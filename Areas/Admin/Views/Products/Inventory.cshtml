@@ -1,0 +1,243 @@
+@model DOAN_BANHANG.ViewModels.AdminInventoryIndexVm
+
+@{
+    ViewData["Title"] = "Cập nhật kho hàng";
+    var selected = Model.SelectedProduct;
+    var variants = selected?.Variants ?? new List<DOAN_BANHANG.ViewModels.AdminInventoryVariantRowVm>();
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+            <div class="card-body bg-success-subtle border-start border-4 border-success">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="avatar-sm rounded bg-success text-white d-inline-flex align-items-center justify-content-center">
+                            <i class="bx bx-box font-size-18"></i>
+                        </span>
+                        <div>
+                            <h4 class="mb-0">Cập nhật kho hàng</h4>
+                            <div class="text-muted small">Điều chỉnh tồn kho theo từng biến thể (tự ghi log)</div>
+                        </div>
+                    </div>
+
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Products" asp-action="Index">Sản phẩm</a></li>
+                            <li class="breadcrumb-item active">Kho hàng</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="avatar-xs">
+                        <span class="avatar-title rounded-circle bg-primary text-white">
+                            <i class="bx bx-search-alt"></i>
+                        </span>
+                    </span>
+                    <div>
+                        <div class="fw-semibold">Chọn sản phẩm</div>
+                        <div class="text-muted small">Tìm nhanh theo tên</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+
+                <form method="get" asp-area="Admin" asp-controller="Products" asp-action="Inventory" class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bx bx-search"></i></span>
+                        <input class="form-control" name="Search" value="@Model.Query.Search" placeholder="Tìm theo tên sản phẩm..." />
+                        <button class="btn btn-soft-primary" type="submit"><i class="bx bx-search-alt-2 me-1"></i>Tìm</button>
+                    </div>
+                </form>
+
+                @if (Model.Products.Count == 0)
+                {
+                    <div class="text-muted">Chưa có sản phẩm.</div>
+                }
+                else
+                {
+                    <div class="list-group" style="max-height: 520px; overflow:auto;">
+                        @foreach (var p in Model.Products)
+                        {
+                            var isActive = selected != null && p.ProductId == selected.ProductId;
+                            <a class="list-group-item list-group-item-action d-flex align-items-center gap-2 @(isActive ? "active" : "")"
+                               asp-area="Admin" asp-controller="Products" asp-action="Inventory"
+                               asp-route-productId="@p.ProductId" asp-route-search="@Model.Query.Search">
+                                <img src="@(string.IsNullOrWhiteSpace(p.PrimaryImageUrl) ? "/admin/assets/images/logo.svg" : p.PrimaryImageUrl)"
+                                     alt="@p.Name" style="width:44px;height:44px;object-fit:cover;border-radius:8px;" />
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold text-truncate">@p.Name</div>
+                                    <div class="small opacity-75 d-flex flex-wrap align-items-center gap-2">
+                                        <span class="badge bg-light text-muted border">#@p.ProductId</span>
+                                        <span>@p.VariantCount biến thể</span>
+                                        <span>•</span>
+                                        <span>Tồn: <span class="fw-semibold">@p.TotalStockQuantity</span></span>
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                    <div class="form-text mt-2">Hiển thị tối đa 50 sản phẩm gần nhất.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-success-subtle border-0 border-start border-4 border-success">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="avatar-xs">
+                            <span class="avatar-title rounded-circle bg-success text-white">
+                                <i class="bx bx-list-check"></i>
+                            </span>
+                        </span>
+                        <div>
+                            <div class="fw-semibold">Tồn kho theo biến thể</div>
+                            <div class="text-muted small">Cập nhật số lượng và lưu thay đổi</div>
+                        </div>
+                    </div>
+
+                    @if (selected != null)
+                    {
+                        <a class="btn btn-sm btn-soft-info" asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@selected.ProductId">
+                            <i class="bx bx-show-alt me-1"></i>Xem chi tiết
+                        </a>
+                    }
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="text-muted">Nhập số lượng tồn kho mới (StockQuantity). Hệ thống sẽ tự ghi log vào bảng InventoryTransactions (Adjust).</div>
+
+                @if (selected is null)
+                {
+                    <div class="alert alert-warning mt-3 mb-0">Vui lòng chọn 1 sản phẩm bên trái để cập nhật tồn kho.</div>
+                }
+                else if (variants.Count == 0)
+                {
+                    <div class="alert alert-warning mt-3 mb-0">Sản phẩm này chưa có biến thể.</div>
+                }
+                else
+                {
+                    <hr class="my-3" />
+
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <img src="@(string.IsNullOrWhiteSpace(selected.PrimaryImageUrl) ? "/admin/assets/images/logo.svg" : selected.PrimaryImageUrl)"
+                             alt="@selected.Name" style="width:56px;height:56px;object-fit:cover;border-radius:10px;" />
+                        <div>
+                            <div class="fw-semibold">@selected.Name</div>
+                            <div class="text-muted small d-flex flex-wrap align-items-center gap-2">
+                                <span class="badge bg-light text-muted border">#@selected.ProductId</span>
+                                <span>@variants.Count biến thể</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form asp-area="Admin" asp-controller="Products" asp-action="Inventory" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ProductId" value="@selected.ProductId" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Ghi chú (tuỳ chọn)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bx bx-note"></i></span>
+                                <input class="form-control" name="Note" value="@Model.Update.Note" placeholder="VD: Nhập thêm hàng / kiểm kê" />
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-nowrap align-middle table-striped table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Màu</th>
+                                        <th>Quy cách</th>
+                                        <th class="text-end">Đã giữ</th>
+                                        <th style="width: 170px;" class="text-end">Tồn kho</th>
+                                        <th class="text-end">Khả dụng</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < variants.Count; i++)
+                                    {
+                                        var v = variants[i];
+                                        var isBad = v.AvailableStock < 0;
+                                        <tr>
+                                            <td class="fw-semibold">@v.Sku</td>
+                                            <td>@(v.ColorName ?? "-")</td>
+                                            <td>@(v.SizeName ?? "-")</td>
+                                            <td class="text-end">@v.ReservedStock</td>
+                                            <td class="text-end">
+                                                <input type="hidden" name="Variants[@i].VariantId" value="@v.VariantId" />
+                                                <input class="form-control form-control-sm text-end" type="number" min="0" step="1" name="Variants[@i].StockQuantity" value="@v.StockQuantity" />
+                                            </td>
+                                            <td class="text-end">
+                                                @if (isBad)
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">@v.AvailableStock</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">@v.AvailableStock</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (v.IsActive)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Đang bán</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">Tạm tắt</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="admin-inventory-actions d-flex flex-wrap gap-2 mt-3 pt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bx bx-save me-1"></i>Lưu tồn kho
+                            </button>
+                            <a class="btn btn-soft-secondary" asp-area="Admin" asp-controller="Products" asp-action="Inventory" asp-route-productId="@selected.ProductId" asp-route-search="@Model.Query.Search">
+                                <i class="bx bx-refresh me-1"></i>Tải lại
+                            </a>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .admin-inventory-actions {
+            position: sticky;
+            bottom: 0;
+            z-index: 5;
+            background: var(--bs-body-bg);
+            border-top: 1px solid var(--bs-border-color);
+        }
+
+        .table-responsive thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+        }
+    </style>
+}

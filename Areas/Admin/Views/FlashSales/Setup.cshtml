@@ -1,0 +1,1391 @@
+@model DOAN_BANHANG.ViewModels.AdminFlashSaleIndexVm
+
+@{
+    ViewData["Title"] = "Thiết lập Flash Sale";
+    var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+}
+
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 bg-light border rounded-3 p-3">
+                        <div>
+                            <h4 class="mb-1"><i class="bx bx-bolt-circle me-1"></i>Thiết lập Flash Sale</h4>
+                            <div class="text-muted small">Tạo/áp dụng Flash Sale theo % và khoảng thời gian</div>
+                        </div>
+                        <div class="page-title-right">
+                            <ol class="breadcrumb m-0">
+                                <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                                <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="FlashSales" asp-action="Index">Flash Sale</a></li>
+                                <li class="breadcrumb-item active">Thiết lập</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                    <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-xs">
+                                    <span class="avatar-title rounded-circle bg-primary text-white">
+                                        <i class="bx bx-cog"></i>
+                                    </span>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0">Cài đặt Flash Sale</h5>
+                                    <div class="text-muted small">Áp dụng cho toàn shop, nhiều sản phẩm, hoặc 1 sản phẩm</div>
+                                </div>
+                            </div>
+
+                            <span class="badge bg-primary text-white rounded-pill px-3 py-2">
+                                <i class="bx bx-package me-1"></i>
+                                @(Model.Products?.Count ?? 0) sản phẩm
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div class="text-muted">
+                                <i class="bx bx-info-circle me-1"></i>
+                                Tip: nếu muốn set sale theo từng biến thể, hãy chọn ở bước “Chọn biến thể”.
+                            </div>
+
+                            <form method="get" class="d-flex gap-2" style="max-width: 520px; width: 100%;">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bx bx-search-alt"></i></span>
+                                    <input class="form-control" name="search" value="@Model.Search" placeholder="Tìm theo tên sản phẩm..." />
+                                </div>
+                                <button class="btn btn-primary" type="submit"><i class="bx bx-search-alt me-1"></i>Tìm</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-4 col-xl-3">
+                <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                    <div class="card-header bg-light border-0">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-xs">
+                                <span class="avatar-title rounded-circle bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+                                    <i class="bx bx-list-ol"></i>
+                                </span>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Thiết lập theo bước</h6>
+                                <div class="text-muted small">Đi theo thứ tự để tránh sai cấu hình</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="nav flex-column nav-pills gap-2" role="tablist" aria-orientation="vertical">
+                            <button class="nav-link active d-flex align-items-center justify-content-between" type="button" data-pane="1">
+                                <span class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-pill">1</span>
+                                    <span><i class="bx bx-target-lock me-1"></i>Phạm vi</span>
+                                </span>
+                                <i class="bx bx-chevron-right"></i>
+                            </button>
+                            <button class="nav-link d-flex align-items-center justify-content-between" type="button" data-pane="2">
+                                <span class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill">2</span>
+                                    <span><i class="bx bx-package me-1"></i>Chọn sản phẩm</span>
+                                </span>
+                                <i class="bx bx-chevron-right"></i>
+                            </button>
+                            <button class="nav-link d-flex align-items-center justify-content-between" type="button" data-pane="3">
+                                <span class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill">3</span>
+                                    <span><i class="bx bx-layer me-1"></i>Chọn biến thể</span>
+                                </span>
+                                <i class="bx bx-chevron-right"></i>
+                            </button>
+                            <button class="nav-link d-flex align-items-center justify-content-between" type="button" data-pane="4">
+                                <span class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill">4</span>
+                                    <span><i class="bx bx-time-five me-1"></i>Thời gian & giảm giá</span>
+                                </span>
+                                <i class="bx bx-chevron-right"></i>
+                            </button>
+                            <button class="nav-link d-flex align-items-center justify-content-between" type="button" data-pane="5">
+                                <span class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill">5</span>
+                                    <span><i class="bx bx-check-shield me-1"></i>Xác nhận</span>
+                                </span>
+                                <i class="bx bx-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                    <div class="card-header bg-light border-0">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-xs">
+                                <span class="avatar-title rounded-circle bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                    <i class="bx bx-bulb"></i>
+                                </span>
+                            </div>
+                            <h6 class="mb-0">Gợi ý nhanh</h6>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0 ps-3">
+                            <li>Toàn shop: áp dụng cho tất cả sản phẩm.</li>
+                            <li>Nhiều SP: tick các sản phẩm muốn áp dụng.</li>
+                            <li>1 SP: tick đúng 1 sản phẩm.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8 col-xl-9">
+                <form asp-action="Apply" method="post" id="flashsaleForm">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="Scope" id="Scope" value="selected" />
+                    <input type="hidden" name="Action" id="Action" value="apply" />
+                    <input type="hidden" name="VariantSelectionJson" id="VariantSelectionJson" value="" />
+                    <input type="hidden" name="PricingMode" id="PricingMode" value="bulk" />
+                    <input type="hidden" name="PerVariantConfigJson" id="PerVariantConfigJson" value="" />
+
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="text-muted small">
+                                <i class="bx bx-trending-up me-1"></i>
+                                Tiến trình cấu hình
+                            </div>
+                            <div class="text-muted small" id="wizardStepText">Bước 1/5</div>
+                        </div>
+                        <div class="progress rounded-pill" style="height: 8px;">
+                            <div id="wizardProgress" class="progress-bar bg-primary" role="progressbar" style="width: 20%"></div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden" data-pane-content="1">
+                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-pill">Bước 1</span>
+                                    <span class="fw-semibold"><i class="bx bx-target-lock me-1"></i>Chọn phạm vi</span>
+                                </div>
+                                <span class="text-muted small">Chọn 1 trong 3 tuỳ chọn</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-check card p-3 h-100 border" data-scope-card="all">
+                                        <input class="form-check-input" type="radio" name="_scopeRadio" id="scope_all" value="all" />
+                                        <label class="form-check-label ms-1" for="scope_all">
+                                            <strong>Toàn bộ gian hàng</strong>
+                                            <div class="text-muted">Áp dụng cho tất cả sản phẩm.</div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check card p-3 h-100 border" data-scope-card="selected">
+                                        <input class="form-check-input" type="radio" name="_scopeRadio" id="scope_selected" value="selected" checked />
+                                        <label class="form-check-label ms-1" for="scope_selected">
+                                            <strong>Nhiều sản phẩm</strong>
+                                            <div class="text-muted">Chọn nhiều sản phẩm từ danh sách.</div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check card p-3 h-100 border" data-scope-card="single">
+                                        <input class="form-check-input" type="radio" name="_scopeRadio" id="scope_single" value="single" />
+                                        <label class="form-check-label ms-1" for="scope_single">
+                                            <strong>1 sản phẩm</strong>
+                                            <div class="text-muted">Chọn đúng 1 sản phẩm.</div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <button class="btn btn-primary" type="button" data-next><i class="bx bx-right-arrow-alt me-1"></i>Tiếp tục</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden d-none" data-pane-content="2">
+                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-pill">Bước 2</span>
+                                    <span class="fw-semibold"><i class="bx bx-package me-1"></i>Chọn sản phẩm</span>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-3 py-2" id="selectedBadge">
+                                    <i class="bx bx-check-square me-1"></i>
+                                    Đã chọn: 0
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h5 class="card-title mb-0">2) Chọn sản phẩm</h5>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" id="selectAllBtn"><i class="bx bx-select-multiple me-1"></i>Chọn tất cả</button>
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" id="clearAllBtn"><i class="bx bx-x me-1"></i>Bỏ chọn</button>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info d-flex align-items-start gap-2" id="scopeHint" role="alert">
+                                <i class="bx bx-info-circle mt-1"></i>
+                                <div></div>
+                            </div>
+
+                            @if (Model.Products == null || Model.Products.Count == 0)
+                            {
+                                <div class="text-muted">Không có sản phẩm để hiển thị.</div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive border rounded-3" style="max-height: 520px; overflow:auto;">
+                                    <table class="table table-striped table-hover table-nowrap align-middle mb-0">
+                                        <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                                            <tr>
+                                                <th style="width:42px"></th>
+                                                <th>Sản phẩm</th>
+                                                <th style="width:140px" class="text-end">Biến thể</th>
+                                                <th style="width:220px" class="text-end">Giá thấp nhất</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var p in Model.Products)
+                                            {
+                                                var isOnSale = p.MinSalePrice.HasValue;
+                                                <tr>
+                                                    <td>
+                                                        <input class="form-check-input product-check" type="checkbox" name="ProductIds" value="@p.ProductId" data-product-id="@p.ProductId" />
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            @if (!string.IsNullOrWhiteSpace(p.PrimaryImageUrl))
+                                                            {
+                                                                <img src="@p.PrimaryImageUrl" alt="@p.Name" class="rounded" style="width:40px;height:40px;object-fit:cover;" />
+                                                            }
+                                                            <div>
+                                                                <div class="fw-semibold">@p.Name</div>
+                                                                @if (isOnSale)
+                                                                {
+                                                                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill">Đang Flash Sale</span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end">@p.VariantCount</td>
+                                                    <td class="text-end fw-semibold">@p.MinPrice.ToString("N0", viVn)₫</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+
+                            <div class="mt-3 d-flex gap-2">
+                                <button class="btn btn-outline-secondary" type="button" data-prev>Quay lại</button>
+                                <button class="btn btn-primary" type="button" data-next><i class="bx bx-right-arrow-alt me-1"></i>Tiếp tục</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden d-none" data-pane-content="3">
+                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-pill">Bước 3</span>
+                                    <span class="fw-semibold"><i class="bx bx-layer me-1"></i>Chọn biến thể</span>
+                                </div>
+                                <span class="text-muted small">Chọn biến thể sale cho từng sản phẩm</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-danger d-none" id="variantStepError" role="alert"></div>
+
+                            <div class="alert alert-info d-flex align-items-start gap-2" role="alert">
+                                <i class="bx bx-info-circle mt-1"></i>
+                                <div>
+                                    Nếu chọn “Toàn bộ gian hàng” thì mặc định áp dụng cho <strong>tất cả biến thể</strong>.
+                                    Nếu chọn 1/nhiều sản phẩm, bạn có thể chọn sale cho một số biến thể hoặc toàn bộ biến thể theo từng sản phẩm.
+                                </div>
+                            </div>
+
+                            <div id="variantSelectionContainer" class="d-flex flex-column gap-3"></div>
+
+                            <div class="mt-3 d-flex gap-2">
+                                <button class="btn btn-outline-secondary" type="button" data-prev>Quay lại</button>
+                                <button class="btn btn-primary" type="button" data-next><i class="bx bx-right-arrow-alt me-1"></i>Tiếp tục</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden d-none" data-pane-content="4">
+                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-pill">Bước 4</span>
+                                    <span class="fw-semibold"><i class="bx bx-time-five me-1"></i>Giảm giá & thời gian</span>
+                                </div>
+                                <span class="text-muted small">Thiết lập % và thời gian áp dụng</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-danger d-none" id="pricingStepError" role="alert"></div>
+
+                            <div class="border rounded-3 p-3 mb-3" id="pricingModeBox">
+                                <div class="fw-semibold mb-2">Cách đặt giảm giá</div>
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="_pricingModeRadio" id="pricing_bulk" value="bulk" checked />
+                                        <label class="form-check-label" for="pricing_bulk">Một mức giảm & thời gian cho tất cả biến thể</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="_pricingModeRadio" id="pricing_pervariant" value="pervariant" />
+                                        <label class="form-check-label" for="pricing_pervariant">Mỗi biến thể một mức giảm & thời gian riêng</label>
+                                    </div>
+                                </div>
+                                <div class="text-muted small mt-2" id="pricingModeHint"></div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Giảm giá (%)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bx bx-purchase-tag"></i></span>
+                                        <input class="form-control" type="number" name="DiscountPercent" id="DiscountPercent" min="1" max="90" value="10" required />
+                                        <span class="input-group-text bg-white">%</span>
+                                    </div>
+                                    <div class="form-text">Nhập 1–90.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Bắt đầu</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bx bx-calendar"></i></span>
+                                        <input class="form-control" type="datetime-local" name="SaleStartDate" id="SaleStartDate" required />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Kết thúc</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bx bx-calendar-check"></i></span>
+                                        <input class="form-control" type="datetime-local" name="SaleEndDate" id="SaleEndDate" required />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 d-none" id="perVariantPricingContainer">
+                                <div class="alert alert-info d-flex align-items-start gap-2" role="alert">
+                                    <i class="bx bx-info-circle mt-1"></i>
+                                    <div>Nhập % giảm và thời gian áp dụng cho từng biến thể.</div>
+                                </div>
+                                <div id="perVariantPricingList" class="d-flex flex-column gap-3"></div>
+                            </div>
+
+                            <div class="mt-3 d-flex gap-2">
+                                <button class="btn btn-outline-secondary" type="button" data-prev>Quay lại</button>
+                                <button class="btn btn-primary" type="button" data-next><i class="bx bx-right-arrow-alt me-1"></i>Tiếp tục</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden d-none" data-pane-content="5">
+                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-pill">Bước 5</span>
+                                    <span class="fw-semibold"><i class="bx bx-check-shield me-1"></i>Xác nhận</span>
+                                </div>
+                                <span class="text-muted small">Kiểm tra lại trước khi áp dụng</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="border rounded-3 p-3 h-100 bg-light">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="avatar-xs">
+                                                <span class="avatar-title rounded-circle bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+                                                    <i class="bx bx-target-lock"></i>
+                                                </span>
+                                            </span>
+                                            <div class="fw-semibold">Phạm vi</div>
+                                        </div>
+                                        <div class="fw-semibold" id="summaryScope">—</div>
+                                        <div class="text-muted mt-2">Số sản phẩm chọn</div>
+                                        <div class="fw-semibold" id="summaryCount">—</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="border rounded-3 p-3 h-100 bg-light">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="avatar-xs">
+                                                <span class="avatar-title rounded-circle bg-success-subtle text-success-emphasis border border-success-subtle">
+                                                    <i class="bx bx-purchase-tag"></i>
+                                                </span>
+                                            </span>
+                                            <div class="fw-semibold">Giảm giá & thời gian</div>
+                                        </div>
+                                        <div class="text-muted">Giảm giá</div>
+                                        <div class="fw-semibold" id="summaryDiscount">—</div>
+                                        <div class="text-muted mt-2">Thời gian</div>
+                                        <div class="fw-semibold" id="summaryDates">—</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <div class="fw-semibold mb-2"><i class="bx bx-list-check me-1"></i>Chi tiết áp dụng</div>
+                                <div class="table-responsive border rounded-3">
+                                    <table class="table table-striped table-sm align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 28%">Sản phẩm</th>
+                                                <th>Biến thể</th>
+                                                <th style="width: 12%" class="text-end">Giảm (%)</th>
+                                                <th style="width: 16%">Bắt đầu</th>
+                                                <th style="width: 16%">Kết thúc</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="confirmTbody">
+                                            <tr>
+                                                <td colspan="5" class="text-muted">—</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="text-muted small mt-2" id="confirmNote"></div>
+                            </div>
+
+                            <div class="mt-3 d-flex gap-2">
+                                <button class="btn btn-outline-secondary" type="button" data-prev>Quay lại</button>
+                                <button class="btn btn-primary" type="submit" onclick="document.getElementById('Action').value='apply';document.getElementById('DiscountPercent').required=true;document.getElementById('SaleStartDate').required=true;document.getElementById('SaleEndDate').required=true;">
+                                    <i class="bx bx-check-circle me-1"></i>Áp dụng Flash Sale
+                                </button>
+                                <button class="btn btn-outline-danger" type="submit" onclick="document.getElementById('Action').value='clear';document.getElementById('DiscountPercent').required=false;document.getElementById('SaleStartDate').required=false;document.getElementById('SaleEndDate').required=false;">
+                                    <i class="bx bx-trash me-1"></i>Gỡ Flash Sale
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+@section Scripts {
+    <script>
+        (function () {
+            const paneButtons = Array.from(document.querySelectorAll('[data-pane]'));
+            const panes = Array.from(document.querySelectorAll('[data-pane-content]'));
+
+            const scopeCards = Array.from(document.querySelectorAll('[data-scope-card]'));
+
+            const scopeHidden = document.getElementById('Scope');
+            const scopeRadios = Array.from(document.querySelectorAll('input[name="_scopeRadio"]'));
+            const productChecks = Array.from(document.querySelectorAll('.product-check'));
+
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const clearAllBtn = document.getElementById('clearAllBtn');
+            const scopeHint = document.getElementById('scopeHint');
+
+            const wizardProgress = document.getElementById('wizardProgress');
+            const wizardStepText = document.getElementById('wizardStepText');
+            const selectedBadge = document.getElementById('selectedBadge');
+
+            const variantSelectionContainer = document.getElementById('variantSelectionContainer');
+            const variantSelectionJson = document.getElementById('VariantSelectionJson');
+            const variantStepError = document.getElementById('variantStepError');
+
+            const pricingModeHidden = document.getElementById('PricingMode');
+            const perVariantConfigJson = document.getElementById('PerVariantConfigJson');
+            const pricingModeBox = document.getElementById('pricingModeBox');
+            const pricingModeHint = document.getElementById('pricingModeHint');
+            const pricingStepError = document.getElementById('pricingStepError');
+            const perVariantPricingContainer = document.getElementById('perVariantPricingContainer');
+            const perVariantPricingList = document.getElementById('perVariantPricingList');
+
+            const discount = document.getElementById('DiscountPercent');
+            const startDate = document.getElementById('SaleStartDate');
+            const endDate = document.getElementById('SaleEndDate');
+
+            const summaryScope = document.getElementById('summaryScope');
+            const summaryCount = document.getElementById('summaryCount');
+            const summaryDiscount = document.getElementById('summaryDiscount');
+            const summaryDates = document.getElementById('summaryDates');
+
+            const confirmTbody = document.getElementById('confirmTbody');
+            const confirmNote = document.getElementById('confirmNote');
+
+            const variantState = {}; // { [productId]: { mode: 'all'|'selected', variants: Set<number>, loaded: boolean, items: [] } }
+
+            let pricingMode = 'bulk'; // bulk | pervariant
+
+            function setPricingStepError(message) {
+                if (!pricingStepError) return;
+                if (message) {
+                    pricingStepError.textContent = message;
+                    pricingStepError.classList.remove('d-none');
+                } else {
+                    pricingStepError.textContent = '';
+                    pricingStepError.classList.add('d-none');
+                }
+            }
+
+            async function computePerVariantEligibility() {
+                const scope = getScope();
+                if (scope === 'all') {
+                    return { eligible: false, totalTargets: 0 };
+                }
+
+                const ids = selectedProductIds();
+                if (ids.length === 0) {
+                    return { eligible: false, totalTargets: 0 };
+                }
+
+                // Determine total number of targeted variants across selected products.
+                let totalTargets = 0;
+                for (const pid of ids) {
+                    const st = ensureVariantState(pid);
+                    if (st.mode === 'selected') {
+                        totalTargets += st.variants.size;
+                        continue;
+                    }
+
+                    // mode === 'all' => need variant count; load once if needed.
+                    if (!st.loaded) {
+                        try {
+                            const loaded = await fetchVariants(pid);
+                            st.items = Array.isArray(loaded) ? loaded : [];
+                        } catch {
+                            st.items = [];
+                        }
+                        st.loaded = true;
+                    }
+                    totalTargets += (st.items ? st.items.length : 0);
+                }
+
+                return { eligible: totalTargets >= 2, totalTargets };
+            }
+
+            function syncPricingModeHidden() {
+                if (pricingModeHidden) {
+                    pricingModeHidden.value = pricingMode;
+                }
+            }
+
+            function ensureVariantState(productId) {
+                if (!variantState[productId]) {
+                    variantState[productId] = { mode: 'all', variants: new Set(), loaded: false, items: [] };
+                }
+                return variantState[productId];
+            }
+
+            function selectedProductIds() {
+                return productChecks
+                    .filter(c => c.checked)
+                    .map(c => Number(c.getAttribute('data-product-id')))
+                    .filter(n => Number.isFinite(n) && n > 0);
+            }
+
+            function setVariantStepError(message) {
+                if (!variantStepError) return;
+                if (message) {
+                    variantStepError.textContent = message;
+                    variantStepError.classList.remove('d-none');
+                } else {
+                    variantStepError.textContent = '';
+                    variantStepError.classList.add('d-none');
+                }
+            }
+
+            function buildVariantSelectionJson() {
+                if (!variantSelectionJson) return;
+                const scope = getScope();
+
+                if (scope === 'all') {
+                    variantSelectionJson.value = '';
+                    return;
+                }
+
+                const map = {};
+                selectedProductIds().forEach(pid => {
+                    const st = ensureVariantState(pid);
+                    map[String(pid)] = {
+                        mode: st.mode,
+                        variantIds: Array.from(st.variants.values())
+                    };
+                });
+
+                variantSelectionJson.value = JSON.stringify(map);
+            }
+
+            function validateVariantStep() {
+                const scope = getScope();
+                if (scope === 'all') {
+                    setVariantStepError('');
+                    return true;
+                }
+
+                const ids = selectedProductIds();
+                if (ids.length === 0) {
+                    setVariantStepError('Vui lòng chọn sản phẩm trước khi chọn biến thể.');
+                    return false;
+                }
+
+                for (const pid of ids) {
+                    const st = ensureVariantState(pid);
+                    if (st.mode === 'selected' && st.variants.size === 0) {
+                        setVariantStepError('Bạn đã chọn “Chọn biến thể” nhưng chưa tick biến thể nào.');
+                        return false;
+                    }
+                }
+
+                setVariantStepError('');
+                return true;
+            }
+
+            async function fetchVariants(productId) {
+                const baseUrl = '@Url.Action("GetVariants", "FlashSales", new { area = "Admin" })';
+                const res = await fetch(baseUrl + '?productId=' + encodeURIComponent(productId));
+                if (!res.ok) {
+                    throw new Error('Không tải được biến thể.');
+                }
+                return await res.json();
+            }
+
+            async function renderVariantSelectionUi() {
+                if (!variantSelectionContainer) return;
+
+                const scope = getScope();
+                const ids = selectedProductIds();
+                variantSelectionContainer.innerHTML = '';
+                setVariantStepError('');
+
+                if (scope === 'all') {
+                    const div = document.createElement('div');
+                    div.className = 'border rounded-3 p-3 bg-light';
+                    div.innerHTML = '<div class="fw-semibold">Toàn bộ gian hàng</div><div class="text-muted small">Mặc định áp dụng cho tất cả biến thể của tất cả sản phẩm.</div>';
+                    variantSelectionContainer.appendChild(div);
+                    buildVariantSelectionJson();
+                    return;
+                }
+
+                if (ids.length === 0) {
+                    const div = document.createElement('div');
+                    div.className = 'border rounded-3 p-3 bg-light';
+                    div.innerHTML = '<div class="text-muted">Chưa chọn sản phẩm nào.</div>';
+                    variantSelectionContainer.appendChild(div);
+                    buildVariantSelectionJson();
+                    return;
+                }
+
+                // Resolve product names from step-2 table.
+                const productNameById = {};
+                productChecks.forEach(c => {
+                    const pid = Number(c.getAttribute('data-product-id'));
+                    const row = c.closest('tr');
+                    const nameEl = row ? row.querySelector('.fw-semibold') : null;
+                    if (pid > 0) {
+                        productNameById[pid] = nameEl ? nameEl.textContent.trim() : ('Sản phẩm #' + pid);
+                    }
+                });
+
+                for (const pid of ids) {
+                    const st = ensureVariantState(pid);
+
+                    const card = document.createElement('div');
+                    card.className = 'border rounded-3 p-3';
+
+                    const header = document.createElement('div');
+                    header.className = 'd-flex flex-wrap align-items-start justify-content-between gap-2';
+                    header.innerHTML = `
+                        <div>
+                            <div class="fw-semibold">${productNameById[pid] || ('Sản phẩm #' + pid)}</div>
+                            <div class="text-muted small">#${pid}</div>
+                        </div>
+                    `;
+
+                    const body = document.createElement('div');
+                    body.className = 'mt-2';
+
+                    const radios = document.createElement('div');
+                    radios.className = 'd-flex flex-wrap gap-3 align-items-center';
+                    radios.innerHTML = `
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="variant_mode_${pid}" id="variant_mode_all_${pid}" value="all" ${st.mode === 'all' ? 'checked' : ''} />
+                            <label class="form-check-label" for="variant_mode_all_${pid}">Toàn bộ biến thể</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="variant_mode_${pid}" id="variant_mode_selected_${pid}" value="selected" ${st.mode === 'selected' ? 'checked' : ''} />
+                            <label class="form-check-label" for="variant_mode_selected_${pid}">Chọn biến thể</label>
+                        </div>
+                    `;
+
+                    const variantsBox = document.createElement('div');
+                    variantsBox.className = 'mt-2';
+
+                    async function ensureLoaded() {
+                        if (st.loaded) return;
+                        variantsBox.innerHTML = '<div class="text-muted small">Đang tải biến thể...</div>';
+                        try {
+                            const items = await fetchVariants(pid);
+                            st.items = Array.isArray(items) ? items : [];
+                        } catch {
+                            st.items = [];
+                        }
+                        st.loaded = true;
+                    }
+
+                    function renderVariantsList() {
+                        if (st.mode !== 'selected') {
+                            variantsBox.innerHTML = '<div class="text-muted small">Mặc định áp dụng cho tất cả biến thể.</div>';
+                            buildVariantSelectionJson();
+                            return;
+                        }
+
+                        if (!st.loaded) {
+                            variantsBox.innerHTML = '<div class="text-muted small">Đang tải biến thể...</div>';
+                            return;
+                        }
+
+                        if (!st.items || st.items.length === 0) {
+                            variantsBox.innerHTML = '<div class="text-muted small">Không có biến thể để chọn.</div>';
+                            buildVariantSelectionJson();
+                            return;
+                        }
+
+                        const wrap = document.createElement('div');
+                        wrap.className = 'd-flex flex-column gap-2';
+
+                        st.items.forEach(v => {
+                            const vid = Number(v.id);
+                            const label = (v.label && String(v.label).trim()) ? String(v.label).trim() : (v.sku ? String(v.sku) : ('Variant #' + vid));
+                            const activeText = (v.isActive === false)
+                                ? '<span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle ms-2">Inactive</span>'
+                                : '';
+
+                            const row = document.createElement('div');
+                            row.className = 'form-check';
+                            row.innerHTML = `
+                                <input class="form-check-input" type="checkbox" id="variant_${pid}_${vid}" ${st.variants.has(vid) ? 'checked' : ''} />
+                                <label class="form-check-label" for="variant_${pid}_${vid}">${label}${activeText}</label>
+                            `;
+
+                            const cb = row.querySelector('input');
+                            cb.addEventListener('change', () => {
+                                if (cb.checked) st.variants.add(vid);
+                                else st.variants.delete(vid);
+                                buildVariantSelectionJson();
+                                setVariantStepError('');
+                            });
+                            wrap.appendChild(row);
+                        });
+
+                        variantsBox.innerHTML = '';
+                        variantsBox.appendChild(wrap);
+                        buildVariantSelectionJson();
+                    }
+
+                    radios.querySelectorAll('input[type="radio"]').forEach(r => {
+                        r.addEventListener('change', async () => {
+                            st.mode = r.value === 'selected' ? 'selected' : 'all';
+                            if (st.mode !== 'selected') {
+                                st.variants.clear();
+                                renderVariantsList();
+                                return;
+                            }
+
+                            await ensureLoaded();
+                            renderVariantsList();
+                        });
+                    });
+
+                    body.appendChild(radios);
+                    body.appendChild(variantsBox);
+                    card.appendChild(header);
+                    card.appendChild(body);
+                    variantSelectionContainer.appendChild(card);
+
+                    if (st.mode === 'selected') {
+                        await ensureLoaded();
+                    }
+                    renderVariantsList();
+                }
+
+                buildVariantSelectionJson();
+            }
+
+            async function renderPricingUi() {
+                setPricingStepError('');
+                syncPricingModeHidden();
+
+                const eligibility = await computePerVariantEligibility();
+                const eligible = eligibility.eligible;
+                if (pricingModeBox) {
+                    pricingModeBox.classList.toggle('d-none', !eligible);
+                }
+
+                if (!eligible) {
+                    pricingMode = 'bulk';
+                    syncPricingModeHidden();
+                }
+
+                if (pricingModeHint) {
+                    if (!eligible) {
+                        pricingModeHint.textContent = 'Tuỳ chọn “mỗi biến thể” chỉ khả dụng khi bạn target từ 2 biến thể trở lên ở bước 3.';
+                    } else {
+                        pricingModeHint.textContent = pricingMode === 'pervariant'
+                            ? 'Bạn đang đặt giảm giá theo từng biến thể.'
+                            : 'Bạn đang đặt một mức giảm cho tất cả biến thể.';
+                    }
+                }
+
+                const bulkInputs = [discount, startDate, endDate].filter(Boolean);
+                const showPerVariant = eligible && pricingMode === 'pervariant';
+
+                // Toggle bulk inputs
+                bulkInputs.forEach(i => {
+                    i.disabled = showPerVariant;
+                });
+                if (discount) discount.required = !showPerVariant;
+                if (startDate) startDate.required = !showPerVariant;
+                if (endDate) endDate.required = !showPerVariant;
+
+                if (perVariantPricingContainer) {
+                    perVariantPricingContainer.classList.toggle('d-none', !showPerVariant);
+                }
+
+                if (!showPerVariant) {
+                    if (perVariantConfigJson) perVariantConfigJson.value = '';
+                    return;
+                }
+
+                if (!perVariantPricingList) return;
+                perVariantPricingList.innerHTML = '';
+
+                const ids = selectedProductIds();
+                // Resolve product names from step-2 table.
+                const productNameById = {};
+                productChecks.forEach(c => {
+                    const pid = Number(c.getAttribute('data-product-id'));
+                    const row = c.closest('tr');
+                    const nameEl = row ? row.querySelector('.fw-semibold') : null;
+                    if (pid > 0) {
+                        productNameById[pid] = nameEl ? nameEl.textContent.trim() : ('Sản phẩm #' + pid);
+                    }
+                });
+
+                // Ensure variants loaded for all selected products (needed to render labels/count)
+                for (const pid of ids) {
+                    const st = ensureVariantState(pid);
+                    if (!st.loaded) {
+                        try {
+                            const loaded = await fetchVariants(pid);
+                            st.items = Array.isArray(loaded) ? loaded : [];
+                        } catch {
+                            st.items = [];
+                        }
+                        st.loaded = true;
+                    }
+                }
+
+                ids.forEach(pid => {
+                    const st = ensureVariantState(pid);
+                    const group = document.createElement('div');
+                    group.className = 'border rounded-3 p-3';
+                    group.innerHTML = `
+                        <div class="fw-semibold">${productNameById[pid] || ('Sản phẩm #' + pid)}</div>
+                        <div class="text-muted small">#${pid}</div>
+                    `;
+
+                    const list = document.createElement('div');
+                    list.className = 'mt-2 d-flex flex-column gap-2';
+
+                    if (!st.items || st.items.length === 0) {
+                        const empty = document.createElement('div');
+                        empty.className = 'text-muted small';
+                        empty.textContent = 'Không tải được biến thể.';
+                        list.appendChild(empty);
+                    } else {
+                        const targeted = st.mode === 'selected'
+                            ? st.items.filter(x => st.variants.has(Number(x.id)))
+                            : st.items;
+
+                        targeted.forEach(v => {
+                            const vid = Number(v.id);
+                            const label = (v.label && String(v.label).trim()) ? String(v.label).trim() : (v.sku ? String(v.sku) : ('Variant #' + vid));
+
+                            const row = document.createElement('div');
+                            row.className = 'row g-2 align-items-end';
+                            row.innerHTML = `
+                                <div class="col-md-4">
+                                    <div class="fw-semibold">${label}</div>
+                                    <div class="text-muted small">#${vid}</div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label mb-1">Giảm (%)</label>
+                                    <input class="form-control" type="number" min="1" max="90" value="10" data-vid="${vid}" data-field="pct" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label mb-1">Bắt đầu</label>
+                                    <input class="form-control" type="datetime-local" data-vid="${vid}" data-field="start" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label mb-1">Kết thúc</label>
+                                    <input class="form-control" type="datetime-local" data-vid="${vid}" data-field="end" />
+                                </div>
+                            `;
+                            list.appendChild(row);
+                        });
+                    }
+
+                    group.appendChild(list);
+                    perVariantPricingList.appendChild(group);
+                });
+
+                buildPerVariantConfigJson();
+            }
+
+            function buildPerVariantConfigJson() {
+                if (!perVariantConfigJson) return;
+                if (pricingMode !== 'pervariant') {
+                    perVariantConfigJson.value = '';
+                    return;
+                }
+
+                const map = {};
+                const inputs = Array.from(document.querySelectorAll('#perVariantPricingList [data-vid]'));
+
+                inputs.forEach(el => {
+                    const vid = Number(el.getAttribute('data-vid'));
+                    const field = el.getAttribute('data-field');
+                    if (!vid || !field) return;
+                    if (!map[String(vid)]) {
+                        map[String(vid)] = { discountPercent: 0, saleStartDate: '', saleEndDate: '' };
+                    }
+
+                    if (field === 'pct') {
+                        map[String(vid)].discountPercent = Number(el.value || 0);
+                    } else if (field === 'start') {
+                        map[String(vid)].saleStartDate = String(el.value || '');
+                    } else if (field === 'end') {
+                        map[String(vid)].saleEndDate = String(el.value || '');
+                    }
+                });
+
+                perVariantConfigJson.value = JSON.stringify(map);
+            }
+
+            function validatePricingStep() {
+                setPricingStepError('');
+                if (pricingMode !== 'pervariant') {
+                    return true;
+                }
+
+                // Validate every per-variant row has pct + start + end, and end > start.
+                const byVid = {};
+                Array.from(document.querySelectorAll('#perVariantPricingList [data-vid]')).forEach(el => {
+                    const vid = Number(el.getAttribute('data-vid'));
+                    const field = el.getAttribute('data-field');
+                    if (!vid || !field) return;
+                    if (!byVid[vid]) byVid[vid] = {};
+                    byVid[vid][field] = el.value;
+                });
+
+                const vids = Object.keys(byVid);
+                for (const k of vids) {
+                    const v = byVid[k];
+                    const pct = Number(v.pct || 0);
+                    if (!(pct >= 1 && pct <= 90)) {
+                        setPricingStepError('Giảm giá theo biến thể phải nằm trong 1–90%.');
+                        return false;
+                    }
+                    if (!v.start || !v.end) {
+                        setPricingStepError('Vui lòng nhập đủ thời gian bắt đầu/kết thúc cho từng biến thể.');
+                        return false;
+                    }
+                    const s = new Date(v.start);
+                    const e = new Date(v.end);
+                    if (!(s instanceof Date) || isNaN(s.getTime()) || !(e instanceof Date) || isNaN(e.getTime())) {
+                        setPricingStepError('Thời gian theo biến thể không hợp lệ.');
+                        return false;
+                    }
+                    if (e <= s) {
+                        setPricingStepError('Thời gian kết thúc phải lớn hơn thời gian bắt đầu (theo từng biến thể).');
+                        return false;
+                    }
+                }
+
+                buildPerVariantConfigJson();
+                return true;
+            }
+
+            function getScope() {
+                return (scopeHidden.value || '').toLowerCase();
+            }
+
+            function showPane(index1) {
+                const idx = index1 - 1;
+                paneButtons.forEach(b => b.classList.toggle('active', Number(b.getAttribute('data-pane')) === index1));
+                panes.forEach((p, i) => p.classList.toggle('d-none', i !== idx));
+
+                if (wizardProgress) {
+                    const pct = Math.max(1, Math.min(5, index1)) * 20;
+                    wizardProgress.style.width = pct + '%';
+                }
+                if (wizardStepText) {
+                    wizardStepText.textContent = 'Bước ' + index1 + '/5';
+                }
+
+                if (index1 === 3) {
+                    renderVariantSelectionUi();
+                }
+
+                if (index1 === 4) {
+                    renderPricingUi();
+                }
+
+                if (index1 === 5) {
+                    updateSummary();
+                }
+            }
+
+            function updateScopeCardHighlight() {
+                const scope = getScope();
+                scopeCards.forEach(card => {
+                    const key = (card.getAttribute('data-scope-card') || '').toLowerCase();
+                    const isActive = key === scope;
+                    card.classList.toggle('border-primary', isActive);
+                    card.classList.toggle('shadow-sm', isActive);
+                    card.classList.toggle('bg-light', isActive);
+                });
+            }
+
+            function selectedCount() {
+                return productChecks.filter(c => c.checked).length;
+            }
+
+            function updateSelectedBadge() {
+                if (!selectedBadge) return;
+                selectedBadge.textContent = 'Đã chọn: ' + selectedCount();
+            }
+
+            function clearAll() {
+                productChecks.forEach(c => c.checked = false);
+            }
+
+            function enforceSingleSelection(changed) {
+                if (!changed.checked) return;
+                productChecks.forEach(c => {
+                    if (c !== changed) c.checked = false;
+                });
+            }
+
+            function updateSelectionUi() {
+                const scope = getScope();
+
+                if (!scopeHint) return;
+
+                if (scope === 'all') {
+                    scopeHint.querySelector('div').textContent = 'Bạn đang chọn: Toàn bộ gian hàng. Không cần chọn sản phẩm.';
+                    if (selectAllBtn) selectAllBtn.disabled = true;
+                    if (clearAllBtn) clearAllBtn.disabled = true;
+                    clearAll();
+                    productChecks.forEach(c => c.disabled = true);
+                } else if (scope === 'single') {
+                    scopeHint.querySelector('div').textContent = 'Bạn đang chọn: 1 sản phẩm. Vui lòng tick đúng 1 sản phẩm.';
+                    if (selectAllBtn) selectAllBtn.disabled = true;
+                    if (clearAllBtn) clearAllBtn.disabled = false;
+                    productChecks.forEach(c => c.disabled = false);
+                    if (selectedCount() > 1) {
+                        const first = productChecks.find(c => c.checked);
+                        productChecks.forEach(c => c.checked = (c === first));
+                    }
+                } else {
+                    scopeHint.querySelector('div').textContent = 'Bạn đang chọn: Nhiều sản phẩm. Tick các sản phẩm muốn áp dụng.';
+                    if (selectAllBtn) selectAllBtn.disabled = false;
+                    if (clearAllBtn) clearAllBtn.disabled = false;
+                    productChecks.forEach(c => c.disabled = false);
+                }
+
+                updateScopeCardHighlight();
+                updateSelectedBadge();
+            }
+
+            async function updateSummary() {
+                function formatDtLocal(dtLocalValue) {
+                    if (!dtLocalValue) return '—';
+                    const parts = String(dtLocalValue).split('T');
+                    if (parts.length !== 2) return String(dtLocalValue);
+                    const date = parts[0].split('-');
+                    if (date.length !== 3) return String(dtLocalValue).replace('T', ' ');
+                    return date[2] + '/' + date[1] + '/' + date[0] + ' ' + parts[1];
+                }
+
+                function resolveProductNameById() {
+                    const map = {};
+                    productChecks.forEach(c => {
+                        const pid = Number(c.getAttribute('data-product-id'));
+                        const row = c.closest('tr');
+                        const nameEl = row ? row.querySelector('.fw-semibold') : null;
+                        if (pid > 0) {
+                            map[pid] = nameEl ? nameEl.textContent.trim() : ('Sản phẩm #' + pid);
+                        }
+                    });
+                    return map;
+                }
+
+                function safeParseJson(s) {
+                    if (!s) return null;
+                    try { return JSON.parse(s); } catch { return null; }
+                }
+
+                const scope = getScope();
+                if (summaryScope) {
+                    summaryScope.textContent = scope === 'all' ? 'Toàn bộ gian hàng' : (scope === 'single' ? '1 sản phẩm' : 'Nhiều sản phẩm');
+                }
+                if (summaryCount) {
+                    summaryCount.textContent = scope === 'all' ? 'Tất cả' : String(selectedCount());
+                }
+                if (summaryDiscount) {
+                    summaryDiscount.textContent = pricingMode === 'pervariant'
+                        ? 'Theo từng biến thể'
+                        : ((discount && discount.value) ? (discount.value + '%') : '—');
+                }
+                if (summaryDates) {
+                    summaryDates.textContent = pricingMode === 'pervariant'
+                        ? 'Theo từng biến thể'
+                        : ((startDate && startDate.value && endDate && endDate.value)
+                            ? (formatDtLocal(startDate.value) + ' → ' + formatDtLocal(endDate.value))
+                            : '—');
+                }
+
+                if (!confirmTbody) return;
+                confirmTbody.innerHTML = '';
+                if (confirmNote) confirmNote.textContent = '';
+
+                if (scope === 'all') {
+                    confirmTbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-muted">Phạm vi toàn gian hàng: hệ thống sẽ áp dụng cho tất cả sản phẩm và tất cả biến thể.</td>
+                        </tr>
+                    `;
+                    if (confirmNote) {
+                        confirmNote.textContent = 'Nếu muốn xem chi tiết sản phẩm/biến thể cụ thể, hãy chọn phạm vi “Nhiều sản phẩm” hoặc “1 sản phẩm”.';
+                    }
+                    return;
+                }
+
+                const ids = selectedProductIds();
+                if (ids.length === 0) {
+                    confirmTbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-muted">Chưa chọn sản phẩm.</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                const productNameById = resolveProductNameById();
+
+                // Ensure variants loaded so we can show labels/count even when mode=all.
+                for (const pid of ids) {
+                    const st = ensureVariantState(pid);
+                    if (!st.loaded) {
+                        try {
+                            const loaded = await fetchVariants(pid);
+                            st.items = Array.isArray(loaded) ? loaded : [];
+                        } catch {
+                            st.items = [];
+                        }
+                        st.loaded = true;
+                    }
+                }
+
+                const perVarMap = pricingMode === 'pervariant'
+                    ? (safeParseJson(perVariantConfigJson ? perVariantConfigJson.value : '') || {})
+                    : null;
+
+                function addRow(productCellHtml, variantCellHtml, pctText, sText, eText) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${productCellHtml || ''}</td>
+                        <td>${variantCellHtml || ''}</td>
+                        <td class="text-end">${pctText || '—'}</td>
+                        <td>${sText || '—'}</td>
+                        <td>${eText || '—'}</td>
+                    `;
+                    confirmTbody.appendChild(tr);
+                }
+
+                let totalTargets = 0;
+                ids.forEach(pid => {
+                    const st = ensureVariantState(pid);
+                    const targeted = st.mode === 'selected'
+                        ? (st.items || []).filter(x => st.variants.has(Number(x.id)))
+                        : (st.items || []);
+                    totalTargets += targeted.length;
+                });
+
+                if (confirmNote) {
+                    confirmNote.textContent = `Tổng biến thể mục tiêu: ${totalTargets}. Cách đặt giảm giá: ${pricingMode === 'pervariant' ? 'theo từng biến thể' : 'một mức cho tất cả'}.`;
+                }
+
+                ids.forEach(pid => {
+                    const st = ensureVariantState(pid);
+                    const productName = productNameById[pid] || ('Sản phẩm #' + pid);
+                    const targeted = st.mode === 'selected'
+                        ? (st.items || []).filter(x => st.variants.has(Number(x.id)))
+                        : (st.items || []);
+
+                    if (!targeted || targeted.length === 0) {
+                        addRow(
+                            `<div class="fw-semibold">${productName}</div><div class="text-muted small">#${pid}</div>`,
+                            `<span class="text-muted">(không có biến thể mục tiêu)</span>`,
+                            '—',
+                            '—',
+                            '—'
+                        );
+                        return;
+                    }
+
+                    targeted.forEach((v, idx) => {
+                        const vid = Number(v.id);
+                        const label = (v.label && String(v.label).trim()) ? String(v.label).trim() : (v.sku ? String(v.sku) : ('Variant #' + vid));
+
+                        const productCell = idx === 0
+                            ? `<div class="fw-semibold">${productName}</div><div class="text-muted small">#${pid}</div>`
+                            : '';
+                        const variantCell = `<div class="fw-semibold">${label}</div><div class="text-muted small">#${vid}</div>`;
+
+                        if (pricingMode !== 'pervariant') {
+                            addRow(
+                                productCell,
+                                variantCell,
+                                (discount && discount.value) ? (String(discount.value) + '%') : '—',
+                                (startDate && startDate.value) ? formatDtLocal(startDate.value) : '—',
+                                (endDate && endDate.value) ? formatDtLocal(endDate.value) : '—'
+                            );
+                            return;
+                        }
+
+                        const cfg = perVarMap ? perVarMap[String(vid)] : null;
+                        const pct = (cfg && cfg.discountPercent) ? (String(cfg.discountPercent) + '%') : '—';
+                        const s = (cfg && cfg.saleStartDate) ? formatDtLocal(cfg.saleStartDate) : '—';
+                        const e = (cfg && cfg.saleEndDate) ? formatDtLocal(cfg.saleEndDate) : '—';
+                        addRow(productCell, variantCell, pct, s, e);
+                    });
+                });
+            }
+
+            // Pane nav buttons
+            paneButtons.forEach(btn => {
+                btn.addEventListener('click', () => showPane(Number(btn.getAttribute('data-pane'))));
+            });
+
+            // Next / prev in-pane buttons
+            document.querySelectorAll('[data-next]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const current = Number(document.querySelector('[data-pane].active').getAttribute('data-pane'));
+                    if (current === 3) {
+                        if (!validateVariantStep()) {
+                            return;
+                        }
+                    }
+                    if (current === 4) {
+                        if (!validatePricingStep()) {
+                            return;
+                        }
+                    }
+                    showPane(Math.min(5, current + 1));
+                });
+            });
+            document.querySelectorAll('[data-prev]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const current = Number(document.querySelector('[data-pane].active').getAttribute('data-pane'));
+                    showPane(Math.max(1, current - 1));
+                });
+            });
+
+            // Scope radio -> hidden scope value
+            scopeRadios.forEach(r => {
+                r.addEventListener('change', () => {
+                    if (!r.checked) return;
+                    scopeHidden.value = r.value;
+                    updateSelectionUi();
+                    buildVariantSelectionJson();
+                });
+            });
+
+            // Product selection behavior
+            productChecks.forEach(c => {
+                c.addEventListener('change', () => {
+                    if (getScope() === 'single') {
+                        enforceSingleSelection(c);
+                    }
+                    updateSelectedBadge();
+                    buildVariantSelectionJson();
+                });
+            });
+
+            if (selectAllBtn) {
+                selectAllBtn.addEventListener('click', () => {
+                    if (getScope() !== 'selected') return;
+                    productChecks.forEach(c => { if (!c.disabled) c.checked = true; });
+                    updateSelectedBadge();
+                });
+            }
+
+            if (clearAllBtn) {
+                clearAllBtn.addEventListener('click', () => {
+                    if (getScope() === 'all') return;
+                    clearAll();
+                    updateSelectedBadge();
+                });
+            }
+
+            // Initialize
+            scopeHidden.value = 'selected';
+            updateSelectionUi();
+            showPane(1);
+
+            // Pricing mode radios
+            document.querySelectorAll('input[name="_pricingModeRadio"]').forEach(r => {
+                r.addEventListener('change', () => {
+                    if (!r.checked) return;
+                    pricingMode = r.value === 'pervariant' ? 'pervariant' : 'bulk';
+                    syncPricingModeHidden();
+                    renderPricingUi();
+                });
+            });
+
+            // Any change inside per-variant list should refresh JSON
+            document.addEventListener('input', (e) => {
+                const target = e.target;
+                if (!target) return;
+                if (target.closest && target.closest('#perVariantPricingList')) {
+                    buildPerVariantConfigJson();
+                }
+            });
+
+            const form = document.getElementById('flashsaleForm');
+            if (form) {
+                form.addEventListener('submit', () => {
+                    buildVariantSelectionJson();
+                    syncPricingModeHidden();
+                    buildPerVariantConfigJson();
+                });
+            }
+        })();
+    </script>
+}

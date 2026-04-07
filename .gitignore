@@ -1,0 +1,29 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS / tooling
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local / secret configuration (DO NOT COMMIT)
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.Local.json
+secrets.json
+
+# Local scratch files
+_cartcookies*.txt
+
+# Node (if any)
+node_modules/

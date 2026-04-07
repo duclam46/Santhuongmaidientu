@@ -1,0 +1,515 @@
+@model DOAN_BANHANG.ViewModels.ProductAdminUpsertVm
+
+@{
+    ViewData["Title"] = "Cập nhật sản phẩm";
+
+    var tab = (string?)Context.Request.Query["tab"];
+    var isVariantsTab = string.Equals(tab, "variants", StringComparison.OrdinalIgnoreCase);
+    var isImagesTab = string.Equals(tab, "images", StringComparison.OrdinalIgnoreCase);
+    var isInfoTab = !isVariantsTab && !isImagesTab;
+}
+
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body bg-primary-subtle rounded">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="avatar-sm">
+                    <span class="avatar-title rounded-circle bg-primary text-white">
+                        <i class="bx bx-package font-size-20"></i>
+                    </span>
+                </div>
+                <div>
+                    <h4 class="mb-1">Cập nhật sản phẩm</h4>
+                    <div class="text-muted small">ID: <strong>#@Model.Id</strong> • Trạng thái: <span class="badge bg-light text-dark">@Model.Status</span></div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+                <a class="btn btn-soft-info" asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" asp-route-id="@Model.Id">
+                    <i class="bx bx-bolt-circle me-1"></i>Cài đặt Flash sale
+                </a>
+                <a class="btn btn-soft-warning" asp-area="Admin" asp-controller="Products" asp-action="Reviews" asp-route-id="@Model.Id">
+                    <i class="bx bx-star me-1"></i>Quản lý đánh giá
+                </a>
+                <a class="btn btn-soft-secondary" asp-area="Admin" asp-controller="Products" asp-action="Index">
+                    <i class="bx bx-arrow-back me-1"></i>Quay lại
+                </a>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <ol class="breadcrumb m-0">
+                <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Products" asp-action="Index">Sản phẩm</a></li>
+                <li class="breadcrumb-item active">Cập nhật</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+        @if (TempData["AdminToast"] is string msg && !string.IsNullOrWhiteSpace(msg))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bx bx-check-circle me-1"></i>@msg
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                            <div>
+                                <h4 class="card-title mb-1">@Model.Name</h4>
+                                <div class="text-muted small">Chỉnh sửa thông tin, biến thể và hình ảnh theo từng tab.</div>
+                            </div>
+                            <div class="d-none d-md-flex align-items-center gap-2">
+                                <span class="badge bg-primary-subtle text-primary-emphasis">Thông tin</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis">Biến thể</span>
+                                <span class="badge bg-success-subtle text-success-emphasis">Hình ảnh</span>
+                            </div>
+                        </div>
+
+                        <ul class="nav nav-pills nav-justified bg-light p-1 rounded" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link @(isInfoTab ? "active" : null)" data-bs-toggle="tab" href="#tab-info" role="tab" aria-selected="@(isInfoTab ? "true" : "false")">
+                                    <span class="badge bg-primary-subtle text-primary-emphasis me-2">1</span>
+                                    <i class="bx bx-info-circle me-1"></i>Thông tin
+                                </a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link @(isVariantsTab ? "active" : null)" data-bs-toggle="tab" href="#tab-variants" role="tab" aria-selected="@(isVariantsTab ? "true" : "false")">
+                                    <span class="badge bg-warning-subtle text-warning-emphasis me-2">2</span>
+                                    <i class="bx bx-layer-plus me-1"></i>Biến thể
+                                </a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link @(isImagesTab ? "active" : null)" data-bs-toggle="tab" href="#tab-images" role="tab" aria-selected="@(isImagesTab ? "true" : "false")">
+                                    <span class="badge bg-success-subtle text-success-emphasis me-2">3</span>
+                                    <i class="bx bx-image-alt me-1"></i>Hình ảnh
+                                </a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content pt-4">
+                            <div class="tab-pane @(isInfoTab ? "active" : null)" id="tab-info" role="tabpanel">
+                                <form asp-area="Admin" asp-controller="Products" asp-action="Edit" method="post" class="row">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" asp-for="Id" />
+
+                                    <div class="col-lg-8">
+                                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                                        <div class="card border shadow-none mb-3">
+                                            <div class="card-header bg-primary-subtle border-0">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <h5 class="my-0"><i class="bx bx-edit-alt me-1"></i>Thông tin cơ bản</h5>
+                                                    <span class="badge bg-primary">Bắt buộc</span>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Tên sản phẩm</label>
+                                                    <input asp-for="Name" class="form-control" />
+                                                    <span asp-validation-for="Name" class="text-danger"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card border shadow-none mb-3">
+                                            <div class="card-header bg-info-subtle border-0">
+                                                <h5 class="my-0"><i class="bx bx-link-alt me-1"></i>SEO / Đường dẫn</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-8">
+                                                        <label class="form-label">Slug</label>
+                                                        <input asp-for="Slug" class="form-control" />
+                                                        <div class="form-text">Gợi ý: dùng chữ thường, dấu gạch nối, không dấu.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card border shadow-none mb-3">
+                                            <div class="card-header bg-warning-subtle border-0">
+                                                <h5 class="my-0"><i class="bx bx-notepad me-1"></i>Mô tả</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <label class="form-label">Nội dung mô tả</label>
+                                                <textarea asp-for="Description" class="form-control" rows="6"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="card border shadow-none mb-0">
+                                            <div class="card-header bg-success-subtle border-0">
+                                                <h5 class="my-0"><i class="bx bx-ruler me-1"></i>Hướng dẫn chọn size</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-striped align-middle mb-0">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Size</th>
+                                                                <th>Thông số</th>
+                                                                <th>Giá trị</th>
+                                                                <th>Ghi chú</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @for (var i = 0; i < Model.SizeGuide.Count; i++)
+                                                            {
+                                                                <tr>
+                                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].SizeLabel" value="@Model.SizeGuide[i].SizeLabel" /></td>
+                                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].HeightRange" value="@Model.SizeGuide[i].HeightRange" /></td>
+                                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].WeightRange" value="@Model.SizeGuide[i].WeightRange" /></td>
+                                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].Note" value="@Model.SizeGuide[i].Note" /></td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="col-lg-4">
+                                        <div class="card border shadow-none">
+                                            <div class="card-header bg-secondary-subtle border-0">
+                                                <h5 class="my-0"><i class="bx bx-cog me-1"></i>Thiết lập</h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Danh mục</label>
+                                                    <select asp-for="CategoryId" class="form-select">
+                                                        <option value="">-- Chọn danh mục --</option>
+                                                        @foreach (var c in Model.CategoryOptions)
+                                                        {
+                                                            <option value="@c.Value" selected="@(Model.CategoryId == c.Value)">@c.Label</option>
+                                                        }
+                                                    </select>
+                                                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Trạng thái</label>
+                                                    <select asp-for="Status" class="form-select">
+                                                        @foreach (var s in Model.StatusOptions)
+                                                        {
+                                                            if (!string.IsNullOrWhiteSpace(s.ValueString))
+                                                            {
+                                                                <option value="@s.ValueString" selected="@(Model.Status == s.ValueString)">@s.Label</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                </div>
+
+                                                <div class="d-grid gap-2">
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="bx bx-save me-1"></i>Lưu thay đổi
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="tab-pane @(isVariantsTab ? "active" : null)" id="tab-variants" role="tabpanel">
+                                <div class="alert alert-warning bg-warning-subtle border-0" role="alert">
+                                    <i class="bx bx-bulb me-1"></i>Thêm/sửa biến thể (Màu sắc, Kích cỡ) và tồn kho/giá.
+                                </div>
+
+                                <div class="card border shadow-none mb-3">
+                                    <div class="card-header bg-info-subtle border-0">
+                                        <h5 class="my-0"><i class="bx bx-grid-alt me-1"></i>Tạo nhanh biến thể (Màu × Size)</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="text-muted mb-3">Chọn nhiều màu và nhiều size để tạo các biến thể còn thiếu. Tồn kho/giá mặc định = 0 (có thể cập nhật ở “Cập nhật kho hàng”).</div>
+
+                                        <form asp-area="Admin" asp-controller="Products" asp-action="GenerateVariants" method="post" class="row g-3">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="ProductId" value="@Model.Id" />
+
+                                            <div class="col-md-6">
+                                                <label class="form-label">Màu (chọn nhiều)</label>
+                                                <select class="form-select" name="ColorIds" multiple size="8">
+                                                    @foreach (var opt in Model.ColorOptions)
+                                                    {
+                                                        <option value="@opt.Value">@opt.Label</option>
+                                                    }
+                                                </select>
+                                                <div class="form-text">Nếu không chọn màu, hệ thống sẽ tạo biến thể “Màu -”.</div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label">Size (chọn nhiều)</label>
+                                                <select class="form-select" name="SizeIds" multiple size="8">
+                                                    @foreach (var opt in Model.SizeOptions)
+                                                    {
+                                                        <option value="@opt.Value">@opt.Label</option>
+                                                    }
+                                                </select>
+                                                <div class="form-text">Nếu không chọn size, hệ thống sẽ tạo biến thể “Size -”.</div>
+                                            </div>
+
+                                            <div class="col-12">
+                                                <button type="submit" class="btn btn-soft-primary">
+                                                    <i class="bx bx-plus-circle me-1"></i>Tạo biến thể còn thiếu
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="card border shadow-none mb-3">
+                                    <div class="card-header bg-warning-subtle border-0">
+                                        <h5 class="my-0"><i class="bx bx-add-to-queue me-1"></i>Thêm biến thể</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form asp-area="Admin" asp-controller="Products" asp-action="AddVariant" method="post" class="row g-3">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="ProductId" value="@Model.Id" />
+
+                                            <div class="col-md-3">
+                                                <label class="form-label">Màu</label>
+                                                <select class="form-select" name="ColorId">
+                                                    <option value="">--</option>
+                                                    @foreach (var opt in Model.ColorOptions)
+                                                    {
+                                                        <option value="@opt.Value">@opt.Label</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Size</label>
+                                                <select class="form-select" name="SizeId">
+                                                    <option value="">--</option>
+                                                    @foreach (var opt in Model.SizeOptions)
+                                                    {
+                                                        <option value="@opt.Value">@opt.Label</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">SKU</label>
+                                                <div class="form-control bg-light" aria-readonly="true">
+                                                    <span class="text-muted">Tự tạo theo dạng</span>
+                                                    <span class="fw-semibold">@Model.Id-OPTION</span>
+                                                </div>
+                                                <div class="form-text">SKU tự tạo tự động giống “Thêm sản phẩm mới”: <span class="fw-semibold">ProductId-Color-Size</span> (bỏ phần nếu không chọn).</div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Giá</label>
+                                                <input class="form-control" type="number" step="0.01" min="0" name="Price" value="0" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Tồn kho</label>
+                                                <input class="form-control" type="number" min="0" name="StockQuantity" value="0" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Trạng thái</label>
+                                                <select class="form-select" name="IsActive">
+                                                    <option value="true" selected>Bật</option>
+                                                    <option value="false">Tắt</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 d-flex align-items-end">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="bx bx-plus me-1"></i>Thêm
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div id="variantsSection" data-product-id="@Model.Id">
+                                    <partial name="_VariantsSection" model="Model" />
+                                </div>
+
+                                <div class="text-muted small mt-2">Quản lý ảnh theo biến thể trong từng dòng biến thể (mình sẽ bổ sung nút ở bước tiếp theo nếu bạn muốn).</div>
+                            </div>
+
+                            <div class="tab-pane @(isImagesTab ? "active" : null)" id="tab-images" role="tabpanel">
+                                <div class="alert alert-success bg-success-subtle border-0" role="alert">
+                                    <i class="bx bx-image me-1"></i>Tải lên & sắp xếp ảnh chính/chi tiết.
+                                </div>
+
+                                <div class="card border shadow-none mb-3">
+                                    <div class="card-header bg-success-subtle border-0">
+                                        <h5 class="my-0"><i class="bx bx-cloud-upload me-1"></i>Tải ảnh lên</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form asp-area="Admin" asp-controller="Products" asp-action="UploadProductImages" method="post" enctype="multipart/form-data">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="ProductId" value="@Model.Id" />
+
+                                            <div class="row g-2 align-items-end">
+                                                <div class="col-md-8">
+                                                    <label class="form-label">Chọn ảnh sản phẩm</label>
+                                                    <input class="form-control" type="file" name="Files" multiple accept="image/*" />
+                                                    <div class="form-text">Hỗ trợ chọn nhiều ảnh. Ảnh chính sẽ có badge màu xanh.</div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button class="btn btn-primary w-100" type="submit">
+                                                        <i class="bx bx-upload me-1"></i>Upload
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    @if (Model.Images.Count == 0)
+                                    {
+                                        <div class="col-12 text-center text-muted py-4">Chưa có ảnh.</div>
+                                    }
+                                    else
+                                    {
+                                        foreach (var img in Model.Images)
+                                        {
+                                            <div class="col-md-3">
+                                                <div class="card border shadow-none">
+                                                    <img src="@img.ImageUrl" class="card-img-top" alt="Image" style="height: 180px; object-fit: cover;" />
+                                                    <div class="card-body">
+                                                        <div class="d-flex align-items-center justify-content-between">
+                                                            <span class="badge @(img.IsPrimary ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary")">@(img.IsPrimary ? "Ảnh chính" : "Ảnh")</span>
+                                                            <span class="text-muted small">Sort: @img.SortOrder</span>
+                                                        </div>
+
+                                                        <div class="d-flex gap-2 mt-3">
+                                                            <form asp-area="Admin" asp-controller="Products" asp-action="SetPrimaryProductImage" method="post" class="flex-fill">
+                                                                @Html.AntiForgeryToken()
+                                                                <input type="hidden" name="ProductId" value="@Model.Id" />
+                                                                <input type="hidden" name="ImageId" value="@img.ImageId" />
+                                                                <button type="submit" class="btn btn-soft-primary btn-sm w-100" @(img.IsPrimary ? "disabled" : null)>
+                                                                    <i class="bx bx-check me-1"></i>Đặt chính
+                                                                </button>
+                                                            </form>
+
+                                                            <form asp-area="Admin" asp-controller="Products" asp-action="DeleteProductImage" method="post" class="flex-fill" onsubmit="return confirm('Xóa ảnh này?');">
+                                                                @Html.AntiForgeryToken()
+                                                                <input type="hidden" name="ProductId" value="@Model.Id" />
+                                                                <input type="hidden" name="ImageId" value="@img.ImageId" />
+                                                                <button type="submit" class="btn btn-soft-danger btn-sm w-100">
+                                                                    <i class="bx bx-trash me-1"></i>Xóa
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            // Keep active tab stable across reloads
+            function activateTabByHash(hash) {
+                if (!hash || !hash.startsWith('#')) return false;
+                const trigger = document.querySelector(`a[data-bs-toggle="tab"][href="${hash}"]`);
+                if (!trigger) return false;
+                try {
+                    const tab = new bootstrap.Tab(trigger);
+                    tab.show();
+                    return true;
+                } catch {
+                    return false;
+                }
+            }
+
+            // 1) Prefer URL hash (#tab-variants / #tab-images)
+            if (activateTabByHash(window.location.hash)) return;
+
+            // 2) Fallback: ?tab=variants|images
+            const url = new URL(window.location.href);
+            const t = (url.searchParams.get('tab') || '').toLowerCase();
+            if (t === 'variants') activateTabByHash('#tab-variants');
+            if (t === 'images') activateTabByHash('#tab-images');
+
+            // 3) When user switches tabs, update hash (no reload)
+            document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(a => {
+                a.addEventListener('shown.bs.tab', function (e) {
+                    const href = e.target?.getAttribute('href');
+                    if (!href || !href.startsWith('#')) return;
+                    history.replaceState(null, '', href);
+                });
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            const variantsSection = document.getElementById('variantsSection');
+            if (!variantsSection) return;
+
+            const productId = variantsSection.getAttribute('data-product-id');
+            if (!productId) return;
+
+            const refreshUrl = '@Url.Action("VariantsSection", "Products", new { area = "Admin", productId = Model.Id })';
+
+            async function refreshVariants() {
+                const res = await fetch(refreshUrl, {
+                    method: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!res.ok) throw new Error('Failed to refresh variants');
+                const html = await res.text();
+                variantsSection.innerHTML = html;
+            }
+
+            variantsSection.addEventListener('submit', async function (e) {
+                const form = e.target;
+                if (!(form instanceof HTMLFormElement)) return;
+                if (!form.matches('form[data-ajax-variants="true"]')) return;
+
+                const confirmMsg = form.getAttribute('data-confirm');
+                if (confirmMsg && !window.confirm(confirmMsg)) {
+                    e.preventDefault();
+                    return;
+                }
+
+                e.preventDefault();
+
+                try {
+                    const res = await fetch(form.action, {
+                        method: (form.method || 'POST').toUpperCase(),
+                        body: new FormData(form),
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+
+                    if (!res.ok) throw new Error('Request failed');
+
+                    await refreshVariants();
+                } catch {
+                    // Fallback: do a full submit if anything goes wrong
+                    // Ensure we stay on the variants tab after reload
+                    if (!form.querySelector('input[name="tab"]')) {
+                        const tabInput = document.createElement('input');
+                        tabInput.type = 'hidden';
+                        tabInput.name = 'tab';
+                        tabInput.value = 'variants';
+                        form.appendChild(tabInput);
+                    }
+                    form.removeAttribute('data-ajax-variants');
+                    form.submit();
+                }
+            });
+        })();
+    </script>
+}

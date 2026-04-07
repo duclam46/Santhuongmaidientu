@@ -1,0 +1,1576 @@
+@model DOAN_BANHANG.ViewModels.ProductAdminUpsertVm
+@using DOAN_BANHANG.Helpers
+
+@{
+    ViewData["Title"] = "Thêm sản phẩm";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+            <div class="card-body bg-primary-subtle border-start border-4 border-primary">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="avatar-sm rounded bg-primary text-white d-inline-flex align-items-center justify-content-center">
+                            <i class="bx bx-plus-circle font-size-18"></i>
+                        </span>
+                        <div>
+                            <h4 class="mb-0">Thêm sản phẩm mới</h4>
+                            <div class="text-muted small">Nhập thông tin, phân loại, hình ảnh và tồn kho</div>
+                        </div>
+                    </div>
+
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Products" asp-action="Index">Sản phẩm</a></li>
+                            <li class="breadcrumb-item active">Thêm mới</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="admin-product-create-form" asp-area="Admin" asp-controller="Products" asp-action="Create" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div class="row">
+        <div class="col-lg-3">
+            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="avatar-xs">
+                            <span class="avatar-title rounded-circle bg-primary text-white">
+                                <i class="bx bx-slider-alt"></i>
+                            </span>
+                        </span>
+                        <div>
+                            <div class="fw-semibold">Thiết lập sản phẩm</div>
+                            <div class="text-muted small">Chọn bước để nhập dữ liệu</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="nav flex-column nav-pills gap-1" id="admin-product-create-menu" role="tablist" aria-orientation="vertical">
+                        <button type="button" data-tab="info" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2 active" role="tab" aria-selected="true">
+                            <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle">1</span>
+                            <i class="bx bx-info-circle"></i>
+                            <span>Thông tin</span>
+                        </button>
+                        <button type="button" data-tab="classify" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2" role="tab" aria-selected="false">
+                            <span class="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle">2</span>
+                            <i class="bx bx-category-alt"></i>
+                            <span>Phân loại</span>
+                        </button>
+                        <button type="button" data-tab="images" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2" role="tab" aria-selected="false">
+                            <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle">3</span>
+                            <i class="bx bx-image"></i>
+                            <span>Hình ảnh</span>
+                        </button>
+                        <button type="button" data-tab="variants" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2" role="tab" aria-selected="false">
+                            <span class="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">4</span>
+                            <i class="bx bx-layer"></i>
+                            <span>Biến thể & tồn kho</span>
+                        </button>
+                        <button type="button" data-tab="specs" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2" role="tab" aria-selected="false">
+                            <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">5</span>
+                            <i class="bx bx-ruler"></i>
+                            <span>Size guide</span>
+                        </button>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-soft-primary">
+                            <i class="bx bx-check-circle me-1"></i>Tạo sản phẩm
+                        </button>
+                        <a class="btn btn-soft-secondary" asp-area="Admin" asp-controller="Products" asp-action="Index">
+                            <i class="bx bx-left-arrow-alt me-1"></i>Quay lại
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="avatar-xs">
+                                <span class="avatar-title rounded-circle bg-light text-primary border border-primary-subtle">
+                                    <i class="bx bx-edit-alt"></i>
+                                </span>
+                            </span>
+                            <div class="fw-semibold">Nhập dữ liệu</div>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill">Tạo mới</span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                            <div class="admin-product-create-pane" data-pane="info">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-primary-subtle border border-primary-subtle rounded-3 p-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="avatar-xs">
+                                            <span class="avatar-title rounded-circle bg-primary text-white">
+                                                <i class="bx bx-info-circle"></i>
+                                            </span>
+                                        </span>
+                                        <div>
+                                            <h4 class="card-title mb-0 fs-4">Thông tin sản phẩm</h4>
+                                            <div class="text-muted small">Tên, slug và mô tả</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Tên sản phẩm</label>
+                                    <input asp-for="Name" class="form-control" placeholder="Ví dụ: Áo thun nam..." />
+                                    <span asp-validation-for="Name" class="text-danger"></span>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Slug</label>
+                                        <input asp-for="Slug" class="form-control" placeholder="(Tự tạo nếu bỏ trống)" />
+                                        <span asp-validation-for="Slug" class="text-danger"></span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-0">
+                                    <label class="form-label">Mô tả</label>
+                                    <textarea asp-for="Description" class="form-control" rows="6" placeholder="Mô tả chi tiết..."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="admin-product-create-pane d-none" data-pane="classify">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-info-subtle border border-info-subtle rounded-3 p-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="avatar-xs">
+                                            <span class="avatar-title rounded-circle bg-info text-white">
+                                                <i class="bx bx-category-alt"></i>
+                                            </span>
+                                        </span>
+                                        <div>
+                                            <h4 class="card-title mb-0 fs-4">Phân loại & trạng thái</h4>
+                                            <div class="text-muted small">Danh mục và trạng thái hiển thị</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Danh mục lớn</label>
+                                            <select asp-for="ParentCategoryId" class="form-select" id="parentCategorySelect">
+                                                <option value="">-- Chọn danh mục lớn --</option>
+                                                @if (Model.ParentCategoryOptions != null)
+                                                {
+                                                    foreach (var c in Model.ParentCategoryOptions)
+                                                    {
+                                                        <option value="@c.Value">@c.Label</option>
+                                                    }
+                                                }
+                                            </select>
+                                            <span asp-validation-for="ParentCategoryId" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Danh mục con</label>
+                                            <select asp-for="CategoryId" class="form-select" id="childCategorySelect">
+                                                <option value="">-- Chọn danh mục con --</option>
+                                                @if (Model.ChildCategoryOptions != null)
+                                                {
+                                                    foreach (var c in Model.ChildCategoryOptions)
+                                                    {
+                                                        <option value="@c.Value">@c.Label</option>
+                                                    }
+                                                }
+                                            </select>
+                                            <span asp-validation-for="CategoryId" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-0">
+                                    <label class="form-label">Trạng thái</label>
+                                    <select asp-for="Status" class="form-select">
+                                        @foreach (var s in Model.StatusOptions)
+                                        {
+                                            if (!string.IsNullOrWhiteSpace(s.ValueString))
+                                            {
+                                                <option value="@s.ValueString" selected="@(Model.Status == s.ValueString)">@s.Label</option>
+                                            }
+                                        }
+                                    </select>
+                                    <span asp-validation-for="Status" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="admin-product-create-pane d-none" data-pane="images">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-warning-subtle border border-warning-subtle rounded-3 p-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="avatar-xs">
+                                            <span class="avatar-title rounded-circle bg-warning text-dark">
+                                                <i class="bx bx-image"></i>
+                                            </span>
+                                        </span>
+                                        <div>
+                                            <h4 class="card-title mb-0 fs-4">Hình ảnh</h4>
+                                            <div class="text-muted small">Ảnh chính và gallery</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label">Ảnh chính</label>
+                                    <div class="row">
+                                        <div class="col-md-7 col-lg-6 mx-auto">
+                                            <input class="d-none" type="file" name="PrimaryImage" id="primaryImageInput" accept="image/*" />
+
+                                            <div class="admin-image-box" id="primaryImageBox" role="button" tabindex="0" aria-label="Chọn ảnh chính">
+                                                <div class="admin-image-box__empty" id="primaryImageEmpty">
+                                                    <div class="fw-semibold">Chọn ảnh</div>
+                                                    <div class="text-muted small">Ảnh đại diện sản phẩm</div>
+                                                    <button type="button" class="btn btn-sm btn-soft-primary mt-2" id="primaryChooseBtn">Chọn ảnh</button>
+                                                </div>
+                                                <img id="primaryImagePreviewImg" class="admin-image-box__img d-none" alt="Primary preview" />
+
+                                                <div class="admin-image-box__overlay" id="primaryImageOverlay">
+                                                    <button type="button" class="btn btn-sm btn-soft-light" id="primaryOverlayChangeBtn">Đổi</button>
+                                                    <button type="button" class="btn btn-sm btn-danger" id="primaryOverlayRemoveBtn">Xóa</button>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-text">Ảnh này hiển thị ở danh sách/thumbnail.</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-0">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <label class="form-label mb-0">Ảnh phụ (gallery)</label>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-soft-primary" id="contentAddManyBtn">Thêm nhiều ảnh</button>
+                                        </div>
+                                    </div>
+
+                                    <input class="d-none" type="file" name="ContentImages" id="contentImagesMaster" multiple accept="image/*" />
+                                    <input class="d-none" type="file" id="contentImagesPickerMany" multiple accept="image/*" />
+                                    <input class="d-none" type="file" id="contentImagesPickerSingle" accept="image/*" />
+
+                                    <div class="form-text mb-2">Bấm vào từng ô để thêm 1 ảnh, hoặc “Thêm nhiều ảnh” để chọn nhiều ảnh 1 lần.</div>
+
+                                    <div class="admin-image-strip" id="contentSlots"></div>
+                                </div>
+                            </div>
+
+                            <div class="admin-product-create-pane d-none" data-pane="variants">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-success-subtle border border-success-subtle rounded-3 p-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="avatar-xs">
+                                            <span class="avatar-title rounded-circle bg-success text-white">
+                                                <i class="bx bx-layer"></i>
+                                            </span>
+                                        </span>
+                                        <div>
+                                            <h4 class="card-title mb-0 fs-4">Biến thể & tồn kho</h4>
+                                            <div class="text-muted small">Màu sắc, quy cách và số lượng</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Màu sắc</label>
+
+                                    @if (Model.ColorOptions != null && Model.ColorOptions.Count > 0)
+                                    {
+                                        <div class="admin-color-grid" aria-label="Chọn màu sắc">
+                                            @foreach (var opt in Model.ColorOptions)
+                                            {
+                                                var checkedColor = Model.SelectedColorIds != null && Model.SelectedColorIds.Contains(opt.Value);
+                                                var hasIcon = ColorUi.TryGetColorIconUrl(opt.Label, out var iconUrl);
+                                                var hex = string.IsNullOrWhiteSpace(opt.Hex) ? "#D0D5DD" : opt.Hex;
+
+                                                <input class="btn-check" type="checkbox" name="SelectedColorIds" value="@opt.Value" id="color_@opt.Value" checked="@(checkedColor ? "checked" : null)" autocomplete="off" />
+                                                <label class="admin-color-tile" for="color_@opt.Value" title="@opt.Label">
+                                                    @if (hasIcon)
+                                                    {
+                                                        <img src="@iconUrl" alt="@opt.Label" class="admin-color-icon" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="admin-color-swatch" style="--swatch:@hex" aria-hidden="true"></span>
+                                                    }
+                                                    <span class="admin-color-name">@opt.Label</span>
+                                                </label>
+                                            }
+                                        </div>
+                                        <div class="form-text">Nếu không chọn màu, hệ thống sẽ tạo biến thể không có màu (Màu -).</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-muted">Chưa có màu. Hãy thêm dữ liệu vào bảng <span class="fw-semibold">Colors</span>.</div>
+                                    }
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Kiểu biến thể / tồn kho</label>
+                                    <div class="btn-group admin-seg-toggle" role="group" aria-label="Kiểu biến thể">
+                                        <input class="btn-check" type="radio" asp-for="HasSizeVariants" id="HasSizeVariantsTrue" value="true" />
+                                        <label class="btn btn-outline-primary admin-seg-btn" for="HasSizeVariantsTrue">Nhiều biến thể</label>
+
+                                        <input class="btn-check" type="radio" asp-for="HasSizeVariants" id="HasSizeVariantsFalse" value="false" />
+                                        <label class="btn btn-outline-primary admin-seg-btn" for="HasSizeVariantsFalse">Một biến thể</label>
+                                    </div>
+                                    <div class="form-text">SKU sẽ tự tạo theo dạng <span class="fw-semibold">ProductId-Option</span> (hoặc <span class="fw-semibold">ProductId</span> nếu 1 biến thể).</div>
+                                </div>
+
+                                <div class="mb-4" id="singleStockWrap">
+                                    <label class="form-label">Số lượng tồn kho</label>
+                                    <input asp-for="SingleStockQuantity" class="form-control" type="number" min="0" />
+                                    <span asp-validation-for="SingleStockQuantity" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3" id="sizeSchemeWrap">
+                                    <label class="form-label">Quy cách (size / dung tích / khối lượng)</label>
+                                    <select asp-for="SizeScheme" class="form-select" id="sizeSchemeSelect">
+                                        <option value="clothing">Quần áo: size chữ (XS/S/M/L/XL...)</option>
+                                        <option value="shoe">Giày dép: size số (38/39/40...)</option>
+                                        <option value="volume">Mỹ phẩm dạng nước: ml (30ml/50ml...)</option>
+                                        <option value="weight">Dạng bột/khối: g/kg (100g/1kg...)</option>
+                                        <option value="all">Hiển thị tất cả</option>
+                                    </select>
+                                    <div class="form-text">Với quy cách <span class="fw-semibold">ml</span>, bạn có thể nhập theo từng dòng bên dưới (hệ thống sẽ tự tạo option nếu chưa có).</div>
+                                </div>
+
+                                <div class="mb-3 d-none" id="shoePickerWrap">
+                                    <label class="form-label">Chọn size giày</label>
+                                    <div class="d-flex flex-wrap gap-2" id="shoePickerGrid"></div>
+                                    <div class="form-text">Chọn size trước, sau đó nhập số lượng cho các size đã chọn.</div>
+                                </div>
+
+                                <div class="mb-4 d-none" id="volumeOptionsWrap">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <h5 class="mb-0">Tồn kho theo dung tích (ml)</h5>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" id="volumeAddRowBtn">Thêm dòng</button>
+                                    </div>
+                                    <div class="text-muted mb-2">Nhập ví dụ: 50ml, 100ml... (SKU tự tạo theo dạng ProductId-Option)</div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-sm align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width: 220px;">Dung tích</th>
+                                                    <th>SKU</th>
+                                                    <th style="width: 160px;">Số lượng</th>
+                                                    <th style="width: 60px;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="volumeOptionsBody">
+                                                @if (Model.VolumeOptionStocks != null && Model.VolumeOptionStocks.Count > 0)
+                                                {
+                                                    for (var i = 0; i < Model.VolumeOptionStocks.Count; i++)
+                                                    {
+                                                        <tr data-volume-row>
+                                                            <td>
+                                                                <input asp-for="VolumeOptionStocks[i].OptionName" class="form-control form-control-sm" placeholder="VD: 50ml" />
+                                                            </td>
+                                                            <td>
+                                                                <span class="text-muted">Tự tạo: <span class="fw-semibold">ID-OPTION</span></span>
+                                                            </td>
+                                                            <td>
+                                                                <input asp-for="VolumeOptionStocks[i].StockQuantity" class="form-control form-control-sm" type="number" min="0" />
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <button type="button" class="btn btn-sm btn-outline-danger" data-volume-remove>×</button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <tr data-volume-row>
+                                                        <td>
+                                                            <input name="VolumeOptionStocks[0].OptionName" class="form-control form-control-sm" placeholder="VD: 50ml" />
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-muted">Tự tạo: <span class="fw-semibold">ID-OPTION</span></span>
+                                                        </td>
+                                                        <td>
+                                                            <input name="VolumeOptionStocks[0].StockQuantity" class="form-control form-control-sm" type="number" min="0" value="0" />
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" data-volume-remove>×</button>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <template id="volumeOptionRowTemplate">
+                                        <tr data-volume-row>
+                                            <td>
+                                                <input class="form-control form-control-sm" name="VolumeOptionStocks[__index__].OptionName" placeholder="VD: 50ml" />
+                                            </td>
+                                            <td>
+                                                <span class="text-muted">Tự tạo: <span class="fw-semibold">ID-OPTION</span></span>
+                                            </td>
+                                            <td>
+                                                <input class="form-control form-control-sm" type="number" min="0" name="VolumeOptionStocks[__index__].StockQuantity" value="0" />
+                                            </td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" data-volume-remove>×</button>
+                                            </td>
+                                        </tr>
+                                    </template>
+
+                                    <span asp-validation-for="VolumeOptionStocks" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-4" id="sizeStocksWrap">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <h5 class="mb-0">Tồn kho theo quy cách</h5>
+                                    </div>
+                                    <div class="text-muted mb-2">Nhập số lượng theo quy cách (size số / size chữ / ml / g...). SKU tự tạo theo dạng ProductId-Option.</div>
+
+                                    <div class="mb-3" id="sizePickerWrap">
+                                        <label class="form-label mb-2">Chọn quy cách đang bán</label>
+                                        <div class="admin-size-grid" id="sizePickerGrid" aria-label="Chọn size/quy cách"></div>
+                                        <div class="form-text">Chọn size/quy cách trước, sau đó nhập số lượng ở bảng bên dưới.</div>
+                                    </div>
+
+                                    <div class="alert alert-info py-2 px-3 d-none" id="schemeEmptyAlert">
+                                        Không có quy cách phù hợp với lựa chọn hiện tại. Hãy thêm dữ liệu vào bảng <span class="fw-semibold">Size</span> (VD: 38, 39, 40 hoặc 50ml...).
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-sm align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width: 160px;">Quy cách</th>
+                                                    <th>SKU</th>
+                                                    <th style="width: 160px;">Số lượng</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @if (Model.InitialSizeStocks != null && Model.InitialSizeStocks.Count > 0)
+                                                {
+                                                    for (var i = 0; i < Model.InitialSizeStocks.Count; i++)
+                                                    {
+                                                        <tr data-size-row data-size-name="@Model.InitialSizeStocks[i].SizeName">
+                                                            <td>
+                                                                <input type="hidden" asp-for="InitialSizeStocks[i].SizeId" />
+                                                                <input type="hidden" asp-for="InitialSizeStocks[i].SizeName" />
+                                                                <span class="fw-semibold size-name">@Model.InitialSizeStocks[i].SizeName</span>
+                                                            </td>
+                                                            <td>
+                                                                <span class="text-muted">Tự tạo: <span class="fw-semibold">ID-OPTION</span></span>
+                                                            </td>
+                                                            <td>
+                                                                <input asp-for="InitialSizeStocks[i].StockQuantity" class="form-control form-control-sm" type="number" min="0" />
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <tr>
+                                                        <td colspan="3" class="text-muted">Chưa có danh sách size.</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="form-text">SKU tự tạo sau khi bạn bấm tạo sản phẩm.</div>
+                                    <span asp-validation-for="InitialSizeStocks" class="text-danger"></span>
+                                </div>
+
+                            </div>
+
+                            <div class="admin-product-create-pane d-none" data-pane="specs">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-secondary-subtle border border-secondary-subtle rounded-3 p-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="avatar-xs">
+                                            <span class="avatar-title rounded-circle bg-secondary text-white">
+                                                <i class="bx bx-ruler"></i>
+                                            </span>
+                                        </span>
+                                        <div>
+                                            <h4 class="card-title mb-0 fs-4">Size guide</h4>
+                                            <div class="text-muted small">Thông số theo size để khách dễ chọn</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-muted mb-2">Chọn/nhập size ở bước <span class="fw-semibold">Biến thể & tồn kho</span>, hệ thống sẽ tự hiện đúng các size ở đây để bạn nhập thông số theo từng size.</div>
+
+                                <div class="alert alert-info py-2 px-3 d-none" id="sizeGuideEmptyAlert">
+                                    Chưa có size nào được chọn. Hãy quay lại bước <span class="fw-semibold">Biến thể & tồn kho</span> và nhập số lượng (hoặc chọn size giày).
+                                </div>
+
+                                <div class="table-responsive" id="sizeGuideTableWrap">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 110px;">Size</th>
+                                                <th style="width: 170px;">Chiều cao</th>
+                                                <th style="width: 170px;">Cân nặng</th>
+
+                                                <th class="sg-col-clothing" style="width: 140px;">Dài (cm)</th>
+                                                <th class="sg-col-clothing" style="width: 140px;">Rộng (cm)</th>
+                                                <th class="sg-col-clothing" style="width: 140px;">Cao (cm)</th>
+
+                                                <th class="sg-col-shoe d-none" style="width: 160px;">Chiều dài (cm)</th>
+
+                                                <th>Ghi chú</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sizeGuideBody">
+                                            @for (var i = 0; i < (Model.SizeGuide?.Count ?? 0); i++)
+                                            {
+                                                <tr data-size-guide-row data-size-label="@Model.SizeGuide[i].SizeLabel">
+                                                    <td>
+                                                        <input type="hidden" name="SizeGuide[@i].SizeLabel" value="@Model.SizeGuide[i].SizeLabel" />
+                                                        <span class="fw-semibold">@Model.SizeGuide[i].SizeLabel</span>
+                                                    </td>
+                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].HeightRange" value="@Model.SizeGuide[i].HeightRange" placeholder="VD: 160-170cm" /></td>
+                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].WeightRange" value="@Model.SizeGuide[i].WeightRange" placeholder="VD: 55-65kg" /></td>
+
+                                                    <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[@i].ClothingLengthCm" value="@Model.SizeGuide[i].ClothingLengthCm" type="number" step="0.1" min="0" placeholder="VD: 70" /></td>
+                                                    <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[@i].ClothingWidthCm" value="@Model.SizeGuide[i].ClothingWidthCm" type="number" step="0.1" min="0" placeholder="VD: 52" /></td>
+                                                    <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[@i].ClothingHeightCm" value="@Model.SizeGuide[i].ClothingHeightCm" type="number" step="0.1" min="0" placeholder="VD: 3" /></td>
+
+                                                    <td class="sg-col-shoe d-none"><input class="form-control form-control-sm" name="SizeGuide[@i].ShoeLengthCm" value="@Model.SizeGuide[i].ShoeLengthCm" type="number" step="0.1" min="0" placeholder="VD: 26" /></td>
+
+                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].Note" value="@Model.SizeGuide[i].Note" placeholder="VD: form rộng" /></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <template id="sizeGuideRowTemplate">
+                                    <tr data-size-guide-row data-size-label="__sizeLabel__">
+                                        <td>
+                                            <input type="hidden" name="SizeGuide[__index__].SizeLabel" value="__sizeLabel__" />
+                                            <span class="fw-semibold">__sizeLabel__</span>
+                                        </td>
+                                        <td><input class="form-control form-control-sm" name="SizeGuide[__index__].HeightRange" value="" placeholder="VD: 160-170cm" /></td>
+                                        <td><input class="form-control form-control-sm" name="SizeGuide[__index__].WeightRange" value="" placeholder="VD: 55-65kg" /></td>
+
+                                        <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingLengthCm" value="" type="number" step="0.1" min="0" placeholder="VD: 70" /></td>
+                                        <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingWidthCm" value="" type="number" step="0.1" min="0" placeholder="VD: 52" /></td>
+                                        <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingHeightCm" value="" type="number" step="0.1" min="0" placeholder="VD: 3" /></td>
+
+                                        <td class="sg-col-shoe d-none"><input class="form-control form-control-sm" name="SizeGuide[__index__].ShoeLengthCm" value="" type="number" step="0.1" min="0" placeholder="VD: 26" /></td>
+
+                                        <td><input class="form-control form-control-sm" name="SizeGuide[__index__].Note" value="" placeholder="VD: form rộng" /></td>
+                                    </tr>
+                                </template>
+                            </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <style>
+        #admin-product-create-form .form-label {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .admin-color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: .75rem;
+        }
+
+        .admin-color-tile {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .6rem .75rem;
+            border: 1px solid var(--bs-border-color);
+            border-radius: .75rem;
+            background: var(--bs-body-bg);
+            box-shadow: var(--bs-box-shadow-sm);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .admin-color-tile:hover {
+            border-color: rgba(var(--bs-primary-rgb), .45);
+            box-shadow: var(--bs-box-shadow);
+        }
+
+        .btn-check:checked + .admin-color-tile {
+            border-color: rgba(var(--bs-primary-rgb), .85);
+            box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+        }
+
+        .admin-color-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            background: var(--swatch);
+            border: 1px solid rgba(var(--bs-body-color-rgb), .18);
+            flex: 0 0 auto;
+        }
+
+        .admin-color-icon {
+            width: 28px;
+            height: 28px;
+            flex: 0 0 auto;
+        }
+
+        .admin-color-name {
+            font-weight: 600;
+            text-transform: capitalize;
+            line-height: 1.2;
+        }
+
+        .admin-seg-toggle {
+            width: 100%;
+        }
+
+        #admin-product-create-form .admin-seg-toggle > .admin-seg-btn {
+            flex: 1 1 0;
+            padding: .6rem 1rem;
+            font-weight: 700;
+        }
+
+        #admin-product-create-form .admin-seg-toggle > .admin-seg-btn:first-of-type {
+            border-top-left-radius: .85rem !important;
+            border-bottom-left-radius: .85rem !important;
+        }
+
+        #admin-product-create-form .admin-seg-toggle > .admin-seg-btn:last-of-type {
+            border-top-right-radius: .85rem !important;
+            border-bottom-right-radius: .85rem !important;
+        }
+
+        .admin-size-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+            gap: .5rem;
+        }
+
+        .admin-size-tile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: .55rem .5rem;
+            border: 1px solid var(--bs-border-color);
+            border-radius: .75rem;
+            background: var(--bs-body-bg);
+            box-shadow: var(--bs-box-shadow-sm);
+            cursor: pointer;
+            user-select: none;
+            font-weight: 700;
+        }
+
+        .admin-size-tile:hover {
+            border-color: rgba(var(--bs-primary-rgb), .45);
+            box-shadow: var(--bs-box-shadow);
+        }
+
+        .btn-check:checked + .admin-size-tile {
+            border-color: rgba(var(--bs-primary-rgb), .85);
+            box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+        }
+
+        #shoePickerGrid .btn {
+            min-width: 3.25rem;
+        }
+
+        .admin-image-box {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border: 2px dashed rgba(var(--bs-primary-rgb), .35);
+            border-radius: .75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(var(--bs-primary-rgb), .06), rgba(var(--bs-primary-rgb), .02));
+            cursor: pointer;
+            position: relative;
+            box-shadow: var(--bs-box-shadow-sm);
+        }
+
+        .admin-image-box:hover,
+        .admin-image-box:focus-within {
+            border-color: rgba(var(--bs-primary-rgb), .65);
+            box-shadow: var(--bs-box-shadow);
+        }
+
+        .admin-image-box__empty {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .admin-image-box__img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            background: var(--bs-body-bg);
+        }
+
+        .admin-image-box__overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            background: rgba(var(--bs-body-color-rgb), .10);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s ease-in-out;
+        }
+
+        .admin-image-box.has-image:hover .admin-image-box__overlay,
+        .admin-image-box.has-image:focus-within .admin-image-box__overlay {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .admin-image-box:not(.has-image) .admin-image-box__overlay {
+            display: none;
+        }
+
+        .admin-image-strip {
+            --slot-gap: .75rem;
+            --slot-size: calc((100% - (var(--slot-gap) * 3)) / 3.5);
+            display: flex;
+            gap: var(--slot-gap);
+            overflow-x: auto;
+            padding: .25rem;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .admin-image-slot {
+            flex: 0 0 var(--slot-size);
+            max-width: var(--slot-size);
+            aspect-ratio: 1 / 1;
+            border: 1px solid var(--bs-border-color);
+            border-radius: .75rem;
+            overflow: hidden;
+            background: var(--bs-body-bg);
+            position: relative;
+            scroll-snap-align: start;
+            box-shadow: var(--bs-box-shadow-sm);
+        }
+
+        .admin-image-slot:hover {
+            border-color: rgba(var(--bs-primary-rgb), .45);
+            box-shadow: var(--bs-box-shadow);
+        }
+
+        .admin-image-slot--empty,
+        .admin-image-slot--add {
+            border: 2px dashed rgba(var(--bs-primary-rgb), .35);
+            background: linear-gradient(180deg, rgba(var(--bs-primary-rgb), .06), rgba(var(--bs-primary-rgb), .02));
+        }
+
+        .admin-image-slot button {
+            border: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .admin-image-slot__img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            background: var(--bs-body-bg);
+            display: block;
+        }
+
+        .admin-image-slot__remove {
+            position: absolute;
+            top: .25rem;
+            right: .25rem;
+            z-index: 2;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .12s ease-in-out;
+        }
+
+        .admin-image-slot:hover .admin-image-slot__remove {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+
+    <script>
+        (() => {
+            const menu = document.getElementById('admin-product-create-menu');
+            if (!menu) return;
+
+            const buttons = Array.from(menu.querySelectorAll('button[data-tab]'));
+            const panes = Array.from(document.querySelectorAll('.admin-product-create-pane[data-pane]'));
+
+            function activate(key) {
+                buttons.forEach(b => {
+                    const isActive = b.getAttribute('data-tab') === key;
+                    b.classList.toggle('active', isActive);
+                    b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+
+                panes.forEach(p => {
+                    const isActive = p.getAttribute('data-pane') === key;
+                    p.classList.toggle('d-none', !isActive);
+                });
+            }
+
+            menu.addEventListener('click', (e) => {
+                const t = e.target;
+                if (!(t instanceof HTMLElement)) return;
+                const btn = t.closest('button[data-tab]');
+                if (!btn) return;
+                const key = btn.getAttribute('data-tab') || '';
+                if (!key) return;
+                activate(key);
+            });
+
+            // Default open
+            activate('info');
+
+            // If the server returned validation errors, jump to the pane that contains the first error.
+            const firstFieldError = Array.from(document.querySelectorAll('.field-validation-error'))
+                .find(el => (el?.textContent || '').trim().length > 0);
+            if (firstFieldError) {
+                const pane = firstFieldError.closest('.admin-product-create-pane[data-pane]');
+                const key = pane ? (pane.getAttribute('data-pane') || '') : '';
+                if (key) activate(key);
+            }
+        })();
+
+        // Parent -> child categories
+        (() => {
+            const parentSelect = document.getElementById('parentCategorySelect');
+            const childSelect = document.getElementById('childCategorySelect');
+            if (!parentSelect || !childSelect) return;
+
+            async function loadChildren(parentId, keepValue) {
+                const current = keepValue ? childSelect.value : '';
+                childSelect.innerHTML = '<option value="">-- Chọn danh mục con --</option>';
+                if (!parentId) return;
+
+                const url = '@Url.Action("ChildCategories", "Products", new { area = "Admin" })' + '?parentId=' + encodeURIComponent(parentId);
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!Array.isArray(data)) return;
+
+                for (const item of data) {
+                    const opt = document.createElement('option');
+                    opt.value = item.value;
+                    opt.textContent = item.label;
+                    childSelect.appendChild(opt);
+                }
+
+                if (current) {
+                    childSelect.value = current;
+                }
+            }
+
+            parentSelect.addEventListener('change', () => loadChildren(parentSelect.value, false));
+
+            if (parentSelect.value) {
+                loadChildren(parentSelect.value, true);
+            }
+        })();
+
+        // Image pickers (primary + gallery slots)
+        (() => {
+            // Primary
+            const primaryInput = document.getElementById('primaryImageInput');
+            const primaryBox = document.getElementById('primaryImageBox');
+            const primaryEmpty = document.getElementById('primaryImageEmpty');
+            const primaryImg = document.getElementById('primaryImagePreviewImg');
+            const primaryChooseBtn = document.getElementById('primaryChooseBtn');
+            const primaryOverlayChangeBtn = document.getElementById('primaryOverlayChangeBtn');
+            const primaryOverlayRemoveBtn = document.getElementById('primaryOverlayRemoveBtn');
+
+            function openPrimaryPicker() {
+                if (!primaryInput) return;
+                primaryInput.click();
+            }
+
+            function renderPrimary() {
+                const file = primaryInput?.files?.[0];
+                if (!primaryImg || !primaryEmpty || !primaryBox) return;
+
+                if (!file) {
+                    primaryBox.classList.remove('has-image');
+                    primaryImg.removeAttribute('src');
+                    primaryImg.classList.add('d-none');
+                    primaryEmpty.classList.remove('d-none');
+                    return;
+                }
+
+                primaryImg.src = URL.createObjectURL(file);
+                primaryImg.classList.remove('d-none');
+                primaryEmpty.classList.add('d-none');
+                primaryBox.classList.add('has-image');
+            }
+
+            function clearPrimary() {
+                if (!primaryInput || !primaryImg || !primaryEmpty || !primaryBox) return;
+                primaryInput.value = '';
+                primaryImg.removeAttribute('src');
+                primaryImg.classList.add('d-none');
+                primaryEmpty.classList.remove('d-none');
+                primaryBox.classList.remove('has-image');
+            }
+
+            if (primaryBox) {
+                primaryBox.addEventListener('click', openPrimaryPicker);
+                primaryBox.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') openPrimaryPicker();
+                });
+            }
+            primaryChooseBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openPrimaryPicker();
+            });
+            primaryOverlayChangeBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openPrimaryPicker();
+            });
+            primaryOverlayRemoveBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                clearPrimary();
+            });
+            primaryInput?.addEventListener('change', renderPrimary);
+
+            // In case browser restores selected file on refresh
+            renderPrimary();
+
+            // Gallery
+            const contentMaster = document.getElementById('contentImagesMaster');
+            const contentPickerMany = document.getElementById('contentImagesPickerMany');
+            const contentPickerSingle = document.getElementById('contentImagesPickerSingle');
+            const contentSlots = document.getElementById('contentSlots');
+            const contentAddManyBtn = document.getElementById('contentAddManyBtn');
+
+            let slotCount = 3;
+            let pendingSingleIndex = -1;
+
+            function getFiles() {
+                return contentMaster?.files ? Array.from(contentMaster.files) : [];
+            }
+
+            function setFiles(files) {
+                if (!contentMaster) return;
+                const dt = new DataTransfer();
+                for (const f of files) dt.items.add(f);
+                contentMaster.files = dt.files;
+            }
+
+            function addFiles(newFiles) {
+                const current = getFiles();
+                setFiles(current.concat(newFiles));
+            }
+
+            function removeAt(index) {
+                const current = getFiles();
+                if (index < 0 || index >= current.length) return;
+                current.splice(index, 1);
+                setFiles(current);
+            }
+
+            function ensureSlotsFor(filesCount) {
+                const minSlots = 3;
+                slotCount = Math.max(slotCount, filesCount, minSlots);
+            }
+
+            function openManyPicker() {
+                contentPickerMany?.click();
+            }
+
+            function openSinglePicker(slotIndex) {
+                pendingSingleIndex = slotIndex;
+                contentPickerSingle?.click();
+            }
+
+            function renderSlots() {
+                if (!contentSlots) return;
+                const files = getFiles();
+                ensureSlotsFor(files.length);
+
+                contentSlots.innerHTML = '';
+
+                function renderAddTile() {
+                    const addWrap = document.createElement('div');
+                    addWrap.className = 'admin-image-slot admin-image-slot--add';
+                    const addBtn = document.createElement('button');
+                    addBtn.type = 'button';
+                    addBtn.innerHTML = '<div class="fw-semibold">+</div><div class="text-muted small">Thêm ô</div>';
+                    addBtn.addEventListener('click', () => {
+                        slotCount += 1;
+                        renderSlots();
+                    });
+                    addWrap.appendChild(addBtn);
+                    contentSlots.appendChild(addWrap);
+                }
+
+                for (let i = 0; i < slotCount; i++) {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'admin-image-slot';
+
+                    if (i < files.length) {
+                        const img = document.createElement('img');
+                        img.className = 'admin-image-slot__img';
+                        img.alt = 'Preview';
+                        img.src = URL.createObjectURL(files[i]);
+                        wrap.appendChild(img);
+
+                        const removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'btn btn-sm btn-danger admin-image-slot__remove';
+                        removeBtn.textContent = '×';
+                        removeBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeAt(i);
+                            renderSlots();
+                        });
+                        wrap.appendChild(removeBtn);
+
+                        const change = document.createElement('button');
+                        change.type = 'button';
+                        change.style.position = 'absolute';
+                        change.style.inset = '0';
+                        change.style.opacity = '0';
+                        change.addEventListener('click', () => openSinglePicker(i));
+                        wrap.appendChild(change);
+                    } else {
+                        wrap.classList.add('admin-image-slot--empty');
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.innerHTML = '<div class="fw-semibold">+</div><div class="text-muted small">Thêm ảnh</div>';
+                        btn.addEventListener('click', () => openSinglePicker(i));
+                        wrap.appendChild(btn);
+                    }
+
+                    contentSlots.appendChild(wrap);
+                }
+
+                // Add-slot tile (always at the end)
+                renderAddTile();
+            }
+
+            contentAddManyBtn?.addEventListener('click', openManyPicker);
+
+            contentPickerMany?.addEventListener('change', () => {
+                const picked = contentPickerMany.files ? Array.from(contentPickerMany.files) : [];
+                if (picked.length === 0) return;
+                addFiles(picked);
+                contentPickerMany.value = '';
+                renderSlots();
+            });
+
+            contentPickerSingle?.addEventListener('change', () => {
+                const picked = contentPickerSingle.files ? Array.from(contentPickerSingle.files) : [];
+                if (picked.length === 0) return;
+                const file = picked[0];
+                const current = getFiles();
+
+                if (pendingSingleIndex >= 0 && pendingSingleIndex < current.length) {
+                    current[pendingSingleIndex] = file;
+                    setFiles(current);
+                } else {
+                    addFiles([file]);
+                }
+
+                pendingSingleIndex = -1;
+                contentPickerSingle.value = '';
+                renderSlots();
+            });
+
+            // Initial render
+            renderSlots();
+        })();
+
+        // Variant mode + scheme UI (size table vs shoe picker vs volume rows)
+        (() => {
+            const multi = document.getElementById('HasSizeVariantsTrue');
+            const single = document.getElementById('HasSizeVariantsFalse');
+
+            const singleWrap = document.getElementById('singleStockWrap');
+            const schemeWrap = document.getElementById('sizeSchemeWrap');
+            const schemeSelect = document.getElementById('sizeSchemeSelect');
+
+            const sizeWrap = document.getElementById('sizeStocksWrap');
+            const emptyAlert = document.getElementById('schemeEmptyAlert');
+
+            const sizePickerWrap = document.getElementById('sizePickerWrap');
+            const sizePickerGrid = document.getElementById('sizePickerGrid');
+
+            const volumeWrap = document.getElementById('volumeOptionsWrap');
+            const volumeBody = document.getElementById('volumeOptionsBody');
+            const volumeAddRowBtn = document.getElementById('volumeAddRowBtn');
+            const volumeTpl = document.getElementById('volumeOptionRowTemplate');
+
+            // Size guide sync
+            const sizeGuideBody = document.getElementById('sizeGuideBody');
+            const sizeGuideTpl = document.getElementById('sizeGuideRowTemplate');
+            const sizeGuideEmptyAlert = document.getElementById('sizeGuideEmptyAlert');
+            const sizeGuideTableWrap = document.getElementById('sizeGuideTableWrap');
+
+            if (!multi || !single || !singleWrap || !schemeWrap || !schemeSelect || !sizeWrap) return;
+
+            const selectedSizes = new Set();
+            let lastPickerMode = null;
+
+            function classify(name) {
+                const s = (name || '').trim().toUpperCase();
+                if (!s) return 'other';
+
+                // volume
+                if (/(\d+)\s*ML\b/.test(s) || /\bML\b/.test(s)) return 'volume';
+                if (/(\d+(?:\.\d+)?)\s*L\b/.test(s)) return 'volume';
+
+                // weight
+                if (/(\d+)\s*G\b/.test(s) || /(\d+(?:\.\d+)?)\s*KG\b/.test(s)) return 'weight';
+
+                // shoe numeric sizes
+                if (/^\d+(?:\.\d+)?$/.test(s)) return 'shoe';
+                if (/\bEU\s*\d+/.test(s)) return 'shoe';
+                if (/\bSIZE\s*\d+/.test(s)) return 'shoe';
+                if (/\b\d{2}(?:\.\d+)?\b/.test(s)) return 'shoe';
+
+                // clothing alpha sizes
+                if (/\b(XXS|XS|S|M|L|XL|XXL|XXXL)\b/.test(s)) return 'clothing';
+
+                return 'other';
+            }
+
+            function parseShoeNumber(name) {
+                const raw = (name || '').trim().toUpperCase();
+                if (!raw) return Number.NaN;
+                const m = raw.match(/(\d+(?:\.\d+)?)/);
+                if (!m) return Number.NaN;
+                return parseFloat(m[1]);
+            }
+
+            function getAllSizeRows() {
+                return Array.from(sizeWrap.querySelectorAll('tbody tr[data-size-row]'));
+            }
+
+            function getRowSizeName(row) {
+                const hiddenName = row.querySelector('input[type="hidden"][name$=".SizeName"]');
+                if (hiddenName && hiddenName.value) return hiddenName.value;
+                const nameEl = row.querySelector('.size-name');
+                return nameEl ? (nameEl.textContent || '').trim() : '';
+            }
+
+            function getRowQtyInput(row) {
+                return row.querySelector('input[type="number"]');
+            }
+
+            function getRowsForMode(mode) {
+                const rows = getAllSizeRows();
+                const result = [];
+
+                for (const r of rows) {
+                    const name = getRowSizeName(r);
+                    if (!name) continue;
+                    const kind = classify(name);
+                    if (mode === 'all' || kind === mode) {
+                        result.push({ row: r, name, kind });
+                    }
+                }
+
+                // Keep DOM order (already sorted server-side)
+                return result;
+            }
+
+            function seedSelectionFromQty(mode) {
+                selectedSizes.clear();
+                const items = getRowsForMode(mode);
+                for (const it of items) {
+                    const qtyEl = getRowQtyInput(it.row);
+                    const qty = qtyEl ? parseInt(qtyEl.value || '0', 10) : 0;
+                    if (qty > 0) selectedSizes.add(it.name);
+                }
+            }
+
+            function renderSizePicker(mode) {
+                if (!sizePickerWrap || !sizePickerGrid) return;
+
+                const items = getRowsForMode(mode);
+                sizePickerGrid.innerHTML = '';
+
+                for (let i = 0; i < items.length; i++) {
+                    const it = items[i];
+                    const id = `pick_size_${mode}_${i}`;
+
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.className = 'btn-check';
+                    input.id = id;
+                    input.autocomplete = 'off';
+                    input.checked = selectedSizes.has(it.name);
+                    input.setAttribute('data-size-pick', '1');
+                    input.setAttribute('data-size-name', it.name);
+
+                    input.addEventListener('change', () => {
+                        if (input.checked) selectedSizes.add(it.name);
+                        else selectedSizes.delete(it.name);
+
+                        applySizeFiltering();
+                        syncSizeGuideRows();
+                    });
+
+                    const label = document.createElement('label');
+                    label.className = 'admin-size-tile';
+                    label.setAttribute('for', id);
+                    label.textContent = it.name;
+
+                    sizePickerGrid.appendChild(input);
+                    sizePickerGrid.appendChild(label);
+                }
+            }
+
+            function syncPickerStates() {
+                if (!sizePickerGrid) return;
+                const inputs = Array.from(sizePickerGrid.querySelectorAll('input[data-size-pick="1"]'));
+                for (const el of inputs) {
+                    if (!(el instanceof HTMLInputElement)) continue;
+                    const name = el.getAttribute('data-size-name') || '';
+                    el.checked = !!name && selectedSizes.has(name);
+                }
+            }
+
+            function clearAndHideSizeRows() {
+                for (const r of getAllSizeRows()) {
+                    r.classList.add('d-none');
+                    const qty = getRowQtyInput(r);
+                    if (qty) qty.value = '0';
+                }
+                emptyAlert?.classList.add('d-none');
+            }
+
+            function setVolumeInputsEnabled(enabled) {
+                if (!volumeWrap) return;
+                const inputs = Array.from(volumeWrap.querySelectorAll('input, select, textarea'));
+                for (const el of inputs) {
+                    if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
+                        el.disabled = !enabled;
+                    }
+                }
+            }
+
+            function applySizeFiltering() {
+                const mode = schemeSelect.value;
+                const rows = getAllSizeRows();
+                let visible = 0;
+                let availableInMode = 0;
+
+                for (const r of rows) {
+                    const name = getRowSizeName(r);
+                    if (!name) continue;
+                    const kind = classify(name);
+
+                    const inMode = (mode === 'all') || (kind === mode);
+                    if (mode !== 'all' && inMode) availableInMode++;
+
+                    const show = inMode && selectedSizes.has(name);
+
+                    r.classList.toggle('d-none', !show);
+                    if (show) visible++;
+                    if (!show) {
+                        const qty = getRowQtyInput(r);
+                        if (qty) qty.value = '0';
+                    }
+                }
+
+                if (emptyAlert) {
+                    const shouldShowEmpty = (mode !== 'all') && (availableInMode === 0);
+                    emptyAlert.classList.toggle('d-none', !shouldShowEmpty);
+                }
+            }
+
+            function readGuideRowData() {
+                const map = new Map();
+                if (!sizeGuideBody) return map;
+                const rows = Array.from(sizeGuideBody.querySelectorAll('tr[data-size-guide-row]'));
+                for (const r of rows) {
+                    const label = (r.getAttribute('data-size-label') || '').trim();
+                    if (!label) continue;
+
+                    const read = (suffix) => {
+                        const el = r.querySelector(`[name$=".${suffix}"]`);
+                        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+                            return (el.value || '').trim();
+                        }
+                        return '';
+                    };
+
+                    map.set(label, {
+                        HeightRange: read('HeightRange'),
+                        WeightRange: read('WeightRange'),
+                        ClothingLengthCm: read('ClothingLengthCm'),
+                        ClothingWidthCm: read('ClothingWidthCm'),
+                        ClothingHeightCm: read('ClothingHeightCm'),
+                        ShoeLengthCm: read('ShoeLengthCm'),
+                        Note: read('Note')
+                    });
+                }
+                return map;
+            }
+
+            function collectSelectedSizeLabels() {
+                const labels = [];
+                const mode = schemeSelect.value;
+                const rows = getAllSizeRows();
+
+                for (const r of rows) {
+                    const name = getRowSizeName(r);
+                    if (!name) continue;
+
+                    const kind = classify(name);
+                    const inMode = (mode === 'all') || (kind === mode);
+                    if (!inMode) continue;
+
+                    if (selectedSizes.has(name)) labels.push(name);
+                }
+
+                // Deduplicate while preserving order
+                const seen = new Set();
+                const unique = [];
+                for (const l of labels) {
+                    if (seen.has(l)) continue;
+                    seen.add(l);
+                    unique.push(l);
+                }
+                return unique;
+            }
+
+            function setSizeGuideSchemeColumns() {
+                const mode = schemeSelect.value;
+                const clothingCols = Array.from(document.querySelectorAll('.sg-col-clothing'));
+                const shoeCols = Array.from(document.querySelectorAll('.sg-col-shoe'));
+
+                const showClothing = mode === 'clothing';
+                const showShoe = mode === 'shoe';
+
+                for (const el of clothingCols) el.classList.toggle('d-none', !showClothing);
+                for (const el of shoeCols) el.classList.toggle('d-none', !showShoe);
+            }
+
+            function syncSizeGuideRows() {
+                if (!sizeGuideBody || !sizeGuideTpl || !(sizeGuideTpl instanceof HTMLTemplateElement)) return;
+
+                const bySize = !!multi.checked;
+                const mode = schemeSelect.value;
+
+                // Only meaningful for clothing/shoe size variants.
+                const applicable = bySize && (mode === 'clothing' || mode === 'shoe');
+                if (sizeGuideTableWrap) sizeGuideTableWrap.classList.toggle('d-none', !applicable);
+                if (!applicable) {
+                    sizeGuideEmptyAlert?.classList.add('d-none');
+                    return;
+                }
+
+                setSizeGuideSchemeColumns();
+
+                const selected = collectSelectedSizeLabels();
+                const existing = readGuideRowData();
+
+                if (selected.length === 0) {
+                    sizeGuideBody.innerHTML = '';
+                    sizeGuideEmptyAlert?.classList.remove('d-none');
+                    return;
+                }
+
+                sizeGuideEmptyAlert?.classList.add('d-none');
+
+                const rowsHtml = [];
+                for (let i = 0; i < selected.length; i++) {
+                    const sizeLabel = selected[i];
+                    let html = sizeGuideTpl.innerHTML
+                        .replaceAll('__index__', String(i))
+                        .replaceAll('__sizeLabel__', String(sizeLabel));
+                    rowsHtml.push(html);
+                }
+
+                sizeGuideBody.innerHTML = rowsHtml.join('');
+
+                // Restore any typed values for sizes we kept.
+                const rows = Array.from(sizeGuideBody.querySelectorAll('tr[data-size-guide-row]'));
+                for (const r of rows) {
+                    const label = (r.getAttribute('data-size-label') || '').trim();
+                    if (!label) continue;
+                    const data = existing.get(label);
+                    if (!data) continue;
+
+                    const set = (suffix, value) => {
+                        const el = r.querySelector(`[name$=".${suffix}"]`);
+                        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+                            el.value = value || '';
+                        }
+                    };
+
+                    set('HeightRange', data.HeightRange);
+                    set('WeightRange', data.WeightRange);
+                    set('ClothingLengthCm', data.ClothingLengthCm);
+                    set('ClothingWidthCm', data.ClothingWidthCm);
+                    set('ClothingHeightCm', data.ClothingHeightCm);
+                    set('ShoeLengthCm', data.ShoeLengthCm);
+                    set('Note', data.Note);
+                }
+            }
+
+            function wireVolumeRemoveButtons() {
+                if (!volumeBody) return;
+                const btns = Array.from(volumeBody.querySelectorAll('[data-volume-remove]'));
+                for (const b of btns) {
+                    if (b.getAttribute('data-wired') === '1') continue;
+                    b.setAttribute('data-wired', '1');
+                    b.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const row = (b instanceof HTMLElement) ? b.closest('tr[data-volume-row]') : null;
+                        if (!row) return;
+
+                        const nameInput = row.querySelector('input[name^="VolumeOptionStocks["][name$=".OptionName"]');
+                        const qtyInput = row.querySelector('input[name^="VolumeOptionStocks["][name$=".StockQuantity"]');
+                        if (nameInput instanceof HTMLInputElement) nameInput.value = '';
+                        if (qtyInput instanceof HTMLInputElement) qtyInput.value = '0';
+                        row.classList.add('d-none');
+                    });
+                }
+            }
+
+            function addVolumeRow() {
+                if (!volumeBody || !volumeTpl) return;
+                const tpl = volumeTpl;
+                if (!(tpl instanceof HTMLTemplateElement)) return;
+
+                const existingIndexes = Array.from(volumeBody.querySelectorAll('input[name^="VolumeOptionStocks["]'))
+                    .map(i => {
+                        const n = (i instanceof HTMLInputElement) ? i.name : '';
+                        const m = n.match(/^VolumeOptionStocks\[(\d+)\]/);
+                        return m ? parseInt(m[1], 10) : -1;
+                    })
+                    .filter(n => n >= 0);
+
+                const nextIndex = (existingIndexes.length ? Math.max(...existingIndexes) : -1) + 1;
+                const html = tpl.innerHTML.replaceAll('__index__', String(nextIndex));
+                const temp = document.createElement('tbody');
+                temp.innerHTML = html.trim();
+                const row = temp.querySelector('tr[data-volume-row]');
+                if (!row) return;
+
+                volumeBody.appendChild(row);
+                wireVolumeRemoveButtons();
+            }
+
+            function syncVariantModeVisibility() {
+                const bySize = !!multi.checked;
+                singleWrap.classList.toggle('d-none', bySize);
+                schemeWrap.classList.toggle('d-none', !bySize);
+            }
+
+            function apply() {
+                syncVariantModeVisibility();
+
+                const bySize = !!multi.checked;
+                if (!bySize) {
+                    volumeWrap?.classList.add('d-none');
+                    sizeWrap.classList.add('d-none');
+                    setVolumeInputsEnabled(false);
+
+                    selectedSizes.clear();
+                    lastPickerMode = null;
+                    if (sizePickerWrap) sizePickerWrap.classList.add('d-none');
+
+                    syncSizeGuideRows();
+                    return;
+                }
+
+                const mode = schemeSelect.value;
+                const isVolume = mode === 'volume';
+
+                volumeWrap?.classList.toggle('d-none', !isVolume);
+                sizeWrap.classList.toggle('d-none', isVolume);
+
+                if (sizePickerWrap) sizePickerWrap.classList.toggle('d-none', isVolume);
+
+                setVolumeInputsEnabled(isVolume);
+
+                if (isVolume) {
+                    // Ensure size table stocks don't leak into volume mode.
+                    clearAndHideSizeRows();
+                } else {
+                    const mode = schemeSelect.value;
+                    if (lastPickerMode !== mode) {
+                        seedSelectionFromQty(mode);
+                        renderSizePicker(mode);
+                        lastPickerMode = mode;
+                    }
+                    syncPickerStates();
+                    applySizeFiltering();
+                }
+
+                syncSizeGuideRows();
+            }
+
+            // Events
+            multi.addEventListener('change', apply);
+            single.addEventListener('change', apply);
+            schemeSelect.addEventListener('change', apply);
+
+            // Keep size guide in sync while user types quantities.
+            sizeWrap.addEventListener('input', (e) => {
+                const t = e.target;
+                if (!(t instanceof HTMLElement)) return;
+                if (t.matches('input[type="number"]')) {
+                    const row = t.closest('tr[data-size-row]');
+                    const name = row ? getRowSizeName(row) : '';
+                    const qty = (t instanceof HTMLInputElement) ? parseInt(t.value || '0', 10) : 0;
+                    if (name && qty > 0) {
+                        selectedSizes.add(name);
+                        syncPickerStates();
+                    }
+                    syncSizeGuideRows();
+                }
+            });
+
+            volumeAddRowBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                addVolumeRow();
+            });
+
+            wireVolumeRemoveButtons();
+            apply();
+        })();
+    </script>
+}

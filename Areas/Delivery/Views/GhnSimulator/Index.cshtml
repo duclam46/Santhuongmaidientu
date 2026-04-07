@@ -1,0 +1,166 @@
+@model DOAN_BANHANG.ViewModels.DeliveryGhnSimulatorVm
+@{
+    ViewData["Title"] = "GHN Simulator";
+
+    var hasOrder = Model.ResolvedOrderId.HasValue && Model.ResolvedOrderId.Value > 0;
+    var hasRoute = Model.RouteSteps is { Count: > 0 };
+}
+
+@section DeliveryTopNotice {
+    @if (TempData["DeliveryToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+    {
+        <div class="alert alert-info d-flex align-items-start gap-2 rounded-3" role="alert">
+            <i class="bx bx-info-circle mt-1"></i>
+            <div>@toast</div>
+        </div>
+    }
+
+    <div class="alert alert-warning d-flex align-items-start gap-2 rounded-3" role="alert">
+        <i class="bx bx-error-circle mt-1"></i>
+        <div>
+            <div class="fw-semibold">Lưu ý</div>
+            <div class="small">
+                GHN docs id=96 chỉ là API <span class="fw-semibold">lấy danh sách bưu cục</span>.
+                Trang này sẽ dùng danh sách bưu cục (theo địa chỉ gửi/nhận trong DB) để dựng <span class="fw-semibold">lộ trình dự kiến (giả lập)</span>.
+                Khi bạn bấm “Check-in”, hệ thống sẽ ghi log vào bảng <span class="fw-semibold">OrderTrackingLogs</span> để mô phỏng “đã tới kho/đã rời kho”.
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-12 col-xl-5">
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bx bx-receipt"></i>
+                    <h5 class="mb-0">Nhập mã vận đơn</h5>
+                </div>
+                    <div class="text-muted small">Nhập mã vận đơn (TrackingCode) để tải lộ trình dự kiến.</div>
+            </div>
+            <div class="card-body">
+                <form method="get" asp-area="Delivery" asp-controller="GhnSimulator" asp-action="Index" class="vstack gap-3">
+                    <div>
+                        <label class="form-label">Mã vận đơn (TrackingCode / GHN order_code)</label>
+                        <input class="form-control" type="text" name="TrackingCode" value="@Model.Query.TrackingCode" placeholder="VD: LTME4P" />
+                        <div class="form-text">Mã này chính là giá trị đang lưu ở <span class="fw-semibold">Orders.TrackingCode</span>.</div>
+                    </div>
+
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bx bx-search-alt me-1"></i>
+                        Tải lộ trình
+                    </button>
+                </form>
+
+                @if (hasOrder)
+                {
+                    <hr />
+                    <div class="border rounded-3 p-3 bg-light">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div class="fw-semibold">@Model.ResolvedOrderCode</div>
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-3 py-2">
+                                <i class="bx bx-package me-1"></i>
+                                GHN: @(string.IsNullOrWhiteSpace(Model.ResolvedTrackingCode) ? "(chưa có mã)" : Model.ResolvedTrackingCode)
+                            </span>
+                        </div>
+                        <div class="text-muted small mt-2">OrderId: @Model.ResolvedOrderId</div>
+                        <div class="text-muted small">Log check-in sẽ hiển thị ở trang người mua (timeline).</div>
+                        @if (!string.IsNullOrWhiteSpace(Model.GhnStatusName))
+                        {
+                            <div class="text-muted small">GHN status: @Model.GhnStatusName</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-7">
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-light border-0">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-git-branch"></i>
+                        <h5 class="mb-0">Lộ trình GHN</h5>
+                    </div>
+                    <div class="text-muted small">@(!hasRoute ? "" : $"Tổng: {Model.RouteSteps.Count}")</div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                @if (!hasOrder)
+                {
+                    <div class="text-muted">Nhập mã vận đơn để tải lộ trình.</div>
+                }
+                else
+                {
+                    @if (!hasRoute)
+                    {
+                        <div class="text-muted">
+                            Chưa có lộ trình dự kiến để hiển thị.
+                            <div class="small mt-1">Kiểm tra đơn hàng đã có <span class="fw-semibold">ShippingDistrictId</span> (địa chỉ nhận) và shop có <span class="fw-semibold">UserAddress</span> (địa chỉ gửi) hay chưa.</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 42px;">#</th>
+                                        <th>Điểm/Kho</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thời gian</th>
+                                        <th style="width: 260px;">Giả lập check-in</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < Model.RouteSteps.Count; i++)
+                                    {
+                                        var s = Model.RouteSteps[i];
+                                        <tr>
+                                            <td>@s.Index</td>
+                                            <td>
+                                                <div class="fw-semibold">@(string.IsNullOrWhiteSpace(s.Location) ? "(không rõ kho)" : s.Location)</div>
+                                                @if (!string.IsNullOrWhiteSpace(s.Message))
+                                                {
+                                                    <div class="text-muted small">@s.Message</div>
+                                                }
+                                            </td>
+                                            <td class="text-wrap">@s.StatusName</td>
+                                            <td class="text-muted small">@s.TimeRaw</td>
+                                            <td>
+                                                <form asp-area="Delivery" asp-controller="GhnSimulator" asp-action="CheckIn" method="post" class="d-flex flex-column gap-2">
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden" name="TrackingCode" value="@Model.ResolvedTrackingCode" />
+                                                    <input type="hidden" name="OrderId" value="@Model.ResolvedOrderId" />
+                                                    <input type="hidden" name="RouteLocation" value="@(string.IsNullOrWhiteSpace(s.Location) ? "(không rõ kho)" : s.Location)" />
+                                                    <input type="hidden" name="RouteStatusName" value="@s.StatusName" />
+                                                    <input type="hidden" name="RouteTimeRaw" value="@s.TimeRaw" />
+
+                                                    <div class="d-flex gap-2">
+                                                        <select class="form-select form-select-sm" name="Event">
+                                                            <option value="arrive" selected>Đã đến kho</option>
+                                                            <option value="depart">Đã rời kho</option>
+                                                        </select>
+                                                        <button class="btn btn-sm btn-primary" type="submit">
+                                                            <i class="bx bx-log-in me-1"></i>
+                                                            Check-in
+                                                        </button>
+                                                    </div>
+
+                                                    <input class="form-control form-control-sm" name="CustomNote" placeholder="Ghi chú (tuỳ chọn)" maxlength="255" />
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>

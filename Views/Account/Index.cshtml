@@ -1,0 +1,1855 @@
+@model DOAN_BANHANG.ViewModels.MyAccountPageVm
+
+@{
+  ViewData["Title"] = "Tài khoản";
+
+  var account = Model.Account;
+  var displayName = account is null
+    ? "Tài khoản"
+    : (!string.IsNullOrWhiteSpace(account.FullName) ? account.FullName : account.Email);
+
+  string ResolveImageUrl(string? rawUrl)
+  {
+    if (string.IsNullOrWhiteSpace(rawUrl))
+    {
+      return Url.Content("~/assets/images/blog/user-avatar-1.png");
+    }
+
+    rawUrl = rawUrl.Trim();
+
+    if (rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+    {
+      return rawUrl;
+    }
+
+    if (rawUrl.StartsWith("~/", StringComparison.Ordinal))
+    {
+      return Url.Content(rawUrl);
+    }
+
+    if (rawUrl.StartsWith("/", StringComparison.Ordinal))
+    {
+      return rawUrl;
+    }
+
+    return Url.Content("~/" + rawUrl.TrimStart('/'));
+  }
+
+  string FormatVnd(decimal amount)
+  {
+    return string.Format("{0:N0}đ", amount);
+  }
+
+  (string tabKey, string label, string pillClass) ResolveOrderStatusUi(string? rawStatus)
+  {
+    var s = (rawStatus ?? string.Empty).Trim();
+    var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
+
+    const string basePill = "inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold leading-5";
+
+    return norm switch
+    {
+      "pendingconfirmation" or "waitconfirm" or "waitingconfirm" or "confirming" or "pending" or "confirmationpending" or "processing" or "inprocess" or "inprocessing" or "inprocess" or "chờxácnhận" or "choxacnhan" => (
+        "pending-confirmation",
+        "Chờ xác nhận",
+        $"{basePill} bg-warning-light text-warning-dark"
+      ),
+      "awaitingpickup" or "waitpickup" or "waitingpickup" or "readytopick" or "pickup" or "chờlấyhàng" or "cholayhang" => (
+        "awaiting-pickup",
+        "Chờ lấy hàng",
+        $"{basePill} bg-warning-light text-warning-dark"
+      ),
+      "confirmed" or "accepted" or "đãxácnhận" or "daxacnhan" => (
+        "awaiting-pickup",
+        "Chờ lấy hàng",
+        $"{basePill} bg-warning-light text-warning-dark"
+      ),
+      "shipping" or "delivering" or "intransit" or "đanggiao" or "danggiao" => (
+        "delivering",
+        "Đang giao",
+        $"{basePill} bg-primary/8 text-primary"
+      ),
+      "completed" or "success" or "hoàntất" or "hoantat" => (
+        "completed",
+        "Hoàn tất",
+        $"{basePill} bg-success-light text-success-dark"
+      ),
+      "delivered" or "deliverysuccess" or "dagiao" or "đãgiao" => (
+        "completed",
+        "Hoàn tất",
+        $"{basePill} bg-success-light text-success-dark"
+      ),
+      "returned" or "return" or "refund" or "returnrequest" or "returning" or "trahang" or "trảhàng" => (
+        "returned",
+        "Trả hàng",
+        $"{basePill} bg-warning-light text-warning-dark"
+      ),
+      "cancelled" or "canceled" or "cancel" or "đãhủy" or "dahuy" => (
+        "cancelled",
+        "Đã hủy",
+        $"{basePill} bg-error-light text-error-dark"
+      ),
+      _ => (
+        "pending-confirmation",
+        "Chờ xác nhận",
+        $"{basePill} bg-warning-light text-warning-dark"
+      )
+    };
+  }
+
+  string ResolvePaymentBadge(string? rawPaymentStatus)
+  {
+    var s = (rawPaymentStatus ?? string.Empty).Trim();
+    var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
+    return norm is "paid" or "success" or "completed" ? "(Đã thanh toán)" : "(Chưa thanh toán)";
+  }
+}
+
+<!-- ========== Breadcrumb Section Start ========== -->
+<div class="container py-12">
+  <div class="breadcrumb">
+    <ul>
+      <li>
+        <a href='@Url.Action("Index", "Home")'>
+          <span class="inline-flex items-center justify-center">
+            <i class="hgi hgi-stroke hgi-home-01 text-2xl leading-6"></i>
+          </span>
+          Home
+        </a>
+      </li>
+      <li class="text-light-disabled-text">&#8226;</li>
+      <li><span class="text-sm leading-[22px]">Tài khoản</span></li>
+    </ul>
+  </div>
+</div>
+<!-- ========== Breadcrumb Section End ========== -->
+
+<section class="pb-[90px]">
+  <div class="container">
+    <div class="grid grid-cols-12 gap-y-6 lg:gap-x-6">
+      <div class="xl:col-span-3 lg:col-span-4 col-span-12">
+        <div class="border border-gray-300 rounded-2xl p-6">
+          <div class="flex items-center gap-x-4 pb-6 border-b border-gray-300">
+            <div class="size-14 rounded-full overflow-hidden bg-gray-200">
+              <img src="@(ResolveImageUrl(account?.AvatarUrl))" alt="Avatar" class="w-full h-full object-cover" />
+            </div>
+            <div>
+              <p class="text-sm leading-[22px] text-light-secondary-text">Xin chào</p>
+              <p id="my-account-display-name-left" class="text-base leading-6 text-light-primary-text font-semibold">@displayName</p>
+              @if (Model.IsSignedIn)
+              {
+                <p class="text-xs leading-[18px] text-light-secondary-text">@account!.Email</p>
+              }
+            </div>
+          </div>
+
+          <ul class="my-account-menu flex flex-col gap-y-1 pt-6">
+            <li>
+              <p class="px-2 pb-2 text-xs leading-[18px] text-primary font-semibold uppercase">Dashboard</p>
+            </li>
+            <li>
+              <button type="button" data-tab="dashboard" class="active w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+                <span class="inline-flex items-center gap-x-3">
+                  <i class="hgi hgi-stroke hgi-dashboard-square-01 text-xl"></i>
+                  Tổng quan
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" data-tab="orders" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+                <span class="inline-flex items-center gap-x-3">
+                  <i class="hgi hgi-stroke hgi-package text-xl"></i>
+                  Đơn hàng
+                </span>
+              </button>
+            </li>
+
+            <li class="pt-4 mt-3 border-t border-gray-200">
+              <p class="px-2 pb-2 text-xs leading-[18px] text-primary font-semibold uppercase">Account settings</p>
+            </li>
+            <li>
+              <button type="button" data-tab="account-details" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+                <span class="inline-flex items-center gap-x-3">
+                  <i class="hgi hgi-stroke hgi-user-circle text-xl"></i>
+                  Thông tin cá nhân
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" data-tab="password" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+                <span class="inline-flex items-center gap-x-3">
+                  <i class="hgi hgi-stroke hgi-lock-sync-01 text-xl"></i>
+                  Đổi mật khẩu
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" data-tab="address" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+                <span class="inline-flex items-center gap-x-3">
+                  <i class="hgi hgi-stroke hgi-location-01 text-xl"></i>
+                  Địa chỉ
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" data-tab="wishlist" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+                <span class="inline-flex items-center gap-x-3">
+                  <i class="hgi hgi-stroke hgi-favourite text-xl"></i>
+                  Yêu thích
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" data-tab="reviews" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+                <span class="inline-flex items-center gap-x-3">
+                  <i class="hgi hgi-stroke hgi-star text-xl"></i>
+                  Reviews
+                </span>
+              </button>
+            </li>
+            @if (Model.IsSignedIn)
+            {
+              <li class="pt-3">
+                <button type="button" data-tab="logout" class="logout-btn w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+                  <span class="inline-flex items-center gap-x-3">
+                    <i class="hgi hgi-stroke hgi-logout-01 text-xl"></i>
+                    Đăng xuất
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+
+      <div class="xl:col-span-9 lg:col-span-8 col-span-12">
+        <div class="border border-gray-300 rounded-2xl p-6">
+          <div id="my-account-ajax-message" class="mb-6 p-4 rounded-2xl hidden"></div>
+          @if (TempData["AccountSuccess"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
+          {
+            <div class="my-account-status-message mb-6 p-4 rounded-2xl bg-success-light text-light-primary-text">
+              @okMsg
+            </div>
+          }
+          @if (TempData["AccountError"] is string errMsg && !string.IsNullOrWhiteSpace(errMsg))
+          {
+            <div class="my-account-status-message mb-6 p-4 rounded-2xl bg-warning-light text-light-primary-text">
+              @errMsg
+            </div>
+          }
+
+          <div class="my-account-content">
+            <div id="dashboard" class="menu-tab-pane">
+              @if (!Model.IsSignedIn)
+              {
+                <h4 class="pb-3">Bạn chưa đăng nhập</h4>
+                <p class="text-light-secondary-text pb-6">
+                  Vui lòng đăng nhập để xem thông tin tài khoản.
+                </p>
+                <a href="#" class="btn btn-primary login-page-btn">Đăng nhập</a>
+              }
+              else
+              {
+                var orders = Model.Account?.Orders ?? new List<OrderSummaryVm>();
+                var totalOrders = orders.Count;
+                var completedOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "completed");
+                var processingOrdersCount = orders.Count(o =>
+                  ResolveOrderStatusUi(o.OrderStatus).tabKey is "pending-confirmation" or "awaiting-pickup");
+                var cancelledOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "cancelled");
+                var wishlistCount = 0;
+                var reviewsCount = Model.Account?.ReviewsTotalCount ?? 0;
+                var recentOrders = orders.Take(5).ToList();
+                var recentReviews = Model.Account?.RecentReviews ?? new List<ReviewSummaryVm>();
+
+                <div class="pb-6">
+                  <h3 class="text-light-primary-text">Tổng quan</h3>
+                  <p class="text-light-secondary-text pt-1">
+                    Xin chào <span id="my-account-display-name-dashboard" class="text-light-primary-text font-semibold">@displayName</span>.
+                  </p>
+                </div>
+
+                <div class="grid grid-cols-12 gap-4">
+                  <div class="md:col-span-4 col-span-12 bg-success-lighter rounded-2xl p-5">
+                    <div class="flex items-center gap-x-4">
+                      <div class="size-12 rounded-2xl bg-success-light text-success-dark inline-flex items-center justify-center">
+                        <i class="hgi hgi-stroke hgi-package text-2xl leading-6"></i>
+                      </div>
+                      <div>
+                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@totalOrders</p>
+                        <p class="text-sm leading-[22px] text-light-secondary-text">Total Order</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="md:col-span-4 col-span-12 bg-primary-lighter rounded-2xl p-5">
+                    <div class="flex items-center gap-x-4">
+                      <div class="size-12 rounded-2xl bg-primary text-white inline-flex items-center justify-center">
+                        <i class="hgi hgi-stroke hgi-checkmark-circle-02 text-2xl leading-6"></i>
+                      </div>
+                      <div>
+                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@completedOrdersCount</p>
+                        <p class="text-sm leading-[22px] text-light-secondary-text">Completed Order</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="md:col-span-4 col-span-12 bg-warning-lighter rounded-2xl p-5">
+                    <div class="flex items-center gap-x-4">
+                      <div class="size-12 rounded-2xl bg-warning text-white inline-flex items-center justify-center">
+                        <i class="hgi hgi-stroke hgi-time-quarter-pass text-2xl leading-6"></i>
+                      </div>
+                      <div>
+                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@processingOrdersCount</p>
+                        <p class="text-sm leading-[22px] text-light-secondary-text">Pending Order</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="md:col-span-4 col-span-12 bg-error-lighter rounded-2xl p-5">
+                    <div class="flex items-center gap-x-4">
+                      <div class="size-12 rounded-2xl bg-error text-white inline-flex items-center justify-center">
+                        <i class="hgi hgi-stroke hgi-cancel-01 text-2xl leading-6"></i>
+                      </div>
+                      <div>
+                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@cancelledOrdersCount</p>
+                        <p class="text-sm leading-[22px] text-light-secondary-text">Canceled Order</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="md:col-span-4 col-span-12 bg-gray-100 rounded-2xl p-5">
+                    <div class="flex items-center gap-x-4">
+                      <div class="size-12 rounded-2xl bg-primary-dark text-white inline-flex items-center justify-center">
+                        <i class="hgi hgi-stroke hgi-favourite text-2xl leading-6"></i>
+                      </div>
+                      <div>
+                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@wishlistCount</p>
+                        <p class="text-sm leading-[22px] text-light-secondary-text">Total Wishlist</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="md:col-span-4 col-span-12 bg-gray-100 rounded-2xl p-5">
+                    <div class="flex items-center gap-x-4">
+                      <div class="size-12 rounded-2xl bg-primary-darker text-white inline-flex items-center justify-center">
+                        <i class="hgi hgi-stroke hgi-star text-2xl leading-6"></i>
+                      </div>
+                      <div>
+                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@reviewsCount</p>
+                        <p class="text-sm leading-[22px] text-light-secondary-text">Total Reviews</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-4 pt-6">
+                  <div class="lg:col-span-8 col-span-12 border border-gray-300 rounded-2xl overflow-x-auto">
+                    <div class="p-6 border-b border-gray-300">
+                      <h4 class="text-light-primary-text">Your Recent Order</h4>
+                    </div>
+                    <table class="w-full">
+                      <thead>
+                        <tr class="border-b border-gray-300 text-left">
+                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Order ID</th>
+                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Date</th>
+                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Status</th>
+                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Amount</th>
+                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @if (recentOrders.Count == 0)
+                        {
+                          <tr>
+                            <td class="py-5 px-6" colspan="5">
+                              <p class="text-light-secondary-text">Chưa có đơn hàng nào.</p>
+                            </td>
+                          </tr>
+                        }
+                        else
+                        {
+                          foreach (var o in recentOrders)
+                          {
+                            var ui = ResolveOrderStatusUi(o.OrderStatus);
+                            <tr class="border-b border-gray-300">
+                              <td class="py-5 px-6 text-light-primary-text font-semibold">#@(!string.IsNullOrWhiteSpace(o.OrderCode) ? o.OrderCode : o.Id.ToString())</td>
+                              <td class="py-5 px-6 text-light-secondary-text">@o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                              <td class="py-5 px-6">
+                                <span class="@ui.pillClass">@ui.label</span>
+                              </td>
+                              <td class="py-5 px-6 text-light-primary-text font-semibold">@FormatVnd(o.FinalAmount)</td>
+                              <td class="py-5 px-6">
+                                  <div class="flex flex-wrap items-center gap-2">
+                                    <a class="btn btn-default outline btn-small rounded-full"
+                                       href='@Url.Action("OrderDetails", "Account", new { id = o.Id })'>Xem</a>
+
+                                    @if (ui.tabKey is "pending-confirmation" or "awaiting-pickup")
+                                    {
+                                      <form method="post" action="/my-orders/cancel" class="inline-flex" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="Id" value="@o.Id" />
+                                        <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                                        <button type="submit" class="btn btn-small rounded-full bg-error text-white ring-1 ring-inset ring-error-dark/20">Hủy</button>
+                                      </form>
+                                    }
+                                  </div>
+                              </td>
+                            </tr>
+                          }
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div class="lg:col-span-4 col-span-12 border border-gray-300 rounded-2xl overflow-hidden">
+                    <div class="p-6 border-b border-gray-300">
+                      <h4 class="text-light-primary-text">Your Recent Reviews</h4>
+                    </div>
+                    <div class="p-6">
+                      @if (recentReviews.Count == 0)
+                      {
+                        <p class="text-light-secondary-text">Chưa có đánh giá nào.</p>
+                      }
+                      else
+                      {
+                        <div class="flex flex-col gap-y-5">
+                          @foreach (var r in recentReviews)
+                          {
+                            var img = string.IsNullOrWhiteSpace(r.ProductImageUrl)
+                              ? Url.Content("~/assets/images/product-details/product-details-1.png")
+                              : ResolveImageUrl(r.ProductImageUrl);
+
+                            <div class="flex gap-x-4">
+                              <div class="size-16 rounded-2xl overflow-hidden bg-gray-200 shrink-0">
+                                <img src="@img" alt="@r.ProductName" class="w-full h-full object-cover" />
+                              </div>
+                              <div class="min-w-0">
+                                <div class="flex items-start justify-between gap-x-3">
+                                  <a class="text-light-primary-text font-semibold truncate" href='@Url.RouteUrl("product_details", new { slug = r.ProductSlug })'>@r.ProductName</a>
+                                  <span class="inline-flex items-center gap-x-1 shrink-0">
+                                    @for (var i = 1; i <= 5; i++)
+                                    {
+                                      var starClass = i <= Math.Clamp(r.Rating, 0, 5) ? "text-warning" : "text-gray-300";
+                                      <i class="hgi hgi-stroke hgi-star text-base leading-4 @starClass"></i>
+                                    }
+                                  </span>
+                                </div>
+                                <p class="text-xs leading-[18px] text-light-secondary-text pt-1">@r.CreatedAt.ToLocalTime().ToString("dd MMMM yyyy")</p>
+                                <p class="text-sm leading-[22px] text-light-secondary-text pt-2">
+                                  @(string.IsNullOrWhiteSpace(r.Comment) ? "(Không có nội dung đánh giá.)" : r.Comment)
+                                </p>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div id="account-details" class="menu-tab-pane hidden">
+              <h4 class="pb-6">Thông tin tài khoản</h4>
+
+              @if (!Model.IsSignedIn)
+              {
+                <p class="text-light-secondary-text">Vui lòng đăng nhập để xem thông tin.</p>
+              }
+              else
+              {
+                <div class="border border-gray-300 rounded-2xl">
+                  <div class="py-4 px-6 bg-gray-200 rounded-t-2xl">
+                    <h5 class="text-light-primary-text">Personal Information</h5>
+                  </div>
+
+                  <div class="px-6 py-6">
+                    <div class="flex flex-col gap-y-6">
+                      <form id="update-profile-form" method="post" action="/my-account/update-profile" enctype="multipart/form-data" class="flex flex-col gap-y-6">
+                        @Html.AntiForgeryToken()
+
+                        <div class="flex items-center justify-center">
+                          <div class="w-[144px] h-[144px] flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full hover:border-primary transition-all duration-300 ease-in-out">
+                            <label class="flex flex-col items-center justify-center w-[128px] h-[128px] bg-gray-100 rounded-full cursor-pointer overflow-hidden">
+                              <input type="file" name="AvatarFile" accept="image/*" class="hidden" />
+
+                              @if (!string.IsNullOrWhiteSpace(account!.AvatarUrl))
+                              {
+                                <img src="@(ResolveImageUrl(account.AvatarUrl))" alt="Avatar" class="w-full h-full object-cover" />
+                              }
+                              else
+                              {
+                                <svg class="w-6 h-6 text-light-secondary-text" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M3 8C3 8.55 3.45 9 4 9C4.55 9 5 8.55 5 8V6H7C7.55 6 8 5.55 8 5C8 4.45 7.55 4 7 4H5V2C5 1.45 4.55 1 4 1C3.45 1 3 1.45 3 2V4H1C0.45 4 0 4.45 0 5C0 5.55 0.45 6 1 6H3V8Z" fill="currentColor" />
+                                  <circle cx="13" cy="14" r="3" fill="currentColor" />
+                                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.83 6H21C22.1 6 23 6.9 23 8V20C23 21.1 22.1 22 21 22H5C3.9 22 3 21.1 3 20V9.72C3.3 9.89 3.63 10 4 10C5.1 10 6 9.1 6 8V7H7C8.1 7 9 6.1 9 5C9 4.63 8.89 4.3 8.72 4H15.12C15.68 4 16.22 4.24 16.59 4.65L17.83 6ZM8 14C8 16.76 10.24 19 13 19C15.76 19 18 16.76 18 14C18 11.24 15.76 9 13 9C10.24 9 8 11.24 8 14Z" fill="currentColor" />
+                                </svg>
+                                <span class="mt-1 text-xs leading-[18px]">Upload photo</span>
+                              }
+                            </label>
+                          </div>
+                        </div>
+
+                        <div class="grid xl:grid-cols-2 md:grid-cols-2 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
+                          <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                            <div class="relative w-full">
+                              <input name="FullName" value="@(account!.FullName ?? string.Empty)" type="text" id="full_name" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Họ và tên" />
+                              <label for="full_name" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                                Họ và tên
+                              </label>
+                            </div>
+                          </div>
+
+                          <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                            <div class="relative w-full">
+                              <input name="PhoneNumber" value="@(account!.PhoneNumber ?? string.Empty)" type="tel" id="phone_number" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Số điện thoại" />
+                              <label for="phone_number" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                                Số điện thoại
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="grid xl:grid-cols-2 md:grid-cols-2 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
+                          <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                            <div class="relative w-full">
+                              <input value="@account!.Email" type="email" id="email_address" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Email" readonly />
+                              <label for="email_address" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                                Email
+                              </label>
+                            </div>
+                          </div>
+
+                          <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                            <div class="relative w-full">
+                              <input name="Address" value="@(account!.Address ?? string.Empty)" type="text" id="profile_address" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Địa chỉ" />
+                              <label for="profile_address" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                                Địa chỉ
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-x-4">
+                          <span class="text-sm leading-[22px] text-light-secondary-text">Đăng nhập bằng: @(string.IsNullOrWhiteSpace(account!.AuthProvider) ? "local" : account.AuthProvider)</span>
+
+                          <div class="text-end">
+                            <button type="submit" class="btn btn-primary btn-large md:px-[42px] w-[45%] md:w-auto py-[11px] rounded-[100px]">
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div id="password" class="menu-tab-pane hidden">
+              <h4 class="pb-6">Đổi mật khẩu</h4>
+
+              @if (!Model.IsSignedIn)
+              {
+                <p class="text-light-secondary-text">Vui lòng đăng nhập để đổi mật khẩu.</p>
+              }
+              else
+              {
+                <div class="border border-gray-300 rounded-2xl">
+                  <div class="py-4 px-6 bg-gray-200 rounded-t-2xl">
+                    <h5 class="text-light-primary-text">Password Change</h5>
+                  </div>
+
+                  <div class="px-6 py-6">
+                    <form id="change-password-form" method="post" action="/my-account/change-password" class="flex flex-col gap-y-6">
+                      @Html.AntiForgeryToken()
+
+                      @if (!account!.HasPassword)
+                      {
+                        <p class="text-sm leading-[22px] text-light-secondary-text">
+                          Tài khoản này chưa có mật khẩu (đăng nhập Google). Bạn có thể thiết lập mật khẩu mới để đăng nhập bằng email/mật khẩu.
+                        </p>
+                      }
+
+                      @if (account!.HasPassword)
+                      {
+                        <div class="relative w-full">
+                          <input
+                            name="CurrentPassword"
+                            type="password"
+                            id="current_password"
+                            autocomplete="current-password"
+                            class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                            placeholder="Mật khẩu hiện tại"
+                          />
+
+                          <label
+                            for="current_password"
+                            class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
+                          >
+                            Mật khẩu hiện tại
+                          </label>
+                        </div>
+                      }
+
+                      <div class="relative w-full">
+                        <input
+                          name="NewPassword"
+                          type="password"
+                          id="new_password"
+                          autocomplete="new-password"
+                          class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                          placeholder="Mật khẩu mới"
+                        />
+
+                        <label
+                          for="new_password"
+                          class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
+                        >
+                          Mật khẩu mới
+                        </label>
+                      </div>
+
+                      <div class="relative w-full">
+                        <input
+                          name="ConfirmPassword"
+                          type="password"
+                          id="confirm_new_password"
+                          autocomplete="new-password"
+                          class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                          placeholder="Xác nhận mật khẩu mới"
+                        />
+
+                        <label
+                          for="confirm_new_password"
+                          class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
+                        >
+                          Xác nhận mật khẩu mới
+                        </label>
+                      </div>
+
+                      <div class="text-end">
+                        <button type="submit" class="btn btn-primary btn-large md:px-[22px] w-[45%] md:w-auto py-[11px] rounded-[100px]">
+                          Save Changes
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div id="address" class="menu-tab-pane hidden">
+              <div class="flex items-center justify-between pb-6">
+                <h4>Địa chỉ</h4>
+                @if (Model.IsSignedIn)
+                {
+                  <button type="button" class="btn btn-primary btn-medium rounded-full add-new-address-button">
+                    Thêm địa chỉ mới
+                  </button>
+                }
+              </div>
+              @if (!Model.IsSignedIn)
+              {
+                <p class="text-light-secondary-text">Vui lòng đăng nhập để xem thông tin.</p>
+              }
+              else
+              {
+                <div id="address-list-container">
+                  @if (account!.Addresses.Count == 0)
+                  {
+                    <div class="border border-gray-300 rounded-2xl p-6">
+                      <p class="text-light-secondary-text">
+                        Bạn chưa có địa chỉ nào. Nhấn <span class="font-semibold">Thêm địa chỉ mới</span> để tạo địa chỉ theo chuẩn GHN.
+                      </p>
+                    </div>
+                  }
+                  else
+                  {
+                    <div class="flex flex-col gap-y-4">
+                      @foreach (var a in account!.Addresses)
+                      {
+                        var typeLabel = a.AddressType == 1 ? "Shop" : "Cá nhân";
+                        var typeBadgeClass = a.AddressType == 1
+                          ? "bg-warning-light text-warning-dark"
+                          : "bg-gray-100 text-light-secondary-text";
+                        <div class="border border-gray-300 rounded-2xl p-5">
+                          <div class="flex items-start justify-between gap-x-4">
+                            <div class="min-w-0">
+                              <div class="flex items-center gap-x-2 pb-1">
+                                <p class="text-base leading-6 text-light-primary-text font-semibold truncate">@a.FullName</p>
+                                <span class="px-2 py-1 rounded-full text-xs @typeBadgeClass">@typeLabel</span>
+                                @if (a.IsDefault)
+                                {
+                                  <span class="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">Mặc định</span>
+                                }
+                              </div>
+                              <p class="text-sm leading-[22px] text-light-secondary-text pb-1">@a.PhoneNumber</p>
+                              <p class="text-sm leading-[22px] text-light-secondary-text">
+                                @a.StreetAddress, @a.WardName, @a.DistrictName, @a.ProvinceName
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              class="btn btn-default outline btn-medium rounded-full edit-address-button"
+                              data-address-id="@a.Id"
+                              data-full-name="@a.FullName"
+                              data-phone-number="@a.PhoneNumber"
+                              data-address-type="@a.AddressType"
+                              data-province-id="@a.ProvinceId"
+                              data-province-name="@a.ProvinceName"
+                              data-district-id="@a.DistrictId"
+                              data-district-name="@a.DistrictName"
+                              data-ward-code="@a.WardCode"
+                              data-ward-name="@a.WardName"
+                              data-street-address="@a.StreetAddress"
+                              data-is-default="@(a.IsDefault ? "1" : "0")">
+                              Sửa
+                            </button>
+
+                            <button
+                              type="button"
+                              class="btn btn-error btn-medium rounded-full delete-address-button"
+                              data-address-id="@a.Id">
+                              Xóa
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <div id="add-address" class="menu-tab-pane hidden">
+              <div class="flex items-center justify-between pb-6">
+                <h4>Thêm địa chỉ</h4>
+                <button type="button" class="btn btn-default outline btn-medium rounded-full add-new-address-back-button">
+                  Quay lại
+                </button>
+              </div>
+
+              <div class="border border-gray-300 rounded-2xl">
+                <div class="py-4 px-6 bg-gray-200 rounded-t-2xl">
+                  <h5 class="text-light-primary-text">Thiết lập địa chỉ (GHN)</h5>
+                </div>
+
+                <div class="px-6 py-6">
+                  <form id="add-address-form" method="post" action="/my-account/address/create" class="flex flex-col gap-y-6">
+                    @Html.AntiForgeryToken()
+
+                    <div class="grid xl:grid-cols-2 md:grid-cols-2 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <p class="text-sm leading-[22px] text-light-secondary-text">Loại địa chỉ</p>
+                        <div class="flex items-center gap-x-6 pt-2">
+                          <label class="inline-flex items-center gap-x-2 text-sm leading-[22px] text-light-secondary-text">
+                            <input type="radio" name="AddressType" value="0" class="form-check-input" checked />
+                            Cá nhân
+                          </label>
+                          <label class="inline-flex items-center gap-x-2 text-sm leading-[22px] text-light-secondary-text">
+                            <input type="radio" name="AddressType" value="1" class="form-check-input" />
+                            Shop
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="grid xl:grid-cols-2 md:grid-cols-2 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <input name="FullName" value="@(account?.FullName ?? string.Empty)" type="text" id="add_full_name" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Họ và tên" />
+                          <label for="add_full_name" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">Họ và tên</label>
+                        </div>
+                      </div>
+
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <input name="PhoneNumber" value="@(account?.PhoneNumber ?? string.Empty)" type="tel" id="add_phone_number" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Số điện thoại" />
+                          <label for="add_phone_number" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">Số điện thoại</label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="grid xl:grid-cols-3 md:grid-cols-3 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <select name="ProvinceId" id="add_province" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none">
+                            <option value="">Chọn Tỉnh/Thành phố</option>
+                          </select>
+                          <input type="hidden" name="ProvinceName" id="add_province_name" />
+                          <label for="add_province" class="absolute left-[14px] top-0 -translate-y-1/2 text-xs leading-[18px] bg-white px-1 text-light-disabled-text">Tỉnh/Thành phố</label>
+                        </div>
+                      </div>
+
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <select name="DistrictId" id="add_district" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
+                            <option value="">Chọn Quận/Huyện</option>
+                          </select>
+                          <input type="hidden" name="DistrictName" id="add_district_name" />
+                          <label for="add_district" class="absolute left-[14px] top-0 -translate-y-1/2 text-xs leading-[18px] bg-white px-1 text-light-disabled-text">Quận/Huyện</label>
+                        </div>
+                      </div>
+
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <select name="WardCode" id="add_ward" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
+                            <option value="">Chọn Phường/Xã</option>
+                          </select>
+                          <input type="hidden" name="WardName" id="add_ward_name" />
+                          <label for="add_ward" class="absolute left-[14px] top-0 -translate-y-1/2 text-xs leading-[18px] bg-white px-1 text-light-disabled-text">Phường/Xã</label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="relative w-full">
+                      <input name="StreetAddress" type="text" id="add_street_address" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Số nhà, đường..." />
+                      <label for="add_street_address" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">Địa chỉ (số nhà, tên đường)</label>
+                    </div>
+
+                    <label class="inline-flex items-center gap-x-2 text-sm leading-[22px] text-light-secondary-text">
+                      <input type="checkbox" name="IsDefault" value="true" class="form-check-input" />
+                      Đặt làm địa chỉ mặc định
+                    </label>
+
+                    <div class="text-end">
+                      <button type="submit" class="btn btn-primary btn-large md:px-[22px] w-[45%] md:w-auto py-[11px] rounded-[100px]">
+                        Lưu
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div id="edit-address" class="menu-tab-pane hidden">
+              <div class="flex items-center justify-between pb-6">
+                <h4>Sửa địa chỉ</h4>
+                <button type="button" class="btn btn-default outline btn-medium rounded-full edit-address-back-button">
+                  Quay lại
+                </button>
+              </div>
+
+              <div class="border border-gray-300 rounded-2xl">
+                <div class="py-4 px-6 bg-gray-200 rounded-t-2xl">
+                  <h5 class="text-light-primary-text">Cập nhật địa chỉ (GHN)</h5>
+                </div>
+
+                <div class="px-6 py-6">
+                  <form id="edit-address-form" method="post" action="/my-account/address/update" class="flex flex-col gap-y-6">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" id="edit_address_id" />
+
+                    <div class="grid xl:grid-cols-2 md:grid-cols-2 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <p class="text-sm leading-[22px] text-light-secondary-text">Loại địa chỉ</p>
+                        <div class="flex items-center gap-x-6 pt-2">
+                          <label class="inline-flex items-center gap-x-2 text-sm leading-[22px] text-light-secondary-text">
+                            <input type="radio" name="AddressType" value="0" id="edit_address_type_personal" class="form-check-input" checked />
+                            Cá nhân
+                          </label>
+                          <label class="inline-flex items-center gap-x-2 text-sm leading-[22px] text-light-secondary-text">
+                            <input type="radio" name="AddressType" value="1" id="edit_address_type_shop" class="form-check-input" />
+                            Shop
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="grid xl:grid-cols-2 md:grid-cols-2 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <input name="FullName" type="text" id="edit_full_name" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Họ và tên" />
+                          <label for="edit_full_name" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">Họ và tên</label>
+                        </div>
+                      </div>
+
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <input name="PhoneNumber" type="tel" id="edit_phone_number" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Số điện thoại" />
+                          <label for="edit_phone_number" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">Số điện thoại</label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="grid xl:grid-cols-3 md:grid-cols-3 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <select name="ProvinceId" id="edit_province" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none">
+                            <option value="">Chọn Tỉnh/Thành phố</option>
+                          </select>
+                          <input type="hidden" name="ProvinceName" id="edit_province_name" />
+                          <label for="edit_province" class="absolute left-[14px] top-0 -translate-y-1/2 text-xs leading-[18px] bg-white px-1 text-light-disabled-text">Tỉnh/Thành phố</label>
+                        </div>
+                      </div>
+
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <select name="DistrictId" id="edit_district" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
+                            <option value="">Chọn Quận/Huyện</option>
+                          </select>
+                          <input type="hidden" name="DistrictName" id="edit_district_name" />
+                          <label for="edit_district" class="absolute left-[14px] top-0 -translate-y-1/2 text-xs leading-[18px] bg-white px-1 text-light-disabled-text">Quận/Huyện</label>
+                        </div>
+                      </div>
+
+                      <div class="xl:col-span-1 md:col-span-1 col-span-1">
+                        <div class="relative w-full">
+                          <select name="WardCode" id="edit_ward" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
+                            <option value="">Chọn Phường/Xã</option>
+                          </select>
+                          <input type="hidden" name="WardName" id="edit_ward_name" />
+                          <label for="edit_ward" class="absolute left-[14px] top-0 -translate-y-1/2 text-xs leading-[18px] bg-white px-1 text-light-disabled-text">Phường/Xã</label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="relative w-full">
+                      <input name="StreetAddress" type="text" id="edit_street_address" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Số nhà, đường..." />
+                      <label for="edit_street_address" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">Địa chỉ (số nhà, tên đường)</label>
+                    </div>
+
+                    <label class="inline-flex items-center gap-x-2 text-sm leading-[22px] text-light-secondary-text">
+                      <input type="checkbox" name="IsDefault" value="true" id="edit_is_default" class="form-check-input" />
+                      Đặt làm địa chỉ mặc định
+                    </label>
+
+                    <div class="text-end">
+                      <button type="submit" class="btn btn-primary btn-large md:px-[22px] w-[45%] md:w-auto py-[11px] rounded-[100px]">
+                        Cập nhật
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div id="orders" class="menu-tab-pane hidden">
+              @{
+                var allOrders = Model.Account?.Orders ?? new List<OrderSummaryVm>();
+                var pendingConfirmOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "pending-confirmation").ToList();
+                var awaitingPickupOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "awaiting-pickup").ToList();
+                var deliveringOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "delivering").ToList();
+                var completedOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "completed").ToList();
+                var returnedOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "returned").ToList();
+                var cancelledOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "cancelled").ToList();
+
+                var tabs = new (string key, List<OrderSummaryVm> orders)[]
+                {
+                  ("all", allOrders),
+                  ("pending-confirmation", pendingConfirmOrders),
+                  ("awaiting-pickup", awaitingPickupOrders),
+                  ("delivering", deliveringOrders),
+                  ("completed", completedOrders),
+                  ("returned", returnedOrders),
+                  ("cancelled", cancelledOrders)
+                };
+              }
+
+              <div class="flex flex-col gap-y-6 mb-6">
+                <h3 class="text-light-primary-text">Lịch sử đơn hàng</h3>
+                <div class="flex gap-x-4 overflow-x-auto order-history-product-filter">
+                  <button data-tab="all" class="inline-flex items-center justify-center py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text">Tất cả</button>
+                  <button data-tab="pending-confirmation" class="inline-flex items-center justify-center gap-x-2 py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text whitespace-nowrap">
+                    <span>Chờ xác nhận</span>
+                    @if (pendingConfirmOrders.Count > 0)
+                    {
+                      <span class="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full text-xs font-bold bg-error text-white border-2 border-white" style="pointer-events:none">@pendingConfirmOrders.Count</span>
+                    }
+                  </button>
+                  <button data-tab="awaiting-pickup" class="inline-flex items-center justify-center gap-x-2 py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text whitespace-nowrap">
+                    <span>Chờ lấy hàng</span>
+                    @if (awaitingPickupOrders.Count > 0)
+                    {
+                      <span class="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full text-xs font-bold bg-error text-white border-2 border-white" style="pointer-events:none">@awaitingPickupOrders.Count</span>
+                    }
+                  </button>
+                  <button data-tab="delivering" class="inline-flex items-center justify-center gap-x-2 py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text whitespace-nowrap">
+                    <span>Đang giao</span>
+                    @if (deliveringOrders.Count > 0)
+                    {
+                      <span class="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full text-xs font-bold bg-error text-white border-2 border-white" style="pointer-events:none">@deliveringOrders.Count</span>
+                    }
+                  </button>
+                  <button data-tab="completed" class="inline-flex items-center justify-center py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text">Hoàn tất</button>
+                  <button data-tab="returned" class="inline-flex items-center justify-center py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text">Trả hàng</button>
+                  <button data-tab="cancelled" class="inline-flex items-center justify-center py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text">Đã hủy</button>
+                </div>
+              </div>
+
+              <div id="order-tab-content">
+                @foreach (var tab in tabs)
+                {
+                  <div class="tab-pane" id="@tab.key">
+                    @if (tab.orders.Count == 0)
+                    {
+                      <div class="border border-gray-300 rounded-2xl p-6">
+                        <p class="text-light-secondary-text">Chưa có đơn hàng nào.</p>
+                      </div>
+                    }
+                    else
+                    {
+                      <div class="flex flex-col gap-y-6">
+                        @foreach (var o in tab.orders)
+                        {
+                          var ui = ResolveOrderStatusUi(o.OrderStatus);
+                          <div class="order-history-table-wrapper border-gray-300 rounded-2xl border overflow-hidden">
+                            <table class="w-full order-history-table">
+                              <thead>
+                                <tr class="border-b border-gray-300">
+                                  <th class="py-5 px-6">
+                                    <div class="flex items-center justify-between">
+                                      <span class="pr-3 break-all">Mã đơn: #@(!string.IsNullOrWhiteSpace(o.OrderCode) ? o.OrderCode : o.Id.ToString())</span>
+                                      <span class="@ui.pillClass">@ui.label</span>
+                                    </div>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td class="lg:px-6 px-4 py-6 border-b border-gray-300">
+                                    <div>
+                                      <ul class="flex flex-col gap-y-4">
+                                        <li class="flex items-center justify-between">
+                                          <p class="text-light-primary-text font-normal inline-flex items-center md:gap-x-4 gap-x-2">
+                                            <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-calendar-03 text-2xl leading-6"></i></span>
+                                            Ngày đặt:
+                                          </p>
+                                          <span class="font-semibold text-light-primary-text">@o.CreatedAt.ToLocalTime().ToString("HH:mm, dd/MM/yyyy")</span>
+                                        </li>
+                                        <li class="flex items-center justify-between">
+                                          <p class="text-light-primary-text font-normal inline-flex items-center md:gap-x-4 gap-x-2">
+                                            <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-delivery-box-01 text-2xl leading-6"></i></span>
+                                            Sản phẩm
+                                          </p>
+                                          <span class="font-semibold text-light-primary-text">@o.ItemCount</span>
+                                        </li>
+                                        <li class="flex items-center justify-between">
+                                          <p class="text-light-primary-text font-normal inline-flex items-center md:gap-x-4 gap-x-2">
+                                            <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-truck text-2xl leading-6"></i></span>
+                                            Phí vận chuyển
+                                          </p>
+                                          <p class="font-semibold text-light-primary-text">@(o.ShippingFee <= 0 ? "Miễn phí" : FormatVnd(o.ShippingFee))</p>
+                                        </li>
+                                        <li class="flex items-center justify-between">
+                                          <p class="text-light-primary-text font-normal inline-flex items-center md:gap-x-4 gap-x-2">
+                                            <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-payment-success-01 text-2xl leading-6"></i></span>
+                                            Tổng thanh toán
+                                          </p>
+                                          <p class="font-semibold text-light-primary-text">
+                                            @FormatVnd(o.FinalAmount)<span class="text-primary ml-0.5">@ResolvePaymentBadge(o.PaymentStatus)</span>
+                                          </p>
+                                        </li>
+                                      </ul>
+                                    </div>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="p-4">
+                                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                      <a class="btn btn-large btn-default outline py-1.5 px-6 text-sm leading-[22px] font-semibold rounded-[80px] shadow-none w-full md:w-auto whitespace-nowrap"
+                                         href='@Url.Action("OrderDetails", "Account", new { id = o.Id })'>
+                                        Xem chi tiết
+                                      </a>
+
+                                      <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center md:justify-end gap-2 w-full md:w-auto">
+                                        @if (ui.tabKey is "pending-confirmation" or "awaiting-pickup")
+                                        {
+                                          <form method="post" action="/my-orders/cancel" class="inline-flex w-full sm:w-auto" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="Id" value="@o.Id" />
+                                            <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                                            <button type="submit" class="btn btn-large py-1.5 px-6 text-sm leading-[22px] font-semibold rounded-[80px] shadow-none w-full sm:w-auto whitespace-nowrap bg-error text-white ring-1 ring-inset ring-error-dark/20">
+                                              Hủy đơn
+                                            </button>
+                                          </form>
+                                        }
+                                        <a class="btn btn-large btn-primary py-[7px] px-6 text-sm leading-[22px] font-semibold rounded-[80px] w-full sm:w-auto whitespace-nowrap" href='@Url.Action("Index", "Products")'>
+                                          Mua lại
+                                        </a>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div id="order-details" class="menu-tab-pane hidden">
+              <div class="flex items-center justify-between pb-6">
+                <h4>Chi tiết đơn hàng</h4>
+                <button type="button" class="btn btn-default outline btn-medium rounded-full order-details-back-button">
+                  Quay lại
+                </button>
+              </div>
+
+              <div class="border border-gray-300 rounded-2xl p-6">
+                <p class="text-light-secondary-text">Trang chi tiết đơn hàng đã được chuyển sang trang riêng để hiển thị dữ liệu thật.</p>
+              </div>
+            </div>
+
+            <div id="wishlist" class="menu-tab-pane hidden">
+              <h4 class="pb-6">Yêu thích</h4>
+              <p class="text-light-secondary-text">
+                Danh sách yêu thích đã có trang riêng.
+                <a class="text-primary font-semibold hover:underline" href='@Url.RouteUrl("my_wishlist")'>Xem tại đây</a>.
+              </p>
+            </div>
+
+            <div id="reviews" class="menu-tab-pane hidden">
+              <div class="flex items-center justify-between pb-6">
+                <h4>My Reviews</h4>
+              </div>
+
+              @if (!Model.IsSignedIn)
+              {
+                <p class="text-light-secondary-text">Vui lòng đăng nhập để xem đánh giá.</p>
+              }
+              else
+              {
+                var reviews = Model.Account?.Reviews ?? new List<ReviewSummaryVm>();
+                var totalCount = Model.Account?.ReviewsTotalCount ?? 0;
+                var pageSize = Model.Account?.ReviewsPageSize ?? 5;
+                var page = Model.Account?.ReviewsPage ?? 1;
+                var totalPages = (int)Math.Ceiling(totalCount / (double)Math.Max(1, pageSize));
+
+                <div class="border border-gray-300 rounded-2xl">
+                  <div class="py-4 px-6 bg-gray-200 rounded-t-2xl">
+                    <h5 class="text-light-primary-text">Danh sách đánh giá</h5>
+                  </div>
+
+                  <div class="p-6">
+                    @if (reviews.Count == 0)
+                    {
+                      <p class="text-light-secondary-text">Bạn chưa có đánh giá nào.</p>
+                    }
+                    else
+                    {
+                      <div class="flex flex-col gap-y-6">
+                        @foreach (var r in reviews)
+                        {
+                          var img = string.IsNullOrWhiteSpace(r.ProductImageUrl)
+                            ? Url.Content("~/assets/images/product-details/product-details-1.png")
+                            : ResolveImageUrl(r.ProductImageUrl);
+
+                          <div class="flex gap-x-5 border border-gray-300 rounded-2xl p-5">
+                            <div class="size-20 rounded-2xl overflow-hidden bg-gray-200 shrink-0">
+                              <img src="@img" alt="@r.ProductName" class="w-full h-full object-cover" />
+                            </div>
+                            <div class="min-w-0 flex-1">
+                              <div class="flex items-start justify-between gap-x-4">
+                                <a class="text-light-primary-text font-semibold truncate" href='@Url.RouteUrl("product_details", new { slug = r.ProductSlug })'>@r.ProductName</a>
+                                <span class="inline-flex items-center gap-x-1 shrink-0">
+                                  @for (var i = 1; i <= 5; i++)
+                                  {
+                                    var starClass = i <= Math.Clamp(r.Rating, 0, 5) ? "text-warning" : "text-gray-300";
+                                    <i class="hgi hgi-stroke hgi-star text-base leading-4 @starClass"></i>
+                                  }
+                                </span>
+                              </div>
+                              <p class="text-xs leading-[18px] text-light-secondary-text pt-1">@r.CreatedAt.ToLocalTime().ToString("dd MMMM yyyy")</p>
+                              <p class="text-sm leading-[22px] text-light-secondary-text pt-3">
+                                @(string.IsNullOrWhiteSpace(r.Comment) ? "(Không có nội dung đánh giá.)" : r.Comment)
+                              </p>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    @if (totalPages > 1)
+                    {
+                      <div class="flex items-center gap-x-2 pt-6">
+                        @{
+                          var prev = Math.Max(1, page - 1);
+                          var next = Math.Min(totalPages, page + 1);
+                        }
+                        <a class="btn btn-default outline btn-small rounded-full" href='@Url.RouteUrl("my_account", new { tab = "reviews", reviewsPage = prev })'>
+                          <span class="inline-flex items-center">
+                            <i class="hgi hgi-stroke hgi-arrow-left-02 text-base leading-4"></i>
+                          </span>
+                        </a>
+                        @for (var p = 1; p <= totalPages; p++)
+                        {
+                          var isActive = p == page;
+                          <a class="btn btn-small rounded-full @(isActive ? "btn-primary" : "btn-default outline")" href='@Url.RouteUrl("my_account", new { tab = "reviews", reviewsPage = p })'>@p.ToString("00")</a>
+                        }
+                        <a class="btn btn-default outline btn-small rounded-full" href='@Url.RouteUrl("my_account", new { tab = "reviews", reviewsPage = next })'>
+                          <span class="inline-flex items-center">
+                            <i class="hgi hgi-stroke hgi-arrow-right-02 text-base leading-4"></i>
+                          </span>
+                        </a>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  /* GHN address selects use jquery.niceSelect; keep controls fixed-size and make long lists scrollable */
+  #add-address .nice-select,
+  #edit-address .nice-select {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #add-address .nice-select .current,
+  #edit-address .nice-select .current {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  #add-address .nice-select .list,
+  #edit-address .nice-select .list {
+    max-height: 260px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+</style>
+
+<script>
+  (() => {
+    const endpoints = {
+      provinces: '/api/ghn/provinces',
+      districts: (provinceId) => `/api/ghn/districts?provinceId=${encodeURIComponent(provinceId)}`,
+      wards: (districtId) => `/api/ghn/wards?districtId=${encodeURIComponent(districtId)}`
+    };
+
+    const cache = {
+      provinces: null,
+      districtsByProvince: new Map(),
+      wardsByDistrict: new Map()
+    };
+
+    async function getJson(url) {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      return await res.json();
+    }
+
+    function refreshNiceSelect(select) {
+      const $ = window.jQuery;
+      if (!$ || !$.fn || !$.fn.niceSelect) return;
+      try {
+        $(select).niceSelect('update');
+      } catch {
+        // ignore
+      }
+    }
+
+    function bindChange(select, handler) {
+      const $ = window.jQuery;
+      if ($) {
+        $(select).on('change', handler);
+        return;
+      }
+      select.addEventListener('change', handler);
+    }
+
+    function attachNiceSelectChangeBridgeOnce() {
+      if (window.__ghnNiceSelectBridgeAttached) return;
+      window.__ghnNiceSelectBridgeAttached = true;
+
+      document.addEventListener('click', (e) => {
+        const raw = e.target;
+        const el = (raw instanceof Element)
+          ? raw
+          : (raw && raw.parentElement ? raw.parentElement : null);
+        if (!el) return;
+
+        const opt = el.closest('.nice-select .option');
+        if (!opt) return;
+
+        const nice = opt.closest('.nice-select');
+        const select = nice ? nice.previousElementSibling : null;
+        if (!(select instanceof HTMLSelectElement)) return;
+
+        // Scope only to GHN cascading selects to avoid side-effects.
+        const id = select.id || '';
+        if (!/^(add|edit)_(province|district|ward)$/.test(id)) return;
+
+        // niceSelect updates the underlying <select> value on click;
+        // defer dispatch so our handlers see the latest value.
+        setTimeout(() => {
+          try {
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          } catch {
+            // ignore
+          }
+        }, 0);
+      }, true);
+    }
+
+    function setOptions(select, items, valueKey, textKey, placeholder) {
+      select.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = placeholder;
+      select.appendChild(opt0);
+
+      for (const it of items) {
+        const opt = document.createElement('option');
+        opt.value = String(it[valueKey]);
+        opt.textContent = String(it[textKey]);
+        select.appendChild(opt);
+      }
+
+      refreshNiceSelect(select);
+    }
+
+    function selectedText(select) {
+      const i = select.selectedIndex;
+      if (i < 0) return '';
+      const opt = select.options[i];
+      return opt ? (opt.textContent || '') : '';
+    }
+
+    function resetSelect(select, placeholder) {
+      select.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = placeholder;
+      select.appendChild(opt0);
+      select.value = '';
+      select.disabled = true;
+
+      refreshNiceSelect(select);
+    }
+
+    function showLoadError(select, message) {
+      if (!select) return;
+      select.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = message;
+      select.appendChild(opt0);
+      select.value = '';
+      select.disabled = true;
+
+      refreshNiceSelect(select);
+    }
+
+    async function ensureProvincesLoaded() {
+      if (cache.provinces) return cache.provinces;
+      cache.provinces = await getJson(endpoints.provinces);
+      return cache.provinces;
+    }
+
+    async function ensureDistrictsLoaded(provinceId) {
+      const key = String(provinceId);
+      if (cache.districtsByProvince.has(key)) return cache.districtsByProvince.get(key);
+      const data = await getJson(endpoints.districts(provinceId));
+      cache.districtsByProvince.set(key, data);
+      return data;
+    }
+
+    async function ensureWardsLoaded(districtId) {
+      const key = String(districtId);
+      if (cache.wardsByDistrict.has(key)) return cache.wardsByDistrict.get(key);
+      const data = await getJson(endpoints.wards(districtId));
+      cache.wardsByDistrict.set(key, data);
+      return data;
+    }
+
+    function wireCascading(prefix) {
+      const province = document.getElementById(`${prefix}_province`);
+      const district = document.getElementById(`${prefix}_district`);
+      const ward = document.getElementById(`${prefix}_ward`);
+
+      const provinceName = document.getElementById(`${prefix}_province_name`);
+      const districtName = document.getElementById(`${prefix}_district_name`);
+      const wardName = document.getElementById(`${prefix}_ward_name`);
+
+      if (!province || !district || !ward || !provinceName || !districtName || !wardName) return;
+
+      bindChange(province, async () => {
+        provinceName.value = province.value ? selectedText(province) : '';
+        districtName.value = '';
+        wardName.value = '';
+        resetSelect(district, 'Chọn Quận/Huyện');
+        resetSelect(ward, 'Chọn Phường/Xã');
+
+        const provinceId = parseInt(province.value || '0', 10);
+        if (!provinceId) return;
+
+        try {
+          const districts = await ensureDistrictsLoaded(provinceId);
+          setOptions(district, districts, 'id', 'name', 'Chọn Quận/Huyện');
+          district.disabled = false;
+          refreshNiceSelect(district);
+        } catch (e) {
+          console.error(e);
+          showLoadError(district, 'Không tải được Quận/Huyện. Kiểm tra GHN Token.');
+        }
+      });
+
+      bindChange(district, async () => {
+        districtName.value = district.value ? selectedText(district) : '';
+        wardName.value = '';
+        resetSelect(ward, 'Chọn Phường/Xã');
+
+        const districtId = parseInt(district.value || '0', 10);
+        if (!districtId) return;
+
+        try {
+          const wards = await ensureWardsLoaded(districtId);
+          setOptions(ward, wards, 'code', 'name', 'Chọn Phường/Xã');
+          ward.disabled = false;
+          refreshNiceSelect(ward);
+        } catch (e) {
+          console.error(e);
+          showLoadError(ward, 'Không tải được Phường/Xã. Kiểm tra GHN Token.');
+        }
+      });
+
+      bindChange(ward, () => {
+        wardName.value = ward.value ? selectedText(ward) : '';
+      });
+    }
+
+    async function initAddForm() {
+      const province = document.getElementById('add_province');
+      const district = document.getElementById('add_district');
+      const ward = document.getElementById('add_ward');
+      if (!province || !district || !ward) return;
+
+      try {
+        const provinces = await ensureProvincesLoaded();
+        setOptions(province, provinces, 'id', 'name', 'Chọn Tỉnh/Thành phố');
+        province.disabled = false;
+        refreshNiceSelect(province);
+        resetSelect(district, 'Chọn Quận/Huyện');
+        resetSelect(ward, 'Chọn Phường/Xã');
+      } catch (e) {
+        console.error(e);
+        showLoadError(province, 'Không tải được Tỉnh/Thành phố. Kiểm tra GHN Token.');
+        resetSelect(district, 'Chọn Quận/Huyện');
+        resetSelect(ward, 'Chọn Phường/Xã');
+      }
+    }
+
+    async function initEditFormFromButton(btn) {
+      const id = btn.getAttribute('data-address-id') || '';
+      const fullName = btn.getAttribute('data-full-name') || '';
+      const phoneNumber = btn.getAttribute('data-phone-number') || '';
+      const addressType = parseInt(btn.getAttribute('data-address-type') || '0', 10);
+      const provinceId = parseInt(btn.getAttribute('data-province-id') || '0', 10);
+      const provinceName = btn.getAttribute('data-province-name') || '';
+      const districtId = parseInt(btn.getAttribute('data-district-id') || '0', 10);
+      const districtName = btn.getAttribute('data-district-name') || '';
+      const wardCode = btn.getAttribute('data-ward-code') || '';
+      const wardName = btn.getAttribute('data-ward-name') || '';
+      const street = btn.getAttribute('data-street-address') || '';
+      const isDefault = (btn.getAttribute('data-is-default') || '0') === '1';
+
+      const idEl = document.getElementById('edit_address_id');
+      const fullNameEl = document.getElementById('edit_full_name');
+      const phoneEl = document.getElementById('edit_phone_number');
+      const streetEl = document.getElementById('edit_street_address');
+      const isDefaultEl = document.getElementById('edit_is_default');
+
+      const typePersonal = document.getElementById('edit_address_type_personal');
+      const typeShop = document.getElementById('edit_address_type_shop');
+
+      const province = document.getElementById('edit_province');
+      const district = document.getElementById('edit_district');
+      const ward = document.getElementById('edit_ward');
+
+      const provinceNameEl = document.getElementById('edit_province_name');
+      const districtNameEl = document.getElementById('edit_district_name');
+      const wardNameEl = document.getElementById('edit_ward_name');
+
+      if (!idEl || !fullNameEl || !phoneEl || !streetEl || !isDefaultEl || !province || !district || !ward || !provinceNameEl || !districtNameEl || !wardNameEl) return;
+
+      idEl.value = id;
+      fullNameEl.value = fullName;
+      phoneEl.value = phoneNumber;
+      streetEl.value = street;
+      isDefaultEl.checked = isDefault;
+
+      if (typePersonal && typeShop) {
+        typePersonal.checked = addressType !== 1;
+        typeShop.checked = addressType === 1;
+      }
+
+      provinceNameEl.value = provinceName;
+      districtNameEl.value = districtName;
+      wardNameEl.value = wardName;
+
+      try {
+        const provinces = await ensureProvincesLoaded();
+        setOptions(province, provinces, 'id', 'name', 'Chọn Tỉnh/Thành phố');
+        province.disabled = false;
+        refreshNiceSelect(province);
+        province.value = provinceId ? String(provinceId) : '';
+        provinceNameEl.value = province.value ? selectedText(province) : provinceName;
+        refreshNiceSelect(province);
+
+        resetSelect(district, 'Chọn Quận/Huyện');
+        resetSelect(ward, 'Chọn Phường/Xã');
+
+        if (provinceId) {
+          const districts = await ensureDistrictsLoaded(provinceId);
+          setOptions(district, districts, 'id', 'name', 'Chọn Quận/Huyện');
+          district.disabled = false;
+          refreshNiceSelect(district);
+          district.value = districtId ? String(districtId) : '';
+          districtNameEl.value = district.value ? selectedText(district) : districtName;
+          refreshNiceSelect(district);
+        }
+
+        if (districtId) {
+          const wards = await ensureWardsLoaded(districtId);
+          setOptions(ward, wards, 'code', 'name', 'Chọn Phường/Xã');
+          ward.disabled = false;
+          refreshNiceSelect(ward);
+          ward.value = wardCode || '';
+          wardNameEl.value = ward.value ? selectedText(ward) : wardName;
+          refreshNiceSelect(ward);
+        }
+      } catch (e) {
+        console.error(e);
+        showLoadError(province, 'Không tải được Tỉnh/Thành phố. Kiểm tra GHN Token.');
+      }
+    }
+
+    // Wire cascading once
+    attachNiceSelectChangeBridgeOnce();
+    wireCascading('add');
+    wireCascading('edit');
+
+    document.addEventListener('click', (e) => {
+      const rawTarget = e.target;
+      const t = (rawTarget instanceof Element)
+        ? rawTarget
+        : (rawTarget && rawTarget.parentElement ? rawTarget.parentElement : null);
+      if (!t) return;
+
+      const addBtn = t.closest('.add-new-address-button');
+      if (addBtn) {
+        initAddForm();
+        return;
+      }
+
+      const editBtn = t.closest('.edit-address-button');
+      if (editBtn) {
+        initEditFormFromButton(editBtn);
+      }
+    });
+
+    // Load provinces eagerly so the Add form works even
+    // when the pane is opened by template tab switching.
+    initAddForm();
+
+    // Auto-hide status messages (AJAX + server TempData) after ~5s.
+    document.querySelectorAll('.my-account-status-message').forEach((el) => {
+      setTimeout(() => {
+        try { el.classList.add('hidden'); } catch { }
+      }, 5000);
+    });
+
+    let ajaxMsgHideTimer = null;
+
+    function showAjaxMessage(type, text) {
+      const box = document.getElementById('my-account-ajax-message');
+      if (!box) return;
+      if (ajaxMsgHideTimer) {
+        clearTimeout(ajaxMsgHideTimer);
+        ajaxMsgHideTimer = null;
+      }
+      box.classList.remove('hidden');
+      box.classList.remove('bg-success-light', 'bg-warning-light', 'text-light-primary-text');
+      box.classList.add('text-light-primary-text');
+      box.classList.add(type === 'success' ? 'bg-success-light' : 'bg-warning-light');
+      box.textContent = text || '';
+      box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+      ajaxMsgHideTimer = setTimeout(() => {
+        try {
+          box.classList.add('hidden');
+          box.textContent = '';
+        } catch {
+          // ignore
+        }
+      }, 5000);
+    }
+
+    async function postFormAjax(form) {
+      const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          credentials: 'same-origin',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          }
+        });
+
+        const contentType = res.headers.get('content-type') || '';
+        const payload = contentType.includes('application/json')
+          ? await res.json()
+          : { ok: res.ok, message: await res.text() };
+
+        if (!res.ok || !payload || payload.ok === false) {
+          throw new Error(payload && payload.message ? payload.message : `HTTP ${res.status}`);
+        }
+
+        return payload;
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
+
+    function getAntiforgeryToken() {
+      const el = document.querySelector('input[name="__RequestVerificationToken"]');
+      return el ? (el.value || '') : '';
+    }
+
+    async function deleteAddressAjax(id) {
+      const token = getAntiforgeryToken();
+      const body = new URLSearchParams();
+      body.set('Id', String(id));
+      if (token) body.set('__RequestVerificationToken', token);
+
+      const res = await fetch('/my-account/address/delete', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        body
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json')
+        ? await res.json()
+        : { ok: res.ok, message: await res.text() };
+
+      if (!res.ok || !payload || payload.ok === false) {
+        throw new Error(payload && payload.message ? payload.message : `HTTP ${res.status}`);
+      }
+
+      return payload;
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderAddressList(addresses) {
+      const container = document.getElementById('address-list-container');
+      if (!container) return;
+
+      if (!addresses || !addresses.length) {
+        container.innerHTML = `
+          <div class="border border-gray-300 rounded-2xl p-6">
+            <p class="text-light-secondary-text">
+              Bạn chưa có địa chỉ nào. Nhấn <span class="font-semibold">Thêm địa chỉ mới</span> để tạo địa chỉ theo chuẩn GHN.
+            </p>
+          </div>`;
+        return;
+      }
+
+      const cards = addresses.map(a => {
+        const badge = a.isDefault
+          ? '<span class="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">Mặc định</span>'
+          : '';
+
+        const typeBadge = (a.addressType === 1)
+          ? '<span class="px-2 py-1 rounded-full text-xs bg-warning-light text-warning-dark">Shop</span>'
+          : '<span class="px-2 py-1 rounded-full text-xs bg-gray-100 text-light-secondary-text">Cá nhân</span>';
+        return `
+          <div class="border border-gray-300 rounded-2xl p-5">
+            <div class="flex items-start justify-between gap-x-4">
+              <div class="min-w-0">
+                <div class="flex items-center gap-x-2 pb-1">
+                  <p class="text-base leading-6 text-light-primary-text font-semibold truncate">${escapeHtml(a.fullName)}</p>
+                  ${typeBadge}
+                  ${badge}
+                </div>
+                <p class="text-sm leading-[22px] text-light-secondary-text pb-1">${escapeHtml(a.phoneNumber)}</p>
+                <p class="text-sm leading-[22px] text-light-secondary-text">${escapeHtml(a.streetAddress)}, ${escapeHtml(a.wardName)}, ${escapeHtml(a.districtName)}, ${escapeHtml(a.provinceName)}</p>
+              </div>
+
+              <div class="flex items-center gap-x-2">
+                <button type="button"
+                  class="btn btn-default outline btn-medium rounded-full edit-address-button"
+                  data-address-id="${escapeHtml(a.id)}"
+                  data-full-name="${escapeHtml(a.fullName)}"
+                  data-phone-number="${escapeHtml(a.phoneNumber)}"
+                  data-address-type="${escapeHtml(a.addressType ?? 0)}"
+                  data-province-id="${escapeHtml(a.provinceId)}"
+                  data-province-name="${escapeHtml(a.provinceName)}"
+                  data-district-id="${escapeHtml(a.districtId)}"
+                  data-district-name="${escapeHtml(a.districtName)}"
+                  data-ward-code="${escapeHtml(a.wardCode)}"
+                  data-ward-name="${escapeHtml(a.wardName)}"
+                  data-street-address="${escapeHtml(a.streetAddress)}"
+                  data-is-default="${a.isDefault ? '1' : '0'}">Sửa</button>
+                <button type="button"
+                  class="btn btn-error btn-medium rounded-full delete-address-button"
+                  data-address-id="${escapeHtml(a.id)}">Xóa</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+      container.innerHTML = `<div class="flex flex-col gap-y-4">${cards}</div>`;
+    }
+
+    async function refreshAddresses() {
+      const res = await fetch('/api/my-account/addresses', {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      renderAddressList(data);
+    }
+
+    function gotoTab(tabId) {
+      const btn = document.querySelector(`.my-account-menu button[data-tab="${tabId}"]`);
+      if (btn) btn.click();
+    }
+
+    function wireAjaxForm(formId, onSuccess) {
+      const form = document.getElementById(formId);
+      if (!(form instanceof HTMLFormElement)) return;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          const payload = await postFormAjax(form);
+          showAjaxMessage('success', payload.message || 'Thành công.');
+          if (typeof onSuccess === 'function') await onSuccess(payload);
+        } catch (err) {
+          console.error(err);
+          showAjaxMessage('error', err && err.message ? err.message : 'Có lỗi xảy ra.');
+        }
+      });
+    }
+
+    wireAjaxForm('update-profile-form', async (payload) => {
+      const name = (payload && payload.fullName) ? String(payload.fullName) : '';
+      if (name) {
+        const left = document.getElementById('my-account-display-name-left');
+        const dash = document.getElementById('my-account-display-name-dashboard');
+        if (left) left.textContent = name;
+        if (dash) dash.textContent = name;
+      }
+    });
+
+    wireAjaxForm('change-password-form', async () => {
+      const current = document.getElementById('current_password');
+      const next = document.getElementById('new_password');
+      const confirm = document.getElementById('confirm_new_password');
+      if (current) current.value = '';
+      if (next) next.value = '';
+      if (confirm) confirm.value = '';
+    });
+
+    wireAjaxForm('add-address-form', async (payload) => {
+      if (payload && payload.reloadAddresses) {
+        await refreshAddresses();
+        gotoTab('address');
+      }
+    });
+
+    wireAjaxForm('edit-address-form', async (payload) => {
+      if (payload && payload.reloadAddresses) {
+        await refreshAddresses();
+        gotoTab('address');
+      }
+    });
+
+    document.addEventListener('click', async (e) => {
+      const rawTarget = e.target;
+      const t = (rawTarget instanceof Element)
+        ? rawTarget
+        : (rawTarget && rawTarget.parentElement ? rawTarget.parentElement : null);
+      if (!t) return;
+
+      const delBtn = t.closest('.delete-address-button');
+      if (!delBtn) return;
+
+      const id = parseInt(delBtn.getAttribute('data-address-id') || '0', 10);
+      if (!id) return;
+
+      if (!confirm('Xóa địa chỉ này?')) return;
+
+      try {
+        const payload = await deleteAddressAjax(id);
+        showAjaxMessage('success', payload.message || 'Đã xóa địa chỉ.');
+        if (payload && payload.reloadAddresses) {
+          await refreshAddresses();
+        }
+      } catch (err) {
+        console.error(err);
+        showAjaxMessage('error', err && err.message ? err.message : 'Không thể xóa địa chỉ.');
+      }
+    });
+  })();
+</script>
+
+<script>
+  (() => {
+    const serverTab = @System.Text.Json.JsonSerializer.Serialize(ViewData["ActiveAccountTab"] as string ?? string.Empty);
+    const urlTab = (new URLSearchParams(window.location.search).get('tab') || '').trim();
+    const tab = (serverTab || urlTab).trim();
+    if (!tab) return;
+
+    const allowedTabs = new Set([
+      'dashboard',
+      'orders',
+      'order-details',
+      'account-details',
+      'password',
+      'address',
+      'add-address',
+      'edit-address',
+      'wishlist',
+      'reviews',
+      'logout'
+    ]);
+    if (!allowedTabs.has(tab)) return;
+
+    const btn = document.querySelector(`.my-account-menu button[data-tab="${tab}"]`);
+    if (btn) {
+      try { btn.click(); } catch { }
+    }
+  })();
+</script>

@@ -1,0 +1,56 @@
+@model IReadOnlyList<DOAN_BANHANG.ViewModels.ProductCardVm>
+
+@{
+  var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+}
+
+@if (Model.Count == 0)
+{
+  <div class="border border-gray-300 rounded-2xl p-6 text-center">
+    <p class="text-light-secondary-text">Chưa có sản phẩm gợi ý.</p>
+  </div>
+}
+else
+{
+  @foreach (var p in Model)
+  {
+    var imageUrl = !string.IsNullOrWhiteSpace(p.PrimaryImageUrl) ? p.PrimaryImageUrl : "assets/images/vitamin-c.png";
+    var ratingPct = (int)Math.Round(Math.Clamp((double)(p.RatingAverage / 5m * 100m), 0d, 100d));
+
+    <div class="similar-product-item flex items-center gap-x-4 p-4 border border-gray-300 rounded-2xl">
+      <a class="similar-product-item-image w-[102px] h-[102px] rounded-xl bg-[#F4F3F5] overflow-hidden relative" href="@Url.RouteUrl("product_details", new { slug = p.Slug })">
+        <img
+          src="@imageUrl"
+          alt="@p.Name"
+          class="w-full h-full object-cover rounded-xl"
+        />
+      </a>
+
+      <div class="similar-product-item-content flex flex-col gap-y-2 flex-1">
+        <h6 class="text-base font-semibold">
+          <a href="@Url.RouteUrl("product_details", new { slug = p.Slug })">@p.Name</a>
+        </h6>
+
+        <div class="flex items-center gap-x-2">
+          <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+            <div style="width: @ratingPct%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+          </div>
+          <span class="text-sm leading-[22px]">(@p.RatingCount)</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="price-section flex items-center gap-x-3">
+            <span class="current-price text-base font-semibold text-light-primary-text">@p.Price.ToString("N0", viVn) VNĐ</span>
+          </div>
+
+          <a class="btn btn-primary btn-medium rounded-full font-semibold text-sm leading-6 px-4 py-2" href="@Url.RouteUrl("product_details", new { slug = p.Slug })">
+            <span>
+              <i class="hgi hgi-stroke hgi-eye text-xl text-white"></i>
+            </span>
+            <span>Xem</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  }
+}

@@ -1,0 +1,623 @@
+@model DOAN_BANHANG.ViewModels.ProductAdminDetailsVm
+
+@{
+    ViewData["Title"] = $"Chi tiết sản phẩm #{Model.ProductId}";
+    var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+
+    var images = (Model.Images ?? new List<DOAN_BANHANG.ViewModels.ProductAdminDetailsImageVm>())
+        .OrderByDescending(i => i.IsPrimary)
+        .ThenBy(i => i.SortOrder)
+        .ThenBy(i => i.Url)
+        .ToList();
+
+    var variants = (Model.Variants ?? new List<DOAN_BANHANG.ViewModels.ProductAdminDetailsVariantVm>()).ToList();
+
+    var selectedVariant = variants
+        .FirstOrDefault(v => Model.SelectedVariantId.HasValue && v.VariantId == Model.SelectedVariantId.Value)
+        ?? variants.FirstOrDefault();
+
+    var colorOptions = variants
+        .Where(v => v.ColorId.HasValue && !string.IsNullOrWhiteSpace(v.ColorName))
+        .GroupBy(v => v.ColorId!.Value)
+        .Select(g => new
+        {
+            ColorId = g.Key,
+            Name = g.Select(x => x.ColorName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "(N/A)",
+            Hex = g.Select(x => x.ColorHex).FirstOrDefault(h => !string.IsNullOrWhiteSpace(h)) ?? "#dfe3e8",
+        })
+        .OrderBy(x => x.Name)
+        .ToList();
+
+    var sizeOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["XXS"] = 0,
+        ["XS"] = 1,
+        ["S"] = 2,
+        ["M"] = 3,
+        ["L"] = 4,
+        ["XL"] = 5,
+        ["XXL"] = 6,
+        ["XXXL"] = 7
+    };
+
+    var sizeOptions = variants
+        .Where(v => v.SizeId.HasValue && !string.IsNullOrWhiteSpace(v.SizeName))
+        .GroupBy(v => v.SizeId!.Value)
+        .Select(g => new
+        {
+            SizeId = g.Key,
+            Name = g.Select(x => x.SizeName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "(N/A)",
+        })
+        .OrderBy(x => sizeOrder.TryGetValue(x.Name, out var ord) ? ord : 999)
+        .ThenBy(x => x.Name)
+        .ToList();
+
+    var selectedColorId = selectedVariant?.ColorId ?? (colorOptions.Count > 0 ? colorOptions[0].ColorId : (int?)null);
+    var selectedSizeId = selectedVariant?.SizeId ?? (sizeOptions.Count > 0 ? sizeOptions[0].SizeId : (int?)null);
+
+    string StatusBadge(string status)
+    {
+        return string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase) ? "bg-success"
+            : string.Equals(status, "Hidden", StringComparison.OrdinalIgnoreCase) ? "bg-warning text-dark"
+            : "bg-secondary";
+    }
+}
+
+
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0 font-size-18">Chi tiết sản phẩm</h4>
+
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Products" asp-action="Index">Sản phẩm</a></li>
+                            <li class="breadcrumb-item active">#@Model.ProductId</li>
+                        </ol>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex flex-wrap gap-2 justify-content-end mb-3">
+                    <a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="Products" asp-action="Index">Quay lại</a>
+                    <a class="btn btn-outline-info" asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" asp-route-id="@Model.ProductId">Flash sale</a>
+                    <a class="btn btn-primary" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@Model.ProductId">Cập nhật</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex gap-3">
+                            <div class="flex-shrink-0" style="width: 92px;">
+                                <div class="d-flex flex-column gap-2" id="adminProductThumbs">
+                                    @for (var i = 0; i < images.Count; i++)
+                                    {
+                                        var img = images[i];
+                                        <button type="button"
+                                                class="btn p-0 border rounded overflow-hidden admin-thumb @(i == 0 ? "border-primary" : "")"
+                                                data-img-src="@img.Url"
+                                                style="width: 92px; height: 92px;">
+                                            <img src="@img.Url" alt="@img.Alt" class="w-100 h-100" style="object-fit: contain; background: var(--bs-body-bg);" />
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="flex-grow-1">
+                                <div class="border rounded p-2" style="min-height: 420px; display:flex; align-items:center; justify-content:center;">
+                                    <img id="adminProductMainImg" src="@images[0].Url" alt="@images[0].Alt" class="img-fluid" style="max-height: 420px; object-fit: contain;" />
+                                </div>
+                                <div class="form-text mt-2">Bấm thumbnail để xem ảnh lớn.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div>
+                                <div class="text-muted small">#@Model.ProductId</div>
+                                <h4 class="mb-1">@Model.Name</h4>
+                                <div class="text-muted">@(!string.IsNullOrWhiteSpace(Model.CategoryName) ? Model.CategoryName : "-")</div>
+                            </div>
+                            <span class="badge @StatusBadge(Model.Status)">@Model.Status</span>
+                        </div>
+
+                        <hr class="my-3" />
+
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="text-muted small">Đánh giá</div>
+                                <div class="fw-semibold">@Model.AverageRating.ToString("0.0", viVn) / 5</div>
+                                <div class="text-muted small">@Model.ReviewCount.ToString("N0", viVn) lượt</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small">Tồn kho</div>
+                                <div class="fw-semibold">@Model.TotalStockQuantity.ToString("N0", viVn)</div>
+                                <div class="text-muted small">(Tổng tất cả biến thể)</div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3" />
+
+                        @if (variants.Count == 0)
+                        {
+                            <div class="alert alert-warning mb-0">Sản phẩm chưa có biến thể. Hãy vào trang cập nhật để thêm biến thể.</div>
+                        }
+                        else
+                        {
+                            <script type="application/json" id="js-admin-product-variants">
+                                @Html.Raw(global::System.Text.Json.JsonSerializer.Serialize(
+                                    variants.Select(v => new
+                                    {
+                                        variantId = v.VariantId,
+                                        sku = v.Sku,
+                                        colorId = v.ColorId,
+                                        color = v.ColorName,
+                                        colorHex = v.ColorHex,
+                                        sizeId = v.SizeId,
+                                        sizeLabel = v.SizeName,
+                                        price = v.Price,
+                                        salePrice = v.SalePrice,
+                                        saleStartDate = v.SaleStartDate,
+                                        saleEndDate = v.SaleEndDate,
+                                        stockQuantity = v.StockQuantity,
+                                        isActive = v.IsActive,
+                                        isDefault = v.IsDefault,
+                                    })
+                                ))
+                            </script>
+
+                            @if (colorOptions.Count > 0)
+                            {
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="fw-semibold">Màu</div>
+                                        <div class="text-muted small" id="js-admin-selected-color">@((selectedVariant?.ColorName) ?? colorOptions[0].Name)</div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2" id="adminColorOptions">
+                                        @foreach (var c in colorOptions)
+                                        {
+                                            var isSelected = selectedColorId.HasValue && c.ColorId == selectedColorId.Value;
+                                            <button type="button"
+                                                    class="btn p-0 rounded-circle border @(isSelected ? "border-primary" : "border-light")"
+                                                    style="width: 38px; height: 38px; background:@c.Hex"
+                                                    data-color-id="@c.ColorId"
+                                                    data-color-text="@c.Name"
+                                                    aria-label="@c.Name"></button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            @if (sizeOptions.Count > 0)
+                            {
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="fw-semibold">Quy cách</div>
+                                        <div class="text-muted small" id="js-admin-selected-size">@((selectedVariant?.SizeName) ?? sizeOptions[0].Name)</div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2" id="adminSizeOptions">
+                                        @foreach (var s in sizeOptions)
+                                        {
+                                            var isSelected = selectedSizeId.HasValue && s.SizeId == selectedSizeId.Value;
+                                            <button type="button"
+                                                    class="btn btn-sm @(isSelected ? "btn-primary" : "btn-outline-primary")"
+                                                    data-size-id="@s.SizeId"
+                                                    data-size-text="@s.Name">@s.Name</button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="border rounded p-3 bg-light" style="--bs-bg-opacity: .35;">
+                                <div class="d-flex justify-content-between">
+                                    <div class="text-muted">SKU</div>
+                                    <div class="fw-semibold" id="js-admin-sku">@selectedVariant?.Sku</div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <div class="text-muted">Giá</div>
+                                    <div class="fw-semibold" id="js-admin-price">@selectedVariant?.Price.ToString("N0", viVn) VNĐ</div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <div class="text-muted">Giá sale</div>
+                                    <div class="fw-semibold" id="js-admin-sale">@((selectedVariant?.SalePrice.HasValue ?? false) ? selectedVariant!.SalePrice!.Value.ToString("N0", viVn) + " VNĐ" : "-")</div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <div class="text-muted">Tồn kho</div>
+                                    <div class="fw-semibold" id="js-admin-stock">@selectedVariant?.StockQuantity.ToString("N0", viVn)</div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <div class="text-muted">Trạng thái biến thể</div>
+                                    <div class="fw-semibold" id="js-admin-variant-active">@((selectedVariant?.IsActive ?? false) ? "Đang bán" : "Tạm tắt")</div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <a class="btn btn-outline-info w-100" asp-area="Admin" asp-controller="Products" asp-action="Reviews" asp-route-id="@Model.ProductId">Xem & trả lời đánh giá</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-desc" type="button" role="tab">Mô tả</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-variants" type="button" role="tab">Biến thể</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-sizeguide" type="button" role="tab">Size guide</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reviews" type="button" role="tab">Đánh giá</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content pt-3">
+                            <div class="tab-pane fade show active" id="tab-desc" role="tabpanel">
+                                @if (!string.IsNullOrWhiteSpace(Model.Description))
+                                {
+                                    <div class="text-muted" style="white-space: pre-line;">@Model.Description</div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted">Chưa có mô tả.</div>
+                                }
+
+                                <div class="text-muted small mt-3">
+                                    Tạo lúc: <span class="fw-semibold">@Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", viVn)</span> •
+                                    Cập nhật: <span class="fw-semibold">@Model.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", viVn)</span>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tab-variants" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>SKU</th>
+                                                <th>Màu</th>
+                                                <th>Quy cách</th>
+                                                <th class="text-end">Giá</th>
+                                                <th class="text-end">Sale</th>
+                                                <th class="text-end">Tồn kho</th>
+                                                <th>Trạng thái</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var v in variants)
+                                            {
+                                                <tr>
+                                                    <td class="fw-semibold">@v.Sku</td>
+                                                    <td>@(v.ColorName ?? "-")</td>
+                                                    <td>@(v.SizeName ?? "-")</td>
+                                                    <td class="text-end">@v.Price.ToString("N0", viVn)</td>
+                                                    <td class="text-end">@(v.SalePrice.HasValue ? v.SalePrice.Value.ToString("N0", viVn) : "-")</td>
+                                                    <td class="text-end">@v.StockQuantity.ToString("N0", viVn)</td>
+                                                    <td>
+                                                        @if (v.IsActive)
+                                                        {
+                                                            <span class="badge bg-success">Đang bán</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary">Tạm tắt</span>
+                                                        }
+                                                        @if (v.IsDefault)
+                                                        {
+                                                            <span class="badge bg-info ms-1">Mặc định</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="tab-sizeguide" role="tabpanel">
+                                @if (Model.SizeGuides == null || Model.SizeGuides.Count == 0)
+                                {
+                                    <div class="text-muted">Chưa có size guide.</div>
+                                }
+                                else
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-sm align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width: 110px;">Size</th>
+                                                    <th style="width: 170px;">Chiều cao</th>
+                                                    <th style="width: 170px;">Cân nặng</th>
+                                                    <th>Ghi chú</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var r in Model.SizeGuides)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@(r.SizeLabel ?? "-")</td>
+                                                        <td>@(r.HeightRange ?? "-")</td>
+                                                        <td>@(r.WeightRange ?? "-")</td>
+                                                        <td>@(r.Note ?? "-")</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="tab-pane fade" id="tab-reviews" role="tabpanel">
+                                @if (Model.ReviewCount <= 0)
+                                {
+                                    <div class="text-muted">Chưa có đánh giá.</div>
+                                }
+                                else
+                                {
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="text-muted">Hiển thị 5 đánh giá gần nhất</div>
+                                        <a class="btn btn-sm btn-outline-info" asp-area="Admin" asp-controller="Products" asp-action="Reviews" asp-route-id="@Model.ProductId">Xem tất cả</a>
+                                    </div>
+
+                                    <div class="list-group">
+                                        @foreach (var rv in (Model.RecentReviews ?? new List<DOAN_BANHANG.ViewModels.ProductAdminReviewItemVm>()))
+                                        {
+                                            <div class="list-group-item">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div class="fw-semibold">@rv.AuthorName</div>
+                                                    <div class="text-muted small">@rv.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", viVn)</div>
+                                                </div>
+                                                <div class="text-muted small">@(new string('★', Math.Clamp(rv.Rating, 1, 5)))</div>
+                                                @if (!string.IsNullOrWhiteSpace(rv.Comment))
+                                                {
+                                                    <div class="mt-1">@rv.Comment</div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const mainImg = document.getElementById('adminProductMainImg');
+            const thumbs = document.getElementById('adminProductThumbs');
+            if (!mainImg || !thumbs) return;
+
+            thumbs.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-img-src]');
+                if (!btn) return;
+                const src = btn.getAttribute('data-img-src');
+                if (!src) return;
+
+                mainImg.setAttribute('src', src);
+
+                for (const b of thumbs.querySelectorAll('button[data-img-src]')) {
+                    b.classList.toggle('border-primary', b === btn);
+                    b.classList.toggle('border-light', b !== btn);
+                }
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            const dataEl = document.getElementById('js-admin-product-variants');
+            if (!dataEl) return;
+
+            let variants = [];
+            try {
+                variants = JSON.parse(dataEl.textContent || '[]') || [];
+            } catch {
+                variants = [];
+            }
+            if (!Array.isArray(variants) || variants.length === 0) return;
+
+            const skuEl = document.getElementById('js-admin-sku');
+            const priceEl = document.getElementById('js-admin-price');
+            const saleEl = document.getElementById('js-admin-sale');
+            const stockEl = document.getElementById('js-admin-stock');
+            const activeEl = document.getElementById('js-admin-variant-active');
+
+            const selectedSizeTextEl = document.getElementById('js-admin-selected-size');
+            const selectedColorTextEl = document.getElementById('js-admin-selected-color');
+
+            const colorButtons = Array.from(document.querySelectorAll('#adminColorOptions button[data-color-id]'));
+            const sizeButtons = Array.from(document.querySelectorAll('#adminSizeOptions button[data-size-id]'));
+
+            const hasColorUi = colorButtons.length > 0;
+            const hasSizeUi = sizeButtons.length > 0;
+
+            const fmt = new Intl.NumberFormat('vi-VN');
+            const fmtVnd = (n) => `${fmt.format(n)} VNĐ`;
+
+            const asInt = (v) => {
+                const n = parseInt(String(v ?? '0'), 10);
+                return Number.isFinite(n) ? n : 0;
+            };
+
+            const asNum = (v) => {
+                const n = Number(v);
+                return Number.isFinite(n) ? n : null;
+            };
+
+            function setDisabled(btn, disabled) {
+                if (!btn) return;
+                btn.disabled = !!disabled;
+                btn.classList.toggle('opacity-50', !!disabled);
+            }
+
+            const state = {
+                colorId: hasColorUi ? asInt(colorButtons.find(b => b.classList.contains('border-primary'))?.dataset.colorId) || asInt(colorButtons[0]?.dataset.colorId) : 0,
+                sizeId: hasSizeUi ? asInt(sizeButtons.find(b => b.classList.contains('btn-primary'))?.dataset.sizeId) || asInt(sizeButtons[0]?.dataset.sizeId) : 0,
+            };
+
+            const findExactVariant = (colorId, sizeId) => {
+                return variants.find(v => {
+                    const okColor = !hasColorUi || asInt(v.colorId) === asInt(colorId);
+                    const okSize = !hasSizeUi || asInt(v.sizeId) === asInt(sizeId);
+                    return okColor && okSize;
+                }) || null;
+            };
+
+            const availableSizesForColor = (colorId) => {
+                const set = new Set();
+                variants.forEach(v => {
+                    if (asInt(v.colorId) === asInt(colorId) && asInt(v.sizeId)) set.add(asInt(v.sizeId));
+                });
+                return set;
+            };
+
+            const availableColorsForSize = (sizeId) => {
+                const set = new Set();
+                variants.forEach(v => {
+                    if (asInt(v.sizeId) === asInt(sizeId) && asInt(v.colorId)) set.add(asInt(v.colorId));
+                });
+                return set;
+            };
+
+            const syncOptionAvailability = () => {
+                if (hasColorUi && state.colorId) {
+                    const sizesOk = availableSizesForColor(state.colorId);
+                    for (const btn of sizeButtons) {
+                        const id = asInt(btn.dataset.sizeId);
+                        setDisabled(btn, !sizesOk.has(id));
+                    }
+                }
+
+                if (hasSizeUi && state.sizeId) {
+                    const colorsOk = availableColorsForSize(state.sizeId);
+                    for (const btn of colorButtons) {
+                        const id = asInt(btn.dataset.colorId);
+                        setDisabled(btn, !colorsOk.has(id));
+                    }
+                }
+            };
+
+            const selectColorUi = (colorId) => {
+                state.colorId = asInt(colorId);
+                for (const btn of colorButtons) {
+                    const isSelected = asInt(btn.dataset.colorId) === state.colorId;
+                    btn.classList.toggle('border-primary', isSelected);
+                    btn.classList.toggle('border-light', !isSelected);
+                    if (isSelected && selectedColorTextEl) {
+                        selectedColorTextEl.textContent = (btn.dataset.colorText || '').toString();
+                    }
+                }
+            };
+
+            const selectSizeUi = (sizeId) => {
+                state.sizeId = asInt(sizeId);
+                for (const btn of sizeButtons) {
+                    const isSelected = asInt(btn.dataset.sizeId) === state.sizeId;
+                    btn.classList.toggle('btn-primary', isSelected);
+                    btn.classList.toggle('btn-outline-primary', !isSelected);
+                    if (isSelected && selectedSizeTextEl) {
+                        selectedSizeTextEl.textContent = (btn.dataset.sizeText || '').toString();
+                    }
+                }
+            };
+
+            const ensureValidSelection = () => {
+                if (hasColorUi && !state.colorId) {
+                    const first = colorButtons.find(b => !b.disabled);
+                    if (first) selectColorUi(asInt(first.dataset.colorId));
+                }
+
+                if (hasSizeUi && !state.sizeId) {
+                    const first = sizeButtons.find(b => !b.disabled);
+                    if (first) selectSizeUi(asInt(first.dataset.sizeId));
+                }
+
+                const isValid = findExactVariant(state.colorId, state.sizeId);
+                if (isValid) return;
+
+                const sorted = variants
+                    .slice()
+                    .sort((a, b) => {
+                        const sa = asInt(a.stockQuantity) > 0 ? 0 : 1;
+                        const sb = asInt(b.stockQuantity) > 0 ? 0 : 1;
+                        if (sa !== sb) return sa - sb;
+                        return (asNum(a.price) ?? 0) - (asNum(b.price) ?? 0);
+                    });
+
+                const first = sorted[0] || null;
+                if (!first) return;
+
+                if (hasColorUi && asInt(first.colorId)) selectColorUi(asInt(first.colorId));
+                if (hasSizeUi && asInt(first.sizeId)) selectSizeUi(asInt(first.sizeId));
+            };
+
+            const updateDisplayedInfo = () => {
+                const v = findExactVariant(state.colorId, state.sizeId);
+                if (!v) return;
+
+                if (skuEl) skuEl.textContent = String(v.sku || '-');
+                if (priceEl) priceEl.textContent = fmtVnd(asNum(v.price) ?? 0);
+                if (saleEl) saleEl.textContent = (v.salePrice != null) ? fmtVnd(asNum(v.salePrice) ?? 0) : '-';
+                if (stockEl) stockEl.textContent = fmt.format(asInt(v.stockQuantity));
+                if (activeEl) activeEl.textContent = (v.isActive ? 'Đang bán' : 'Tạm tắt');
+
+                if (selectedSizeTextEl && v.sizeLabel) selectedSizeTextEl.textContent = String(v.sizeLabel);
+                if (selectedColorTextEl && v.color) selectedColorTextEl.textContent = String(v.color);
+            };
+
+            for (const btn of colorButtons) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (btn.disabled) return;
+                    const colorId = asInt(btn.dataset.colorId);
+                    if (!colorId) return;
+                    selectColorUi(colorId);
+                    syncOptionAvailability();
+                    ensureValidSelection();
+                    updateDisplayedInfo();
+                });
+            }
+
+            for (const btn of sizeButtons) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (btn.disabled) return;
+                    const sizeId = asInt(btn.dataset.sizeId);
+                    if (!sizeId) return;
+                    selectSizeUi(sizeId);
+                    syncOptionAvailability();
+                    ensureValidSelection();
+                    updateDisplayedInfo();
+                });
+            }
+
+            syncOptionAvailability();
+            ensureValidSelection();
+            updateDisplayedInfo();
+        })();
+    </script>
+}

@@ -1,0 +1,97 @@
+@model IReadOnlyList<DOAN_BANHANG.Models.Category>
+
+@functions {
+  private static string IconUrl(DOAN_BANHANG.Models.Category item)
+  {
+    var name = (item.Name ?? string.Empty).Trim().ToLowerInvariant();
+    var slug = (item.Slug ?? string.Empty).Trim().ToLowerInvariant();
+
+    // Prefer explicit slug mapping (stable even if Name changes).
+    // These icon files exist in wwwroot/assets/images/.
+    if (slug == "menu-thoi-trang-nam") return "assets/images/category_list_icon_1.png";
+    if (slug == "menu-thoi-trang-nu") return "assets/images/category_list_icon_2.png";
+    if (slug == "menu-thoi-trang-tre-em") return "assets/images/category_list_icon_3.png";
+    if (slug == "menu-bo-suu-tap-denim") return "assets/images/category_list_icon_4.png";
+    if (slug == "menu-thoi-trang-au-my") return "assets/images/category_list_icon_5.png";
+    if (slug == "menu-do-the-thao") return "assets/images/category_list_icon_6.png";
+    if (slug == "menu-giay-dep") return "assets/images/category_list_icon_7.png";
+    if (slug == "menu-trang-suc-thoi-trang") return "assets/images/category_list_icon_8.png";
+    if (slug == "menu-lam-dep-my-pham") return "assets/images/category_list_icon_9.png";
+
+    // Use existing assets in this project.
+    // Feel free to replace these mappings with your own icons.
+    // Fallback heuristics for non-template data
+    if (name.Contains("nam") || name.Contains("men") || slug.Contains("men")) return "assets/images/category_list_icon_1.png";
+    if (name.Contains("nữ") || name.Contains("nu") || name.Contains("women") || slug.Contains("women")) return "assets/images/category_list_icon_2.png";
+    if (name.Contains("trẻ") || name.Contains("tre") || name.Contains("kid") || name.Contains("kids") || slug.Contains("kid")) return "assets/images/category_list_icon_3.png";
+    if (name.Contains("denim") || slug.Contains("denim")) return "assets/images/category_list_icon_4.png";
+    if (name.Contains("âu") || name.Contains("au") || name.Contains("western") || slug.Contains("western")) return "assets/images/category_list_icon_5.png";
+    if (name.Contains("sport") || name.Contains("thể thao") || name.Contains("the thao") || slug.Contains("sport")) return "assets/images/category_list_icon_6.png";
+    if (name.Contains("giày") || name.Contains("giay") || name.Contains("shoe") || name.Contains("footwear") || slug.Contains("shoe")) return "assets/images/category_list_icon_7.png";
+
+    return "assets/images/category_list_icon_8.png";
+  }
+}
+
+@{
+  string Href(DOAN_BANHANG.Models.Category item)
+  {
+    if (string.IsNullOrWhiteSpace(item.Slug)) return "#";
+    return Url.RouteUrl("category", new { slug = item.Slug }) ?? "#";
+  }
+}
+
+@foreach (var level1 in Model)
+{
+  var hasChildren = level1.Children.Count > 0;
+  <li class="py-[9px] group @(hasChildren ? "relative" : "")">
+    <a href="@Href(level1)" class="flex items-center gap-x-2 relative text-light-primary-text group-hover:text-primary">
+      <span class="w-8 h-8 bg-primary-lighter inline-flex items-center justify-center rounded-full overflow-hidden">
+        <img src="@IconUrl(level1)" alt="category" class="w-5 h-5 object-contain" />
+      </span>
+      @level1.Name
+
+      @if (hasChildren)
+      {
+        <span class="absolute right-0 top-1/2 -translate-y-1/2">
+          <i class="hgi hgi-stroke hgi-arrow-right-01 text-lg text-light-primary-text"></i>
+        </span>
+      }
+    </a>
+
+    @if (hasChildren)
+    {
+      <ul class="menu_cat_droapdown absolute left-full top-0 z-60 w-[250px] max-w-[250px] bg-white rounded-2xl divide-y divide-gray-300 shadow-dark-z-24 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
+        @foreach (var level2 in level1.Children)
+        {
+          var hasChildren2 = level2.Children.Count > 0;
+          <li class="py-[9px] px-4 group/item @(hasChildren2 ? "relative" : "")">
+            <a href="@Href(level2)" class="flex items-center gap-x-2 relative text-light-primary-text group-hover/item:text-primary">
+              @level2.Name
+              @if (hasChildren2)
+              {
+                <span class="absolute right-0 top-1/2 -translate-y-1/2">
+                  <i class="hgi hgi-stroke hgi-arrow-right-01 text-lg text-light-primary-text"></i>
+                </span>
+              }
+            </a>
+
+            @if (hasChildren2)
+            {
+              <ul class="sub_category absolute left-full top-0 z-60 w-[250px] max-w-[250px] bg-white rounded-2xl divide-y divide-gray-300 shadow-dark-z-24 opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-300 transform translate-x-4 group-hover/item:translate-x-0">
+                @foreach (var level3 in level2.Children)
+                {
+                  <li class="py-[9px] px-4">
+                    <a href="@Href(level3)" class="flex items-center gap-x-2 relative text-light-primary-text hover:text-primary">
+                      @level3.Name
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </li>
+}

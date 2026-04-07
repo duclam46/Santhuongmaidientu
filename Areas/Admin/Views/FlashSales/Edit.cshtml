@@ -1,0 +1,497 @@
+@model DOAN_BANHANG.ViewModels.ProductAdminFlashSaleVm
+
+@{
+    ViewData["Title"] = "Sửa Flash Sale";
+    var totalVariants = Model.Variants?.Count ?? 0;
+    var selectedVariants = Model.Variants?.Count(v => v.IsOnSale) ?? 0;
+    var activeVariants = Model.Variants?.Count(v => v.IsActive) ?? 0;
+    var configuredSelectedVariants = Model.Variants?.Count(v => v.IsOnSale && v.SalePrice.HasValue && v.SaleStartDate.HasValue && v.SaleEndDate.HasValue) ?? 0;
+}
+
+<style>
+    .flashsale-page-title {
+        background: var(--bs-body-bg);
+    }
+
+    .flashsale-stats-card {
+        background: var(--bs-body-bg);
+    }
+
+    .flashsale-table-wrap {
+        max-height: 560px;
+        overflow: auto;
+        border-color: var(--bs-border-color-translucent) !important;
+    }
+
+    .flashsale-table {
+        margin-bottom: 0;
+        table-layout: fixed;
+        width: 100%;
+        min-width: 1220px;
+    }
+
+    .flashsale-table th,
+    .flashsale-table td {
+        padding-top: .5rem;
+        padding-bottom: .5rem;
+    }
+
+    .flashsale-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--bs-tertiary-bg);
+        font-weight: 600;
+        font-size: 0.78rem;
+        letter-spacing: 0.2px;
+        border-bottom-width: 2px;
+        border-top: 0;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .flashsale-table thead th .form-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .35rem;
+    }
+
+    .flashsale-table.table-bordered {
+        border-color: var(--bs-border-color-translucent) !important;
+        border-top: 0 !important;
+    }
+
+    .flashsale-table.table-bordered thead tr:first-child th {
+        border-top: 0 !important;
+    }
+
+    /* Subtle grid lines for each cell */
+    .flashsale-table.table-bordered > :not(caption) > * > * {
+        border-color: var(--bs-border-color-translucent) !important;
+    }
+
+    .flashsale-badges {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: .25rem;
+    }
+
+    .flashsale-table th:nth-child(5),
+    .flashsale-table td:nth-child(5),
+    .flashsale-table th:nth-child(6),
+    .flashsale-table td:nth-child(6),
+    .flashsale-table th:nth-child(7),
+    .flashsale-table td:nth-child(7) {
+        padding-left: .85rem;
+    }
+
+    .flashsale-table td {
+        font-size: 0.875rem;
+    }
+
+    .flashsale-table .form-control,
+    .flashsale-table .input-group-text {
+        font-size: 0.875rem;
+    }
+
+    .flashsale-table .input-group-text {
+        width: 40px;
+        justify-content: center;
+        background: var(--bs-body-bg);
+        color: var(--bs-secondary-color);
+    }
+
+    .flashsale-table .input-group {
+        width: 100%;
+        flex-wrap: nowrap;
+    }
+
+    .flashsale-variant-label {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .flashsale-table .form-control {
+        background-clip: padding-box;
+    }
+
+    .flashsale-table tbody tr:hover > td {
+        background: var(--bs-tertiary-bg);
+    }
+
+    .sale-row--inactive {
+        color: var(--bs-secondary-color);
+    }
+
+    .sale-row--selected {
+        box-shadow: inset 4px 0 0 var(--bs-primary);
+    }
+
+    .sale-row--selected > td {
+        background: var(--bs-primary-bg-subtle) !important;
+        border-color: rgba(var(--bs-white-rgb), .35) !important;
+    }
+
+    .sale-row--selected:hover > td {
+        background: var(--bs-primary-bg-subtle) !important;
+    }
+
+    .flashsale-input:disabled {
+        background-color: var(--bs-secondary-bg);
+        opacity: 1;
+    }
+
+    .flashsale-input {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .flashsale-input[type="datetime-local"] {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .flashsale-table .text-nowrap {
+        white-space: nowrap;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box">
+            <div class="bg-light border rounded-3 p-3 flashsale-page-title">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h4 class="mb-1"><i class="bx bx-bolt-circle me-1"></i>Sửa Flash Sale</h4>
+                        <div class="text-muted small">Chỉnh theo từng biến thể • sản phẩm: <span class="fw-semibold">@Model.ProductName</span></div>
+                    </div>
+
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="FlashSales" asp-action="Index">Flash Sale</a></li>
+                        <li class="breadcrumb-item active">Sửa</li>
+                    </ol>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-2">
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-3 py-2">
+                            <i class="bx bx-layer me-1"></i>@totalVariants biến thể
+                        </span>
+                        <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill px-3 py-2" id="js-selected-badge">
+                            <i class="bx bx-purchase-tag me-1"></i>Đang chọn: @selectedVariants
+                        </span>
+                    </div>
+
+                    <a asp-area="Admin" asp-controller="FlashSales" asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bx bx-arrow-back me-1"></i>Quay lại
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["AdminToast"] is string msg && !string.IsNullOrWhiteSpace(msg))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bx bx-check-circle me-1"></i>@msg
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary rounded-top-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar-xs">
+                            <span class="avatar-title rounded-circle bg-primary text-white">
+                                <i class="bx bx-slider-alt"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Thiết lập theo biến thể</h5>
+                            <div class="text-muted small">Tick “Sale” để bật • bỏ tick để tắt (tự xóa giá/thời gian)</div>
+                        </div>
+                    </div>
+                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">
+                        <i class="bx bx-check-circle me-1 text-success"></i>@activeVariants / @totalVariants active
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 rounded-3 border flashsale-stats-card h-100">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small">Tổng biến thể</div>
+                                    <div class="fs-4 fw-bold text-primary">@totalVariants</div>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-3 py-2">
+                                    <i class="bx bx-layer"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 rounded-3 border flashsale-stats-card h-100">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small">Đang chọn (Sale)</div>
+                                    <div class="fs-4 fw-bold text-danger" id="js-selected-count">@selectedVariants</div>
+                                </div>
+                                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill px-3 py-2">
+                                    <i class="bx bx-purchase-tag"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-3 rounded-3 border flashsale-stats-card h-100">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="text-muted small">Đã cấu hình đủ</div>
+                                    <div class="fs-4 fw-bold text-success" id="js-configured-count">@configuredSelectedVariants</div>
+                                </div>
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-3 py-2">
+                                    <i class="bx bx-check-shield"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info d-flex align-items-start gap-2" role="alert">
+                    <i class="bx bx-info-circle mt-1"></i>
+                    <div>
+                        <div class="fw-semibold mb-1">Lưu ý hiển thị</div>
+                        <div class="text-muted">Chỉ biến thể có đủ <strong>Giá sale + Bắt đầu + Kết thúc</strong> mới xuất hiện ở danh sách Flash Sale.</div>
+                        <div class="mt-2">
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Đủ cấu hình</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1">Thiếu thông tin</span>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle ms-1">Inactive</span>
+                        </div>
+                    </div>
+                </div>
+
+                <form asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ProductId" />
+                    <input type="hidden" asp-for="ProductName" />
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        @Html.ValidationSummary(excludePropertyErrors: false, message: null, htmlAttributes: new { @class = "alert alert-danger" })
+                    }
+
+                    <div class="table-responsive border rounded-3 flashsale-table-wrap">
+                        <table class="table table-bordered table-hover table-nowrap align-middle table-sm flashsale-table">
+                            <colgroup>
+                                <col style="width:70px" />
+                                <col style="width:100px" />
+                                <col style="width:220px" />
+                                <col style="width:140px" />
+                                <col style="width:200px" />
+                                <col style="width:245px" />
+                                <col style="width:245px" />
+                            </colgroup>
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 70px;">
+                                        <div class="form-check m-0">
+                                            <input class="form-check-input" type="checkbox" id="js-sale-select-all" />
+                                            <label class="form-check-label" for="js-sale-select-all">Sale</label>
+                                        </div>
+                                    </th>
+                                    <th style="width: 90px;"><i class="bx bx-hash text-muted me-1"></i>Variant</th>
+                                    <th><i class="bx bx-palette text-muted me-1"></i>Thuộc tính</th>
+                                    <th class="text-nowrap text-center"><i class="bx bx-money text-muted me-1"></i>Giá gốc</th>
+                                    <th class="text-nowrap"><i class="bx bx-badge-check text-muted me-1"></i>Giá sale</th>
+                                    <th class="text-nowrap"><i class="bx bx-time-five text-muted me-1"></i>Bắt đầu</th>
+                                    <th class="text-nowrap"><i class="bx bx-time-five text-muted me-1"></i>Kết thúc</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < Model.Variants.Count; i++)
+                                {
+                                    var row = Model.Variants[i];
+                                    var isConfigured = row.SalePrice.HasValue && row.SaleStartDate.HasValue && row.SaleEndDate.HasValue;
+                                    <tr class="js-sale-row @(row.IsOnSale ? "sale-row--selected" : "") @(!row.IsActive ? "sale-row--inactive" : "")">
+                                        <td>
+                                            <div class="form-check m-0">
+                                                <input class="form-check-input js-sale-toggle" type="checkbox" id="sale_@i" name="Variants[@i].IsOnSale" value="true" @(row.IsOnSale ? "checked" : "") />
+                                                <label class="form-check-label" for="sale_@i"></label>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold">#@row.VariantId</div>
+                                            <input type="hidden" name="Variants[@i].VariantId" value="@row.VariantId" />
+                                            <input type="hidden" name="Variants[@i].VariantLabel" value="@row.VariantLabel" />
+                                            <input type="hidden" name="Variants[@i].Price" value="@row.Price" />
+                                            <input type="hidden" name="Variants[@i].IsActive" value="@(row.IsActive ? "true" : "false")" />
+                                        </td>
+                                        <td>
+                                            <div class="fw-medium flashsale-variant-label" title="@row.VariantLabel">@row.VariantLabel</div>
+                                            <div class="mt-1 flashsale-badges">
+                                                @if (row.IsActive)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">Inactive</span>
+                                                }
+                                                @if (row.IsOnSale)
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">On Sale</span>
+                                                }
+                                                @if (row.IsOnSale && !isConfigured)
+                                                {
+                                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Thiếu thông tin</span>
+                                                }
+                                                @if (row.IsOnSale && isConfigured)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Đủ cấu hình</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="fw-semibold">@row.Price.ToString("n0")</span>
+                                            <span class="text-muted ms-1">đ</span>
+                                        </td>
+                                        <td>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="bx bx-money"></i></span>
+                                                <input class="form-control form-control-sm text-end js-sale-input flashsale-input" type="number" step="0.01" min="0" placeholder="Giá sale" name="Variants[@i].SalePrice" value="@(row.SalePrice?.ToString("0.##") ?? "")" @(row.IsOnSale ? "" : "disabled") />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="bx bx-time-five"></i></span>
+                                                <input class="form-control form-control-sm js-sale-input flashsale-input" type="datetime-local" name="Variants[@i].SaleStartDate" value="@(row.SaleStartDate?.ToString("yyyy-MM-ddTHH:mm") ?? "")" @(row.IsOnSale ? "" : "disabled") />
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="bx bx-time-five"></i></span>
+                                                <input class="form-control form-control-sm js-sale-input flashsale-input" type="datetime-local" name="Variants[@i].SaleEndDate" value="@(row.SaleEndDate?.ToString("yyyy-MM-ddTHH:mm") ?? "")" @(row.IsOnSale ? "" : "disabled") />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                        <div class="text-muted small">
+                            <i class="bx bx-time-five me-1"></i>
+                            Thời gian hiển thị theo giờ local (datetime-local)
+                        </div>
+                        <button type="submit" class="btn btn-primary bg-gradient">
+                            <i class="bx bx-save me-1"></i>Lưu Flash Sale
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const selectAll = document.getElementById('js-sale-select-all');
+            const toggles = Array.from(document.querySelectorAll('.js-sale-toggle'));
+            const selectedBadge = document.getElementById('js-selected-badge');
+            const selectedCount = document.getElementById('js-selected-count');
+            const configuredCount = document.getElementById('js-configured-count');
+
+            function setRowEnabled(toggleEl, enabled, clear) {
+                const tr = toggleEl.closest('tr');
+                if (!tr) return;
+
+                const inputs = Array.from(tr.querySelectorAll('.js-sale-input'));
+                inputs.forEach(input => {
+                    input.disabled = !enabled;
+                    if (!enabled && clear) {
+                        input.value = '';
+                    }
+                });
+
+                tr.classList.toggle('sale-row--selected', enabled);
+            }
+
+            function updateSelectedBadge() {
+                if (!selectedBadge) return;
+                const count = toggles.filter(t => t.checked).length;
+                selectedBadge.innerHTML = '<i class="bx bx-purchase-tag me-1"></i>Đang chọn: ' + count;
+
+                if (selectedCount) selectedCount.textContent = count;
+
+                if (configuredCount) {
+                    const configured = toggles
+                        .filter(t => t.checked)
+                        .filter(t => {
+                            const tr = t.closest('tr');
+                            if (!tr) return false;
+
+                            const inputs = Array.from(tr.querySelectorAll('.js-sale-input'));
+                            // order: SalePrice, SaleStartDate, SaleEndDate
+                            const salePrice = inputs[0]?.value?.trim();
+                            const start = inputs[1]?.value?.trim();
+                            const end = inputs[2]?.value?.trim();
+                            return !!salePrice && !!start && !!end;
+                        }).length;
+                    configuredCount.textContent = configured;
+                }
+            }
+
+            function syncSelectAllState() {
+                if (!selectAll) return;
+                if (toggles.length === 0) {
+                    selectAll.checked = false;
+                    selectAll.indeterminate = false;
+                    return;
+                }
+
+                const checkedCount = toggles.filter(t => t.checked).length;
+                selectAll.indeterminate = checkedCount > 0 && checkedCount < toggles.length;
+                selectAll.checked = checkedCount === toggles.length;
+            }
+
+            // Init
+            toggles.forEach(t => setRowEnabled(t, t.checked, false));
+            syncSelectAllState();
+            updateSelectedBadge();
+
+            // Per-row toggle
+            toggles.forEach(t => {
+                t.addEventListener('change', function () {
+                    setRowEnabled(t, t.checked, !t.checked);
+                    syncSelectAllState();
+                    updateSelectedBadge();
+                });
+            });
+
+            // Select all
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    toggles.forEach(t => {
+                        t.checked = selectAll.checked;
+                        setRowEnabled(t, t.checked, !t.checked);
+                    });
+                    syncSelectAllState();
+                    updateSelectedBadge();
+                });
+            }
+        })();
+    </script>
+}

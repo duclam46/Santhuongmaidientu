@@ -1,0 +1,448 @@
+@model DOAN_BANHANG.ViewModels.MyOrderDetailsPageVm
+
+@{
+  ViewData["Title"] = "Chi tiết đơn hàng";
+
+  string FormatVnd(decimal amount)
+  {
+    return string.Format("{0:N0}đ", amount);
+  }
+
+  (string label, string pillClass) ResolveOrderStatusPill(string? rawStatus)
+  {
+    var s = (rawStatus ?? string.Empty).Trim();
+    var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
+
+    const string basePill = "inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold leading-5";
+
+    return norm switch
+    {
+      "pendingconfirmation" or "waitconfirm" or "waitingconfirm" or "confirming" or "pending" or "confirmationpending" or "processing" or "inprocess" or "inprocessing" or "chờxácnhận" or "choxacnhan" => (
+        "Chờ xác nhận",
+        $"{basePill} bg-warning-light text-warning-dark"
+      ),
+      "awaitingpickup" or "waitpickup" or "waitingpickup" or "readytopick" or "pickup" or "chờlấyhàng" or "cholayhang" or "confirmed" or "accepted" or "đãxácnhận" or "daxacnhan" => (
+        "Chờ lấy hàng",
+        $"{basePill} bg-warning-light text-warning-dark"
+      ),
+      "shipping" or "delivering" or "intransit" or "đanggiao" or "danggiao" => (
+        "Đang giao",
+        $"{basePill} bg-primary/8 text-primary"
+      ),
+      "completed" or "success" or "hoàntất" or "hoantat" => (
+        "Hoàn tất",
+        $"{basePill} bg-success-light text-success-dark"
+      ),
+      "delivered" or "deliverysuccess" or "dagiao" or "đãgiao" => (
+        "Đã giao",
+        $"{basePill} bg-success-light text-success-dark"
+      ),
+      "returned" or "return" or "refund" or "returnrequest" or "returning" or "trahang" or "trảhàng" => (
+        "Trả hàng",
+        $"{basePill} bg-warning-light text-warning-dark"
+      ),
+      "rejected" or "cancelled" or "canceled" or "cancel" or "đãhủy" or "dahuy" => (
+        "Đã hủy",
+        $"{basePill} bg-error-light text-error-dark"
+      ),
+      _ => (
+        "Chờ xác nhận",
+        $"{basePill} bg-warning-light text-warning-dark"
+      )
+    };
+  }
+
+  string ResolvePaymentBadge(string? rawPaymentStatus)
+  {
+    var s = (rawPaymentStatus ?? string.Empty).Trim();
+    var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
+    return norm is "paid" or "success" or "completed" ? "(Đã thanh toán)" : "(Chưa thanh toán)";
+  }
+
+  var order = Model.Order;
+}
+
+<section class="pb-[90px]">
+  <div class="container">
+    <div class="breadcrumb pt-12">
+      <ul>
+        <li>
+          <a href='@Url.Action("Index", "Home")'>
+            <span class="inline-flex items-center justify-center">
+              <i class="hgi hgi-stroke hgi-home-01 text-2xl leading-6"></i>
+            </span>
+            Trang chủ
+          </a>
+        </li>
+        <li class="text-light-disabled-text">&#8226;</li>
+        <li>
+          <a href='@Url.Action("Orders", "Account")'><span class="text-sm leading-[22px]">Đơn hàng</span></a>
+        </li>
+        <li class="text-light-disabled-text">&#8226;</li>
+        <li><span class="text-sm leading-[22px]">Chi tiết</span></li>
+      </ul>
+    </div>
+
+    <div class="border border-gray-300 rounded-2xl p-6 lg:p-8 mt-6">
+      @if (TempData["AccountSuccess"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
+      {
+        <div class="mb-6 p-4 rounded-2xl bg-success-light text-light-primary-text">@okMsg</div>
+      }
+      @if (TempData["AccountError"] is string errMsg && !string.IsNullOrWhiteSpace(errMsg))
+      {
+        <div class="mb-6 p-4 rounded-2xl bg-warning-light text-light-primary-text">@errMsg</div>
+      }
+
+      @if (!Model.IsSignedIn)
+      {
+        <h4 class="pb-3">Bạn chưa đăng nhập</h4>
+        <p class="text-light-secondary-text pb-6">Vui lòng đăng nhập để xem chi tiết đơn hàng.</p>
+        <a href="#" class="btn btn-primary login-page-btn">Đăng nhập</a>
+      }
+      else if (order is null)
+      {
+        <h4 class="pb-3">Không tìm thấy đơn hàng</h4>
+        <a class="btn btn-default outline" href='@Url.Action("Orders", "Account")'>Quay lại</a>
+      }
+      else
+      {
+        var statusUi = ResolveOrderStatusPill(order.OrderStatus);
+        var raw = (order.OrderStatus ?? string.Empty).Trim();
+        var norm = raw.Replace(" ", string.Empty).ToLowerInvariant();
+
+        var canCancel = norm switch
+        {
+          // Pending confirmation
+          "pendingconfirmation" or "waitconfirm" or "waitingconfirm" or "confirming" or "pending" or "confirmationpending" or "processing" or "inprocess" or "inprocessing" or "chờxácnhận" or "choxacnhan" => true,
+          // Awaiting pickup (before carrier pickup)
+          "awaitingpickup" or "waitpickup" or "waitingpickup" or "readytopick" or "pickup" or "chờlấyhàng" or "cholayhang" or "confirmed" or "accepted" or "đãxácnhận" or "daxacnhan" => true,
+          _ => false
+        };
+
+        <div class="rounded-2xl border border-gray-300 overflow-hidden">
+          <div class="p-6 lg:p-8 bg-primary/8 border-b border-gray-300">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h3 class="text-light-primary-text">Đơn hàng #@(!string.IsNullOrWhiteSpace(order.OrderCode) ? order.OrderCode : order.Id.ToString())</h3>
+                <div class="text-light-secondary-text text-sm mt-1">
+                  Đặt lúc @order.CreatedAt.ToLocalTime().ToString("HH:mm, dd/MM/yyyy")
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="@statusUi.pillClass">@statusUi.label</span>
+                @if (canCancel)
+                {
+                  <form method="post" action="/my-orders/cancel" class="inline-flex" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" value="@order.Id" />
+                    <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                    <button type="submit" class="btn btn-small py-[7px] px-3 text-xs leading-[18px] font-semibold rounded-[90px] shadow-none bg-error text-white ring-1 ring-inset ring-error-dark/20">
+                      Hủy đơn
+                    </button>
+                  </form>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 grid-cols-1 gap-6 mt-6">
+          <div class="col-span-1">
+            <div class="border border-gray-300 rounded-2xl overflow-hidden">
+              <div class="px-6 py-4 bg-success-light border-b border-gray-300">
+                <div class="flex items-center justify-between gap-3">
+                  <h4 class="text-light-primary-text">Sản phẩm</h4>
+                  <span class="text-xs font-semibold rounded-full px-3 py-1 bg-white/70 text-success-dark ring-1 ring-inset ring-success-dark/10">@order.Items.Count mục</span>
+                </div>
+              </div>
+              <div class="p-6">
+
+                <div class="overflow-x-auto">
+                  <table class="w-full">
+                  <thead>
+                    <tr class="border-b border-gray-300">
+                      <th class="text-left py-3 px-2 text-sm text-light-secondary-text font-medium">Tên</th>
+                      <th class="text-left py-3 px-2 text-sm text-light-secondary-text font-medium">Phân loại</th>
+                      <th class="text-right py-3 px-2 text-sm text-light-secondary-text font-medium">Đơn giá</th>
+                      <th class="text-right py-3 px-2 text-sm text-light-secondary-text font-medium">SL</th>
+                      <th class="text-right py-3 px-2 text-sm text-light-secondary-text font-medium">Thành tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach (var i in order.Items)
+                    {
+                      var variant = string.Join(" - ", new[] { i.ColorName, i.SizeName }.Where(x => !string.IsNullOrWhiteSpace(x)));
+                      <tr class="border-b border-gray-300 hover:bg-gray-200/40">
+                        <td class="py-3 px-2">
+                          <div class="text-light-primary-text font-semibold">@i.ProductName</div>
+                        </td>
+                        <td class="py-3 px-2">
+                          <div class="text-light-secondary-text text-sm">@(string.IsNullOrWhiteSpace(variant) ? "-" : variant)</div>
+                        </td>
+                        <td class="py-3 px-2 text-right text-light-primary-text font-semibold">@FormatVnd(i.UnitPrice)</td>
+                        <td class="py-3 px-2 text-right text-light-primary-text">@i.Quantity</td>
+                        <td class="py-3 px-2 text-right text-light-primary-text font-semibold">@FormatVnd(i.LineTotal)</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              </div>
+            </div>
+
+            <div class="border border-gray-300 rounded-2xl overflow-hidden mt-6">
+              <div class="px-6 py-4 bg-warning-light border-b border-gray-300">
+                <div class="flex items-center justify-between gap-3">
+                  <h4 class="text-light-primary-text">Thanh toán</h4>
+                  <span class="text-xs font-semibold rounded-full px-3 py-1 bg-white/70 text-warning-dark ring-1 ring-inset ring-warning-dark/10">@order.PaymentMethod</span>
+                </div>
+              </div>
+              <div class="p-6">
+                <div class="rounded-2xl border border-gray-300 bg-white/60 overflow-hidden">
+                  <div class="px-5 py-4">
+                    <div class="flex flex-col gap-y-3">
+                      <div class="flex items-center justify-between">
+                        <span class="text-light-secondary-text">Tạm tính</span>
+                        <span class="text-light-primary-text font-semibold">@FormatVnd(order.SubTotal)</span>
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span class="text-light-secondary-text">Phí vận chuyển</span>
+                        <span class="text-light-primary-text font-semibold">@(order.ShippingFee <= 0 ? "Miễn phí" : FormatVnd(order.ShippingFee))</span>
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span class="text-light-secondary-text">Giảm giá</span>
+                        <span class="text-light-primary-text font-semibold">@FormatVnd(order.DiscountAmount)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="border-t border-gray-300 px-5 py-4 bg-warning-light/60">
+                    <div class="flex items-start justify-between gap-3">
+                      <div>
+                        <div class="text-light-secondary-text text-sm">Tổng thanh toán</div>
+                        <div class="text-light-primary-text font-bold text-lg">@FormatVnd(order.FinalAmount)</div>
+                      </div>
+                      <div class="mt-1">
+                        <span class="inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold leading-5 bg-white/70 text-primary ring-1 ring-inset ring-primary/10">
+                          @ResolvePaymentBadge(order.PaymentStatus)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-span-1">
+            <div class="border border-gray-300 rounded-2xl overflow-hidden">
+              <div class="px-6 py-4 bg-primary/8 border-b border-gray-300">
+                <h4 class="text-light-primary-text">Giao hàng</h4>
+              </div>
+              <div class="p-6">
+                <div class="grid grid-cols-1 gap-4">
+                  <div>
+                    <div class="text-light-secondary-text text-sm">Người nhận</div>
+                    <div class="text-light-primary-text font-semibold">@order.RecipientName</div>
+                  </div>
+
+                  <div>
+                    <div class="text-light-secondary-text text-sm">Số điện thoại</div>
+                    <div class="text-light-primary-text font-semibold">@order.RecipientPhone</div>
+                  </div>
+
+                  <div>
+                    <div class="text-light-secondary-text text-sm">Địa chỉ</div>
+                    <div class="text-light-primary-text font-semibold">@order.ShippingAddress</div>
+                  </div>
+
+                  <div class="border-t border-gray-300 pt-4">
+                    <div class="flex items-center justify-between text-sm">
+                      <span class="text-light-secondary-text">Dự kiến giao</span>
+                      <span class="text-light-primary-text font-semibold">@(order.EstimatedDeliveryAt.HasValue ? order.EstimatedDeliveryAt.Value.ToLocalTime().ToString("HH:mm, dd/MM/yyyy") : "(chưa có)")</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm mt-2">
+                      <span class="text-light-secondary-text">Mã vận đơn GHN</span>
+                      <span class="text-light-primary-text font-semibold">@(string.IsNullOrWhiteSpace(order.TrackingCode) ? "(chưa có)" : order.TrackingCode)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="order-history-table-wrapper border-gray-300 rounded-2xl border overflow-hidden mt-6">
+              <table class="w-full order-history-table">
+                <thead>
+                  <tr class="border-b border-gray-300">
+                    <th class="text-left py-4 px-6 lg:text-xl lg:leading-[30px] text-lg leading-7 font-bold text-light-primary-text bg-gray-200">
+                      Trạng thái đơn hàng
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="lg:px-6 px-4 pb-6 pt-10">
+                      @{
+                        bool ContainsAny(string? source, params string[] tokens)
+                        {
+                          if (string.IsNullOrWhiteSpace(source)) return false;
+                          var s = source.Trim().ToLowerInvariant();
+                          return tokens.Any(t => s.Contains(t));
+                        }
+
+                        var statusRaw = (order.OrderStatus ?? string.Empty).Trim();
+                        var statusNorm = statusRaw.Replace(" ", string.Empty).ToLowerInvariant();
+
+                        var logsAsc = (order.TrackingLogs ?? new List<DOAN_BANHANG.ViewModels.CustomerOrderTrackingLogVm>())
+                          .OrderBy(x => x.CreatedAt)
+                          .ToList();
+
+                        DateTime? firstRealLogAt = logsAsc.Count > 0 ? logsAsc[0].CreatedAt : null;
+
+                        // Rank dùng để phá hòa khi trùng thời gian (cùng phút/giây)
+                        // Rank càng cao -> hiển thị “mới hơn” trong cùng timestamp
+                        const int RankPlaced = 0;
+                        const int RankPreparing = 10;
+                        const int RankPickedUp = 20;
+                        const int RankCarrierLog = 100;
+
+                        var timeline = new List<(DateTime At, int Rank, string Title, string? Detail, bool IsActive)>();
+
+                        var placedAt = order.CreatedAt;
+
+                        // 1) Đơn hàng đã được đặt
+                        timeline.Add((placedAt, RankPlaced, "Đơn hàng đã được đặt", null, false));
+
+                        // 2) Người bán đang chuẩn bị hàng (sau khi xác nhận)
+                        var isBeyondPending = statusNorm is not (
+                          "pendingconfirmation" or "waitconfirm" or "waitingconfirm" or "confirming" or "pending" or "confirmationpending" or
+                          "processing" or "inprocess" or "inprocessing" or "chờxácnhận" or "choxacnhan");
+                        if (isBeyondPending && !timeline.Any(x => string.Equals(x.Title, "Người bán đang chuẩn bị hàng", StringComparison.Ordinal)))
+                        {
+                          var preparingAt = firstRealLogAt.HasValue
+                            ? firstRealLogAt.Value.AddSeconds(-60)
+                            : (order.UpdatedAt > order.CreatedAt ? order.UpdatedAt : order.CreatedAt);
+
+                          if (preparingAt <= placedAt)
+                          {
+                            preparingAt = placedAt.AddSeconds(5);
+                          }
+                          timeline.Add((preparingAt, RankPreparing, "Người bán đang chuẩn bị hàng", null, false));
+                        }
+
+                        // 3) Đơn vị vận chuyển lấy hàng thành công (khi đã qua bước chờ lấy)
+                        var isShippingOrLater = statusNorm is (
+                          "shipping" or "delivering" or "intransit" or "đanggiao" or "danggiao" or
+                          "completed" or "success" or "hoàntất" or "hoantat" or
+                          "delivered" or "deliverysuccess" or "dagiao" or "đãgiao" or
+                          "returned" or "return" or "refund" or "returnrequest" or "returning" or "trahang" or "trảhàng");
+                        var hasPickedUpLog = logsAsc.Any(l =>
+                          ContainsAny(l.Status, "pickup", "picked", "pickedup", "lấy") ||
+                          ContainsAny(l.Note, "lấy hàng", "lấy hàng thành công"));
+
+                        if (isShippingOrLater && !hasPickedUpLog)
+                        {
+                          var pickedUpAt = firstRealLogAt.HasValue
+                            ? firstRealLogAt.Value.AddSeconds(-30)
+                            : (order.UpdatedAt > order.CreatedAt ? order.UpdatedAt : order.CreatedAt);
+
+                          var minPickedUpAt = timeline
+                            .Where(x => x.Rank is RankPreparing or RankPlaced)
+                            .Select(x => x.At)
+                            .DefaultIfEmpty(placedAt)
+                            .Max();
+
+                          if (pickedUpAt <= minPickedUpAt)
+                          {
+                            pickedUpAt = minPickedUpAt.AddSeconds(5);
+                          }
+                          timeline.Add((pickedUpAt, RankPickedUp, "Đơn vị vận chuyển lấy hàng thành công", null, false));
+                        }
+
+                        // 4) Logs thực tế từ GHN / hệ thống (bưu cục, giao thành công, ...)
+                        foreach (var l in logsAsc)
+                        {
+                          // Bỏ log “shop xác nhận ...” vì đã thể hiện bằng “Người bán đang chuẩn bị hàng”
+                          // (tránh tình trạng nhìn như bị đảo logic)
+                          if (ContainsAny(l.Note, "shop xác nhận", "xác nhận đơn") || ContainsAny(l.Status, "confirm"))
+                          {
+                            continue;
+                          }
+
+                          var title = !string.IsNullOrWhiteSpace(l.Note) ? l.Note!.Trim() : l.Status.Trim();
+                          if (!string.IsNullOrWhiteSpace(title))
+                          {
+                            timeline.Add((l.CreatedAt, RankCarrierLog, title, null, false));
+                          }
+                        }
+
+                        // Không có gì để hiển thị
+                        if (timeline.Count == 0)
+                        {
+                          <p class="text-light-secondary-text">Chưa có cập nhật trạng thái.</p>
+                        }
+                        else
+                        {
+                          var timelineDesc = timeline
+                            .OrderByDescending(x => x.At)
+                            .ThenByDescending(x => x.Rank)
+                            .ToList();
+
+                          for (var i = 0; i < timelineDesc.Count; i++)
+                          {
+                            timelineDesc[i] = (timelineDesc[i].At, timelineDesc[i].Rank, timelineDesc[i].Title, timelineDesc[i].Detail, i == 0);
+                          }
+
+                          <div class="flex flex-col">
+                            @for (var idx = 0; idx < timelineDesc.Count; idx++)
+                            {
+                              var item = timelineDesc[idx];
+                              var isLast = idx == timelineDesc.Count - 1;
+                              var local = item.At.ToLocalTime();
+                              var dateText = local.ToString("dd 'Th'MM");
+                              var timeText = local.ToString("HH:mm");
+                              var titleClass = item.IsActive ? "text-success-dark" : "text-light-secondary-text";
+                              var dotColor = item.IsActive ? "background-color: var(--color-success-dark);" : string.Empty;
+
+                              <div class="flex gap-x-6">
+                                <div class="min-h-[72px] text-end">
+                                  <p class="text-sm leading-[22px] w-[85px]">@dateText</p>
+                                  <p class="text-sm leading-[22px] w-[85px]">@timeText</p>
+                                </div>
+
+                                <div class="relative">
+                                  @if (!isLast)
+                                  {
+                                    <div class="absolute bg-gray-300" style="top: 10px; bottom: 0; left: 4px; width: 1px;"></div>
+                                  }
+
+                                  <div class="relative z-10 mt-[6px] w-[9px] h-[9px] rounded-full @(item.IsActive ? "" : "bg-gray-300")" style="@(item.IsActive ? dotColor : string.Empty)"></div>
+                                </div>
+
+                                <div class="grow pb-8">
+                                  <p class="text-base leading-[24px] @titleClass">@item.Title</p>
+                                  @if (!string.IsNullOrWhiteSpace(item.Detail))
+                                  {
+                                    <p class="text-light-secondary-text text-sm leading-[22px]">@item.Detail</p>
+                                  }
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        }
+                      }
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-6">
+              <a class="btn btn-default outline w-full" href='@Url.Action("Orders", "Account")'>Quay lại danh sách</a>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

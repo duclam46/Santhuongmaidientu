@@ -1,0 +1,226 @@
+@model DOAN_BANHANG.ViewModels.QuickViewVm
+
+@{
+  var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+  var ratingPct = (int)System.Math.Round(System.Math.Clamp((double)(Model.AverageRating / 5m * 100m), 0d, 100d));
+
+  string ResolveImageUrl(string? rawUrl)
+  {
+    if (string.IsNullOrWhiteSpace(rawUrl))
+    {
+      return Url.Content("~/assets/images/vitamin-c.png");
+    }
+
+    rawUrl = rawUrl.Trim();
+
+    if (rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+    {
+      return rawUrl;
+    }
+
+    if (rawUrl.StartsWith("~/", StringComparison.Ordinal))
+    {
+      return Url.Content(rawUrl);
+    }
+
+    if (rawUrl.StartsWith("/", StringComparison.Ordinal))
+    {
+      return rawUrl;
+    }
+
+    return Url.Content("~/" + rawUrl.TrimStart('/'));
+  }
+
+  var detailsUrl = Url.RouteUrl("product_details", new { slug = Model.Slug }) ?? "#";
+
+  var images = (Model.ImageUrls ?? new List<string>())
+    .Where(u => !string.IsNullOrWhiteSpace(u))
+    .Select(ResolveImageUrl)
+    .ToList();
+
+  if (images.Count == 0)
+  {
+    images.Add(ResolveImageUrl(null));
+  }
+
+  var defaultColor = !string.IsNullOrWhiteSpace(Model.DefaultColor)
+    ? Model.DefaultColor
+    : Model.Colors.FirstOrDefault()?.Key;
+
+  var defaultSize = !string.IsNullOrWhiteSpace(Model.DefaultSize)
+    ? Model.DefaultSize
+    : Model.Sizes.FirstOrDefault()?.Label;
+
+  var selectedVariant = Model.Variants.FirstOrDefault(v =>
+    string.Equals(v.Color ?? string.Empty, defaultColor ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+    && string.Equals(v.Size ?? string.Empty, defaultSize ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+    ?? Model.Variants.FirstOrDefault();
+}
+
+<div
+  class="product-images-wrapper lg:max-w-[350px] w-full lg:flex-none lg:overflow-y-auto lg:h-[calc(100%-60px)] h-auto mb-6 lg:mb-0"
+>
+  <div class="space-y-4">
+    @foreach (var img in images)
+    {
+      <img class="max-h-[300px] w-full rounded-xl object-cover" src="@img" alt="product-image" />
+    }
+  </div>
+</div>
+
+<div
+  class="product-details-wrapper w-full lg:flex-1 @@container/quick-view-product-details lg:overflow-y-auto lg:h-[calc(100%-60px)] h-auto pr-4"
+>
+  <h4 class="line-clamp-2 mb-4">@Model.Name</h4>
+
+  <div class="rating-section flex items-center mb-4">
+    <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+      <div style="width: @ratingPct%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+    </div>
+    <span class="font-normal inline-block ml-1">(@Model.ReviewCount.ToString("N0", viVn) reviews)</span>
+  </div>
+
+  <div class="price-section flex items-center gap-x-3 mb-6">
+    <span class="current-price text-2xl leading-9 font-bold text-light-primary-text relative after:absolute after:h-6 after:w-px after:bg-gray-300 after:right-0 after:top-1/2 after:-translate-y-1/2 pr-3 inline-block" data-qv-price="@Model.Price.ToString("0.##", global::System.Globalization.CultureInfo.InvariantCulture)">@Model.Price.ToString("N0", viVn) VNĐ</span>
+  </div>
+
+  <div class="product-add-to-cart-section py-6 border-b border-dashed border-gray-300 border-t">
+    @if (Model.Colors.Count > 0)
+    {
+      <div class="color-variation-section mb-6">
+        <div class="color-variation-section-title mb-4">
+          <p class="font-semibold text-light-primary-text flex items-center gap-x-2.5">
+            Color:
+            <span class="text-light-primary-text font-normal capitalize color-variation-selected-color">@(defaultColor ?? "")</span>
+          </p>
+        </div>
+        <div class="color-variation-items flex items-center gap-x-2">
+          @for (var i = 0; i < Model.Colors.Count; i++)
+          {
+            var c = Model.Colors[i];
+            var isDefault = string.Equals(c.Key, defaultColor, StringComparison.OrdinalIgnoreCase);
+            <div class="color-variation-item">
+              <button
+                data-color-text="@c.Key"
+                data-color="@c.Hex"
+                class="cursor-pointer flex items-center justify-center rounded-full size-10 border @(isDefault ? "border-primary" : "border-gray-300") hover:bg-[rgba(145,158,171,0.08)]"
+                title="@c.Key"
+                type="button"
+              >
+                <span class="sr-only">@c.Key</span>
+                @if (DOAN_BANHANG.Helpers.ColorUi.TryGetColorIconUrl(c.Key, out var iconUrl))
+                {
+                  <img src="@iconUrl" alt="color" />
+                }
+                else
+                {
+                  <span class="inline-block size-6 rounded-full border border-gray-300" style="background-color: @c.Hex"></span>
+                }
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (Model.Sizes.Count > 0)
+    {
+      <div class="size-variation-section mb-6">
+        <div class="size-variation-section-title mb-4 flex items-center justify-between">
+          <p class="font-semibold text-light-primary-text flex items-center gap-x-2.5">
+            Size:
+            <span class="text-light-primary-text font-normal capitalize size-variation-selected-size">@(defaultSize ?? "")</span>
+          </p>
+        </div>
+        <div class="size-variation-items flex items-center gap-2 2xl:flex-nowrap flex-wrap">
+          @for (var i = 0; i < Model.Sizes.Count; i++)
+          {
+            var s = Model.Sizes[i];
+            var isDefault = string.Equals(s.Label, defaultSize, StringComparison.OrdinalIgnoreCase);
+            <div class="size-variation-item">
+              <button
+                data-size-text="@s.Label"
+                class="cursor-pointer flex items-center justify-center text-sm leading-6 px-[29px] py-1.5 font-semibold border rounded-[100px] hover:bg-[rgba(145,158,171,0.08)] @(isDefault ? "border border-primary bg-primary text-white hover:bg-primary" : "text-light-primary-text border border-gray-300")"
+                type="button"
+              >
+                @s.Label
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="product-add-to-cart-btn-section">
+      <p class="font-semibold text-light-primary-text mb-4">Quantity:</p>
+      <div class="flex items-center justify-between gap-x-4 gap-y-4 flex-wrap md:flex-nowrap md:gap-y-0">
+        <div class="quantity-section flex-1 max-w-[126px] border border-gray-300 rounded-[80px] px-4 py-[11px] flex items-center justify-between">
+          <button type="button" data-qty-action="dec" class="quantity-btn inline-flex items-center justify-center hover:text-primary">
+            <i class="hgi hgi-stroke hgi-minus-sign text-xl leading-5"></i>
+          </button>
+          <input type="number" min="1" step="1" class="quantity-input text-center w-full focus:outline-none font-semibold text-base leading-6 text-light-primary-text" value="1" />
+          <button type="button" data-qty-action="inc" class="quantity-btn inline-flex items-center justify-center hover:text-primary">
+            <i class="hgi hgi-stroke hgi-plus-sign text-xl leading-5"></i>
+          </button>
+        </div>
+        <div class="flex-1">
+          <a href="@detailsUrl" class="btn btn-warning btn-large rounded-[80px] w-full">Buy Now</a>
+        </div>
+        <div class="flex-1">
+          <a href="@detailsUrl" class="btn btn-primary btn-large rounded-[80px] w-full">
+            <i class="hgi hgi-stroke hgi-shopping-cart-add-02 text-2xl leading-6 text-white"></i>
+            Add to Cart
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="product-extra-info-section flex flex-col gap-y-4 mt-6">
+    @if (selectedVariant is not null)
+    {
+      <div class="product-extra-info-item flex items-center gap-x-4 gap-y-4 flex-wrap @@md/quick-view-product-details:flex-nowrap @@md/quick-view-product-details:gap-y-0">
+        <p class="font-semibold text-light-primary-text">Stock:</p>
+        <p class="js-qv-stock">@selectedVariant.StockQuantity.ToString("N0", viVn)</p>
+      </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.CategoryName))
+    {
+      <div class="product-extra-info-item flex items-center gap-x-4 gap-y-4 flex-wrap @@md/quick-view-product-details:flex-nowrap @@md/quick-view-product-details:gap-y-0">
+        <p class="font-semibold text-light-primary-text">Categories:</p>
+        <p>@Model.CategoryName</p>
+      </div>
+    }
+  </div>
+
+  @if (!string.IsNullOrWhiteSpace(Model.Description))
+  {
+    <div class="accordion" id="quick-view-details-accordion">
+      <div class="accordion-item">
+        <div class="accordion-header active">
+          <h5>Description</h5>
+          <i class="hgi hgi-stroke hgi-arrow-down-01 text-2xl leading-6"></i>
+        </div>
+        <div class="accordion-body">
+          <p>@Model.Description</p>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<div class="quick-view-variants" hidden>
+  @foreach (var v in Model.Variants)
+  {
+    <div
+      class="quick-view-variant"
+      data-color="@(v.Color ?? string.Empty)"
+      data-size="@(v.Size ?? string.Empty)"
+      data-price="@v.Price.ToString("0.##", global::System.Globalization.CultureInfo.InvariantCulture)"
+      data-stock="@v.StockQuantity"
+    ></div>
+  }
+</div>

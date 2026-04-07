@@ -1,0 +1,788 @@
+@model PartnerRegisterVm
+@{
+    ViewData["Title"] = "Đối tác";
+  var isSignedIn = User?.Identity?.IsAuthenticated ?? false;
+}
+
+<!-- ========== Breadcrumb Section Start ========== -->
+<div class="py-12">
+  <div class="container">
+    <div class="breadcrumb">
+      <ul>
+        <li>
+          <a href='@Url.Action("Index", "Home")'>
+            <span>
+              <i class="hgi hgi-stroke hgi-home-01 text-[20px]"></i>
+            </span>
+            Home
+          </a>
+        </li>
+        <li class="text-light-disabled-text">&#8226;</li>
+        <li><span>Đối tác</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<!-- ========== Breadcrumb Section End ========== -->
+
+<!-- ========== Partner Hero + Form Start ========== -->
+<section class="pb-[70px]">
+  <div class="container">
+    <div class="grid grid-cols-12 gap-x-[30px] gap-y-10 items-start">
+      <div class="lg:col-span-7 col-span-12">
+        <div class="mb-6">
+          <h2 class="pb-3 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            Trở thành Đối tác bán hàng
+          </h2>
+          <p class="wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
+            Mở gian hàng, tiếp cận khách hàng mới và phát triển doanh thu cùng nền tảng của chúng tôi.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-12 gap-x-[30px] gap-y-6">
+          <div class="md:col-span-7 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <img src="assets/images/2-girls.jpg" alt="Đối tác" class="rounded-2xl w-full h-[340px] object-cover" />
+          </div>
+          <div class="md:col-span-5 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
+            <img src="assets/images/red-shirt-female.png" alt="Đối tác" class="rounded-2xl w-full h-[340px] object-cover bg-[#F4F3F5]" />
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-5 col-span-12">
+        <div class="border border-gray-300 rounded-2xl p-6 md:p-8 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+          <h4 class="pb-2">Đăng ký trở thành nhà bán hàng</h4>
+          <p class="pb-6 text-light-disabled-text">Điền thông tin cơ bản để bắt đầu.</p>
+
+          @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+          {
+            <div class="mb-4 p-4 rounded-2xl bg-success-lighter text-light-primary-text">
+              @Model.SuccessMessage
+            </div>
+          }
+
+          @if (!ViewData.ModelState.IsValid)
+          {
+            <div class="mb-4 p-4 rounded-2xl bg-[rgba(255,86,48,0.08)]">
+              <div class="text-danger text-sm leading-[22px]">
+                @Html.ValidationSummary(excludePropertyErrors: false)
+              </div>
+            </div>
+          }
+
+          <form asp-action="Register" asp-controller="Partners" method="post" class="flex flex-col gap-y-5">
+            @Html.AntiForgeryToken()
+
+            <div class="relative w-full">
+              <input
+                type="text"
+                id="partner-fullname"
+                name="FullName"
+                value="@Model.FullName"
+                class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                placeholder="Họ và tên *" />
+              <label
+                for="partner-fullname"
+                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                Họ và tên
+              </label>
+            </div>
+
+            <div class="relative w-full">
+              <input
+                type="email"
+                id="partner-email"
+                name="Email"
+                value="@Model.Email"
+                @(isSignedIn ? "readonly=\"readonly\"" : "")
+                class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                placeholder="Email *" />
+              <label
+                for="partner-email"
+                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                Email *
+              </label>
+            </div>
+
+            <div class="relative w-full">
+              <input
+                type="text"
+                id="partner-phone"
+                name="PhoneNumber"
+                value="@Model.PhoneNumber"
+                class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                placeholder="Số điện thoại *" />
+              <label
+                for="partner-phone"
+                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                Số điện thoại *
+              </label>
+            </div>
+
+            <div class="relative w-full">
+              <input
+                type="text"
+                id="partner-shopname"
+                name="ShopName"
+                value="@Model.ShopName"
+                class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                placeholder="Tên cửa hàng/đối tác *" />
+              <label
+                for="partner-shopname"
+                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                Tên cửa hàng/đối tác *
+              </label>
+            </div>
+
+            <div class="w-full">
+              <label for="partner-desc" class="block text-sm leading-[22px] font-semibold pb-2">Mô tả (tuỳ chọn)</label>
+              <textarea
+                id="partner-desc"
+                name="ShopDescription"
+                rows="4"
+                class="form-control input-group rounded-2xl px-4 py-3 focus:outline-none"
+                placeholder="Giới thiệu ngắn về cửa hàng của bạn...">@Model.ShopDescription</textarea>
+            </div>
+
+            <div class="w-full">
+              <label class="block text-sm leading-[22px] font-semibold pb-2">Địa chỉ cửa hàng/địa chỉ lấy hàng (GHN) *</label>
+
+              <div id="partner_ghn_debug" class="hidden text-sm leading-[22px] mb-2 p-3 rounded-2xl bg-[rgba(0,0,0,0.03)]"></div>
+
+              <div id="partner-ghn-address" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+                <div class="w-full">
+                  <select name="ProvinceId" id="partner_province" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none">
+                    <option value="">Chọn Tỉnh/Thành phố</option>
+                  </select>
+                  <input type="hidden" name="ProvinceName" id="partner_province_name" value="@Model.ProvinceName" />
+                </div>
+
+                <div class="w-full">
+                  <select name="DistrictId" id="partner_district" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
+                    <option value="">Chọn Quận/Huyện</option>
+                  </select>
+                  <input type="hidden" name="DistrictName" id="partner_district_name" value="@Model.DistrictName" />
+                </div>
+
+                <div class="w-full">
+                  <select name="WardCode" id="partner_ward" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
+                    <option value="">Chọn Phường/Xã</option>
+                  </select>
+                  <input type="hidden" name="WardName" id="partner_ward_name" value="@Model.WardName" />
+                </div>
+
+                <div class="relative w-full">
+                  <input
+                    name="StreetAddress"
+                    type="text"
+                    id="partner_street_address"
+                    value="@Model.StreetAddress"
+                    class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                    placeholder="Số nhà, đường..." />
+                  <label
+                    for="partner_street_address"
+                    class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                    Số nhà, đường *
+                  </label>
+                </div>
+              </div>
+
+              <p class="pt-2 text-sm leading-[22px] text-light-disabled-text">
+                Hệ thống sẽ dùng địa chỉ này để tính phí vận chuyển (GHN).
+              </p>
+            </div>
+
+            @if (!isSignedIn)
+            {
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
+                <div class="relative w-full">
+                  <input
+                    type="password"
+                    id="partner-password"
+                    name="Password"
+                    value=""
+                    class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                    placeholder="Mật khẩu *" />
+                  <label
+                    for="partner-password"
+                    class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                    Mật khẩu *
+                  </label>
+                </div>
+                <div class="relative w-full">
+                  <input
+                    type="password"
+                    id="partner-confirm"
+                    name="ConfirmPassword"
+                    value=""
+                    class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                    placeholder="Xác nhận mật khẩu *" />
+                  <label
+                    for="partner-confirm"
+                    class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                    Xác nhận *
+                  </label>
+                </div>
+              </div>
+            }
+
+            <button type="submit" class="btn btn-primary btn-large rounded-[80px] w-full">
+              Gửi đăng ký
+            </button>
+
+            <p class="text-sm leading-[22px] text-light-disabled-text">
+              @if (isSignedIn)
+              {
+                <span>Bạn đang đăng nhập, chỉ cần bổ sung thông tin cửa hàng để nâng cấp thành nhà bán hàng.</span>
+              }
+              else
+              {
+                <span>Nếu bạn đã có tài khoản, hãy đăng nhập trước rồi quay lại trang này để nâng cấp thành nhà bán hàng.</span>
+              }
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== Partner Hero + Form End ========== -->
+
+<style>
+  /* GHN address selects use jquery.niceSelect; keep controls fixed-size and make long lists scrollable */
+  #partner-ghn-address .nice-select {
+    width: 100%;
+    max-width: 100%;
+    float: none;
+  }
+
+  #partner-ghn-address .nice-select.open {
+    z-index: 9999;
+  }
+
+  #partner-ghn-address .nice-select .current {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  #partner-ghn-address .nice-select .list {
+    max-height: 260px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 9999;
+  }
+</style>
+
+<script>
+  (() => {
+    const endpoints = {
+      provinces: '/api/ghn/provinces',
+      districts: (provinceId) => `/api/ghn/districts?provinceId=${encodeURIComponent(provinceId)}`,
+      wards: (districtId) => `/api/ghn/wards?districtId=${encodeURIComponent(districtId)}`
+    };
+
+    const debugEl = document.getElementById('partner_ghn_debug');
+
+    function hasQueryFlag(name) {
+      try {
+        const q = new URLSearchParams(window.location.search);
+        if (!q.has(name)) return false;
+        const v = (q.get(name) || '').trim().toLowerCase();
+        return v === '' || v === '1' || v === 'true' || v === 'yes' || v === 'on';
+      } catch {
+        return false;
+      }
+    }
+
+    const debugEnabled = hasQueryFlag('ghnDebug') || hasQueryFlag('ghnTest');
+
+    function debugLine(message) {
+      if (!debugEnabled || !(debugEl instanceof HTMLElement)) return;
+      debugEl.classList.remove('hidden');
+      const div = document.createElement('div');
+      div.textContent = message;
+      debugEl.appendChild(div);
+    }
+
+    debugLine('[GHN] Partner script started');
+
+    const cache = {
+      provinces: null,
+      districtsByProvince: new Map(),
+      wardsByDistrict: new Map()
+    };
+
+    async function getJson(url) {
+      debugLine(`GET ${url}`);
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) {
+        const text = await res.text();
+        debugLine(`↳ HTTP ${res.status}: ${text ? text.slice(0, 120) : ''}`);
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      if (Array.isArray(json)) {
+        debugLine(`↳ OK (${json.length} items)`);
+      } else {
+        debugLine('↳ OK');
+      }
+      return json;
+    }
+
+    async function runGhnSmokeTest() {
+      if (!debugEnabled) return;
+      debugLine('[GHN] Smoke test: START');
+
+      try {
+        const provinces = await ensureProvincesLoaded();
+        const p0 = Array.isArray(provinces) && provinces.length ? provinces[0] : null;
+        debugLine(`[GHN] provinces: ${Array.isArray(provinces) ? provinces.length : 0} (sample: ${p0 ? `${p0.id} - ${p0.name}` : 'none'})`);
+
+        const provinceId = p0 && p0.id ? parseInt(String(p0.id), 10) : 0;
+        if (!provinceId) {
+          debugLine('[GHN] Smoke test: STOP (no province id)');
+          return;
+        }
+
+        const districts = await ensureDistrictsLoaded(provinceId);
+        const d0 = Array.isArray(districts) && districts.length ? districts[0] : null;
+        debugLine(`[GHN] districts (provinceId=${provinceId}): ${Array.isArray(districts) ? districts.length : 0} (sample: ${d0 ? `${d0.id} - ${d0.name}` : 'none'})`);
+
+        const districtId = d0 && d0.id ? parseInt(String(d0.id), 10) : 0;
+        if (!districtId) {
+          debugLine('[GHN] Smoke test: STOP (no district id)');
+          return;
+        }
+
+        const wards = await ensureWardsLoaded(districtId);
+        const w0 = Array.isArray(wards) && wards.length ? wards[0] : null;
+        debugLine(`[GHN] wards (districtId=${districtId}): ${Array.isArray(wards) ? wards.length : 0} (sample: ${w0 ? `${w0.code} - ${w0.name}` : 'none'})`);
+
+        debugLine('[GHN] Smoke test: OK');
+      } catch (e) {
+        console.error(e);
+        debugLine(`[GHN] Smoke test: FAILED -> ${(e && e.message) ? e.message : String(e)}`);
+      }
+    }
+
+    function refreshNiceSelect(select) {
+      const $ = window.jQuery;
+      if (!$ || !$.fn || !$.fn.niceSelect) return;
+      try {
+        const next = select.nextElementSibling;
+        const hasNice = next && next.classList && next.classList.contains('nice-select');
+        if (!hasNice) {
+          // If the plugin hasn't been initialized for this <select>, initialize it.
+          $(select).niceSelect();
+          return;
+        }
+
+        $(select).niceSelect('update');
+      } catch {
+        // ignore
+      }
+    }
+
+    function updateNiceSelectSoon(select) {
+      // Partners page initializes GHN selects immediately on page load.
+      // Depending on script order, niceSelect may initialize AFTER we set <option>s.
+      // Retry a few times so the rendered dropdown always reflects the latest options.
+      refreshNiceSelect(select);
+
+      let tries = 0;
+      const timer = setInterval(() => {
+        tries++;
+        refreshNiceSelect(select);
+
+        const next = select.nextElementSibling;
+        const hasNice = next && next.classList && next.classList.contains('nice-select');
+        const pluginReady = !!(window.jQuery && window.jQuery.fn && window.jQuery.fn.niceSelect);
+
+        // main.js initializes niceSelect at the bottom of the page; on slower loads
+        // it may take longer than 2s for jQuery + plugin to be ready.
+        if ((hasNice && pluginReady) || tries >= 200) {
+          clearInterval(timer);
+        }
+      }, 100);
+    }
+
+    function bindChange(select, handler) {
+      const $ = window.jQuery;
+      if ($) {
+        $(select).on('change', handler);
+        return;
+      }
+      select.addEventListener('change', handler);
+    }
+
+    function attachNiceSelectChangeBridgeOnce() {
+      if (window.__ghnNiceSelectBridgeAttached_partner) return;
+      window.__ghnNiceSelectBridgeAttached_partner = true;
+
+      document.addEventListener('click', (e) => {
+        const raw = e.target;
+        const el = (raw instanceof Element)
+          ? raw
+          : (raw && raw.parentElement ? raw.parentElement : null);
+        if (!el) return;
+
+        const opt = el.closest('.nice-select .option');
+        if (!opt) return;
+
+        const nice = opt.closest('.nice-select');
+        const select = nice ? nice.previousElementSibling : null;
+        if (!(select instanceof HTMLSelectElement)) return;
+
+        // Scope only to GHN cascading selects to avoid side-effects.
+        const id = select.id || '';
+        if (!/^partner_(province|district|ward)$/.test(id)) return;
+
+        // niceSelect updates the underlying <select> value on click;
+        // defer dispatch so our handlers see the latest value.
+        setTimeout(() => {
+          try {
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          } catch {
+            // ignore
+          }
+        }, 0);
+      }, true);
+    }
+
+    function setOptions(select, items, valueKey, textKey, placeholder) {
+      select.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = placeholder;
+      select.appendChild(opt0);
+
+      for (const it of items) {
+        const opt = document.createElement('option');
+        opt.value = String(it[valueKey]);
+        opt.textContent = String(it[textKey]);
+        select.appendChild(opt);
+      }
+
+      updateNiceSelectSoon(select);
+    }
+
+    function selectedText(select) {
+      const i = select.selectedIndex;
+      if (i < 0) return '';
+      const opt = select.options[i];
+      return opt ? (opt.textContent || '') : '';
+    }
+
+    function resetSelect(select, placeholder) {
+      select.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = placeholder;
+      select.appendChild(opt0);
+      select.value = '';
+      select.disabled = true;
+
+      updateNiceSelectSoon(select);
+    }
+
+    function showLoadError(select, message) {
+      if (!select) return;
+      select.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = message;
+      select.appendChild(opt0);
+      select.value = '';
+      select.disabled = true;
+
+      updateNiceSelectSoon(select);
+    }
+
+    async function ensureProvincesLoaded() {
+      if (cache.provinces) return cache.provinces;
+      cache.provinces = await getJson(endpoints.provinces);
+      return cache.provinces;
+    }
+
+    async function ensureDistrictsLoaded(provinceId) {
+      const key = String(provinceId);
+      if (cache.districtsByProvince.has(key)) return cache.districtsByProvince.get(key);
+      const data = await getJson(endpoints.districts(provinceId));
+      cache.districtsByProvince.set(key, data);
+      return data;
+    }
+
+    async function ensureWardsLoaded(districtId) {
+      const key = String(districtId);
+      if (cache.wardsByDistrict.has(key)) return cache.wardsByDistrict.get(key);
+      const data = await getJson(endpoints.wards(districtId));
+      cache.wardsByDistrict.set(key, data);
+      return data;
+    }
+
+    function wireCascading(prefix) {
+      const province = document.getElementById(`${prefix}_province`);
+      const district = document.getElementById(`${prefix}_district`);
+      const ward = document.getElementById(`${prefix}_ward`);
+
+      const provinceName = document.getElementById(`${prefix}_province_name`);
+      const districtName = document.getElementById(`${prefix}_district_name`);
+      const wardName = document.getElementById(`${prefix}_ward_name`);
+
+      if (!province || !district || !ward || !provinceName || !districtName || !wardName) return;
+
+      bindChange(province, async () => {
+        provinceName.value = province.value ? selectedText(province) : '';
+        districtName.value = '';
+        wardName.value = '';
+        resetSelect(district, 'Chọn Quận/Huyện');
+        resetSelect(ward, 'Chọn Phường/Xã');
+
+        const provinceId = parseInt(province.value || '0', 10);
+        if (!provinceId) return;
+
+        try {
+          const districts = await ensureDistrictsLoaded(provinceId);
+          setOptions(district, districts, 'id', 'name', 'Chọn Quận/Huyện');
+          district.disabled = false;
+          refreshNiceSelect(district);
+        } catch (e) {
+          console.error(e);
+          showLoadError(district, 'Không tải được Quận/Huyện. Kiểm tra GHN Token.');
+        }
+      });
+
+      bindChange(district, async () => {
+        districtName.value = district.value ? selectedText(district) : '';
+        wardName.value = '';
+        resetSelect(ward, 'Chọn Phường/Xã');
+
+        const districtId = parseInt(district.value || '0', 10);
+        if (!districtId) return;
+
+        try {
+          const wards = await ensureWardsLoaded(districtId);
+          setOptions(ward, wards, 'code', 'name', 'Chọn Phường/Xã');
+          ward.disabled = false;
+          refreshNiceSelect(ward);
+        } catch (e) {
+          console.error(e);
+          showLoadError(ward, 'Không tải được Phường/Xã. Kiểm tra GHN Token.');
+        }
+      });
+
+      bindChange(ward, () => {
+        wardName.value = ward.value ? selectedText(ward) : '';
+      });
+    }
+
+    async function initPartnerForm() {
+      const province = document.getElementById('partner_province');
+      const district = document.getElementById('partner_district');
+      const ward = document.getElementById('partner_ward');
+      const provinceNameEl = document.getElementById('partner_province_name');
+      const districtNameEl = document.getElementById('partner_district_name');
+      const wardNameEl = document.getElementById('partner_ward_name');
+
+      if (!province || !district || !ward || !provinceNameEl || !districtNameEl || !wardNameEl) return;
+
+      const provinceId = @System.Text.Json.JsonSerializer.Serialize(Model.ProvinceId);
+      const districtId = @System.Text.Json.JsonSerializer.Serialize(Model.DistrictId);
+      const wardCode = @System.Text.Json.JsonSerializer.Serialize(Model.WardCode ?? string.Empty);
+
+      debugLine(`[GHN] initial ids provinceId=${provinceId} districtId=${districtId} wardCode=${wardCode}`);
+
+      try {
+        const provinces = await ensureProvincesLoaded();
+        setOptions(province, provinces, 'id', 'name', 'Chọn Tỉnh/Thành phố');
+        debugLine('Rendered provinces options');
+        province.disabled = false;
+        refreshNiceSelect(province);
+
+        resetSelect(district, 'Chọn Quận/Huyện');
+        resetSelect(ward, 'Chọn Phường/Xã');
+
+        province.value = provinceId ? String(provinceId) : '';
+        provinceNameEl.value = province.value ? selectedText(province) : (provinceNameEl.value || '');
+        refreshNiceSelect(province);
+
+        if (provinceId) {
+          const districts = await ensureDistrictsLoaded(provinceId);
+          setOptions(district, districts, 'id', 'name', 'Chọn Quận/Huyện');
+          district.disabled = false;
+          refreshNiceSelect(district);
+          district.value = districtId ? String(districtId) : '';
+          districtNameEl.value = district.value ? selectedText(district) : (districtNameEl.value || '');
+          refreshNiceSelect(district);
+        }
+
+        if (districtId) {
+          const wards = await ensureWardsLoaded(districtId);
+          setOptions(ward, wards, 'code', 'name', 'Chọn Phường/Xã');
+          ward.disabled = false;
+          refreshNiceSelect(ward);
+          ward.value = wardCode || '';
+          wardNameEl.value = ward.value ? selectedText(ward) : (wardNameEl.value || '');
+          refreshNiceSelect(ward);
+        }
+      } catch (e) {
+        console.error(e);
+        showLoadError(province, 'Không tải được Tỉnh/Thành phố. Kiểm tra GHN Token.');
+        debugLine(`ERROR: ${(e && e.message) ? e.message : String(e)}`);
+        resetSelect(district, 'Chọn Quận/Huyện');
+        resetSelect(ward, 'Chọn Phường/Xã');
+      }
+    }
+
+    // Wire cascading once
+    attachNiceSelectChangeBridgeOnce();
+    wireCascading('partner');
+
+    // Load provinces eagerly so the form works immediately.
+    initPartnerForm();
+
+    // After all vendor scripts load, ensure niceSelect reflects the latest options.
+    window.addEventListener('load', () => {
+      try {
+        const province = document.getElementById('partner_province');
+        const district = document.getElementById('partner_district');
+        const ward = document.getElementById('partner_ward');
+        if (province) refreshNiceSelect(province);
+        if (district) refreshNiceSelect(district);
+        if (ward) refreshNiceSelect(ward);
+      } catch {
+        // ignore
+      }
+    });
+
+    // Optional smoke test for debugging: /doi-tac?ghnTest=1
+    if (hasQueryFlag('ghnTest')) {
+      runGhnSmokeTest();
+    }
+  })();
+</script>
+
+<!-- ========== Benefits (Những điều đạt được) Start ========== -->
+<section class="mb-[70px]">
+  <div class="container">
+    <div class="text-center">
+      <h3 class="pb-3 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+        Những điều bạn đạt được
+      </h3>
+      <p class="pb-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+        Hợp tác cùng chúng tôi để tăng trưởng bền vững.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-12 gap-x-[30px] gap-y-6">
+      <div class="lg:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+        <div class="p-6 border border-gray-300 bg-white rounded-2xl h-full">
+          <span class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full">
+            <i class="hgi hgi-stroke hgi-store-02 text-3xl text-light-primary-text"></i>
+          </span>
+          <h5 class="pt-3 pb-0.5">Mở gian hàng nhanh</h5>
+          <p>Tạo cửa hàng và bắt đầu bán chỉ trong vài bước.</p>
+        </div>
+      </div>
+
+      <div class="lg:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
+        <div class="p-6 border border-gray-300 bg-white rounded-2xl h-full">
+          <span class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full">
+            <i class="hgi hgi-stroke hgi-megaphone-01 text-3xl text-light-primary-text"></i>
+          </span>
+          <h5 class="pt-3 pb-0.5">Hỗ trợ marketing</h5>
+          <p>Tăng hiển thị sản phẩm với các chương trình ưu đãi.</p>
+        </div>
+      </div>
+
+      <div class="lg:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".4s">
+        <div class="p-6 border border-gray-300 bg-white rounded-2xl h-full">
+          <span class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full">
+            <i class="hgi hgi-stroke hgi-coins-02 text-3xl text-light-primary-text"></i>
+          </span>
+          <h5 class="pt-3 pb-0.5">Thanh toán minh bạch</h5>
+          <p>Đối soát rõ ràng, giúp bạn quản lý doanh thu dễ dàng.</p>
+        </div>
+      </div>
+
+      <div class="lg:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".5s">
+        <div class="p-6 border border-gray-300 bg-white rounded-2xl h-full">
+          <span class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full">
+            <i class="hgi hgi-stroke hgi-shield-01 text-3xl text-light-primary-text"></i>
+          </span>
+          <h5 class="pt-3 pb-0.5">Vận hành an tâm</h5>
+          <p>Quy trình và hỗ trợ giúp bạn bán hàng ổn định.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== Benefits End ========== -->
+
+<!-- ========== Steps (Các bước) Start ========== -->
+<section class="mb-[70px]">
+  <div class="container">
+    <div class="text-center">
+      <h3 class="pb-3 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+        Các bước để bắt đầu
+      </h3>
+      <p class="pb-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+        Quy trình đơn giản, rõ ràng.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-12">
+      <div class="lg:col-start-2 md:col-start-2 col-start-1 xl:col-end-12 md:col-end-12 col-end-13">
+        <div class="accordion">
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header active">
+              <h6>1. Gửi đăng ký</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
+              <p>Điền thông tin cửa hàng và thông tin liên hệ ở form phía trên.</p>
+            </div>
+          </div>
+
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header">
+              <h6>2. Xác minh thông tin</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
+              <p>Chúng tôi sẽ kiểm tra thông tin cơ bản để kích hoạt gian hàng.</p>
+            </div>
+          </div>
+
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header">
+              <h6>3. Đăng sản phẩm</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
+              <p>Thêm sản phẩm, hình ảnh, phân loại và giá để bắt đầu bán.</p>
+            </div>
+          </div>
+
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header">
+              <h6>4. Bắt đầu bán hàng</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
+              <p>Nhận đơn, xử lý giao hàng và theo dõi doanh thu ngay trên hệ thống.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== Steps End ========== -->

@@ -1,0 +1,531 @@
+using Microsoft.EntityFrameworkCore;
+
+namespace DOAN_BANHANG.Models;
+
+public class DataContext : DbContext
+{
+    public DataContext(DbContextOptions<DataContext> options) : base(options)
+    {
+    }
+
+    public DbSet<Category> Categories => Set<Category>();
+
+    public DbSet<Account> Accounts => Set<Account>();
+
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+
+    public DbSet<UserAddress> UserAddresses => Set<UserAddress>();
+
+    public DbSet<Product> Products => Set<Product>();
+
+    public DbSet<Color> Colors => Set<Color>();
+
+    public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+
+    public DbSet<Size> Sizes => Set<Size>();
+
+    public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+
+    public DbSet<VariantImage> VariantImages => Set<VariantImage>();
+
+    public DbSet<Cart> Carts => Set<Cart>();
+
+    public DbSet<CartItem> CartItems => Set<CartItem>();
+
+    public DbSet<Order> Orders => Set<Order>();
+
+    public DbSet<Voucher> Vouchers => Set<Voucher>();
+
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
+    public DbSet<OrderTrackingLog> OrderTrackingLogs => Set<OrderTrackingLog>();
+
+    public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+
+    public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
+
+    public DbSet<SizeGuide> SizeGuides => Set<SizeGuide>();
+
+    public DbSet<SizeGuideDetail> SizeGuideDetails => Set<SizeGuideDetail>();
+
+    public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.ToTable("Categories");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.Slug).HasMaxLength(150).IsRequired();
+
+            entity.Property(x => x.SortOrder).HasDefaultValue(0);
+            entity.Property(x => x.IsActive).HasDefaultValue(true);
+            entity.Property(x => x.IsDeleted).HasDefaultValue(false);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasMany(x => x.Children)
+                .WithOne(x => x.Parent)
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.Slug).IsUnique();
+        });
+
+        modelBuilder.Entity<Account>(entity =>
+        {
+            entity.ToTable("Accounts");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Email).HasMaxLength(255).IsRequired();
+            entity.Property(x => x.PasswordHash).HasMaxLength(255);
+            entity.Property(x => x.AuthProvider).HasMaxLength(50);
+            entity.Property(x => x.AuthProviderUserId).HasMaxLength(255);
+            entity.Property(x => x.Role).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
+
+            entity.Property(x => x.IsDeleted).HasDefaultValue(false);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.Email).IsUnique();
+
+            entity.HasOne(x => x.Profile)
+                .WithOne(p => p.Account)
+                .HasForeignKey<UserProfile>(p => p.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<UserProfile>(entity =>
+        {
+            entity.ToTable("UserProfiles");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.FullName).HasMaxLength(150);
+            entity.Property(x => x.PhoneNumber).HasMaxLength(20);
+            entity.Property(x => x.AvatarUrl).HasMaxLength(500);
+            entity.Property(x => x.ShopName).HasMaxLength(200);
+            entity.Property(x => x.ShopSlug).HasMaxLength(200);
+            entity.Property(x => x.ShopLogoUrl).HasMaxLength(500);
+            entity.Property(x => x.Address).HasMaxLength(500);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.AccountId).IsUnique();
+
+            entity.HasIndex(x => x.ShopSlug)
+                .IsUnique()
+                .HasFilter("[ShopSlug] IS NOT NULL");
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.ToTable("Products");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).HasMaxLength(255).IsRequired();
+            entity.Property(x => x.Slug).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.ShortDescription).HasMaxLength(500);
+            entity.Property(x => x.AverageRating)
+                .HasColumnType("decimal(3,2)")
+                .HasDefaultValue(0m);
+            entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
+
+            entity.Property(x => x.IsNewArrival).HasDefaultValue(false);
+
+            entity.Property(x => x.ReviewCount)
+                .HasDefaultValue(0);
+
+            entity.Property(x => x.IsDeleted).HasDefaultValue(false);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.Slug).IsUnique();
+
+            entity.HasIndex(x => x.ShopId);
+
+            entity.HasOne(x => x.ShopAccount)
+                .WithMany()
+                .HasForeignKey(x => x.ShopId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.CategoryId);
+
+            entity.HasOne(x => x.Category)
+                .WithMany()
+                .HasForeignKey(x => x.CategoryId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Variants)
+                .WithOne(v => v.Product)
+                .HasForeignKey(v => v.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(x => x.SizeGuides)
+                .WithOne(g => g.Product)
+                .HasForeignKey(g => g.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(x => x.Reviews)
+                .WithOne(r => r.Product)
+                .HasForeignKey(r => r.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Color>(entity =>
+        {
+            entity.ToTable("Colors");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Code).HasMaxLength(20);
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        });
+
+        modelBuilder.Entity<WishlistItem>(entity =>
+        {
+            entity.ToTable("WishlistItems");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => new { x.AccountId, x.ProductId }).IsUnique();
+
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Size>(entity =>
+        {
+            entity.ToTable("Sizes");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.SortOrder).HasDefaultValue(0);
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+        });
+
+        modelBuilder.Entity<ProductVariant>(entity =>
+        {
+            entity.ToTable("ProductVariants");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Sku).HasMaxLength(100).IsRequired();
+            entity.HasIndex(x => x.Sku).IsUnique();
+
+            entity.Property(x => x.Price).HasColumnType("decimal(18,2)");
+            entity.Property(x => x.SalePrice).HasColumnType("decimal(18,2)");
+
+            entity.Property(x => x.StockQuantity).HasDefaultValue(0);
+            entity.Property(x => x.ReservedStock).HasDefaultValue(0);
+            entity.Property(x => x.IsDefault).HasDefaultValue(false);
+            entity.Property(x => x.IsActive).HasDefaultValue(true);
+            entity.Property(x => x.IsDeleted).HasDefaultValue(false);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(x => x.Color)
+                .WithMany(c => c.Variants)
+                .HasForeignKey(x => x.ColorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Size)
+                .WithMany(s => s.Variants)
+                .HasForeignKey(x => x.SizeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Product)
+                .WithMany(p => p.Variants)
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductImage>(entity =>
+        {
+            entity.ToTable("ProductImages");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.ImageUrl).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.IsPrimary).HasDefaultValue(false);
+            entity.Property(x => x.SortOrder).HasDefaultValue(0);
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(x => x.Product)
+                .WithMany(p => p.Images)
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<VariantImage>(entity =>
+        {
+            entity.ToTable("VariantImages");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.ImageUrl).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.IsPrimary).HasDefaultValue(false);
+            entity.Property(x => x.SortOrder).HasDefaultValue(0);
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(x => x.Variant)
+                .WithMany(v => v.Images)
+                .HasForeignKey(x => x.VariantId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Cart>(entity =>
+        {
+            entity.ToTable("Carts");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.AccountId).IsUnique();
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Items)
+                .WithOne(i => i.Cart)
+                .HasForeignKey(i => i.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CartItem>(entity =>
+        {
+            entity.ToTable("CartItems");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(x => x.Variant)
+                .WithMany()
+                .HasForeignKey(x => x.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.ToTable("Orders");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.OrderCode).HasMaxLength(50).IsRequired();
+            entity.HasIndex(x => x.OrderCode).IsUnique();
+
+            entity.Property(x => x.SubTotal).HasColumnType("decimal(18,2)");
+            entity.Property(x => x.ShippingFee).HasColumnType("decimal(18,2)");
+            entity.Property(x => x.DiscountAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+            entity.Property(x => x.FinalAmount).HasColumnType("decimal(18,2)");
+
+            entity.Property(x => x.OrderStatus).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.PaymentMethod).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.PaymentStatus).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.RecipientName).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.RecipientPhone).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.ShippingAddress).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.TrackingCode).HasMaxLength(100);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.CustomerId);
+            entity.HasIndex(x => x.ShopId);
+
+            entity.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Shop)
+                .WithMany()
+                .HasForeignKey(x => x.ShopId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Voucher)
+                .WithMany()
+                .HasForeignKey(x => x.VoucherId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Items)
+                .WithOne(i => i.Order)
+                .HasForeignKey(i => i.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.ToTable("OrderItems");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.ProductName).HasMaxLength(255).IsRequired();
+            entity.Property(x => x.ColorName).HasMaxLength(50);
+            entity.Property(x => x.SizeName).HasMaxLength(50);
+            entity.Property(x => x.UnitPrice).HasColumnType("decimal(18,2)");
+            entity.Property(x => x.LineTotal).HasColumnType("decimal(18,2)");
+            entity.HasIndex(x => x.OrderId);
+
+            entity.HasOne(x => x.Variant)
+                .WithMany()
+                .HasForeignKey(x => x.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductReview>(entity =>
+        {
+            entity.ToTable("ProductReviews", tb =>
+                tb.HasCheckConstraint("CK_ProductReviews_Rating_1_5", "[Rating] >= 1 AND [Rating] <= 5"));
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.SellerReply).HasMaxLength(1000);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(x => x.Product)
+                .WithMany(p => p.Reviews)
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Voucher>(entity =>
+        {
+            entity.ToTable("Vouchers");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            entity.HasIndex(x => x.Code).IsUnique();
+
+            entity.Property(x => x.DiscountType).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.DiscountValue).HasColumnType("decimal(18,2)");
+            entity.Property(x => x.MinOrderValue).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+            entity.Property(x => x.MaxDiscountValue).HasColumnType("decimal(18,2)");
+            entity.Property(x => x.UsageLimit).HasDefaultValue(0);
+            entity.Property(x => x.UsedCount).HasDefaultValue(0);
+            entity.Property(x => x.IsActive).HasDefaultValue(true);
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(x => x.Shop)
+                .WithMany()
+                .HasForeignKey(x => x.ShopId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrderTrackingLog>(entity =>
+        {
+            entity.ToTable("OrderTrackingLogs");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Status).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Note).HasMaxLength(255);
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.OrderId);
+            entity.HasOne(x => x.Order)
+                .WithMany()
+                .HasForeignKey(x => x.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InventoryTransaction>(entity =>
+        {
+            entity.ToTable("InventoryTransactions");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TransactionType).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.ReferenceId).HasMaxLength(100);
+            entity.Property(x => x.Note).HasMaxLength(255);
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.VariantId);
+            entity.HasOne(x => x.Variant)
+                .WithMany()
+                .HasForeignKey(x => x.VariantId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SizeGuide>(entity =>
+        {
+            entity.ToTable("SizeGuides");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.SizeLabel).HasMaxLength(50);
+            entity.Property(x => x.HeightRange).HasMaxLength(50);
+            entity.Property(x => x.WeightRange).HasMaxLength(50);
+            entity.Property(x => x.Note).HasMaxLength(255);
+            entity.Property(x => x.SortOrder).HasDefaultValue(0);
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.HasIndex(x => x.ProductId);
+
+            entity.HasOne(x => x.Product)
+                .WithMany(p => p.SizeGuides)
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(x => x.Details)
+                .WithOne(d => d.SizeGuide)
+                .HasForeignKey(d => d.SizeGuideId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SizeGuideDetail>(entity =>
+        {
+            entity.ToTable("SizeGuideDetails");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Value).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Unit).HasMaxLength(20);
+            entity.Property(x => x.SortOrder).HasDefaultValue(0);
+            entity.HasIndex(x => x.SizeGuideId);
+        });
+
+        modelBuilder.Entity<UserAddress>(entity =>
+        {
+            entity.ToTable("UserAddresses");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.FullName).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.PhoneNumber).HasMaxLength(20).IsRequired();
+
+            entity.Property(x => x.ProvinceName).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.DistrictName).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.WardCode).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.WardName).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.StreetAddress).HasMaxLength(500).IsRequired();
+
+            entity.Property(x => x.AddressType)
+                .HasConversion<int>()
+                .HasDefaultValue(AddressType.Personal);
+
+            entity.Property(x => x.IsDefault).HasDefaultValue(false);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.AccountId);
+            entity.HasIndex(x => new { x.AccountId, x.AddressType, x.IsDefault })
+                .IsUnique()
+                .HasFilter("[IsDefault] = 1");
+
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+}

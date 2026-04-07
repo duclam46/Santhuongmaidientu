@@ -1,0 +1,600 @@
+@model DOAN_BANHANG.ViewModels.CategoryProductsVm
+
+@{
+  var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+
+  var startItem = Model.TotalItems == 0 ? 0 : ((Model.Page - 1) * Model.PageSize) + 1;
+  var endItem = Math.Min(Model.Page * Model.PageSize, Model.TotalItems);
+
+  string CategoryUrl(
+    int? childCategoryId = null,
+    int? rating = null,
+    string? color = null,
+    string? size = null,
+    decimal? minPrice = null,
+    decimal? maxPrice = null,
+    int? page = null,
+    string? sort = null)
+    => Url.RouteUrl("category", new
+    {
+      slug = Model.CategorySlug,
+      childCategoryId,
+      rating,
+      color,
+      size,
+      minPrice,
+      maxPrice,
+      page,
+      sort
+    }) ?? "#";
+
+  string PageUrl(int page) => CategoryUrl(
+    childCategoryId: Model.SelectedChildCategoryId,
+    rating: Model.SelectedRating,
+    color: Model.SelectedColor,
+    size: Model.SelectedSize,
+    minPrice: Model.SelectedMinPrice,
+    maxPrice: Model.SelectedMaxPrice,
+    page: page,
+    sort: Model.Sort);
+}
+
+<!-- Hidden filter form used by template JS (price-range slider auto-submit) -->
+<form id="category-filter-form" method="get" action="@(Url.RouteUrl("category", new { slug = Model.CategorySlug }) ?? "#")" class="hidden">
+  @if (Model.SelectedChildCategoryId.HasValue)
+  {
+    <input type="hidden" name="childCategoryId" value="@Model.SelectedChildCategoryId" />
+  }
+  @if (Model.SelectedRating.HasValue)
+  {
+    <input type="hidden" name="rating" value="@Model.SelectedRating" />
+  }
+  @if (!string.IsNullOrWhiteSpace(Model.SelectedColor))
+  {
+    <input type="hidden" name="color" value="@Model.SelectedColor" />
+  }
+  @if (!string.IsNullOrWhiteSpace(Model.SelectedSize))
+  {
+    <input type="hidden" name="size" value="@Model.SelectedSize" />
+  }
+  @if (!string.IsNullOrWhiteSpace(Model.Sort))
+  {
+    <input type="hidden" name="sort" value="@Model.Sort" />
+  }
+  <input type="hidden" name="page" value="1" />
+
+  <!-- main.js updates these via .price-range-*-hidden selectors -->
+  <input type="hidden" name="minPrice" class="price-range-min-hidden" value="@(Model.SelectedMinPrice ?? Model.PriceMin)" />
+  <input type="hidden" name="maxPrice" class="price-range-max-hidden" value="@(Model.SelectedMaxPrice ?? Model.PriceMax)" />
+</form>
+
+@functions {
+  private string ResolveImageUrl(string? rawUrl)
+  {
+    if (string.IsNullOrWhiteSpace(rawUrl))
+    {
+      return Url.Content("~/assets/images/vitamin-c.png");
+    }
+
+    rawUrl = rawUrl.Trim();
+
+    if (rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+    {
+      return rawUrl;
+    }
+
+    if (rawUrl.StartsWith("~/", StringComparison.Ordinal))
+    {
+      return Url.Content(rawUrl);
+    }
+
+    if (rawUrl.StartsWith("/", StringComparison.Ordinal))
+    {
+      return rawUrl;
+    }
+
+    return Url.Content("~/" + rawUrl.TrimStart('/'));
+  }
+}
+
+<!-- ========== Breadcrumb Section Start ========== -->
+<div class="container py-12">
+  <div class="breadcrumb">
+    <ul>
+      <li>
+        <a href='@Url.Action("Index", "Home")'>
+          <span class="inline-flex items-center justify-center">
+            <i class="hgi hgi-stroke hgi-home-01 text-2xl leading-6"></i>
+          </span>
+          Home
+        </a>
+      </li>
+      <li class="text-light-disabled-text">&#8226;</li>
+      <li><span class="text-sm leading-[22px]">@Model.CategoryName</span></li>
+    </ul>
+  </div>
+</div>
+<!-- ========== Breadcrumb Section End ========== -->
+
+<!-- ========== Filter with 3-column Section Start ========== -->
+<section class="pb-[90px]">
+  <div class="container">
+    <div class="grid grid-cols-12 lg:gap-x-6 gap-y-6">
+      <!-- LEFT SIDEBAR -->
+      <div class="xl:col-span-3 lg:col-span-4 col-span-12 row-start-2 lg:row-start-auto">
+        <div class="sidebar sticky top-20">
+          <div class="border border-gray-300 rounded-2xl">
+            <!-- title -->
+            <div class="px-6 py-4 bg-gray-200 rounded-t-2xl sidebar-title wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+              <div class="flex items-center justify-between">
+                <h5 class="text-light-primary-text">Bộ lọc</h5>
+                <a href="@CategoryUrl()" class="text-primary text-base leading-[26px] font-semibold hover:underline">Xóa tất cả</a>
+              </div>
+            </div>
+
+            <!-- category -->
+            <div class="px-6 py-6">
+              <div class="widget-category wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+                <div class="flex flex-col gap-y-4 pb-8 border-b border-gray-300">
+                  <div class="flex items-center justify-between widget-category-title">
+                    <h6>Danh mục</h6>
+                    <a
+                      href="@CategoryUrl(childCategoryId: null, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
+                      class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
+                    >Đặt lại</a>
+                  </div>
+
+                  <div class="widget-category-content">
+                    <ul class="flex flex-col gap-y-2">
+                      @if (Model.ChildCategories.Count == 0)
+                      {
+                        <li>
+                          <p class="text-sm leading-[22px] text-light-disabled-text">Không có danh mục con.</p>
+                        </li>
+                      }
+                      else
+                      {
+                        @foreach (var c in Model.ChildCategories)
+                        {
+                          var childUrl = CategoryUrl(
+                            childCategoryId: c.CategoryId,
+                            rating: Model.SelectedRating,
+                            color: Model.SelectedColor,
+                            size: Model.SelectedSize,
+                            minPrice: Model.SelectedMinPrice,
+                            maxPrice: Model.SelectedMaxPrice,
+                            page: 1,
+                            sort: Model.Sort);
+
+                          <li class="widget-category-content-list-items">
+                            <label class="group flex items-center justify-between w-full cursor-pointer">
+                              <span class="flex items-center gap-x-2">
+                                <span class="group-has-[input:checked]:group-hover:bg-[#00AB55]/8 flex items-center justify-center w-9 h-9 bg-transparent rounded-full group-hover:bg-[#919EAB]/8 transition-colors duration-300 ease-in-out">
+                                  <span class="relative inline-flex w-5 h-5 items-center justify-center">
+                                    <input
+                                      type="radio"
+                                      name="childCategoryId"
+                                      value="@c.CategoryId"
+                                      checked="@(c.IsSelected ? "checked" : null)"
+                                      onchange="window.location.href='@childUrl'"
+                                      class="peer appearance-none w-full h-full border-2 focus:outline-none checked:border-none border-gray-300 rounded-sm bg-white checked:bg-primary transition-all duration-300 ease-in-out"
+                                    />
+                                    <span class="absolute inset-0 inline-flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 transition-all">
+                                      <i class="hgi hgi-stroke hgi-tick-02 text-[18px] leading-[18px]"></i>
+                                    </span>
+                                  </span>
+                                </span>
+                                <span class="text-light-primary-text group-hover:text-primary transition-colors duration-300 ease-in-out">@c.Name</span>
+                              </span>
+                              <span class="group-hover:text-primary transition-colors duration-300 ease-in-out">(@c.ProductCount)</span>
+                            </label>
+                          </li>
+                        }
+                      }
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PRICE-Range-content (kept template DOM for existing JS) -->
+              <!-- PRICE-Range-content -->
+                  <div
+                    class="widget-price-range wow animate__animated animate__fadeInUp"
+                    data-wow-delay=".2s"
+                  >
+                    <div
+                      class="flex flex-col gap-y-6 py-8 border-b border-gray-300 widget-price-range-title"
+                    >
+                      <div class="flex items-center justify-between">
+                        <h6>Khoảng giá</h6>
+                        <a
+                          href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: null, maxPrice: null, page: 1, sort: Model.Sort)"
+                          class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
+                          >Đặt lại</a
+                        >
+                      </div>
+                      <div
+                        id="price-range-slider"
+                        data-min="@Model.PriceMin.ToString("0", global::System.Globalization.CultureInfo.InvariantCulture)"
+                        data-max="@Model.PriceMax.ToString("0", global::System.Globalization.CultureInfo.InvariantCulture)"
+                        data-start-min="@((Model.SelectedMinPrice ?? Model.PriceMin).ToString("0", global::System.Globalization.CultureInfo.InvariantCulture))"
+                        data-start-max="@((Model.SelectedMaxPrice ?? Model.PriceMax).ToString("0", global::System.Globalization.CultureInfo.InvariantCulture))"
+                        data-form="category-filter-form"
+                      ></div>
+                      <div
+                        class="price-range-values flex items-center justify-between"
+                      >
+                        <div
+                          class="input-group medium max-w-[147px] w-full rounded-[80px] py-2 px-3.5"
+                        >
+                          <div
+                            class="input-group-addon inline-flex items-center justify-center leading-6"
+                            data-align="inline-start"
+                          >
+                            ₫
+                          </div>
+                          <input
+                            class="price-range-min-value form-control"
+                            type="text"
+                            inputmode="numeric"
+                            value="@((Model.SelectedMinPrice ?? Model.PriceMin).ToString("N0", viVn))"
+                          />
+                        </div>
+                        <span
+                          class="text-sm leading-[22px] text-light-disabled-text"
+                          >To</span
+                        >
+                        <div
+                          class="input-group medium max-w-[147px] w-full rounded-[80px] py-2 px-3.5"
+                        >
+                          <div
+                            class="input-group-addon inline-flex items-center justify-center leading-6"
+                            data-align="inline-start"
+                          >
+                            ₫
+                          </div>
+                          <input
+                            class="price-range-max-value form-control"
+                            type="text"
+                            inputmode="numeric"
+                            value="@((Model.SelectedMaxPrice ?? Model.PriceMax).ToString("N0", viVn))"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+              <!-- Rating-content -->
+              <div class="widget-rating wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+                <div class="flex flex-col gap-y-4 py-8 border-b border-gray-300">
+                  <div class="flex items-center justify-between widget-rating-title">
+                    <h6 class="text-light-primary-text">Đánh giá</h6>
+                    <a
+                      href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: null, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
+                      class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
+                    >Reset</a>
+                  </div>
+                  <div class="ratings">
+                    <ul class="flex items-center flex-wrap gap-3">
+                      @for (var r = 5; r >= 1; r--)
+                      {
+                        var ratingUrl = CategoryUrl(
+                          childCategoryId: Model.SelectedChildCategoryId,
+                          rating: r,
+                          color: Model.SelectedColor,
+                          size: Model.SelectedSize,
+                          minPrice: Model.SelectedMinPrice,
+                          maxPrice: Model.SelectedMaxPrice,
+                          page: 1,
+                          sort: Model.Sort);
+
+                        <li>
+                          <a
+                            href="@ratingUrl"
+                            class="btn btn-default outline shadow-none gap-x-1.5 items-center text-base leading-6 px-2.5 py-1.5 rounded-[80px] @(Model.SelectedRating == r ? "active" : "")"
+                          >@r
+                              <div class="bg-[url('../images/star-icon.png')] w-5 h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+                                <div style="width: 100%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+                              </div>
+                          </a>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Color-centent -->
+              <div class="widget-color-picker wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+                <div class="flex flex-col gap-y-4 py-8 border-b border-gray-300">
+                  <div class="flex items-center justify-between widget-color-title">
+                    <h6>Màu sắc</h6>
+                    <a
+                      href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: null, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
+                      class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
+                    >Đặt lại</a>
+                  </div>
+                  <div class="colors">
+                    <ul class="flex items-center flex-wrap gap-5">
+                      <li class="inline-flex items-center justify-center">
+                        <button data-color="primary" class="w-5 h-5 inline-flex items-center justify-center bg-primary rounded-full @(string.Equals(Model.SelectedColor, "primary", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                      </li>
+                      <li class="inline-flex items-center justify-center">
+                        <button data-color="info" class="w-5 h-5 inline-flex items-center justify-center bg-info rounded-full @(string.Equals(Model.SelectedColor, "info", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                      </li>
+                      <li class="inline-flex items-center justify-center">
+                        <button data-color="info-darker" class="w-5 h-5 inline-flex items-center justify-center bg-info-darker rounded-full @(string.Equals(Model.SelectedColor, "info-darker", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                      </li>
+                      <li class="inline-flex items-center justify-center">
+                        <button data-color="warning" class="w-5 h-5 inline-flex items-center justify-center bg-warning rounded-full @(string.Equals(Model.SelectedColor, "warning", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                      </li>
+                      <li class="inline-flex items-center justify-center">
+                        <button data-color="error-light" class="w-5 h-5 inline-flex items-center justify-center bg-error-light rounded-full @(string.Equals(Model.SelectedColor, "error-light", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                      </li>
+                      <li class="inline-flex items-center justify-center">
+                        <button data-color="error-dark" class="w-5 h-5 inline-flex items-center justify-center bg-error-dark rounded-full @(string.Equals(Model.SelectedColor, "error-dark", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Size-content -->
+              <div class="widget-size-picker wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+                <div class="flex flex-col gap-y-4 py-8 border-b border-gray-300">
+                  <div class="flex items-center justify-between widget-size-title">
+                    <h6>Size</h6>
+                    <a
+                      href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: null, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
+                      class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
+                    >Đặt lại</a>
+                  </div>
+                  <div class="sizes">
+                    <ul class="flex items-center flex-wrap gap-3">
+                      @foreach (var label in new[] { "S", "M", "L", "XL", "XXL", "XXXL" })
+                      {
+                        <li>
+                          <button data-size="@label" class="btn btn-default outline shadow-none py-[7px] px-[15px] rounded-[80px] @(string.Equals(Model.SelectedSize, label, StringComparison.OrdinalIgnoreCase) ? "active" : "")">@label</button>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT CONTENT -->
+      <div class="xl:col-span-9 lg:col-span-8 col-span-12 row-start-1 lg:row-start-auto">
+        <div class="flex items-center justify-between pb-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+          <div class="flex items-center gap-x-4 shrink-0 justify-start">
+            <div class="flex items-center gap-x-4">
+              <a class='w-10 h-10 rounded-full inline-flex items-center justify-center btn btn-default outline shadow-none cursor-pointer' href='#'>
+                <span class="inline-flex items-center justify-center">
+                  <i class="hgi hgi-stroke hgi-left-to-right-list-bullet text-2xl leading-6"></i>
+                </span>
+              </a>
+              <a href="#" class="w-10 h-10 rounded-full inline-flex items-center justify-center btn-primary cursor-pointer">
+                <span class="inline-flex items-center justify-center">
+                  <i class="hgi hgi-stroke hgi-more-01 text-2xl leading-6 text-white"></i>
+                </span>
+              </a>
+            </div>
+            <div class="lg:flex hidden">
+              <p class="text-light-secondary-text">Showing @startItem-@endItem of @Model.TotalItems results</p>
+            </div>
+          </div>
+
+          <!-- Sorting -->
+          <div class="relative min-w-[100px]">
+            @{
+              var sortNameAscUrl = CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: null);
+              var sortNameDescUrl = CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: "name_desc");
+              var sortPriceAscUrl = CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: "price_asc");
+              var sortPriceDescUrl = CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: "price_desc");
+              var sortRatingDescUrl = CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: "rating_desc");
+              var sortRatingAscUrl = CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: "rating_asc");
+              var sortNewestUrl = CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: "newest");
+            }
+
+            <select id="sorting" class="filter-select label" onchange="window.location.href=this.value">
+              <option value="@sortNameAscUrl" selected="@(string.IsNullOrWhiteSpace(Model.Sort) ? "selected" : null)">Tên (A-Z)</option>
+              <option value="@sortNameDescUrl" selected="@(string.Equals(Model.Sort, "name_desc", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Tên (Z-A)</option>
+              <option value="@sortPriceAscUrl" selected="@(string.Equals(Model.Sort, "price_asc", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Giá (Thấp → Cao)</option>
+              <option value="@sortPriceDescUrl" selected="@(string.Equals(Model.Sort, "price_desc", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Giá (Cao → Thấp)</option>
+              <option value="@sortRatingDescUrl" selected="@(string.Equals(Model.Sort, "rating_desc", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Đánh giá (Cao → Thấp)</option>
+              <option value="@sortRatingAscUrl" selected="@(string.Equals(Model.Sort, "rating_asc", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Đánh giá (Thấp → Cao)</option>
+              <option value="@sortNewestUrl" selected="@(string.Equals(Model.Sort, "newest", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Mới nhất</option>
+            </select>
+            <label for="sorting" class="nice-select-label">Sorting</label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6 pb-12">
+          @if (Model.Products.Count == 0)
+          {
+            <div class="col-span-12">
+              <div class="border border-gray-300 rounded-2xl p-6 text-center">
+                <p class="text-light-secondary-text">Chưa có sản phẩm trong danh mục này.</p>
+              </div>
+            </div>
+          }
+          else
+          {
+            foreach (var p in Model.Products)
+            {
+              var imageUrl = ResolveImageUrl(p.PrimaryImageUrl);
+              var detailsUrl = Url.RouteUrl("product_details", new { slug = p.Slug }) ?? "#";
+              var ratingPct = (int)Math.Round(Math.Clamp((double)(p.RatingAverage / 5m * 100m), 0d, 100d));
+
+              <div class="xl:col-span-4 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+                <div class="border border-gray-300 rounded-2xl product-card-1 p-4 group">
+                  <div class="product-image-container relative">
+                    <div class="product-image rounded-xl bg-[#F4F3F5] mb-4 overflow-hidden">
+                      <a href='@detailsUrl'>
+                        <img src="@imageUrl" alt="@p.Name" class="group-hover:scale-110 transition-all transform group-hover:-rotate-3 ease-in-out duration-300" />
+                      </a>
+                    </div>
+                    <div class="product-btn-actions absolute bottom-0 right-0 left-0 flex justify-center z-9 transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 group-hover:bottom-3">
+                      <ul class="flex items-center gap-x-px">
+                        <li>
+                          <button type="button" aria-label='Add to Wishlist' data-wishlist-toggle data-product-id='@p.ProductId' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tl-sm rounded-bl-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5'>
+                            <svg class="wishlist-heart-icon w-6 h-6 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                              <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
+                            </svg>
+                          </button>
+                        </li>
+                        <li>
+                          <a aria-label='Compare' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5' href='#'>
+                            <i class="hgi hgi-stroke hgi-reload text-2xl leading-6 text-light-primary-text"></i>
+                          </a>
+                        </li>
+                        <li>
+                          <a aria-label="Quick view" class="quick-view-sidebar-btn product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="#" data-quick-view-url="@Url.Action("QuickView", "Products", new { id = p.ProductId })">
+                            <i class="hgi hgi-stroke hgi-view text-2xl leading-6 text-light-primary-text"></i>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div class="product-content">
+                    <h5 class="text-base leading-6 font-semibold font-dm-sans mb-4">
+                      <a href='@detailsUrl'>@p.Name</a>
+                    </h5>
+
+                    <div class="rating-section flex items-center mb-4">
+                      <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+                        <div style="width: @ratingPct%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+                      </div>
+                      <span class="text-sm leading-[22px] font-normal inline-block ml-1">(@p.RatingCount)</span>
+                    </div>
+
+                    <div class="price-section flex items-center gap-x-3 mb-2">
+                      <span class="current-price text-base font-semibold text-light-primary-text">@p.Price.ToString("N0", viVn) VNĐ</span>
+                      @if (p.OldPrice.HasValue)
+                      {
+                        <span class="old-price text-sm leading-[22px] font-normal text-light-disabled-text line-through">@p.OldPrice.Value.ToString("N0", viVn) VNĐ</span>
+                      }
+                      @if (p.DiscountPercent > 0)
+                      {
+                        <span class="discount-percentage text-sm leading-[22px] font-semibold text-error">@p.DiscountPercent% OFF</span>
+                      }
+                    </div>
+
+                    <div class="btn-section flex items-center gap-x-4">
+                      <button type="button" aria-label="Add to Wishlist" data-wishlist-toggle data-product-id='@p.ProductId' class='size-11 flex flex-none items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300'>
+                        <svg class="wishlist-heart-icon w-5 h-5 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                          <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
+                        </svg>
+                      </button>
+                      <a class='btn btn-primary rounded-full font-semibold text-sm leading-6 px-6.5 py-2 flex-1' href='#' data-add-to-cart data-variant-id='@p.DefaultVariantId'>
+                        <i class="hgi hgi-stroke hgi-shopping-cart-02 text-xl text-white"></i>
+                        <span>Add to Cart</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- pagination -->
+        <div class="grid grid-cols-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+          <div class="col-span-12">
+            <ul class="flex items-center justify-center gap-x-1.5 blog-pagination">
+              @{
+                var totalPages = Model.TotalPages;
+                var currentPage = Model.Page;
+
+                var windowStart = Math.Max(1, currentPage - 2);
+                var windowEnd = Math.Min(totalPages, currentPage + 2);
+              }
+
+              <li class="group blog-pagination-item">
+                <a
+                  href="@(currentPage > 1 ? PageUrl(currentPage - 1) : "#")"
+                  class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:font-semibold group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out"
+                >
+                  <span class="inline-flex items-center justify-center">
+                    <i class="hgi hgi-stroke hgi-arrow-left-01 text-[20px] group-hover:font-semibold leading-5 text-light-primary-text group-hover:text-primary"></i>
+                  </span>
+                </a>
+              </li>
+
+              @if (totalPages > 0)
+              {
+                if (windowStart > 1)
+                {
+                  <li class="group blog-pagination-item">
+                    <a href="@PageUrl(1)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out">1</a>
+                  </li>
+                }
+
+                if (windowStart > 2)
+                {
+                  <li class="blog-pagination-item">
+                    <a href="#" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white">
+                      <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-more-horizontal text-[20px] leading-5 text-light-primary-text"></i></span>
+                    </a>
+                  </li>
+                }
+
+                for (var i = windowStart; i <= windowEnd; i++)
+                {
+                  if (i == currentPage)
+                  {
+                    <li class="group blog-pagination-item">
+                      <a href="#" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] active">@i</a>
+                    </li>
+                  }
+                  else
+                  {
+                    <li class="group blog-pagination-item">
+                      <a href="@PageUrl(i)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out">@i</a>
+                    </li>
+                  }
+                }
+
+                if (windowEnd < totalPages - 1)
+                {
+                  <li class="blog-pagination-item">
+                    <a href="#" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white">
+                      <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-more-horizontal text-[20px] leading-5 text-light-primary-text"></i></span>
+                    </a>
+                  </li>
+                }
+
+                if (windowEnd < totalPages)
+                {
+                  <li class="group blog-pagination-item">
+                    <a href="@PageUrl(totalPages)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out">@totalPages</a>
+                  </li>
+                }
+              }
+
+              <li class="group blog-pagination-item">
+                <a
+                  href="@(currentPage < totalPages ? PageUrl(currentPage + 1) : "#")"
+                  class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out"
+                >
+                  <span class="inline-flex items-center justify-center">
+                    <i class="hgi hgi-stroke hgi-arrow-right-01 text-[20px] leading-5 group-hover:font-semibold text-light-primary-text group-hover:text-primary"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== Filter with 3-column Section End ========== -->

@@ -1,0 +1,207 @@
+@model DOAN_BANHANG.ViewModels.AdminFlashSaleListVm
+
+@{
+    ViewData["Title"] = "Flash Sale";
+    var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+    var nowLocal = DateTime.Now;
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 bg-light border rounded-3 p-3">
+                <div>
+                    <h4 class="mb-1"><i class="bx bx-bolt-circle me-1"></i>Flash Sale</h4>
+                    <div class="text-muted small">Danh sách Flash Sale đã thiết lập</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a asp-area="Admin" asp-controller="FlashSales" asp-action="Setup" class="btn btn-primary">
+                        <i class="bx bx-plus-circle me-1"></i>Tạo/Thiết lập sự kiện
+                    </a>
+                    @if (Model.Items != null && Model.Items.Count > 0)
+                    {
+                        <form asp-area="Admin" asp-controller="FlashSales" asp-action="CancelEvent" method="post" class="d-inline"
+                              onsubmit="return confirm('Bạn chắc chắn muốn hủy toàn bộ sự kiện FlashSale hiện tại? Hành động này sẽ xóa SalePrice và thời gian sale trên tất cả biến thể đang được set.');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bx bx-x-circle me-1"></i>Hủy sự kiện
+                            </button>
+                        </form>
+                    }
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item active">Flash Sale</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar-xs">
+                            <span class="avatar-title rounded-circle bg-primary text-white">
+                                <i class="bx bx-list-ul"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Danh sách Flash Sale</h5>
+                            <div class="text-muted small">Chỉ hiển thị sản phẩm đã được set SalePrice + thời gian</div>
+                        </div>
+                    </div>
+
+                    <span class="badge bg-primary text-white rounded-pill px-3 py-2">
+                        <i class="bx bx-package me-1"></i>
+                        @(Model.Items?.Count ?? 0) sản phẩm
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="text-muted">
+                        <i class="bx bx-info-circle me-1"></i>
+                        Quản lý Flash Sale theo từng biến thể ngay tại đây.
+                    </div>
+
+                    <form method="get" class="d-flex gap-2" style="max-width: 520px; width: 100%;">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bx bx-search-alt"></i></span>
+                            <input class="form-control" name="search" value="@Model.Search" placeholder="Tìm theo tên sản phẩm..." />
+                        </div>
+                        <button class="btn btn-primary" type="submit"><i class="bx bx-search-alt me-1"></i>Tìm</button>
+                    </form>
+                </div>
+
+                <div class="mt-3">
+                    @if (Model.Items == null || Model.Items.Count == 0)
+                    {
+                        <div class="border rounded-3 p-4 bg-light text-center">
+                            <div class="text-muted">Chưa có Flash Sale nào được thiết lập.</div>
+                            <div class="mt-3">
+                                <a asp-area="Admin" asp-controller="FlashSales" asp-action="Setup" class="btn btn-primary">
+                                    <i class="bx bx-plus-circle me-1"></i>Tạo/Thiết lập sự kiện
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive border rounded-3">
+                            <table class="table table-striped table-hover table-nowrap align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th class="text-end" style="width:140px">Biến thể sale</th>
+                                        <th class="text-end" style="width:180px">Giá gốc (min)</th>
+                                        <th class="text-end" style="width:180px">Giá sale (min)</th>
+                                        <th style="width:260px">Thời gian</th>
+                                        <th style="width:140px">Trạng thái</th>
+                                        <th class="text-end" style="width:160px">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.Items)
+                                    {
+                                        var startUtc = item.SaleStartDate;
+                                        var endUtc = item.SaleEndDate;
+
+                                        var statusText = "—";
+                                        var statusClass = "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle";
+
+                                        if (startUtc.HasValue && endUtc.HasValue)
+                                        {
+                                            if (endUtc.Value < nowLocal)
+                                            {
+                                                statusText = "Đã kết thúc";
+                                                statusClass = "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle";
+                                            }
+                                            else if (startUtc.Value > nowLocal)
+                                            {
+                                                statusText = "Sắp diễn ra";
+                                                statusClass = "bg-warning-subtle text-warning-emphasis border border-warning-subtle";
+                                            }
+                                            else
+                                            {
+                                                statusText = "Đang diễn ra";
+                                                statusClass = "bg-success-subtle text-success-emphasis border border-success-subtle";
+                                            }
+                                        }
+
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    @if (!string.IsNullOrWhiteSpace(item.PrimaryImageUrl))
+                                                    {
+                                                        <img src="@item.PrimaryImageUrl" alt="@item.Name" class="rounded" style="width:44px;height:44px;object-fit:cover;" />
+                                                    }
+                                                    <div>
+                                                        <div class="fw-semibold">@item.Name</div>
+                                                        <div class="text-muted small">#@item.ProductId</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-end fw-semibold">@item.VariantOnSaleCount</td>
+                                            <td class="text-end">@item.MinPrice.ToString("N0", viVn)₫</td>
+                                            <td class="text-end">
+                                                @if (item.MinSalePrice.HasValue)
+                                                {
+                                                    <span class="fw-semibold text-danger">@item.MinSalePrice.Value.ToString("N0", viVn)₫</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">—</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (startUtc.HasValue && endUtc.HasValue)
+                                                {
+                                                    <div class="small">
+                                                        <div><i class="bx bx-calendar me-1"></i>@startUtc.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                                        <div><i class="bx bx-calendar-check me-1"></i>@endUtc.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">—</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge rounded-pill @statusClass">@statusText</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="d-inline-flex gap-2">
+                                                    <a asp-area="Admin" asp-controller="FlashSales" asp-action="Details" asp-route-id="@item.ProductId" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="bx bx-detail me-1"></i>Chi tiết
+                                                    </a>
+
+                                                    <a asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" asp-route-id="@item.ProductId" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bx bx-edit-alt me-1"></i>Sửa
+                                                    </a>
+
+                                                    <form asp-area="Admin" asp-controller="FlashSales" asp-action="CancelProduct" method="post" class="d-inline"
+                                                          onsubmit="return confirm('Hủy FlashSale của sản phẩm: @item.Name ? Hành động này sẽ xóa SalePrice + thời gian sale trên tất cả biến thể của sản phẩm.');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="productId" value="@item.ProductId" />
+                                                        <input type="hidden" name="search" value="@Model.Search" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bx bx-x-circle me-1"></i>Hủy
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

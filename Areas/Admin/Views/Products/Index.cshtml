@@ -1,0 +1,273 @@
+@model DOAN_BANHANG.ViewModels.ProductAdminListVm
+
+@{
+    ViewData["Title"] = "Quản lý sản phẩm";
+
+    (string Label, string BadgeClass, string Icon) ResolveStatusUi(string? status)
+    {
+        if (string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("Đang bán", "badge-soft-success", "bx bx-check-circle");
+        }
+
+        if (string.Equals(status, "Hidden", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("Tạm ẩn", "badge-soft-warning", "bx bx-hide");
+        }
+
+        if (string.Equals(status, "Draft", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("Nháp", "badge-soft-secondary", "bx bx-file");
+        }
+
+        return (status ?? "—", "badge-soft-dark", "bx bx-help-circle");
+    }
+}
+
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="avatar-sm rounded bg-primary-subtle text-primary-emphasis d-inline-flex align-items-center justify-content-center">
+                                        <i class="bx bx-package font-size-18"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="mb-0">Quản lý sản phẩm</h4>
+                                        <div class="text-muted small">Tìm kiếm, lọc và quản trị danh sách sản phẩm</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="page-title-right">
+                                <ol class="breadcrumb m-0">
+                                    <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                                    <li class="breadcrumb-item active">Sản phẩm</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="avatar-xs rounded bg-info-subtle text-info-emphasis d-inline-flex align-items-center justify-content-center">
+                                        <i class="bx bx-list-ul"></i>
+                                    </span>
+                                    <h4 class="card-title mb-0">Danh sách sản phẩm</h4>
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    <span class="badge badge-soft-primary rounded-pill">Tổng: @Model.TotalItems</span>
+                                    <span class="ms-2">Sản phẩm</span>
+                                </div>
+                            </div>
+
+                            <a class="btn btn-primary" asp-area="Admin" asp-controller="Products" asp-action="Create">
+                                <i class="bx bx-plus-circle me-1"></i>Thêm sản phẩm
+                            </a>
+                        </div>
+
+                        <div class="p-3 rounded-3 bg-light border">
+                            <form method="get" class="row g-2 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">Tìm kiếm</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bx bx-search"></i></span>
+                                        <input class="form-control" name="Search" value="@Model.Query.Search" placeholder="Tên sản phẩm" />
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Danh mục</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bx bx-category"></i></span>
+                                        <select class="form-select" name="CategoryId">
+                                            <option value="">Tất cả</option>
+                                            @foreach (var c in Model.CategoryOptions)
+                                            {
+                                                <option value="@c.Value" selected="@(Model.Query.CategoryId == c.Value)">@c.Label</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Trạng thái</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bx bx-shield-quarter"></i></span>
+                                        <select class="form-select" name="Status">
+                                            <option value="">Tất cả</option>
+                                            <option value="Active" selected="@(Model.Query.Status == "Active")">Đang bán (Active)</option>
+                                            <option value="Hidden" selected="@(Model.Query.Status == "Hidden")">Tạm ẩn (Hidden)</option>
+                                            <option value="Draft" selected="@(Model.Query.Status == "Draft")">Nháp (Draft)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 d-flex gap-2">
+                                    <button class="btn btn-primary w-100" type="submit">
+                                        <i class="bx bx-filter-alt me-1"></i>Lọc
+                                    </button>
+                                    <a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="Products" asp-action="Index" title="Reset bộ lọc">
+                                        <i class="bx bx-refresh"></i>
+                                    </a>
+                                </div>
+
+                                <input type="hidden" name="Page" value="1" />
+                                <input type="hidden" name="PageSize" value="@Model.Query.PageSize" />
+                            </form>
+                        </div>
+
+                        <div class="table-responsive mt-3 border rounded-3 overflow-hidden">
+                            <table class="table table-nowrap align-middle table-hover table-striped mb-0">
+                                <thead class="table-light sticky-top z-1">
+                                    <tr>
+                                        <th style="width: 74px;">Ảnh</th>
+                                        <th>Sản phẩm</th>
+                                        <th>Danh mục</th>
+                                        <th style="width: 120px;">Biến thể</th>
+                                        <th style="width: 140px;">Trạng thái</th>
+                                        <th style="width: 210px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.Products.Count == 0)
+                                    {
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-5">
+                                                <div class="d-inline-flex align-items-center gap-2">
+                                                    <i class="bx bx-info-circle"></i>
+                                                    <span>Không có sản phẩm phù hợp bộ lọc.</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        foreach (var p in Model.Products)
+                                        {
+                                            var statusUi = ResolveStatusUi(p.Status);
+                                            var dotClass = string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase)
+                                                ? "bg-success"
+                                                : string.Equals(p.Status, "Hidden", StringComparison.OrdinalIgnoreCase)
+                                                    ? "bg-warning"
+                                                    : string.Equals(p.Status, "Draft", StringComparison.OrdinalIgnoreCase)
+                                                        ? "bg-secondary"
+                                                        : "bg-light";
+                                            <tr>
+                                                <td>
+                                                    <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="d-inline-block">
+                                                        @if (!string.IsNullOrWhiteSpace(p.PrimaryImageUrl))
+                                                        {
+                                                            <img src="@p.PrimaryImageUrl" alt="@p.Name" class="rounded border" style="width: 52px; height: 52px; object-fit: cover;" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="avatar-sm rounded bg-light border d-inline-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                                                                <i class="bx bx-image text-muted font-size-18"></i>
+                                                            </span>
+                                                        }
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <div>
+                                                        <div class="fw-medium">
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <span class="rounded-circle @dotClass" style="width: 8px; height: 8px;"></span>
+                                                                <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="text-reset text-decoration-none">@p.Name</a>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-muted small d-flex flex-wrap align-items-center gap-2">
+                                                            <span class="badge bg-light text-muted border">#@p.Id</span>
+                                                            <span><i class="bx bx-calendar me-1"></i>@p.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="text-muted">@(p.CategoryName ?? "-")</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-soft-primary rounded-pill">
+                                                        <i class="bx bx-layer me-1"></i>@p.VariantCount biến thể
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge rounded-pill @statusUi.BadgeClass">
+                                                        <i class="@statusUi.Icon me-1"></i>@statusUi.Label
+                                                    </span>
+                                                </td>
+                                                <td class="text-nowrap">
+                                                    <div class="btn-group btn-group-sm" role="group" aria-label="Thao tác">
+                                                        <a class="btn btn-soft-secondary" asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" title="Xem chi tiết">
+                                                            <i class="bx bx-show-alt"></i>
+                                                            <span class="ms-1 d-none d-xl-inline">Xem</span>
+                                                        </a>
+                                                        <a class="btn btn-soft-primary" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@p.Id" title="Cập nhật">
+                                                            <i class="bx bx-edit-alt"></i>
+                                                            <span class="ms-1 d-none d-xl-inline">Cập nhật</span>
+                                                        </a>
+                                                        <a class="btn btn-soft-info" asp-area="Admin" asp-controller="Products" asp-action="Reviews" asp-route-id="@p.Id" title="Đánh giá">
+                                                            <i class="bx bx-message-square-dots"></i>
+                                                            <span class="ms-1 d-none d-xl-inline">Đánh giá</span>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if (Model.TotalPages > 1)
+                        {
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                                <div class="text-muted">
+                                    Trang <strong>@Model.Query.Page</strong>/<strong>@Model.TotalPages</strong>
+                                </div>
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination mb-0 pagination-rounded">
+                                        @{
+                                            string BuildUrl(int page)
+                                            {
+                                                return Url.Action("Index", "Products", new
+                                                {
+                                                    area = "Admin",
+                                                    Search = Model.Query.Search,
+                                                    CategoryId = Model.Query.CategoryId,
+                                                    Status = Model.Query.Status,
+                                                    Page = page,
+                                                    PageSize = Model.Query.PageSize
+                                                }) ?? "#";
+                                            }
+                                        }
+
+                                        <li class="page-item @(Model.Query.Page <= 1 ? "disabled" : "")">
+                                            <a class="page-link" href="@BuildUrl(Model.Query.Page - 1)"><i class="bx bx-chevron-left"></i></a>
+                                        </li>
+
+                                        @for (var i = 1; i <= Model.TotalPages; i++)
+                                        {
+                                            <li class="page-item @(i == Model.Query.Page ? "active" : "")">
+                                                <a class="page-link" href="@BuildUrl(i)">@i</a>
+                                            </li>
+                                        }
+
+                                        <li class="page-item @(Model.Query.Page >= Model.TotalPages ? "disabled" : "")">
+                                            <a class="page-link" href="@BuildUrl(Model.Query.Page + 1)"><i class="bx bx-chevron-right"></i></a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>

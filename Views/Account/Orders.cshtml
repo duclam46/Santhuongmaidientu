@@ -1,0 +1,288 @@
+@model DOAN_BANHANG.ViewModels.MyAccountPageVm
+
+@{
+  ViewData["Title"] = "Đơn hàng";
+
+  string FormatVnd(decimal amount)
+  {
+    return string.Format("{0:N0}đ", amount);
+  }
+
+  (string tabKey, string label, string pillClass) ResolveOrderStatusUi(string? rawStatus)
+  {
+    var s = (rawStatus ?? string.Empty).Trim();
+    var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
+
+    const string basePill = "inline-flex items-center justify-center whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-bold leading-5 ring-1 ring-inset";
+
+    return norm switch
+    {
+      "pendingconfirmation" or "waitconfirm" or "waitingconfirm" or "confirming" or "pending" or "confirmationpending" or "processing" or "inprocess" or "inprocessing" or "inprocess" or "chờxácnhận" or "choxacnhan" => (
+        "pending-confirmation",
+        "Chờ xác nhận",
+        $"{basePill} bg-warning-light text-warning-dark ring-warning-dark/25"
+      ),
+      "awaitingpickup" or "waitpickup" or "waitingpickup" or "readytopick" or "pickup" or "chờlấyhàng" or "cholayhang" => (
+        "awaiting-pickup",
+        "Chờ lấy hàng",
+        $"{basePill} bg-warning-light text-warning-dark ring-warning-dark/25"
+      ),
+      "confirmed" or "accepted" or "đãxácnhận" or "daxacnhan" => (
+        "awaiting-pickup",
+        "Chờ lấy hàng",
+        $"{basePill} bg-warning-light text-warning-dark ring-warning-dark/25"
+      ),
+      "shipping" or "delivering" or "intransit" or "đanggiao" or "danggiao" => (
+        "delivering",
+        "Đang giao",
+        $"{basePill} bg-primary/8 text-primary ring-primary/20"
+      ),
+      "completed" or "success" or "hoàntất" or "hoantat" => (
+        "completed",
+        "Hoàn tất",
+        $"{basePill} bg-success-light text-success-dark ring-success-dark/20"
+      ),
+      "delivered" or "deliverysuccess" or "dagiao" or "đãgiao" => (
+        "completed",
+        "Hoàn tất",
+        $"{basePill} bg-success-light text-success-dark ring-success-dark/20"
+      ),
+      "returned" or "return" or "refund" or "returnrequest" or "returning" or "trahang" or "trảhàng" => (
+        "returned",
+        "Trả hàng",
+        $"{basePill} bg-warning-light text-warning-dark ring-warning-dark/25"
+      ),
+      "cancelled" or "canceled" or "cancel" or "đãhủy" or "dahuy" => (
+        "cancelled",
+        "Đã hủy",
+        $"{basePill} bg-error-light text-error-dark ring-error-dark/20"
+      ),
+      _ => (
+        "pending-confirmation",
+        "Chờ xác nhận",
+        $"{basePill} bg-warning-light text-warning-dark ring-warning-dark/25"
+      )
+    };
+  }
+
+  string ResolvePaymentBadge(string? rawPaymentStatus)
+  {
+    var s = (rawPaymentStatus ?? string.Empty).Trim();
+    var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
+    return norm is "paid" or "success" or "completed" ? "(Đã thanh toán)" : "(Chưa thanh toán)";
+  }
+}
+
+<!-- ========== Breadcrumb Section Start ========== -->
+<div class="container py-12">
+  <div class="breadcrumb">
+    <ul>
+      <li>
+        <a href='@Url.Action("Index", "Home")'>
+          <span class="inline-flex items-center justify-center">
+            <i class="hgi hgi-stroke hgi-home-01 text-2xl leading-6"></i>
+          </span>
+          Home
+        </a>
+      </li>
+      <li class="text-light-disabled-text">&#8226;</li>
+      <li><span class="text-sm leading-[22px]">Đơn hàng</span></li>
+    </ul>
+  </div>
+</div>
+<!-- ========== Breadcrumb Section End ========== -->
+
+<section class="pb-[90px]">
+  <div class="container">
+    <div class="border border-gray-300 rounded-2xl p-6">
+      @if (!Model.IsSignedIn)
+      {
+        <h4 class="pb-3">Bạn chưa đăng nhập</h4>
+        <p class="text-light-secondary-text pb-6">
+          Vui lòng đăng nhập để xem lịch sử đơn hàng.
+        </p>
+        <a href="#" class="btn btn-primary login-page-btn">Đăng nhập</a>
+      }
+      else
+      {
+        @if (TempData["AccountSuccess"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
+        {
+          <div class="mb-6 p-4 rounded-2xl bg-success-light text-light-primary-text">@okMsg</div>
+        }
+        @if (TempData["AccountError"] is string errMsg && !string.IsNullOrWhiteSpace(errMsg))
+        {
+          <div class="mb-6 p-4 rounded-2xl bg-warning-light text-light-primary-text">@errMsg</div>
+        }
+
+        var allOrders = Model.Account?.Orders ?? new List<DOAN_BANHANG.ViewModels.OrderSummaryVm>();
+        var pendingConfirmOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "pending-confirmation").ToList();
+        var awaitingPickupOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "awaiting-pickup").ToList();
+        var deliveringOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "delivering").ToList();
+        var completedOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "completed").ToList();
+        var returnedOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "returned").ToList();
+        var cancelledOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "cancelled").ToList();
+
+        var tabs = new (string key, List<DOAN_BANHANG.ViewModels.OrderSummaryVm> orders)[]
+        {
+          ("all", allOrders),
+          ("pending-confirmation", pendingConfirmOrders),
+          ("awaiting-pickup", awaitingPickupOrders),
+          ("delivering", deliveringOrders),
+          ("completed", completedOrders),
+          ("returned", returnedOrders),
+          ("cancelled", cancelledOrders)
+        };
+
+        <div id="orders" class="menu-tab-pane">
+          <div class="flex flex-col gap-y-6 mb-6">
+            <h3 class="text-light-primary-text">Lịch sử đơn hàng</h3>
+            <div class="flex gap-x-4 overflow-x-auto order-history-product-filter">
+              <button data-tab="all" class="inline-flex items-center justify-center py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text">Tất cả</button>
+              <button data-tab="pending-confirmation" class="inline-flex items-center justify-center gap-x-2 py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text whitespace-nowrap">
+                <span>Chờ xác nhận</span>
+                @if (pendingConfirmOrders.Count > 0)
+                {
+                  <span class="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full text-xs font-bold bg-error text-white border-2 border-white" style="pointer-events:none">@pendingConfirmOrders.Count</span>
+                }
+              </button>
+              <button data-tab="awaiting-pickup" class="inline-flex items-center justify-center gap-x-2 py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text whitespace-nowrap">
+                <span>Chờ lấy hàng</span>
+                @if (awaitingPickupOrders.Count > 0)
+                {
+                  <span class="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full text-xs font-bold bg-error text-white border-2 border-white" style="pointer-events:none">@awaitingPickupOrders.Count</span>
+                }
+              </button>
+              <button data-tab="delivering" class="inline-flex items-center justify-center gap-x-2 py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text whitespace-nowrap">
+                <span>Đang giao</span>
+                @if (deliveringOrders.Count > 0)
+                {
+                  <span class="inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full text-xs font-bold bg-error text-white border-2 border-white" style="pointer-events:none">@deliveringOrders.Count</span>
+                }
+              </button>
+              <button data-tab="completed" class="inline-flex items-center justify-center py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text">Hoàn tất</button>
+              <button data-tab="returned" class="inline-flex items-center justify-center py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text">Trả hàng</button>
+              <button data-tab="cancelled" class="inline-flex items-center justify-center py-2 px-6 text-sm leading-[22px] rounded-[80px] font-medium text-light-primary-text">Đã hủy</button>
+            </div>
+          </div>
+
+          <div id="order-tab-content">
+            @foreach (var tab in tabs)
+            {
+              <div class="tab-pane" id="@tab.key">
+                @if (tab.orders.Count == 0)
+                {
+                  <div class="border border-gray-300 rounded-2xl p-6">
+                    <p class="text-light-secondary-text">Chưa có đơn hàng nào.</p>
+                  </div>
+                }
+                else
+                {
+                  <div class="flex flex-col gap-y-6">
+                    @foreach (var o in tab.orders)
+                    {
+                      var ui = ResolveOrderStatusUi(o.OrderStatus);
+                      <div class="order-history-table-wrapper border-gray-300 rounded-2xl border overflow-hidden">
+                        <table class="w-full order-history-table">
+                          <thead>
+                            <tr class="border-b border-gray-300">
+                              <th class="py-5 px-6">
+                                <div class="flex items-center justify-between">
+                                  <span class="pr-3 break-all">Mã đơn: #@(!string.IsNullOrWhiteSpace(o.OrderCode) ? o.OrderCode : o.Id.ToString())</span>
+                                  <span class="@ui.pillClass">@ui.label</span>
+                                </div>
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td class="lg:px-6 px-4 py-6 border-b border-gray-300">
+                                <div>
+                                  <ul class="flex flex-col gap-y-4">
+                                    <li class="flex items-center justify-between">
+                                      <p class="text-light-primary-text font-medium inline-flex items-center md:gap-x-4 gap-x-2">
+                                        <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-calendar-03 text-2xl leading-6"></i></span>
+                                        Ngày đặt:
+                                      </p>
+                                      <span class="font-semibold text-light-primary-text">@o.CreatedAt.ToLocalTime().ToString("HH:mm, dd/MM/yyyy")</span>
+                                    </li>
+                                    <li class="flex items-center justify-between">
+                                      <p class="text-light-primary-text font-medium inline-flex items-center md:gap-x-4 gap-x-2">
+                                        <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-delivery-box-01 text-2xl leading-6"></i></span>
+                                        Sản phẩm
+                                      </p>
+                                      <span class="font-semibold text-light-primary-text">@o.ItemCount</span>
+                                    </li>
+                                    <li class="flex items-center justify-between">
+                                      <p class="text-light-primary-text font-medium inline-flex items-center md:gap-x-4 gap-x-2">
+                                        <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-truck text-2xl leading-6"></i></span>
+                                        Phí vận chuyển
+                                      </p>
+                                      <p class="font-semibold text-light-primary-text">@(o.ShippingFee <= 0 ? "Miễn phí" : FormatVnd(o.ShippingFee))</p>
+                                    </li>
+                                    <li class="flex items-center justify-between">
+                                      <p class="text-light-primary-text font-medium inline-flex items-center md:gap-x-4 gap-x-2">
+                                        <span class="inline-flex items-center justify-center"><i class="hgi hgi-stroke hgi-payment-success-01 text-2xl leading-6"></i></span>
+                                        Tổng thanh toán
+                                      </p>
+                                      <p class="font-semibold text-light-primary-text">
+                                        @FormatVnd(o.FinalAmount)<span class="text-primary ml-0.5">@ResolvePaymentBadge(o.PaymentStatus)</span>
+                                      </p>
+                                    </li>
+                                  </ul>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td class="p-4">
+                                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                  <a class="btn btn-large btn-default outline py-1.5 px-6 text-sm leading-[22px] font-semibold rounded-[80px] shadow-none w-full md:w-auto whitespace-nowrap"
+                                     href='@Url.Action("OrderDetails", "Account", new { id = o.Id })'>
+                                    Xem chi tiết
+                                  </a>
+
+                                  <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center md:justify-end gap-2 w-full md:w-auto">
+                                    @if (ui.tabKey is "pending-confirmation" or "awaiting-pickup")
+                                    {
+                                      <form method="post" action="/my-orders/cancel" class="inline-flex w-full sm:w-auto" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="Id" value="@o.Id" />
+                                        <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                                        <button type="submit" class="btn btn-large py-1.5 px-6 text-sm leading-[22px] font-semibold rounded-[80px] shadow-none w-full sm:w-auto whitespace-nowrap bg-error text-white ring-1 ring-inset ring-error-dark/20">
+                                          Hủy đơn
+                                        </button>
+                                      </form>
+                                    }
+                                    <a class="btn btn-large btn-primary py-[7px] px-6 text-sm leading-[22px] font-semibold rounded-[80px] w-full sm:w-auto whitespace-nowrap" href='@Url.Action("Index", "Products")'>
+                                      Mua lại
+                                    </a>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div id="order-details" class="menu-tab-pane hidden">
+          <div class="flex items-center justify-between pb-6">
+            <h4>Chi tiết đơn hàng</h4>
+            <button type="button" class="btn btn-default outline btn-medium rounded-full order-details-back-button">
+              Quay lại
+            </button>
+          </div>
+
+          <div class="border border-gray-300 rounded-2xl p-6">
+            <p class="text-light-secondary-text">Trang chi tiết đơn hàng đã được chuyển sang trang riêng để hiển thị dữ liệu thật.</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

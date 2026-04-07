@@ -1,0 +1,257 @@
+@model DOAN_BANHANG.ViewModels.ProductAdminFlashSaleVm
+
+@{
+    ViewData["Title"] = "Chi tiết Flash Sale";
+    var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+    var nowLocal = DateTime.Now;
+    var variants = Model.Variants ?? new List<DOAN_BANHANG.ViewModels.ProductAdminFlashSaleVariantVm>();
+    var count = variants.Count;
+    decimal? minSale = variants
+        .Where(v => v.SalePrice.HasValue)
+        .Select(v => (decimal?)v.SalePrice!.Value)
+        .DefaultIfEmpty((decimal?)null)
+        .Min();
+
+    decimal? maxSale = variants
+        .Where(v => v.SalePrice.HasValue)
+        .Select(v => (decimal?)v.SalePrice!.Value)
+        .DefaultIfEmpty((decimal?)null)
+        .Max();
+
+    DateTime? startMin = variants
+        .Where(v => v.SaleStartDate.HasValue)
+        .Select(v => (DateTime?)v.SaleStartDate!.Value)
+        .DefaultIfEmpty((DateTime?)null)
+        .Min();
+
+    DateTime? endMax = variants
+        .Where(v => v.SaleEndDate.HasValue)
+        .Select(v => (DateTime?)v.SaleEndDate!.Value)
+        .DefaultIfEmpty((DateTime?)null)
+        .Max();
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 bg-light border rounded-3 p-3">
+                <div>
+                    <h4 class="mb-1"><i class="bx bx-detail me-1"></i>Chi tiết Flash Sale</h4>
+                    <div class="text-muted small">Sản phẩm: <span class="fw-semibold">@Model.ProductName</span></div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary text-white rounded-pill px-3 py-2">
+                        <i class="bx bx-purchase-tag-alt me-1"></i>
+                        @count biến thể
+                    </span>
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="FlashSales" asp-action="Index">Flash Sale</a></li>
+                        <li class="breadcrumb-item active">Chi tiết</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-success-subtle border-0 border-start border-4 border-success">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar-xs">
+                            <span class="avatar-title rounded-circle bg-success text-white">
+                                <i class="bx bx-check-shield"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Đang được Flash Sale</h5>
+                            <div class="text-muted small">Chỉ hiển thị biến thể đủ SalePrice + Bắt đầu + Kết thúc</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-outline-primary" asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" asp-route-id="@Model.ProductId">
+                            <i class="bx bx-edit-alt me-1"></i>Sửa
+                        </a>
+                        <a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="FlashSales" asp-action="Index">
+                            <i class="bx bx-arrow-back me-1"></i>Quay lại
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="text-muted small">Số biến thể</div>
+                            <div class="fw-semibold fs-5">@count</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="text-muted small">Giá sale (min → max)</div>
+                            <div class="fw-semibold fs-6">
+                                @if (count > 0 && minSale.HasValue && maxSale.HasValue)
+                                {
+                                    <span class="text-danger">@minSale.Value.ToString("N0", viVn)₫</span>
+                                    <span class="text-muted"> → </span>
+                                    <span class="text-danger">@maxSale.Value.ToString("N0", viVn)₫</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded-3 p-3 bg-light h-100">
+                            <div class="text-muted small">Thời gian (sớm nhất → muộn nhất)</div>
+                            <div class="fw-semibold">
+                                @if (count > 0 && startMin.HasValue && endMax.HasValue)
+                                {
+                                    <div class="small"><i class="bx bx-calendar me-1"></i>@startMin.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                    <div class="small"><i class="bx bx-calendar-check me-1"></i>@endMax.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.Variants == null || Model.Variants.Count == 0)
+                {
+                    <div class="border rounded-3 p-4 bg-light text-center">
+                        <div class="avatar-sm mx-auto mb-2">
+                            <span class="avatar-title rounded-circle bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
+                                <i class="bx bx-info-circle"></i>
+                            </span>
+                        </div>
+                        <div class="text-muted">Sản phẩm này hiện chưa có biến thể nào đủ điều kiện Flash Sale.</div>
+                        <div class="mt-3">
+                            <a class="btn btn-outline-primary" asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" asp-route-id="@Model.ProductId">
+                                <i class="bx bx-edit-alt me-1"></i>Thiết lập Flash Sale
+                            </a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive border rounded-3" style="max-height: 560px; overflow:auto;">
+                        <table class="table table-striped table-hover table-nowrap align-middle mb-0">
+                            <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                                <tr>
+                                    <th style="width: 90px">Variant</th>
+                                    <th>Thuộc tính</th>
+                                    <th class="text-end" style="width: 160px">Giá gốc</th>
+                                    <th class="text-end" style="width: 160px">Giá sale</th>
+                                    <th class="text-end" style="width: 120px">Giảm</th>
+                                    <th style="width: 260px">Thời gian</th>
+                                    <th style="width: 140px">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var v in Model.Variants)
+                                {
+                                    var start = v.SaleStartDate;
+                                    var end = v.SaleEndDate;
+
+                                    var statusText = "—";
+                                    var statusClass = "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle";
+
+                                    if (start.HasValue && end.HasValue)
+                                    {
+                                        if (end.Value < nowLocal)
+                                        {
+                                            statusText = "Đã kết thúc";
+                                            statusClass = "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle";
+                                        }
+                                        else if (start.Value > nowLocal)
+                                        {
+                                            statusText = "Sắp diễn ra";
+                                            statusClass = "bg-warning-subtle text-warning-emphasis border border-warning-subtle";
+                                        }
+                                        else
+                                        {
+                                            statusText = "Đang diễn ra";
+                                            statusClass = "bg-success-subtle text-success-emphasis border border-success-subtle";
+                                        }
+                                    }
+
+                                    decimal? pct = null;
+                                    if (v.Price > 0m && v.SalePrice.HasValue && v.SalePrice.Value > 0m)
+                                    {
+                                        var raw = (1m - (v.SalePrice.Value / v.Price)) * 100m;
+                                        pct = Math.Round(raw, 0, MidpointRounding.AwayFromZero);
+                                    }
+
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">#@v.VariantId</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-medium">@v.VariantLabel</div>
+                                            <div class="mt-1">
+                                                @if (v.IsActive)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Active</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">Inactive</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td class="text-end">@v.Price.ToString("N0", viVn)₫</td>
+                                        <td class="text-end">
+                                            @if (v.SalePrice.HasValue)
+                                            {
+                                                <span class="fw-semibold text-danger">@v.SalePrice.Value.ToString("N0", viVn)₫</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            @if (pct.HasValue)
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">@pct.Value%</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (start.HasValue && end.HasValue)
+                                            {
+                                                <div class="small">
+                                                    <div><i class="bx bx-calendar me-1"></i>@start.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                                    <div><i class="bx bx-calendar-check me-1"></i>@end.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge rounded-pill @statusClass">@statusText</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

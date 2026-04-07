@@ -1,0 +1,312 @@
+@model DOAN_BANHANG.ViewModels.CheckoutPageVm
+
+@{
+  ViewData["Title"] = "Thanh toán";
+
+  string ResolveImageUrl(string? rawUrl)
+  {
+    if (string.IsNullOrWhiteSpace(rawUrl))
+    {
+      return Url.Content("~/assets/images/vitamin-c.png");
+    }
+
+    rawUrl = rawUrl.Trim();
+
+    if (rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+    {
+      return rawUrl;
+    }
+
+    if (rawUrl.StartsWith("~/", StringComparison.Ordinal))
+    {
+      return Url.Content(rawUrl);
+    }
+
+    if (rawUrl.StartsWith("/", StringComparison.Ordinal))
+    {
+      return rawUrl;
+    }
+
+    return Url.Content("~/" + rawUrl.TrimStart('/'));
+  }
+
+  string FormatVnd(decimal amount)
+  {
+    return string.Format("{0:N0}đ", amount);
+  }
+
+  var shippingFee = Model.ShippingFee;
+  var finalAmount = Model.FinalAmount;
+  var hasItems = Model.SelectedItemCount > 0 && Model.Items.Count > 0;
+  var hasAddresses = Model.Addresses is not null && Model.Addresses.Count > 0;
+}
+
+<section class="pt-6 pb-15">
+  <div class="container">
+    <div class="mb-6">
+      <h3>Thanh toán</h3>
+      @if (Model.IsBuyNow)
+      {
+        <p class="text-light-secondary-text">Bạn đang mua ngay 1 sản phẩm (không lấy các sản phẩm khác trong giỏ hàng).</p>
+      }
+      else
+      {
+        <p class="text-light-secondary-text">Chỉ những sản phẩm đã chọn trong giỏ hàng mới được thanh toán.</p>
+      }
+    </div>
+
+    <div
+      class="p-4 mb-6 border border-gray-300 rounded-2xl bg-[rgba(255,171,0,0.08)] text-light-primary-text @(string.IsNullOrWhiteSpace(Model.ErrorMessage) ? "hidden" : "")"
+      data-checkout-error-wrapper
+    >
+      <div data-checkout-error>@Model.ErrorMessage</div>
+      <div class="mt-2">
+        <a class="text-primary font-semibold" href="/my-account?tab=address">Quản lý địa chỉ</a>
+      </div>
+    </div>
+
+    <form method="post" action="/checkout" data-checkout-page>
+      @Html.AntiForgeryToken()
+
+      @if (Model.IsBuyNow)
+      {
+        <input type="hidden" name="BuyNowVariantId" value="@Model.BuyNowVariantId" />
+        <input type="hidden" name="BuyNowQuantity" value="@Model.BuyNowQuantity" data-checkout-buynow-quantity />
+      }
+
+      @if (!hasAddresses)
+      {
+      <input type="hidden" name="AddressId" value="0" />
+      }
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="flex flex-col gap-y-6 lg:col-span-1">
+          <div class="p-6 border border-gray-300 rounded-2xl">
+            <div class="flex items-center justify-between gap-x-4">
+              <h5>Địa chỉ giao hàng</h5>
+            <a class="text-primary font-semibold" href="/my-account?tab=address">Thay đổi</a>
+            </div>
+
+          @if (!hasAddresses)
+            {
+              <p class="mt-3 text-light-secondary-text">Bạn chưa có địa chỉ giao hàng mặc định.</p>
+            }
+            else
+            {
+            <div class="mt-4">
+              <label class="block text-sm font-semibold text-light-primary-text mb-2">Chọn địa chỉ</label>
+
+              <div class="flex flex-col gap-3">
+                @foreach (var a in Model.Addresses!)
+                {
+                  var isSelected = a.Id == Model.SelectedAddressId;
+                  var cardClass = isSelected
+                    ? "border-primary bg-primary/8"
+                    : "border-gray-300";
+
+                  <label class="p-4 border rounded-2xl cursor-pointer flex items-start gap-3 @cardClass">
+                    <input
+                      type="radio"
+                      name="AddressId"
+                      value="@a.Id"
+                      checked="@(isSelected ? "checked" : null)"
+                      class="mt-1 js-checkout-address"
+                      aria-label="Chọn địa chỉ"
+                    />
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-start justify-between gap-x-4">
+                        <div class="font-semibold text-light-primary-text truncate">@a.FullName</div>
+                        <div class="text-light-secondary-text whitespace-nowrap">@a.PhoneNumber</div>
+                      </div>
+                      <div class="text-light-secondary-text mt-1 break-words">@a.FullAddress</div>
+                    </div>
+                  </label>
+                }
+              </div>
+            </div>
+            }
+          </div>
+
+          <div class="p-6 border border-gray-300 rounded-2xl">
+            <h5>Phương thức thanh toán</h5>
+
+            <div class="mt-4 flex flex-col gap-y-3">
+              <label class="flex items-center gap-x-3 cursor-pointer">
+                <input type="radio" name="PaymentMethod" value="COD" @(string.Equals(Model.PaymentMethod, "COD", StringComparison.OrdinalIgnoreCase) ? "checked" : null) />
+                <span class="text-light-primary-text">Thanh toán khi nhận hàng (COD)</span>
+              </label>
+              <label class="flex items-center gap-x-3 cursor-pointer">
+                <input type="radio" name="PaymentMethod" value="BANK" @(string.Equals(Model.PaymentMethod, "BANK", StringComparison.OrdinalIgnoreCase) ? "checked" : null) />
+                <span class="text-light-primary-text">Chuyển khoản ngân hàng</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-y-6 lg:col-span-2">
+          <div class="p-6 border border-gray-300 rounded-2xl">
+            <div class="flex items-center justify-between gap-x-4">
+              <h5>Sản phẩm đã chọn</h5>
+              @if (!Model.IsBuyNow)
+              {
+                <a class="text-primary font-semibold" href="#" data-show-sidebar=".cart-sidebar">Chỉnh trong giỏ</a>
+              }
+            </div>
+
+            @if (!hasItems)
+            {
+              <p class="mt-3 text-light-secondary-text">Bạn chưa chọn sản phẩm nào để thanh toán.</p>
+            }
+            else
+            {
+              <div class="mt-4">
+                <div class="wishlist-table-wrapper border-gray-300 rounded-2xl border overflow-x-auto">
+                  <table class="w-full wishlist-table">
+                    <thead class="bg-gray-200">
+                      <tr>
+                        <th class="product text-left font-semibold pl-4">
+                          <p class="product-name">Product</p>
+                        </th>
+                        <th class="product-price text-left py-2.5 font-semibold">Price</th>
+                        <th class="product-quantity text-left py-2.5 font-semibold">Quantity</th>
+                        <th class="product-total-price text-left py-2.5 font-semibold">Total Price</th>
+                        <th class="product-actions text-center py-2.5 font-semibold pr-4">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @foreach (var it in Model.Items)
+                      {
+                        var detailsUrl = !string.IsNullOrWhiteSpace(it.ProductSlug) ? $"/product/{Uri.EscapeDataString(it.ProductSlug)}" : "#";
+                        var variantText = string.Join(", ", new[]
+                        {
+                          !string.IsNullOrWhiteSpace(it.Color) ? $"Color: {it.Color}" : null,
+                          !string.IsNullOrWhiteSpace(it.Size) ? $"Size: {it.Size}" : null
+                        }.Where(x => x is not null));
+
+                        <tr class="py-4" data-checkout-item data-cart-item-id="@it.CartItemId" data-variant-id="@it.VariantId">
+                          <td data-title="Product" class="py-4 px-3 lg:px-4 product">
+                            <div class="flex items-end md:items-start gap-x-4 flex-col md:flex-row gap-y-4">
+                              <div class="product-thumbnail max-w-[120px] h-[120px] rounded-2xl bg-[#F4F3F5] overflow-hidden">
+                                <a href="@detailsUrl">
+                                  <img src="@ResolveImageUrl(it.ImageUrl)" alt="@it.ProductName" class="rounded-2xl h-full w-full object-cover" />
+                                </a>
+                              </div>
+                              <div class="flex flex-col gap-y-2 items-end md:items-start min-w-0">
+                                <a class="product-name text-light-primary-text font-semibold truncate hover:text-primary transition-colors duration-300" href="@detailsUrl">
+                                  @it.ProductName
+                                </a>
+                                @if (!string.IsNullOrWhiteSpace(variantText))
+                                {
+                                  <p class="text-sm leading-[22px] font-normal text-light-secondary-text inline-flex items-center gap-x-2.5">
+                                    @variantText
+                                  </p>
+                                }
+                              </div>
+                            </div>
+                          </td>
+
+                          <td data-title="Price" class="capitalize py-4 px-3 lg:px-0 product-price">
+                            <div class="flex items-center gap-x-3">
+                              <span class="text-light-primary-text font-semibold" data-checkout-unit-price>@FormatVnd(it.UnitPrice)</span>
+                            </div>
+                          </td>
+
+                          <td data-title="Quantity" class="capitalize py-4 px-3 lg:px-0 product-quantity">
+                            <div class="border border-gray-300 inline-flex items-center justify-center rounded-[80px] max-w-[108px] py-2.5 px-4">
+                              <button type="button" class="inline-flex items-center justify-center hover:text-primary" data-checkout-qty-action="dec" aria-label="Decrease quantity">
+                                <i class="hgi hgi-stroke hgi-remove-circle text-xl leading-6"></i>
+                              </button>
+                              <input type="text" readonly value="@it.Quantity" class="quantity-input border-0 w-full grow text-center focus:outline-none font-semibold text-light-primary-text" data-checkout-qty-input />
+                              <button type="button" class="inline-flex items-center justify-center hover:text-primary" data-checkout-qty-action="inc" aria-label="Increase quantity">
+                                <i class="hgi hgi-stroke hgi-add-circle text-xl leading-6"></i>
+                              </button>
+                            </div>
+                          </td>
+
+                          <td data-title="Total Price" class="capitalize py-4 px-3 lg:px-0 product-total-price">
+                            <p class="font-semibold text-light-primary-text" data-checkout-line-total>@FormatVnd(it.LineTotal)</p>
+                          </td>
+
+                          <td data-title="Action" class="capitalize py-4 px-3 lg:px-4 product-actions">
+                            <div class="flex items-center justify-center gap-x-2 md:gap-x-6">
+                              @if (!Model.IsBuyNow && it.CartItemId > 0)
+                              {
+                                <button type="button" class="inline-flex items-center justify-center product-remove" data-checkout-remove data-cart-item-id="@it.CartItemId" aria-label="Remove">
+                                  <i class="hgi hgi-stroke hgi-delete-01 text-2xl leading-6 text-light-primary-text"></i>
+                                </button>
+                              }
+                              else
+                              {
+                                <button type="button" class="inline-flex items-center justify-center opacity-50 cursor-not-allowed" disabled aria-label="Remove">
+                                  <i class="hgi hgi-stroke hgi-delete-01 text-2xl leading-6 text-light-primary-text"></i>
+                                </button>
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="p-6 border border-gray-300 rounded-2xl sticky top-6">
+            <h5 class="mb-4">Tóm tắt đơn hàng</h5>
+
+            <div class="flex items-center justify-between py-2">
+              <span class="text-light-secondary-text">Tạm tính</span>
+              <span class="font-semibold text-light-primary-text" data-checkout-subtotal>@FormatVnd(Model.SelectedSubTotal)</span>
+            </div>
+            <div class="flex items-center justify-between py-2">
+              <span class="text-light-secondary-text">Phí vận chuyển</span>
+              <span class="font-semibold text-light-primary-text" data-checkout-shipping>@FormatVnd(shippingFee)</span>
+            </div>
+            <div class="w-full h-px bg-gray-300 my-3"></div>
+            <div class="flex items-center justify-between py-2">
+              <span class="text-light-primary-text font-semibold">Tổng cộng</span>
+              <span class="text-light-primary-text font-semibold" data-checkout-total>@FormatVnd(finalAmount)</span>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary btn-large rounded-[80px] w-full mt-4 @(hasItems && hasAddresses ? "" : "opacity-50 cursor-not-allowed")"
+              @(hasItems && hasAddresses ? null : "disabled")
+            >
+              Đặt hàng
+            </button>
+
+            <div class="mt-3">
+              <a class="btn btn-default outline btn-large rounded-[80px] w-full shadow-none" href="/">
+                Tiếp tục mua sắm
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  (function () {
+    var radios = document.querySelectorAll('input.js-checkout-address[name="AddressId"]');
+    if (!radios || radios.length === 0) return;
+
+    function onChange(e) {
+      var target = e && e.target;
+      if (!target || !target.value) return;
+
+      var url = new URL(window.location.href);
+      url.searchParams.set('addressId', target.value);
+      window.location.href = url.toString();
+    }
+
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].addEventListener('change', onChange);
+    }
+  })();
+</script>
