@@ -90,10 +90,10 @@
 
   var displayBasePrice = selectedVariant?.BasePrice ?? Model.Price;
   var displayPrice = selectedVariant?.Price ?? Model.Price;
-  var isSaleDisplay = isOnSale && displayBasePrice > displayPrice;
-  var displayDiscountPercent = isSaleDisplay && displayBasePrice > 0
+  var displayDiscountPercent = isOnSale && displayBasePrice > displayPrice && displayBasePrice > 0
     ? (int)System.Math.Round(System.Math.Clamp((double)((displayBasePrice - displayPrice) / displayBasePrice * 100m), 0d, 100d))
     : 0;
+  var isSaleDisplay = isOnSale && displayBasePrice > displayPrice && displayDiscountPercent > 0;
 
   var displayStockLeft = selectedVariant?.StockQuantity ?? Model.StockQuantity;
   var maxVariantStock = variants.Count > 0 ? variants.Max(v => v.StockQuantity) : displayStockLeft;
@@ -140,7 +140,7 @@
                 >
                   @foreach (var img in images)
                   {
-                    <div class="single-product-small-slider-item p-2.5 rounded-lg overflow-hidden">
+                    <div class="single-product-small-slider-item p-2.5 rounded-lg overflow-hidden aspect-square bg-[#F4F3F5]">
                       <img
                         src="@img.Url"
                         alt="@img.Alt"
@@ -162,11 +162,11 @@
                 >
                   @foreach (var img in images)
                   {
-                    <div class="single-product-big-slider-item px-3 rounded-2xl overflow-hidden">
+                    <div class="single-product-big-slider-item px-3 rounded-2xl overflow-hidden h-[360px] sm:h-[440px] lg:h-[520px] bg-[#F4F3F5] flex items-center justify-center">
                       <img
                         src="@img.Url"
                         alt="@img.Alt"
-                        class="w-full h-full object-cover rounded-3xl"
+                        class="w-full h-full object-contain rounded-3xl"
                       />
                     </div>
                   }
@@ -184,11 +184,11 @@
                 <div class="flex items-center flex-wrap gap-2 mb-6">
                   @if (isSaleDisplay)
                   {
-                    <span class="product-discount-badge inline-block uppercase relative bg-error text-warning-lighter font-medium text-sm leading-[22px] px-1 after:absolute after:top-0 after:left-full after:z-10 after:w-1 after:h-full after:bg-[url('../images/discount-shape.png')] after:bg-contain after:bg-no-repeat">Đang giảm giá</span>
+                    <span class="product-details-tag-sale">Đang giảm giá</span>
                   }
                   @if (isNewArrival)
                   {
-                    <span class="product-discount-badge inline-block uppercase relative bg-success-light text-black text-sm leading-[22px] px-1 after:absolute after:top-0 after:left-full after:z-10 after:w-1 after:h-full after:bg-[url('../images/discount-primary-shape.png')] after:bg-contain after:bg-no-repeat">Hàng mới</span>
+                    <span class="product-details-tag-new">Hàng mới</span>
                   }
                 </div>
               }
@@ -218,16 +218,32 @@
               </div>
               <div class="price-section flex items-center gap-x-3 mb-6">
                 <span
-                  class="current-price text-2xl leading-9 font-bold text-light-primary-text relative after:absolute after:h-6 after:w-px after:bg-gray-300 after:right-0 after:top-1/2 after:-translate-y-1/2 pr-3 inline-block"
+                  class="current-price text-2xl leading-9 font-bold text-light-primary-text inline-block @(isSaleDisplay ? "relative after:absolute after:h-6 after:w-px after:bg-gray-300 after:right-0 after:top-1/2 after:-translate-y-1/2 pr-3" : "")"
                   id="js-current-price">@displayPrice.ToString("N0", viVn) VNĐ</span>
-                <span
-                  id="js-old-price"
-                  class="old-price text-2xl leading-9 font-normal text-light-disabled-text @(isSaleDisplay ? "" : "hidden")"
-                >@displayBasePrice.ToString("N0", viVn) VNĐ</span>
-                <span
-                  id="js-discount-percent"
-                  class="product-discount-badge uppercase relative bg-error text-warning-lighter font-medium text-sm leading-[22px] px-1 after:absolute after:top-0 after:left-full after:z-10 after:w-1 after:h-full after:bg-[url('../images/discount-shape.png')] after:bg-contain after:bg-no-repeat @(isSaleDisplay ? "" : "hidden")"
-                >@displayDiscountPercent% OFF</span>
+                @if (isSaleDisplay)
+                {
+                  <span
+                    id="js-old-price"
+                    class="old-price text-2xl leading-9 font-normal text-light-disabled-text"
+                  >@displayBasePrice.ToString("N0", viVn) VNĐ</span>
+                  <span
+                    id="js-discount-percent"
+                    class="product-details-discount-badge"
+                  >@displayDiscountPercent% OFF</span>
+                }
+                else
+                {
+                  <span
+                    id="js-old-price"
+                    class="old-price text-2xl leading-9 font-normal text-light-disabled-text hidden"
+                    style="display: none;"
+                  ></span>
+                  <span
+                    id="js-discount-percent"
+                    class="product-details-discount-badge hidden"
+                    style="display: none;"
+                  ></span>
+                }
               </div>
               <div id="js-sale-countdown" class="sale-section flex flex-col xl:flex-row xl:items-center xl:justify-between mb-6 @(isOnSale && saleSecondsLeft.HasValue && saleSecondsLeft.Value > 0 ? "" : "hidden")" data-seconds-left="@(saleSecondsLeft ?? 0)">
                 <p class="xl:w-[120px] w-full text-left mb-4 xl:mb-0">Nhanh tay! Kết thúc sau:</p>
@@ -262,58 +278,6 @@
                   Nhanh tay! Chỉ còn <span id="js-stock-left" class="font-semibold">@displayStockLeft.ToString("N0", viVn)</span> sản phẩm trong kho
                 </p>
               </div>
-
-              @if (Model.Shop is not null && !string.IsNullOrWhiteSpace(Model.Shop.Slug))
-              {
-                var shopUrl = Url.RouteUrl("shop_details", new { slug = Model.Shop.Slug }) ?? "#";
-                var shopLogoUrl = global::DOAN_BANHANG.Helpers.ImageUrlHelper.NormalizeStaticFileUrl(Model.Shop.LogoUrl)
-                  ?? Url.Content("~/assets/images/vendors-list/vendor-profile.png");
-
-                <div class="border border-gray-300 rounded-2xl p-4 mb-6">
-                  <div class="flex items-start justify-between gap-4">
-                    <a href="@shopUrl" class="flex items-center gap-3 min-w-0">
-                      <div class="size-12 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center flex-none">
-                        <img src="@shopLogoUrl" alt="@Model.Shop.Name" class="w-full h-full object-cover" />
-                      </div>
-                      <div class="min-w-0">
-                        <p class="font-semibold text-light-primary-text truncate">@Model.Shop.Name</p>
-                        <div class="text-sm text-light-secondary-text">
-                          @if (!string.IsNullOrWhiteSpace(Model.Shop.Location))
-                          {
-                            <span class="inline-flex items-center gap-1">
-                              <i class="hgi hgi-stroke hgi-location-01 text-base"></i>
-                              <span class="truncate">@Model.Shop.Location</span>
-                            </span>
-                          }
-                          else
-                          {
-                            <span class="text-light-secondary-text">&nbsp;</span>
-                          }
-                        </div>
-                      </div>
-                    </a>
-
-                    <a href="@shopUrl" class="btn btn-outline rounded-full font-semibold text-sm leading-6 px-5 py-2 flex-none">
-                      Xem shop
-                    </a>
-                  </div>
-
-                  <div class="grid grid-cols-3 gap-3 mt-4">
-                    <div class="text-center">
-                      <p class="text-sm text-light-secondary-text">Đánh giá</p>
-                      <p class="font-semibold text-light-primary-text">@Model.Shop.RatingAverage.ToString("0.0", viVn)</p>
-                    </div>
-                    <div class="text-center">
-                      <p class="text-sm text-light-secondary-text">Sản phẩm</p>
-                      <p class="font-semibold text-light-primary-text">@Model.Shop.ProductCount.ToString("N0", viVn)</p>
-                    </div>
-                    <div class="text-center">
-                      <p class="text-sm text-light-secondary-text">Phản hồi chat</p>
-                      <p class="font-semibold text-light-primary-text">@(Model.Shop.ChatResponseRate.HasValue ? (Model.Shop.ChatResponseRate.Value + "%") : "-")</p>
-                    </div>
-                  </div>
-                </div>
-              }
 
               <script type="application/json" id="js-product-variants">
                 @Html.Raw(global::System.Text.Json.JsonSerializer.Serialize(
@@ -435,6 +399,7 @@
                         ></i>
                       </button>
                     </div>
+
                     <button
                       type="button"
                       data-buy-now
@@ -467,12 +432,20 @@
                   <i class="hgi hgi-stroke hgi-share-05 text-xl leading-5"></i>
                   <span>Chia sẻ</span>
                 </a>
-                <a class='product-compare-btn text-info inline-flex items-center gap-x-2.5' href="#">
+                <a class='product-compare-btn text-info inline-flex items-center gap-x-2.5 pr-4 relative after:absolute after:top-1/2 after:-translate-y-1/2 after:right-0 after:w-px after:h-3 after:bg-gray-300' 
+                   href="javascript:void(0)" onclick="addToCompare(@Model.ProductId)">
                   <i
                     class="hgi hgi-stroke hgi-git-compare text-xl leading-5"
                   ></i>
                   <span>So sánh</span>
                 </a>
+                @if (Model.ShopId > 0)
+                {
+                    <button type="button" onclick="openChatWithShop(@Model.ProductId, @Model.ShopId)" class="text-info inline-flex items-center gap-x-2.5 hover:text-primary transition-colors cursor-pointer bg-transparent border-none p-0">
+                        <i class="hgi hgi-stroke hgi-chatting-01 text-xl leading-5"></i>
+                        <span class="font-medium">Nhắn với shop</span>
+                    </button>
+                }
               </div>
               <div
                 class="product-extra-info-section flex flex-col gap-y-4 mt-6"
@@ -510,6 +483,58 @@
             </div>
           </div>
         </div>
+
+        @if (Model.Shop is not null && !string.IsNullOrWhiteSpace(Model.Shop.Slug))
+        {
+          var shopUrl = Url.RouteUrl("shop_details", new { slug = Model.Shop.Slug }) ?? "#";
+          var shopLogoUrl = global::DOAN_BANHANG.Helpers.ImageUrlHelper.NormalizeStaticFileUrl(Model.Shop.LogoUrl)
+            ?? Url.Content("~/assets/images/vendors-list/vendor-profile.png");
+
+          <div class="mt-5 lg:mt-6 border border-gray-300 rounded-2xl p-5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
+              <a href="@shopUrl" class="flex items-center gap-3 min-w-0 md:flex-1">
+                <div class="size-12 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center flex-none">
+                  <img src="@shopLogoUrl" alt="@Model.Shop.Name" class="w-full h-full object-cover" />
+                </div>
+                <div class="min-w-0">
+                  <p class="font-semibold text-light-primary-text truncate">@Model.Shop.Name</p>
+                  <div class="text-sm text-light-secondary-text">
+                    @if (!string.IsNullOrWhiteSpace(Model.Shop.Location))
+                    {
+                      <span class="inline-flex items-center gap-1 min-w-0">
+                        <i class="hgi hgi-stroke hgi-location-01 text-base"></i>
+                        <span class="truncate">@Model.Shop.Location</span>
+                      </span>
+                    }
+                    else
+                    {
+                      <span class="text-light-secondary-text">&nbsp;</span>
+                    }
+                  </div>
+                </div>
+              </a>
+
+              <div class="flex items-center justify-start md:justify-center gap-6 flex-wrap md:flex-nowrap md:flex-1">
+                <div class="text-center min-w-[92px]">
+                  <p class="text-sm text-light-secondary-text whitespace-nowrap">Đánh giá</p>
+                  <p class="font-semibold text-light-primary-text whitespace-nowrap">@Model.Shop.RatingAverage.ToString("0.0", viVn)</p>
+                </div>
+                <div class="text-center min-w-[92px]">
+                  <p class="text-sm text-light-secondary-text whitespace-nowrap">Sản phẩm</p>
+                  <p class="font-semibold text-light-primary-text whitespace-nowrap">@Model.Shop.ProductCount.ToString("N0", viVn)</p>
+                </div>
+                <div class="text-center min-w-[120px]">
+                  <p class="text-sm text-light-secondary-text whitespace-nowrap">Phản hồi chat</p>
+                  <p class="font-semibold text-light-primary-text whitespace-nowrap">@(Model.Shop.ChatResponseRate.HasValue ? (Model.Shop.ChatResponseRate.Value + "%") : "-")</p>
+                </div>
+              </div>
+
+              <a href="@shopUrl" class="btn btn-outline rounded-full font-semibold text-sm leading-6 px-5 py-2 w-full md:w-auto flex-none whitespace-nowrap">
+                Xem shop
+              </a>
+            </div>
+          </div>
+        }
       </div>
     </section>
     <!-- ========== Product Details Section End ========== -->
@@ -553,25 +578,8 @@
 
           <div class="suggestion-section mb-4">
             <h6 class="mb-2">Gợi ý cho bạn:</h6>
-            <div class="suggestion-items flex items-center gap-x-2">
-              <div class="suggestion-item py-[7px] px-4 rounded-full border border-gray-300 flex items-center justify-center leading-[26px] font-semibold text-light-primary-text hover:bg-[rgba(145,158,171,0.08)]">
-                S
-              </div>
-              <div class="suggestion-item py-[7px] px-[15px] rounded-full border border-gray-300 flex items-center justify-center leading-[26px] font-semibold text-light-primary-text hover:bg-[rgba(145,158,171,0.08)]">
-                M
-              </div>
-              <div class="suggestion-item py-[7px] px-[15px] rounded-full border border-gray-300 flex items-center justify-center leading-[26px] font-semibold text-light-primary-text hover:bg-[rgba(145,158,171,0.08)]">
-                L
-              </div>
-              <div class="suggestion-item py-[7px] px-[15px] rounded-full border border-gray-300 flex items-center justify-center leading-[26px] font-semibold text-light-primary-text hover:bg-[rgba(145,158,171,0.08)]">
-                XL
-              </div>
-              <div class="suggestion-item py-[7px] px-[15px] rounded-full border border-gray-300 flex items-center justify-center leading-[26px] font-semibold text-light-primary-text hover:bg-[rgba(145,158,171,0.08)]">
-                XXL
-              </div>
-              <div class="suggestion-item py-[7px] px-[15px] rounded-full border border-gray-300 flex items-center justify-center leading-[26px] font-semibold text-light-primary-text hover:bg-[rgba(145,158,171,0.08)]">
-                XXXL
-              </div>
+            <div id="js-size-suggestion-output" class="suggestion-items flex items-center gap-x-2">
+              <span class="text-light-secondary-text text-sm italic">Sử dụng thanh trượt phía trên để nhận gợi ý size phù hợp</span>
             </div>
           </div>
 
@@ -579,56 +587,57 @@
             <div class="size-table w-full overflow-x-auto">
               <table class="w-full">
                 <thead>
-                  <tr>
+                  @{
+                    var guidesM = Model.SizeGuides ?? new List<ProductSizeGuideVm>();
+                    var hasShoulderM = guidesM.Any(g => g.ShoulderWidthCm.HasValue);
+                    var hasBustM = guidesM.Any(g => g.BustCm.HasValue);
+                    var hasWaistM = guidesM.Any(g => g.WaistCm.HasValue);
+                    var hasHipM = guidesM.Any(g => g.HipCm.HasValue);
+                    var hasLenM = guidesM.Any(g => g.LengthCm.HasValue);
+                    var hasWidM = guidesM.Any(g => g.WidthCm.HasValue);
+                    var hasHeiM = guidesM.Any(g => g.HeightCm.HasValue);
+                    var hasShoeM = guidesM.Any(g => g.ShoeLengthCm.HasValue);
+                    var hasPersonHeightM = guidesM.Any(g => !string.IsNullOrEmpty(g.HeightRange));
+                    var hasPersonWeightM = guidesM.Any(g => !string.IsNullOrEmpty(g.WeightRange));
+                  }
+                  <tr class="border-b border-gray-300">
                     <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Size</th>
-                    <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Vòng ngực</th>
-                    <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Vòng eo</th>
-                    <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Vòng mông</th>
+                    @if (hasShoulderM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Vai</th> }
+                    @if (hasBustM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Ngực</th> }
+                    @if (hasWaistM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Eo</th> }
+                    @if (hasHipM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Mông</th> }
+                    @if (hasLenM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Dài</th> }
+                    @if (hasWidM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Rộng</th> }
+                    @if (hasHeiM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Cao</th> }
+                    @if (hasShoeM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Dài chân</th> }
+                    @if (hasPersonHeightM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">C.Cao người</th> }
+                    @if (hasPersonWeightM) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">C.Nặng người</th> }
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-300">
-                  <tr>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">XS</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">32</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">24-25</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">33-34</td>
-                  </tr>
-                  <tr>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">S</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">34</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">26-27</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">35-36</td>
-                  </tr>
-                  <tr>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">M</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">36</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">28-29</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">37-38</td>
-                  </tr>
-                  <tr>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">L</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">38</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">30-31</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">39-40</td>
-                  </tr>
-                  <tr>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">XL</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">40</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">32-33</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">41-42</td>
-                  </tr>
-                  <tr>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">XXL</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">42</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">34-35</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">43-44</td>
-                  </tr>
-                  <tr>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">XXXL</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">44</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">36-37</td>
-                    <td class="text-left py-3 px-4 font-semibold text-light-primary-text">45-46</td>
-                  </tr>
+                  @if (guidesM.Count == 0)
+                  {
+                    <tr><td colspan="12" class="py-10 text-center text-light-secondary-text">Chưa có thông số chi tiết</td></tr>
+                  }
+                  else
+                  {
+                    foreach(var g in guidesM)
+                    {
+                      <tr>
+                        <td class="text-left py-3 px-4 font-semibold text-light-primary-text">@g.SizeLabel</td>
+                        @if (hasShoulderM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.ShoulderWidthCm?.ToString("0.#") ?? "-")</td> }
+                        @if (hasBustM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.BustCm?.ToString("0.#") ?? "-")</td> }
+                        @if (hasWaistM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.WaistCm?.ToString("0.#") ?? "-")</td> }
+                        @if (hasHipM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.HipCm?.ToString("0.#") ?? "-")</td> }
+                        @if (hasLenM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.LengthCm?.ToString("0.#") ?? "-")</td> }
+                        @if (hasWidM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.WidthCm?.ToString("0.#") ?? "-")</td> }
+                        @if (hasHeiM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.HeightCm?.ToString("0.#") ?? "-")</td> }
+                        @if (hasShoeM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.ShoeLengthCm?.ToString("0.#") ?? "-")</td> }
+                        @if (hasPersonHeightM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.HeightRange ?? "-")</td> }
+                        @if (hasPersonWeightM) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.WeightRange ?? "-")</td> }
+                      </tr>
+                    }
+                  }
                 </tbody>
               </table>
             </div>
@@ -710,7 +719,63 @@
       </div>
     </section>
 
+@section Styles {
+  <style>
+    .product-details-discount-badge {
+      display: inline-flex !important;
+      align-items: center !important;
+      background: linear-gradient(135deg, #FF3B30 0%, #FF9500 100%) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      font-size: 11px !important;
+      line-height: 1 !important;
+      padding: 4px 8px !important;
+      border-radius: 9999px !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+      z-index: 10 !important;
+      text-transform: uppercase !important;
+      border: none !important;
+      margin-left: 8px !important;
+      vertical-align: middle !important;
+    }
+
+    .product-details-tag-sale {
+      display: inline-flex !important;
+      align-items: center !important;
+      background-color: #FF3B30 !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      font-size: 11px !important;
+      line-height: 1 !important;
+      padding: 4px 10px !important;
+      border-radius: 9999px !important;
+      text-transform: uppercase !important;
+      border: none !important;
+      letter-spacing: 0.5px !important;
+    }
+
+    .product-details-tag-new {
+      display: inline-flex !important;
+      align-items: center !important;
+      background-color: #34C759 !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      font-size: 11px !important;
+      line-height: 1 !important;
+      padding: 4px 10px !important;
+      border-radius: 9999px !important;
+      text-transform: uppercase !important;
+      border: none !important;
+      letter-spacing: 0.5px !important;
+    }
+  </style>
+}
+
 @section Scripts {
+  <script id="js-size-guides-data" type="application/json">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SizeGuides))
+  </script>
+
   <script>
     (function () {
       const dataEl = document.getElementById("js-product-variants");
@@ -1059,20 +1124,42 @@
         }
 
         const price = asNum(v.price) ?? 0;
-        if (currentPriceEl) currentPriceEl.textContent = fmtVnd(price);
-
         const basePrice = asNum(v.basePrice);
-        const onSale = !!v?.isOnSale && basePrice != null && basePrice > price;
-        if (oldPriceEl) {
-          oldPriceEl.classList.toggle("hidden", !onSale);
-          if (onSale) oldPriceEl.textContent = fmtVnd(basePrice);
+        const rawPct = basePrice > 0 ? Math.round(((basePrice - price) / basePrice) * 100) : 0;
+        const pct = Math.max(0, Math.min(100, rawPct));
+        const showDiscount = !!v?.isOnSale && basePrice != null && basePrice > price && pct > 0;
+
+        if (currentPriceEl) {
+          currentPriceEl.textContent = fmtVnd(price);
+          const hasSaleClasses = ["relative", "after:absolute", "after:h-6", "after:w-px", "after:bg-gray-300", "after:right-0", "after:top-1/2", "after:-translate-y-1/2", "pr-3"];
+          if (showDiscount) {
+            currentPriceEl.classList.add(...hasSaleClasses);
+          } else {
+            currentPriceEl.classList.remove(...hasSaleClasses);
+          }
         }
+
+        if (oldPriceEl) {
+          if (showDiscount) {
+            oldPriceEl.classList.remove("hidden");
+            oldPriceEl.style.display = "inline-block";
+            oldPriceEl.textContent = fmtVnd(basePrice);
+          } else {
+            oldPriceEl.classList.add("hidden");
+            oldPriceEl.style.display = "none";
+            oldPriceEl.textContent = "";
+          }
+        }
+
         if (discountPercentEl) {
-          discountPercentEl.classList.toggle("hidden", !onSale);
-          if (onSale) {
-            const rawPct = basePrice > 0 ? Math.round(((basePrice - price) / basePrice) * 100) : 0;
-            const pct = Math.max(0, Math.min(100, rawPct));
+          if (showDiscount) {
+            discountPercentEl.classList.remove("hidden");
+            discountPercentEl.style.display = "inline-block";
             discountPercentEl.textContent = `${pct}% OFF`;
+          } else {
+            discountPercentEl.classList.add("hidden");
+            discountPercentEl.style.display = "none";
+            discountPercentEl.textContent = "";
           }
         }
 
@@ -1086,12 +1173,62 @@
           stockProgressEl.style.width = `${pct}%`;
         }
 
+        const qtyInput = scope.querySelector(".quantity-input");
+        if (qtyInput) {
+          qtyInput.setAttribute("max", String(stockQty));
+          const currentQty = parseInt(qtyInput.value || "1", 10);
+          if (stockQty <= 0) {
+            qtyInput.value = "0";
+            qtyInput.setAttribute("min", "0");
+            qtyInput.disabled = true;
+          } else {
+            qtyInput.disabled = false;
+            qtyInput.setAttribute("min", "1");
+            if (currentQty > stockQty) {
+              qtyInput.value = String(stockQty);
+            } else if (currentQty <= 0) {
+              qtyInput.value = "1";
+            }
+          }
+        }
+
         if (addToCartBtn && asInt(v.variantId)) {
           addToCartBtn.dataset.variantId = String(asInt(v.variantId));
+          if (stockQty <= 0) {
+            addToCartBtn.disabled = true;
+            addToCartBtn.classList.add("opacity-50", "cursor-not-allowed");
+            addToCartBtn.classList.remove("hover:bg-primary");
+            // Save original HTML if not already saved
+            if (!addToCartBtn.dataset.originalHtml) {
+              addToCartBtn.dataset.originalHtml = addToCartBtn.innerHTML;
+            }
+            addToCartBtn.innerHTML = "<span>Hết hàng</span>";
+          } else {
+            addToCartBtn.disabled = false;
+            addToCartBtn.classList.remove("opacity-50", "cursor-not-allowed");
+            if (addToCartBtn.dataset.originalHtml) {
+              addToCartBtn.innerHTML = addToCartBtn.dataset.originalHtml;
+            }
+          }
         }
 
         if (buyNowBtn && asInt(v.variantId)) {
           buyNowBtn.dataset.variantId = String(asInt(v.variantId));
+          if (stockQty <= 0) {
+            buyNowBtn.disabled = true;
+            buyNowBtn.classList.add("opacity-50", "cursor-not-allowed");
+            buyNowBtn.classList.remove("hover:bg-primary");
+            if (!buyNowBtn.dataset.originalHtml) {
+              buyNowBtn.dataset.originalHtml = buyNowBtn.innerHTML;
+            }
+            buyNowBtn.innerHTML = "<span>Hết hàng</span>";
+          } else {
+            buyNowBtn.disabled = false;
+            buyNowBtn.classList.remove("opacity-50", "cursor-not-allowed");
+            if (buyNowBtn.dataset.originalHtml) {
+              buyNowBtn.innerHTML = buyNowBtn.dataset.originalHtml;
+            }
+          }
         }
 
         setSaleUiFromVariant(v);
@@ -1131,6 +1268,183 @@
       ensureValidSelection();
       updateDisplayedInfo();
     })();
+
+    (function() {
+        const sizeGuidesEl = document.getElementById("js-size-guides-data");
+        if (!sizeGuidesEl) return;
+        let sizeGuides = [];
+        try {
+            sizeGuides = JSON.parse(sizeGuidesEl.textContent || "[]");
+        } catch(e) { return; }
+        
+        const suggestionOutput = document.getElementById("js-size-suggestion-output");
+
+        function inRange(val, rangeStr) {
+            if (!rangeStr) return false;
+            // Handle formats like "160-170", "160-170cm", ">170"
+            const dashMatch = rangeStr.match(/(\d+)\s*-\s*(\d+)/);
+            if (dashMatch) {
+                const min = parseFloat(dashMatch[1]);
+                const max = parseFloat(dashMatch[2]);
+                return val >= min && val <= max;
+            }
+            const gtMatch = rangeStr.match(/>\s*(\d+)/);
+            if (gtMatch) {
+                return val > parseFloat(gtMatch[1]);
+            }
+            const ltMatch = rangeStr.match(/<\s*(\d+)/);
+            if (ltMatch) {
+                return val < parseFloat(ltMatch[1]);
+            }
+            return false;
+        }
+
+        function parseRange(rangeStr) {
+            if (!rangeStr) return { min: 0, max: 0 };
+            const dashMatch = rangeStr.match(/(\d+)\s*-\s*(\d+)/);
+            if (dashMatch) return { min: parseFloat(dashMatch[1]), max: parseFloat(dashMatch[2]) };
+            const gtMatch = rangeStr.match(/>\s*(\d+)/);
+            if (gtMatch) return { min: parseFloat(gtMatch[1]), max: 999 };
+            const ltMatch = rangeStr.match(/<\s*(\d+)/);
+            if (ltMatch) return { min: 0, max: parseFloat(ltMatch[1]) };
+            return { min: 0, max: 0 };
+        }
+
+        function updateSuggestion() {
+            if (!suggestionOutput) return;
+            const hText = document.querySelector(".height-range-slider-value")?.textContent || "0";
+            const wText = document.querySelector(".weight-range-slider-value")?.textContent || "0";
+            const h = parseFloat(hText);
+            const w = parseFloat(wText);
+
+            if (h === 0 || w === 0 || sizeGuides.length === 0) return;
+
+            const sizeRankMap = { 
+                "XXS": 10, "XS": 20, "S": 30, "M": 40, "L": 50, 
+                "XL": 60, "XXL": 70, "XXXL": 80, "4XL": 90, "5XL": 100 
+            };
+            const getRank = (label) => {
+                const s = (label || "").toString().trim().toUpperCase();
+                if (sizeRankMap[s] !== undefined) return sizeRankMap[s];
+                const num = parseFloat(s);
+                return isNaN(num) ? -1 : num;
+            };
+
+            const sortedGuides = [...sizeGuides].sort((a, b) => getRank(a.SizeLabel) - getRank(b.SizeLabel));
+
+            const getBestFor = (val, field) => {
+                const exact = sortedGuides.find(g => inRange(val, g[field]));
+                if (exact) return { size: exact, status: 'ok' };
+
+                const first = sortedGuides[0];
+                const firstR = parseRange(first[field]);
+                if (val < firstR.min) return { size: first, status: 'small' };
+
+                const last = sortedGuides[sortedGuides.length - 1];
+                const lastR = parseRange(last[field]);
+                if (val > lastR.max) return { size: last, status: 'large' };
+
+                // Fallback: closest max
+                const closest = sortedGuides.find(g => val <= parseRange(g[field]).max);
+                return { size: closest || last, status: 'ok' };
+            };
+
+            const hRes = getBestFor(h, 'HeightRange');
+            const wRes = getBestFor(w, 'WeightRange');
+
+            let labels = [];
+            let note = "";
+
+            const hIdx = sortedGuides.indexOf(hRes.size);
+            const wIdx = sortedGuides.indexOf(wRes.size);
+
+            if (hIdx === wIdx) {
+                labels = [hRes.size.SizeLabel];
+                if (hRes.status === 'small' || wRes.status === 'small') note = "Thông số của bạn hơi nhỏ so với bảng size, gợi ý size nhỏ nhất.";
+                else if (hRes.status === 'large' || wRes.status === 'large') note = "Thông số của bạn hơi lớn so với bảng size, gợi ý size lớn nhất.";
+            } else {
+                const diff = Math.abs(hIdx - wIdx);
+                if (diff >= 2) {
+                    // Gap is too large, suggest the largest and the one below it
+                    const maxIdx = Math.max(hIdx, wIdx);
+                    const sMax = sortedGuides[maxIdx];
+                    const sPrev = maxIdx > 0 ? sortedGuides[maxIdx - 1] : null;
+                    
+                    if (sPrev) labels = [sPrev.SizeLabel, sMax.SizeLabel];
+                    else labels = [sMax.SizeLabel];
+                    
+                    note = "Chiều cao và cân nặng của bạn chênh lệch khá lớn. Để đảm bảo vừa vặn, bạn nên ưu tiên chọn theo size lớn nhất.";
+                } else {
+                    // Diff is 1 size
+                    const pair = [hRes.size, wRes.size].sort((a, b) => getRank(a.SizeLabel) - getRank(b.SizeLabel));
+                    labels = [pair[0].SizeLabel, pair[1].SizeLabel];
+                    note = "Chiều cao và cân nặng của bạn thuộc 2 size gần nhau. Bạn nên chọn size lớn hơn để mặc thoải mái nhất.";
+                }
+            }
+
+            suggestionOutput.innerHTML = `
+                <div class="flex flex-col items-center gap-2 w-full">
+                    <div class="flex items-center justify-center gap-2 flex-wrap">
+                        ${labels.map(l => `
+                            <div class="suggestion-item py-[7px] px-4 rounded-full border border-primary bg-primary/10 text-primary flex items-center justify-center leading-[26px] font-semibold">
+                                ${l}
+                            </div>
+                        `).join("")}
+                    </div>
+                    ${note ? `<p class="text-[13px] leading-[18px] text-light-secondary-text text-center italic mt-1">${note}</p>` : ""}
+                </div>
+            `;
+        }
+
+        let attempts = 0;
+        const checkInterval = setInterval(() => {
+            attempts++;
+            const hSlider = document.querySelector("#height-range-slider");
+            const wSlider = document.querySelector("#weight-range-slider");
+            if (hSlider && hSlider.noUiSlider && wSlider && wSlider.noUiSlider) {
+                hSlider.noUiSlider.on("update", updateSuggestion);
+                wSlider.noUiSlider.on("update", updateSuggestion);
+                updateSuggestion();
+                clearInterval(checkInterval);
+            }
+            if (attempts > 20) clearInterval(checkInterval);
+        }, 500);
+    })();
+
+    function openChatWithShop(productId, shopId) {
+        fetch('/Chat/StartOrOpen', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ShopId: shopId,
+                ProductId: null // Ngăn backend tự động gửi tin nhắn product_card
+            })
+        })
+        .then(async res => {
+            if (res.status === 401) {
+                window.location.href = '/Auth/Login';
+                throw new Error('Chưa đăng nhập');
+            }
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || 'Có lỗi xảy ra');
+            }
+            return data;
+        })
+        .then(data => {
+            if (data && data.conversationId) {
+                window.location.href = '/Chat?id=' + data.conversationId + '&attachProductId=' + productId;
+            }
+        })
+        .catch(err => {
+            if(err.message !== 'Chưa đăng nhập') {
+                console.error(err);
+                alert("Lỗi: " + err.message);
+            }
+        });
+    }
   </script>
 }
     <!-- ========== CTA Info Section End ========== -->
@@ -1196,30 +1510,58 @@
           <div id="additional-info" class="product-details-tab hidden">
             <h5 class="product-details-tab-title">Thông tin thêm</h5>
             <div class="product-details-tab-content">
-              @if (sizeGuides.Count == 0)
-              {
-                <p class="text-light-secondary-text">Chưa có bảng size cho sản phẩm này.</p>
-              }
-              else
-              {
                 <table class="w-full border-collapse">
                   <thead>
+                    @{
+                      var guides = Model.SizeGuides ?? new List<ProductSizeGuideVm>();
+                      var hasShoulder = guides.Any(g => g.ShoulderWidthCm.HasValue);
+                      var hasBust = guides.Any(g => g.BustCm.HasValue);
+                      var hasWaist = guides.Any(g => g.WaistCm.HasValue);
+                      var hasHip = guides.Any(g => g.HipCm.HasValue);
+                      var hasLen = guides.Any(g => g.LengthCm.HasValue);
+                      var hasWid = guides.Any(g => g.WidthCm.HasValue);
+                      var hasHei = guides.Any(g => g.HeightCm.HasValue);
+                      var hasShoe = guides.Any(g => g.ShoeLengthCm.HasValue);
+                      var hasPersonHeight = guides.Any(g => !string.IsNullOrEmpty(g.HeightRange));
+                      var hasPersonWeight = guides.Any(g => !string.IsNullOrEmpty(g.WeightRange));
+                    }
                     <tr class="border-b border-gray-300">
-                      <th class="font-semibold text-left py-3 text-light-primary-text">Size</th>
-                      <th class="font-semibold text-left py-3 text-light-primary-text">Thông số</th>
-                      <th class="font-semibold text-left py-3 text-light-primary-text">Giá trị</th>
-                      <th class="font-semibold text-left py-3 text-light-primary-text">Ghi chú</th>
+                      <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Size</th>
+                      @if (hasShoulder) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Vai</th> }
+                      @if (hasBust) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Ngực</th> }
+                      @if (hasWaist) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Eo</th> }
+                      @if (hasHip) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Mông</th> }
+                      @if (hasLen) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Dài</th> }
+                      @if (hasWid) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Rộng</th> }
+                      @if (hasHei) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Cao</th> }
+                      @if (hasShoe) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">Dài chân</th> }
+                      @if (hasPersonHeight) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">C.Cao người</th> }
+                      @if (hasPersonWeight) { <th class="text-left font-semibold p-4 bg-[#F4F6F8]">C.Nặng người</th> }
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-300">
-                    @foreach (var g in sizeGuides)
+                    @if (guides.Count == 0)
                     {
-                      <tr>
-                        <td class="py-3">@g.SizeLabel</td>
-                        <td class="py-3">@g.MeasurementName</td>
-                        <td class="py-3">@g.MeasurementValue</td>
-                        <td class="py-3">@g.Note</td>
-                      </tr>
+                      <tr><td colspan="12" class="py-10 text-center text-light-secondary-text">Chưa có thông số chi tiết</td></tr>
+                    }
+                    else
+                    {
+                      foreach(var g in guides)
+                      {
+                        <tr>
+                          <td class="text-left py-3 px-4 font-semibold text-light-primary-text">@g.SizeLabel</td>
+                          @if (hasShoulder) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.ShoulderWidthCm?.ToString("0.#") ?? "-")</td> }
+                          @if (hasBust) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.BustCm?.ToString("0.#") ?? "-")</td> }
+                          @if (hasWaist) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.WaistCm?.ToString("0.#") ?? "-")</td> }
+                          @if (hasHip) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.HipCm?.ToString("0.#") ?? "-")</td> }
+                          @if (hasLen) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.LengthCm?.ToString("0.#") ?? "-")</td> }
+                          @if (hasWid) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.WidthCm?.ToString("0.#") ?? "-")</td> }
+                          @if (hasHei) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.HeightCm?.ToString("0.#") ?? "-")</td> }
+                          @if (hasShoe) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.ShoeLengthCm?.ToString("0.#") ?? "-")</td> }
+                          @if (hasPersonHeight) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.HeightRange ?? "-")</td> }
+                          @if (hasPersonWeight) { <td class="text-left py-3 px-4 text-light-secondary-text">@(g.WeightRange ?? "-")</td> }
+                        </tr>
+                      }
                     }
                   </tbody>
                 </table>
@@ -1233,7 +1575,7 @@
                 class="grid grid-cols-12 md:divide-x divide-y md:divide-y-0 divide-gray-300 rating-overview"
               >
                 <div
-                  class="md:col-span-4 col-span-12 flex items-center justify-center py-6 md:py-0"
+                  class="md:col-span-6 col-span-12 flex items-center justify-center py-6 md:py-0"
                 >
                   <div class="rating-heading space-y-2 text-center">
                     <p class="font-semibold text-light-primary-text">
@@ -1256,7 +1598,7 @@
                   </div>
                 </div>
                 <div
-                  class="md:col-span-4 col-span-12 p-6 flex items-center justify-center"
+                  class="md:col-span-6 col-span-12 p-6 flex items-center justify-center"
                 >
                   <div class="list-rating space-y-6 w-full">
                     <div class="flex gap-x-4 items-center">
@@ -1330,103 +1672,6 @@
                       <span>@ratingCounts[1].ToString("N0", viVn)</span>
                     </div>
                   </div>
-                </div>
-                <div
-                  class="md:col-span-4 col-span-12 flex items-center justify-center py-6 md:py-0"
-                >
-                  <a
-                    href="#comment-forms"
-                    class="btn btn-primary outline btn-large rounded-[100px]"
-                    >Viết đánh giá</a
-                  >
-                </div>
-              </div>
-              <div
-                id="comment-forms"
-                class="comment-form-wrapper p-6 border-t border-gray-300 border-b"
-              >
-                <div
-                  class="comment-respond md:border md:border-gray-300 md:rounded-3xl md:p-6"
-                >
-                  <h5 class="mb-6">Add Comment</h5>
-                  <div class="flex items-center gap-x-3 mb-6">
-                    <p class="text-light-primary-text font-medium">
-                      Đánh giá của bạn về sản phẩm này:
-                    </p>
-                    <div
-                      class="rating-section flex items-center justify-center"
-                    >
-                      <div
-                        class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]"
-                      >
-                        <div
-                          style="width: 0%"
-                          class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                  <form class="comment-forms flex flex-col gap-y-6" action="#">
-                    <div
-                      class="input-group medium rounded-[20px] px-3.5 resize-none"
-                    >
-                      <textarea
-                        id="post_comment"
-                        rows="4"
-                        class="peer form-control placeholder-transparent focus:placeholder-transparent"
-                        placeholder="Comment *"
-                      ></textarea>
-                      <label
-                        for="post_comment"
-                        class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-6 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                      >
-                        Nội dung *
-                      </label>
-                    </div>
-                    <div class="relative w-full">
-                      <input
-                        type="text"
-                        id="name"
-                        class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                        placeholder="Name *"
-                      />
-
-                      <label
-                        for="name"
-                        class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                      >
-                        Họ tên *
-                      </label>
-                    </div>
-                    <div class="relative w-full">
-                      <input
-                        type="email"
-                        id="personal_email"
-                        class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                        placeholder="Email *"
-                      />
-
-                      <label
-                        for="personal_email"
-                        class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                      >
-                        Email *
-                      </label>
-                    </div>
-
-                    <div class="flex md:justify-end justify-start gap-x-4">
-                      <button
-                        class="btn btn-default outline btn-large rounded-[100px] w-[47%] md:w-auto py-[11px] shadow-none"
-                      >
-                        Huỷ
-                      </button>
-                      <button
-                        class="btn btn-primary btn-large rounded-[100px] w-[47%] md:w-auto py-[11px]"
-                      >
-                        Gửi đánh giá
-                      </button>
-                    </div>
-                  </form>
                 </div>
               </div>
               <div class="comment-list-wrapper p-6">
@@ -1662,6 +1907,7 @@
       </div>
     </section>
     <!-- ========== Related Products Section End ========== -->
+
 
 
 

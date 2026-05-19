@@ -40,6 +40,18 @@ public class Order
     [Column(TypeName = "decimal(18,2)")]
     public decimal FinalAmount { get; set; }
 
+    [NotMapped]
+    public decimal VatAmount { get; set; } = 0m;
+
+    [NotMapped]
+    public decimal PlatformFee { get; set; } = 0m;
+
+    [NotMapped]
+    public decimal SellerTaxAmount { get; set; } = 0m;
+
+    [NotMapped]
+    public decimal PayoutAmount { get; set; } = 0m;
+
     [Required]
     [MaxLength(30)]
     public string OrderStatus { get; set; } = "Pending";

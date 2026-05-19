@@ -1,0 +1,267 @@
+@model DOAN_BANHANG.ViewModels.FlashSalePageVm
+
+@{
+  ViewData["Title"] = "Flash Sale";
+  var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+
+  string ResolveImageUrl(string? rawUrl)
+  {
+    if (string.IsNullOrWhiteSpace(rawUrl))
+    {
+      return Url.Content("~/assets/images/vitamin-c.png");
+    }
+
+    rawUrl = rawUrl.Trim();
+
+    if (rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+        || rawUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+    {
+      return rawUrl;
+    }
+
+    if (rawUrl.StartsWith("~/", StringComparison.Ordinal))
+    {
+      return Url.Content(rawUrl);
+    }
+
+    if (rawUrl.StartsWith("/", StringComparison.Ordinal))
+    {
+      return rawUrl;
+    }
+
+    return Url.Content("~/" + rawUrl.TrimStart('/'));
+  }
+
+  string DetailsUrl(string slug) => Url.RouteUrl("product_details", new { slug }) ?? "#";
+}
+
+<!-- ========== Deal Section Start ========== -->
+<section class="pt-6 pb-[70px]">
+  <div class="container">
+    <div class="mb-10 text-center">
+      <h3 data-wow-delay=".2s" class="pb-6 wow animate__animated animate__fadeInUp">
+        Flash Sale
+      </h3>
+
+      <div data-wow-delay=".3s" class="flex items-center justify-center gap-x-4 wow animate__animated animate__fadeInUp">
+        <div class="flex gap-x-8 overflow-x-auto home-four-product-filter border-b border-gray-300">
+          @foreach (var tab in Model.Tabs)
+          {
+            <button data-tab="@tab.Key" class="pt-[13px] pb-[22px] whitespace-nowrap">@tab.Label</button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="deal-tab-content">
+      @foreach (var tab in Model.Tabs)
+      {
+        <div class="tab-pane" id="@tab.Key">
+          <div class="space-y-10">
+            @if (tab.UpTo10.Count > 0)
+            {
+              <div>
+                <h4 class="text-left text-light-primary-text font-semibold mb-4">Giảm đến 10%</h4>
+                <div class="grid 2xl:grid-cols-5 xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
+                  @foreach (var p in tab.UpTo10)
+                  {
+                    var imageUrl = ResolveImageUrl(p.PrimaryImageUrl);
+                    var detailsUrl = DetailsUrl(p.Slug);
+                    var ratingPct = (int)Math.Round(Math.Clamp((double)(p.RatingAverage / 5m * 100m), 0d, 100d));
+
+                    <div data-wow-delay=".2s" class="wow animate__animated animate__fadeInUp">
+                      <div class="border border-gray-300 rounded-2xl product-card-1 p-6 group">
+                        <div class="product-image-container relative">
+                          <div class="product-image rounded-xl bg-[#F4F3F5] mb-4 overflow-hidden">
+                            <a href='@detailsUrl'>
+                              <img src="@imageUrl" alt="@p.Name" class="group-hover:scale-110 transition-all transform group-hover:-rotate-3 ease-in-out duration-300" />
+                            </a>
+                          </div>
+
+                          @if (p.DiscountPercent > 0)
+                          {
+                            <span class="product-discount-badge absolute top-[11px] left-0 bg-error text-warning-lighter font-medium text-sm leading-[22px] px-1 after:absolute after:top-0 after:left-full after:z-10 after:w-1 after:h-full after:bg-[url('assets/images/discount-shape.png')] after:bg-contain after:bg-no-repeat">
+                              <span class="block leading-[18px]">@p.DiscountPercent%</span>
+                              <span class="block leading-[18px]">OFF</span>
+                            </span>
+                          }
+
+                          <div class="product-btn-actions absolute bottom-0 right-0 left-0 flex justify-center z-9 transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 group-hover:bottom-3">
+                            <ul class="flex items-center gap-x-px">
+                              <li>
+                                <button type="button" aria-label='Add to Wishlist' data-wishlist-toggle data-product-id='@p.ProductId' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tl-sm rounded-bl-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5'>
+                                  <svg class="wishlist-heart-icon w-6 h-6 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                                    <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
+                                  </svg>
+                                </button>
+                              </li>
+                              <li>
+                                <a aria-label='Compare' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5' href='#'>
+                                  <i class="hgi hgi-stroke hgi-reload text-2xl leading-6 text-light-primary-text"></i>
+                                </a>
+                              </li>
+                              <li>
+                                <a aria-label="Quick view" class="quick-view-sidebar-btn product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="#" data-quick-view-url="@Url.Action("QuickView", "Products", new { id = p.ProductId })">
+                                  <i class="hgi hgi-stroke hgi-view text-2xl leading-6 text-light-primary-text"></i>
+                                </a>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        <div class="product-content">
+                          <h6 class="text-[20px] leading-[30px] font-bold pb-3">
+                            <a href='@detailsUrl'>@p.Name</a>
+                          </h6>
+
+                          <div class="rating-section flex items-center mb-3">
+                            <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+                              <div style="width: @ratingPct%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+                            </div>
+                            <span class="text-sm leading-[22px] font-normal inline-block ml-1">(@p.RatingCount)</span>
+                          </div>
+
+                          <div class="price-section flex items-center gap-x-3 mb-3">
+                            <span class="current-price text-[20px] font-urbanist leading-[30px] font-bold text-light-primary-text">@p.Price.ToString("N0", viVn) VNĐ</span>
+                            @if (p.OldPrice.HasValue)
+                            {
+                              <span class="old-price text-[20px] font-urbanist font-medium leading-[30px] text-light-disabled-text line-through">@p.OldPrice.Value.ToString("N0", viVn) VNĐ</span>
+                            }
+                            @if (p.DiscountPercent > 0)
+                            {
+                              <span class="discount-percentage text-[20px] font-urbanist font-medium leading-[30px] text-error inline-flex flex-col items-center">
+                                <span class="block leading-[18px]">@p.DiscountPercent%</span>
+                                <span class="block text-xs leading-[14px]">OFF</span>
+                              </span>
+                            }
+                          </div>
+
+                          <div class="btn-section flex items-center gap-x-4">
+                            <button type="button" aria-label="Add to Wishlist" data-wishlist-toggle data-product-id='@p.ProductId' class='size-11 flex flex-none items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300'>
+                              <svg class="wishlist-heart-icon w-5 h-5 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                                <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
+                              </svg>
+                            </button>
+                            <a class='btn btn-primary rounded-full font-semibold text-sm leading-6 px-6.5 py-2 flex-1' href='#' data-add-to-cart data-variant-id='@p.DefaultVariantId'>
+                              <i class="hgi hgi-stroke hgi-shopping-cart-02 text-xl text-white"></i>
+                              <span>Add to Cart</span>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (tab.Above10.Count > 0)
+            {
+              <div>
+                <h4 class="text-left text-light-primary-text font-semibold mb-4">Trên 10%</h4>
+                <div class="grid 2xl:grid-cols-5 xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
+                  @foreach (var p in tab.Above10)
+                  {
+                    var imageUrl = ResolveImageUrl(p.PrimaryImageUrl);
+                    var detailsUrl = DetailsUrl(p.Slug);
+                    var ratingPct = (int)Math.Round(Math.Clamp((double)(p.RatingAverage / 5m * 100m), 0d, 100d));
+
+                    <div data-wow-delay=".2s" class="wow animate__animated animate__fadeInUp">
+                      <div class="border border-gray-300 rounded-2xl product-card-1 p-6 group">
+                        <div class="product-image-container relative">
+                          <div class="product-image rounded-xl bg-[#F4F3F5] mb-4 overflow-hidden">
+                            <a href='@detailsUrl'>
+                              <img src="@imageUrl" alt="@p.Name" class="group-hover:scale-110 transition-all transform group-hover:-rotate-3 ease-in-out duration-300" />
+                            </a>
+                          </div>
+
+                          @if (p.DiscountPercent > 0)
+                          {
+                            <span class="product-discount-badge absolute top-[11px] left-0 bg-error text-warning-lighter font-medium text-sm leading-[22px] px-1 after:absolute after:top-0 after:left-full after:z-10 after:w-1 after:h-full after:bg-[url('assets/images/discount-shape.png')] after:bg-contain after:bg-no-repeat">
+                              <span class="block leading-[18px]">@p.DiscountPercent%</span>
+                              <span class="block leading-[18px]">OFF</span>
+                            </span>
+                          }
+
+                          <div class="product-btn-actions absolute bottom-0 right-0 left-0 flex justify-center z-9 transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 group-hover:bottom-3">
+                            <ul class="flex items-center gap-x-px">
+                              <li>
+                                <button type="button" aria-label='Add to Wishlist' data-wishlist-toggle data-product-id='@p.ProductId' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tl-sm rounded-bl-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5'>
+                                  <svg class="wishlist-heart-icon w-6 h-6 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                                    <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
+                                  </svg>
+                                </button>
+                              </li>
+                              <li>
+                                <a aria-label='Compare' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5' href='#'>
+                                  <i class="hgi hgi-stroke hgi-reload text-2xl leading-6 text-light-primary-text"></i>
+                                </a>
+                              </li>
+                              <li>
+                                <a aria-label="Quick view" class="quick-view-sidebar-btn product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="#" data-quick-view-url="@Url.Action("QuickView", "Products", new { id = p.ProductId })">
+                                  <i class="hgi hgi-stroke hgi-view text-2xl leading-6 text-light-primary-text"></i>
+                                </a>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        <div class="product-content">
+                          <h6 class="text-[20px] leading-[30px] font-bold pb-3">
+                            <a href='@detailsUrl'>@p.Name</a>
+                          </h6>
+
+                          <div class="rating-section flex items-center mb-3">
+                            <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+                              <div style="width: @ratingPct%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+                            </div>
+                            <span class="text-sm leading-[22px] font-normal inline-block ml-1">(@p.RatingCount)</span>
+                          </div>
+
+                          <div class="price-section flex items-center gap-x-3 mb-3">
+                            <span class="current-price text-[20px] font-urbanist leading-[30px] font-bold text-light-primary-text">@p.Price.ToString("N0", viVn) VNĐ</span>
+                            @if (p.OldPrice.HasValue)
+                            {
+                              <span class="old-price text-[20px] font-urbanist font-medium leading-[30px] text-light-disabled-text line-through">@p.OldPrice.Value.ToString("N0", viVn) VNĐ</span>
+                            }
+                            @if (p.DiscountPercent > 0)
+                            {
+                              <span class="discount-percentage text-[20px] font-urbanist font-medium leading-[30px] text-error inline-flex flex-col items-center">
+                                <span class="block leading-[18px]">@p.DiscountPercent%</span>
+                                <span class="block text-xs leading-[14px]">OFF</span>
+                              </span>
+                            }
+                          </div>
+
+                          <div class="btn-section flex items-center gap-x-4">
+                            <button type="button" aria-label="Add to Wishlist" data-wishlist-toggle data-product-id='@p.ProductId' class='size-11 flex flex-none items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300'>
+                              <svg class="wishlist-heart-icon w-5 h-5 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                                <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
+                              </svg>
+                            </button>
+                            <a class='btn btn-primary rounded-full font-semibold text-sm leading-6 px-6.5 py-2 flex-1' href='#' data-add-to-cart data-variant-id='@p.DefaultVariantId'>
+                              <i class="hgi hgi-stroke hgi-shopping-cart-02 text-xl text-white"></i>
+                              <span>Add to Cart</span>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="home-four-deal-slider-nav-bottom flex items-center justify-center gap-x-6 mt-7 md:hidden"></div>
+  </div>
+</section>
+<!-- ========== Deal Section End ========== -->

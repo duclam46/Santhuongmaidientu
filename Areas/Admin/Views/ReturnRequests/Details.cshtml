@@ -1,0 +1,827 @@
+@model DOAN_BANHANG.Models.ReturnRequest
+@using System.Text.Json
+@inject DOAN_BANHANG.Models.DataContext DbContext
+@using Microsoft.EntityFrameworkCore
+
+@{
+    ViewData["Title"] = "Chi tiết yêu cầu trả hàng";
+
+    var mediaUrls = new List<string>();
+    if (!string.IsNullOrWhiteSpace(Model.MediaUrlsJson))
+    {
+        try { mediaUrls = JsonSerializer.Deserialize<List<string>>(Model.MediaUrlsJson) ?? new(); }
+        catch { }
+    }
+
+    bool isPending = Model.Status == "Pending";
+    bool isApproved = Model.Status == "Approved";
+    bool isRejected = Model.Status == "Rejected";
+
+    var (statusLabelText, badgeClass, statusIcon, statusColor, statusBg) = Model.Status switch
+    {
+        "Pending" => (
+            "Chờ duyệt",
+            "glow-badge-pending",
+            "bx bx-time-five",
+            "#f59e0b",
+            "rgba(245, 158, 11, 0.1)"
+        ),
+        "Approved" => (
+            "Đã duyệt hoàn",
+            "glow-badge-approved",
+            "bx bx-check-circle",
+            "#10b981",
+            "rgba(16, 185, 129, 0.1)"
+        ),
+        "Rejected" => (
+            "Từ chối trả hàng",
+            "glow-badge-rejected",
+            "bx bx-x-circle",
+            "#ec4899",
+            "rgba(236, 72, 153, 0.1)"
+        ),
+        _ => (
+            Model.Status ?? "Chưa rõ",
+            "glow-badge-secondary",
+            "bx bx-info-circle",
+            "#64748b",
+            "rgba(100, 116, 139, 0.1)"
+        )
+    };
+}
+
+@section AdminTopNotice {
+    @if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+    {
+        var alertClass = toast.Contains("thất bại") || toast.Contains("Lỗi") ? "alert-danger" : "alert-success";
+        var alertIcon = toast.Contains("thất bại") || toast.Contains("Lỗi") ? "bx bx-error-circle" : "bx bx-check-circle";
+        <div class="alert @alertClass d-flex align-items-start gap-2 rounded-3 shadow-xs" role="alert" style="font-size:13px; font-weight:600;">
+            <i class="@alertIcon mt-1 fs-5"></i>
+            <div>@toast</div>
+        </div>
+    }
+}
+
+<style>
+    /* Premium details CSS system - independent of Tailwind CSS - Compact & Elegant */
+    .details-container {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: #1e293b;
+        font-size: 13px;
+    }
+    
+    /* Header Card styling */
+    .header-card {
+        background: #ffffff;
+        border-radius: 14px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        padding: 16px 20px;
+        box-shadow: 0 4px 15px -2px rgba(148, 163, 184, 0.05);
+        margin-bottom: 20px;
+        border-left: 5px solid @statusColor;
+    }
+
+    /* Premium styled card */
+    .premium-card {
+        background: #ffffff;
+        border-radius: 14px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: 0 4px 15px -2px rgba(148, 163, 184, 0.05);
+        margin-bottom: 20px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .premium-card:hover {
+        box-shadow: 0 8px 25px -4px rgba(148, 163, 184, 0.08);
+    }
+
+    .premium-card-header {
+        padding: 12px 18px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .premium-card-body {
+        padding: 18px;
+    }
+
+    /* Top accents for card types */
+    .accent-indigo { border-top: 4px solid #6366f1; }
+    .accent-blue { border-top: 4px solid #3b82f6; }
+    .accent-emerald { border-top: 4px solid #10b981; }
+    .accent-rose { border-top: 4px solid #f43f5e; }
+    .accent-amber { border-top: 4px solid #f59e0b; }
+
+    /* Custom badges */
+    .glow-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 800;
+        border-width: 1px;
+        border-style: solid;
+        white-space: nowrap;
+    }
+    .glow-badge-pending {
+        background: #fffbeb !important;
+        color: #d97706 !important;
+        border-color: #fde68a !important;
+        box-shadow: 0 3px 8px rgba(217, 119, 6, 0.05) !important;
+    }
+    .glow-badge-approved {
+        background: #ecfdf5 !important;
+        color: #059669 !important;
+        border-color: #a7f3d0 !important;
+        box-shadow: 0 3px 8px rgba(5, 150, 105, 0.05) !important;
+    }
+    .glow-badge-rejected {
+        background: #fff1f2 !important;
+        color: #e11d48 !important;
+        border-color: #fecdd3 !important;
+        box-shadow: 0 3px 8px rgba(225, 29, 72, 0.05) !important;
+    }
+    .glow-badge-secondary {
+        background: #f8fafc !important;
+        color: #475569 !important;
+        border-color: #e2e8f0 !important;
+    }
+
+    /* List group styling */
+    .info-list-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .info-item {
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 12px;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .info-label {
+        font-size: 10.5px;
+        color: #64748b;
+        font-weight: 750;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .info-value {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    /* Quote block for reason */
+    .reason-quote-box {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.04) 0%, rgba(168, 85, 247, 0.04) 100%);
+        border-left: 4px solid #6366f1;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #334155;
+        font-size: 12.5px;
+        line-height: 1.55;
+        font-weight: 600;
+        position: relative;
+    }
+    
+    .reason-quote-box i {
+        color: rgba(99, 102, 241, 0.2);
+        font-size: 20px;
+        position: absolute;
+        top: 6px;
+        right: 10px;
+    }
+
+    /* Media grid & thumbnails */
+    .media-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); 
+        gap: 8px; 
+        margin-top: 8px; 
+    }
+    
+    .media-thumb { 
+        border-radius: 10px; 
+        overflow: hidden; 
+        border: 2px solid #e2e8f0; 
+        aspect-ratio: 1; 
+        background: #f8fafc; 
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+        cursor: pointer; 
+        position: relative; 
+    }
+    
+    .media-thumb:hover { 
+        transform: translateY(-2px); 
+        border-color: #6366f1; 
+        box-shadow: 0 6px 12px rgba(99, 102, 241, 0.15);
+    }
+    
+    .media-thumb img, .media-thumb video { 
+        width: 100%; 
+        height: 100%; 
+        object-fit: cover; 
+    }
+    
+    .media-overlay { 
+        position: absolute; 
+        inset: 0; 
+        background: rgba(15, 23, 42, 0.4); 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        opacity: 0; 
+        transition: opacity .2s; 
+        color: #fff; 
+        font-size: 16px; 
+    }
+    
+    .media-thumb:hover .media-overlay { 
+        opacity: 1; 
+    }
+
+    /* Order details panel */
+    .order-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px;
+    }
+
+    /* GHN tracking badge */
+    .tracking-code-badge {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 13.5px;
+        font-weight: 800;
+        background: #d1fae5;
+        color: #065f46;
+        padding: 6px 14px;
+        border-radius: 8px;
+        border: 2px dashed #059669;
+        display: inline-block;
+        letter-spacing: 0.05em;
+    }
+
+    /* Timeline styling */
+    .timeline-container {
+        padding: 5px 0;
+    }
+    
+    .timeline-item {
+        display: flex;
+        gap: 12px;
+        position: relative;
+        padding-bottom: 14px;
+    }
+    
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 14px;
+        top: 28px;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+        z-index: 1;
+    }
+    
+    .timeline-item:last-child::before {
+        display: none;
+    }
+    
+    .timeline-node {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+        flex-shrink: 0;
+        font-size: 13px;
+        box-shadow: 0 0 0 4px #ffffff;
+    }
+    
+    .timeline-content {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        flex-grow: 1;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+    }
+
+    /* Premium action buttons */
+    .btn-approve {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2) !important;
+        transition: all 0.25s ease !important;
+    }
+    .btn-approve:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 14px rgba(16, 185, 129, 0.3) !important;
+    }
+    .btn-reject {
+        background: linear-gradient(135deg, #f43f5e, #e11d48) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 4px 10px rgba(244, 63, 94, 0.2) !important;
+        transition: all 0.25s ease !important;
+    }
+    .btn-reject:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 14px rgba(244, 63, 94, 0.3) !important;
+    }
+</style>
+
+<div class="container-fluid py-4 px-4 details-container">
+
+    @* Top Page Header Card - Elegant & Slim *@
+    <div class="header-card d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h4 class="mb-0 fw-bold" style="letter-spacing: -0.02em; font-size: 20px;">Chi tiết yêu cầu #@Model.Id</h4>
+                <span class="glow-badge @badgeClass">
+                    <i class="@statusIcon"></i> @statusLabelText
+                </span>
+            </div>
+            <div class="text-muted small mt-1.5 d-flex align-items-center gap-1.5" style="font-weight: 550; font-size: 11px;">
+                <i class="bx bx-calendar"></i>
+                Gửi yêu cầu lúc: @Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+            </div>
+        </div>
+        <div>
+            <a class="btn btn-sm btn-outline-secondary px-3 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-1.5" style="font-size: 12px;" href="@Url.Action("Index", "ReturnRequests", new { area = "Admin" })">
+                <i class="bx bx-left-arrow-alt fs-5"></i> Quay lại danh sách
+            </a>
+        </div>
+    </div>
+
+    @* Two-Column Balanced Grid Layout *@
+    <div class="row g-3">
+        
+        @* COLUMN 1: LEFT SIDE (Clean structured Return Request details) *@
+        <div class="col-12 col-lg-6">
+            <div class="premium-card accent-indigo">
+                <div class="premium-card-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-subdirectory-left fs-5" style="color: #6366f1;"></i>
+                        <h6 class="mb-0 fw-bold" style="font-size: 13.5px; color: #1e293b;">Yêu cầu trả hàng</h6>
+                    </div>
+                    @if (mediaUrls.Count > 0)
+                    {
+                        <span class="glow-badge glow-badge-secondary" style="font-size: 10px; padding: 2px 8px;">
+                            <i class="bx bx-paperclip"></i> @mediaUrls.Count tệp
+                        </span>
+                    }
+                </div>
+
+                <div class="premium-card-body">
+                    <div class="info-list-group">
+                        @* Item 1: Time sent *@
+                        <div class="info-item">
+                            <div class="info-label"><i class="bx bx-time-five"></i> Thời gian gửi yêu cầu</div>
+                            <div class="info-value mt-1 text-dark">
+                                @Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") 
+                                <span class="text-muted small font-normal ms-2">(@Model.CreatedAt.ToLocalTime().ToString("dddd"))</span>
+                            </div>
+                        </div>
+
+                        @* Item 2: Reason *@
+                        <div class="info-item">
+                            <div class="info-label"><i class="bx bx-comment-detail"></i> Lý do từ khách hàng</div>
+                            <div class="reason-quote-box mt-2">
+                                <i class="bx bxs-quote-left"></i>
+                                <div style="white-space: pre-wrap;">@Model.Reason</div>
+                            </div>
+                        </div>
+
+                        @* Item 3: Media evidence *@
+                        <div class="info-item">
+                            <div class="info-label"><i class="bx bx-image-alt"></i> Hình ảnh & Video minh chứng</div>
+                            
+                            @if (mediaUrls.Count > 0)
+                            {
+                                <div class="media-grid">
+                                    @foreach (var url in mediaUrls)
+                                    {
+                                        var ext = System.IO.Path.GetExtension(url).ToLowerInvariant();
+                                        bool isVideo = ext is ".mp4" or ".mov" or ".avi" or ".webm";
+                                        <div class="media-thumb" onclick="showLightbox('@url', @(isVideo ? "true" : "false"))">
+                                            @if (isVideo)
+                                            {
+                                                <video src="@url"></video>
+                                                <div class="media-overlay">
+                                                    <i class="bx bx-play-circle"></i>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <img src="@url" alt="Evidence" loading="lazy" />
+                                                <div class="media-overlay">
+                                                    <i class="bx bx-zoom-in"></i>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-muted small mt-2 italic bg-light p-3 rounded text-center border" style="font-size: 11.5px;">
+                                    <i class="bx bx-info-circle me-1"></i> Không có tệp bằng chứng nào được tải lên
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* COLUMN 2: RIGHT SIDE (Order info & admin action logs) *@
+        <div class="col-12 col-lg-6">
+            <div class="vstack gap-0">
+                
+                @* Card: Original Order Details *@
+                <div class="premium-card accent-blue">
+                    <div class="premium-card-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bx bx-shopping-bag fs-5" style="color: #3b82f6;"></i>
+                            <h6 class="mb-0 fw-bold" style="font-size: 13.5px; color: #1e293b;">Thông tin đơn hàng</h6>
+                        </div>
+                    </div>
+
+                    <div class="premium-card-body">
+                        <div class="order-box">
+                            <div class="info-list-group">
+                                @if (Model.Order is not null)
+                                {
+                                    <div class="info-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="info-label"><i class="bx bx-barcode-reader"></i> Mã đơn gốc</div>
+                                            <div class="fw-bold mt-1">
+                                                <a href="@Url.Action("Details", "Orders", new { area = "Admin", id = Model.Order.Id })"
+                                                   class="text-primary text-decoration-underline" style="font-size: 13.5px;">
+                                                    @Model.Order.OrderCode
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <span class="glow-badge glow-badge-secondary" style="font-size: 10px;">@Model.Order.OrderStatus</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label"><i class="bx bx-user"></i> Tên người nhận</div>
+                                        <div class="info-value mt-1" style="font-size: 12.5px;">@Model.Order.RecipientName</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label"><i class="bx bx-phone-call"></i> Số điện thoại nhận</div>
+                                        <div class="info-value mt-1 text-primary" style="font-size: 12.5px;">@Model.Order.RecipientPhone</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label"><i class="bx bx-home"></i> Địa chỉ thu hồi / hoàn trả</div>
+                                        <div class="info-value mt-1 text-slate-600" style="font-size: 12px; font-weight: 600; line-height: 1.5;">@Model.Order.ShippingAddress</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="info-item text-danger fw-bold py-2" style="font-size: 12px;">
+                                        <i class="bx bx-error-alt"></i> Không tìm thấy đơn hàng gốc tương ứng.
+                                    </div>
+                                }
+                                <div class="info-item pt-2">
+                                    <div class="info-label"><i class="bx bx-envelope"></i> Tài khoản mua hàng</div>
+                                    <div class="info-value mt-1" style="font-size: 12.5px;">
+                                        @(Model.Customer?.Profile?.FullName ?? "-")
+                                        <span class="text-muted font-normal small" style="font-size: 11px;">(@Model.Customer?.Email)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* Card: Approved Status (GHN Return Shipping Info) *@
+                @if (isApproved)
+                {
+                    var returnLogs = await DbContext.OrderTrackingLogs
+                        .AsNoTracking()
+                        .Where(x => x.OrderId == Model.OrderId && x.Note != null && x.Note.StartsWith("SIM_RET|"))
+                        .OrderBy(x => x.CreatedAt)
+                        .ToListAsync();
+
+                    <div class="premium-card accent-emerald">
+                        <div class="premium-card-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bx bx-check-double fs-5" style="color: #10b981;"></i>
+                                <h6 class="mb-0 fw-bold" style="font-size: 13.5px; color: #1e293b;">Đơn hoàn GHN</h6>
+                            </div>
+                            <span class="glow-badge glow-badge-approved">Approved</span>
+                        </div>
+
+                        <div class="premium-card-body">
+                            <div class="order-box" style="border-left: 3px solid #10b981;">
+                                <div class="info-list-group">
+                                    <div class="info-item">
+                                        <div class="info-label"><i class="bx bx-barcode"></i> Mã vận đơn hoàn GHN</div>
+                                        <div class="mt-1.5">
+                                            @if (!string.IsNullOrWhiteSpace(Model.ReturnTrackingCode))
+                                            {
+                                                <span class="tracking-code-badge">@Model.ReturnTrackingCode</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-danger fw-bold" style="font-size: 12px;">(Chưa có mã vận đơn)</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(Model.EstimatedPickupTime))
+                                    {
+                                        <div class="info-item">
+                                            <div class="info-label"><i class="bx bx-time"></i> Ca tài xế hẹn lấy hàng</div>
+                                            <div class="fw-bold mt-1 text-success d-flex align-items-center gap-1" style="font-size: 13px;">
+                                                <i class="bx bx-calendar-event"></i> @Model.EstimatedPickupTime
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="info-item">
+                                        <div class="info-label"><i class="bx bx-calendar-check"></i> Ngày phê duyệt</div>
+                                        <div class="info-value mt-1" style="font-size: 12.5px;">@Model.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Return Shipping Tracking Timeline *@
+                    <div class="premium-card">
+                        <div class="premium-card-header" style="background: rgba(59, 130, 246, 0.03);">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bx bx-map-pin" style="color: #3b82f6;"></i>
+                                <h6 class="mb-0 fw-bold" style="font-size: 13.5px; color: #1e293b;">Hành trình trả hàng hoàn</h6>
+                            </div>
+                        </div>
+                        <div class="premium-card-body">
+                            @if (returnLogs.Count == 0)
+                            {
+                                <div class="text-center py-4 text-muted border rounded-3 bg-light d-flex flex-column align-items-center gap-2">
+                                    <i class="bx bx-loader-alt bx-spin fs-4 text-info"></i>
+                                    <div class="fw-semibold" style="font-size: 12.5px;">Chưa ghi nhận hành trình di chuyển</div>
+                                    <div class="small px-3 text-center" style="font-size: 11px;">Vui lòng sử dụng <strong>GhnSimulator (Bưu tá / Nhà vận chuyển)</strong> để quét và cập nhật lộ trình đơn hoàn này.</div>
+                                </div>
+                            }
+                            else
+                            {
+                                var latestLog = returnLogs.LastOrDefault();
+                                var isRefused = returnLogs.Any(x => x.Note != null && (x.Note.Contains("|e=refuse") || x.Note.Contains("Event: refuse")));
+                                var isSuccessful = Model.Order?.OrderStatus == "Returned" && !isRefused;
+
+                                <div class="p-2.5 mb-3 rounded-3 text-center border d-flex align-items-center justify-content-center gap-1.5 @(isSuccessful ? "bg-success-subtle border-success-subtle text-success" : (isRefused ? "bg-danger-subtle border-danger-subtle text-danger" : "bg-primary-subtle border-primary-subtle text-primary"))" style="font-size: 12px; font-weight: 750;">
+                                    <i class="bx @(isSuccessful ? "bx-check-double" : (isRefused ? "bx-error-circle" : "bx-time-five")) fs-5"></i>
+                                    @if (isSuccessful)
+                                    {
+                                        <span>ĐÃ THU HỒI & HOÀN GIAO VỀ SHOP THÀNH CÔNG</span>
+                                    }
+                                    else if (isRefused)
+                                    {
+                                        <span>HÀNG HOÀN BỊ SHOP TỪ CHỐI NHẬN</span>
+                                    }
+                                    else
+                                    {
+                                        <span>ĐƠN HOÀN ĐANG TRÊN ĐƯỜNG VẬN CHUYỂN</span>
+                                    }
+                                </div>
+
+                                <div class="timeline-container">
+                                    @foreach (var log in returnLogs)
+                                    {
+                                        var displayMsg = log.Note;
+                                        if (log.Note != null && log.Note.Contains(" - "))
+                                        {
+                                            displayMsg = log.Note.Substring(log.Note.IndexOf(" - ") + 3);
+                                        }
+
+                                        var isArrive = log.Note != null && log.Note.Contains("|e=arrive");
+                                        var isDepart = log.Note != null && log.Note.Contains("|e=depart");
+                                        var isRefuseEvent = log.Note != null && log.Note.Contains("|e=refuse");
+
+                                        var stepIcon = isArrive ? "bx-log-in" : (isDepart ? "bx-log-out" : (isRefuseEvent ? "bx-x-circle" : "bx-git-commit"));
+                                        var stepColor = isArrive ? "bg-primary text-white" : (isDepart ? "bg-success text-white" : (isRefuseEvent ? "bg-danger text-white" : "bg-secondary text-white"));
+
+                                        <div class="timeline-item">
+                                            <div class="timeline-node @stepColor">
+                                                <i class="bx @stepIcon"></i>
+                                            </div>
+                                            <div class="timeline-content">
+                                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+                                                    <span class="fw-bold text-dark" style="font-size: 12.5px;">@log.Status</span>
+                                                    <small class="text-muted" style="font-size: 10.5px;"><i class="bx bx-time-five"></i> @log.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                                                </div>
+                                                <div class="text-muted" style="line-height: 1.5; font-size: 11.5px;">@displayMsg</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @* Card: Rejected Status (Rejection Info) *@
+                @if (isRejected)
+                {
+                    <div class="premium-card accent-rose">
+                        <div class="premium-card-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bx bx-x-circle fs-5" style="color: #f43f5e;"></i>
+                                <h6 class="mb-0 fw-bold" style="font-size: 13.5px; color: #1e293b;">Từ chối trả hàng</h6>
+                            </div>
+                            <span class="glow-badge glow-badge-rejected">Rejected</span>
+                        </div>
+
+                        <div class="premium-card-body">
+                            <div class="order-box" style="border-left: 3px solid #f43f5e;">
+                                <div class="info-list-group">
+                                    <div class="info-item">
+                                        <div class="info-label"><i class="bx bx-info-circle"></i> Phản hồi từ chối của Shop</div>
+                                        <div class="fw-bold text-danger mt-2 p-3 bg-white rounded border border-danger-subtle" style="line-height: 1.55; font-size: 12.5px;">
+                                            @(string.IsNullOrWhiteSpace(Model.RejectionNote) ? "Shop từ chối nhưng không có lý do." : Model.RejectionNote)
+                                        </div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label"><i class="bx bx-calendar"></i> Thời gian từ chối</div>
+                                        <div class="info-value mt-1" style="font-size: 12.5px;">@Model.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @* Card: Action Panel for Pending requests *@
+                @if (isPending)
+                {
+                    <div class="premium-card accent-amber">
+                        <div class="premium-card-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bx bx-bolt-circle fs-5" style="color: #f59e0b;"></i>
+                                <h6 class="mb-0 fw-bold" style="font-size: 13.5px; color: #1e293b;">Xử lý yêu cầu</h6>
+                            </div>
+                            <span class="glow-badge glow-badge-pending">Pending</span>
+                        </div>
+
+                        <div class="premium-card-body">
+                            <div class="alert alert-warning small rounded-3 p-3 mb-3 border-0" style="line-height: 1.6; font-size: 12px; background: rgba(245, 158, 11, 0.08); color: #854d0e;">
+                                <h6 class="fw-bold mb-1 d-flex align-items-center gap-1" style="font-size: 12.5px;"><i class="bx bx-shield-quarter"></i> Quy trình xử lý hoàn tiền:</h6>
+                                • <strong>Xác nhận duyệt:</strong> Hệ thống tự động liên kết API Giao Hàng Nhanh (GHN) để tạo vận đơn thu hồi (lấy tại địa chỉ khách hàng và giao về Shop). Hệ thống trả về mã đơn hoàn GHN công khai.<br/>
+                                • <strong>Từ chối:</strong> Vui lòng điền cụ thể lý do từ chối để khách hàng theo dõi.
+                            </div>
+
+                            <div class="d-flex gap-2.5">
+                                <form method="post" action="@Url.Action("Approve", "ReturnRequests", new { area = "Admin", id = Model.Id })"
+                                      class="flex-fill d-inline-flex"
+                                      onsubmit="return confirm('Bạn xác nhận DUYỆT yêu cầu trả hàng này và khởi tạo đơn hoàn GHN?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-success btn-approve w-100 py-2.5 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-1.5">
+                                        <i class="bx bx-check-shield fs-5"></i>
+                                        Xác nhận duyệt
+                                    </button>
+                                </form>
+
+                                <button type="button" class="btn btn-danger btn-reject flex-fill py-2.5 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-1.5" onclick="openRejectModal()">
+                                    <i class="bx bx-x-circle fs-5"></i>
+                                    Từ chối
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@* Reject Modal *@
+<div id="rejectModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); backdrop-filter:blur(5px); z-index:9999; align-items:center; justify-content:center; padding:15px;">
+    <div class="card shadow-lg border-0 rounded-3 overflow-hidden" style="width: 100%; max-width: 480px; animation: scaleUp 0.25s ease-out;">
+        <div class="card-header bg-danger-subtle border-0 border-start border-4 border-danger rounded-top-3 py-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bx bx-x-circle text-danger fs-4"></i>
+                <h5 class="mb-0 text-danger fw-bold" style="font-size: 15px;">Từ chối yêu cầu trả hàng</h5>
+            </div>
+            <button type="button" class="btn-close" onclick="closeRejectModal()"></button>
+        </div>
+        <div class="card-body p-4" style="font-size: 13px;">
+            <p class="text-muted small">Vui lòng cung cấp lý do chi tiết từ chối yêu cầu trả hàng để gửi tới khách hàng.</p>
+            <form method="post" action="@Url.Action("Reject", "ReturnRequests", new { area = "Admin", id = Model.Id })" onsubmit="return validateRejectForm()">
+                @Html.AntiForgeryToken()
+                <textarea name="note" id="rejectNote" class="form-control rounded-3" rows="4" style="font-size:13px;"
+                          placeholder="Ví dụ: Sản phẩm không có lỗi kỹ thuật hoặc khách hàng không cung cấp video mở hàng làm bằng chứng chứng minh..."
+                          maxlength="500"></textarea>
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="button" onclick="closeRejectModal()" class="btn btn-light py-2.5 fw-bold rounded-3" style="flex: 1; font-size:13px;">
+                        Hủy bỏ
+                    </button>
+                    <button type="submit" class="btn btn-danger py-2.5 fw-bold rounded-3" style="flex: 1; font-size:13px;">
+                        Xác nhận từ chối
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Lightbox Modal for Zooming Evidence *@
+<div id="lightboxModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.9); backdrop-filter:blur(6px); z-index:99999; align-items:center; justify-content:center; padding:20px;" onclick="closeLightbox()">
+    <button type="button" class="btn-close btn-close-white" style="position:absolute; top:20px; right:20px; font-size:24px;" onclick="closeLightbox()"></button>
+    <div style="max-width:90%; max-height:90%; position:relative;" onclick="event.stopPropagation()">
+        <img id="lightboxImage" src="" alt="Evidence Zoom" style="display:none; max-width:100%; max-height:85vh; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+        <video id="lightboxVideo" src="" controls style="display:none; max-width:100%; max-height:85vh; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></video>
+    </div>
+</div>
+
+<script>
+function openRejectModal() {
+    const m = document.getElementById('rejectModal');
+    if (m) { 
+        m.style.display = 'flex'; 
+        document.getElementById('rejectNote').focus();
+    }
+}
+function closeRejectModal() {
+    const m = document.getElementById('rejectModal');
+    if (m) { m.style.display = 'none'; }
+}
+function validateRejectForm() {
+    const note = document.getElementById('rejectNote').value.trim();
+    if (!note) {
+        alert('Vui lòng nhập lý do từ chối yêu cầu.');
+        return false;
+    }
+    return true;
+}
+document.getElementById('rejectModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeRejectModal();
+});
+
+// Lightbox controller
+function showLightbox(url, isVideo) {
+    const modal = document.getElementById('lightboxModal');
+    const img = document.getElementById('lightboxImage');
+    const vid = document.getElementById('lightboxVideo');
+    
+    if (isVideo) {
+        img.style.display = 'none';
+        vid.src = url;
+        vid.style.display = 'block';
+        vid.play();
+    } else {
+        vid.style.display = 'none';
+        vid.src = '';
+        img.src = url;
+        img.style.display = 'block';
+    }
+    modal.style.display = 'flex';
+}
+function closeLightbox() {
+    const modal = document.getElementById('lightboxModal');
+    const img = document.getElementById('lightboxImage');
+    const vid = document.getElementById('lightboxVideo');
+    
+    vid.pause();
+    vid.src = '';
+    img.src = '';
+    modal.style.display = 'none';
+}
+</script>
+
+<style>
+    @@keyframes scaleUp {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+</style>

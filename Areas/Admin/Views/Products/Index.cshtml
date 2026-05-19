@@ -6,268 +6,443 @@
     (string Label, string BadgeClass, string Icon) ResolveStatusUi(string? status)
     {
         if (string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase))
-        {
             return ("Đang bán", "badge-soft-success", "bx bx-check-circle");
-        }
-
         if (string.Equals(status, "Hidden", StringComparison.OrdinalIgnoreCase))
-        {
             return ("Tạm ẩn", "badge-soft-warning", "bx bx-hide");
-        }
-
         if (string.Equals(status, "Draft", StringComparison.OrdinalIgnoreCase))
-        {
             return ("Nháp", "badge-soft-secondary", "bx bx-file");
-        }
-
+            
         return (status ?? "—", "badge-soft-dark", "bx bx-help-circle");
     }
 }
 
+<style>
+    /* Premium Dashboard Styles */
+    :root {
+        --prod-primary: #556ee6;
+        --prod-primary-light: rgba(85, 110, 230, 0.1);
+        --prod-danger: #f46a6a;
+        --prod-success: #34c38f;
+        --prod-success-light: rgba(52, 195, 143, 0.1);
+        --prod-warning: #f1b44c;
+        --prod-warning-light: rgba(241, 180, 76, 0.1);
+        --prod-info: #50a5f1;
+        --prod-info-light: rgba(80, 165, 241, 0.1);
+        --prod-secondary: #74788d;
+        --prod-secondary-light: rgba(116, 120, 141, 0.1);
+    }
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                            <div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="avatar-sm rounded bg-primary-subtle text-primary-emphasis d-inline-flex align-items-center justify-content-center">
-                                        <i class="bx bx-package font-size-18"></i>
-                                    </span>
-                                    <div>
-                                        <h4 class="mb-0">Quản lý sản phẩm</h4>
-                                        <div class="text-muted small">Tìm kiếm, lọc và quản trị danh sách sản phẩm</div>
-                                    </div>
-                                </div>
-                            </div>
+    .prod-page-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+        padding: 24px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
 
-                            <div class="page-title-right">
-                                <ol class="breadcrumb m-0">
-                                    <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
-                                    <li class="breadcrumb-item active">Sản phẩm</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
+    .prod-page-header::after {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -30px;
+        width: 180px;
+        height: 180px;
+        background: var(--prod-primary-light);
+        border-radius: 50%;
+        filter: blur(40px);
+    }
+
+    .prod-card {
+        border-radius: 16px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        background: #fff;
+    }
+
+    .filter-wrapper {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .search-input-group {
+        position: relative;
+    }
+
+    .search-input-group i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        z-index: 5;
+    }
+
+    .search-input-group input {
+        padding-left: 40px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        transition: all 0.3s;
+    }
+
+    .search-input-group input:focus {
+        border-color: var(--prod-primary);
+        box-shadow: 0 0 0 3px var(--prod-primary-light);
+    }
+
+    .custom-select {
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        transition: all 0.3s;
+    }
+
+    .custom-select:focus {
+        border-color: var(--prod-primary);
+        box-shadow: 0 0 0 3px var(--prod-primary-light);
+    }
+
+    .btn-create {
+        background: linear-gradient(135deg, var(--prod-primary), #3b82f6);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(85, 110, 230, 0.3);
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-create:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(85, 110, 230, 0.4);
+        color: white;
+    }
+
+    .table-prod th {
+        background-color: #f8f9fa;
+        color: #495057;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        padding: 16px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .table-prod td {
+        padding: 16px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        color: #495057;
+    }
+
+    .table-prod tbody tr {
+        transition: background-color 0.2s;
+    }
+    
+    .table-prod tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .prod-img {
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        object-fit: cover;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        background: #fff;
+        border: 1px solid #f1f5f9;
+    }
+
+    .prod-img-placeholder {
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 24px;
+        border: 1px dashed #cbd5e1;
+    }
+
+    .badge-soft {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .badge-soft-success { background: var(--prod-success-light); color: var(--prod-success); }
+    .badge-soft-warning { background: var(--prod-warning-light); color: #d97706; }
+    .badge-soft-secondary { background: var(--prod-secondary-light); color: var(--prod-secondary); }
+    .badge-soft-primary { background: var(--prod-primary-light); color: var(--prod-primary); }
+    .badge-soft-info { background: var(--prod-info-light); color: var(--prod-info); }
+
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .btn-action.view { background: #f8fafc; color: #64748b; }
+    .btn-action.view:hover { background: #e2e8f0; color: #334155; }
+    
+    .btn-action.edit { background: var(--prod-primary-light); color: var(--prod-primary); }
+    .btn-action.edit:hover { background: var(--prod-primary); color: white; }
+    
+    .btn-action.reviews { background: var(--prod-info-light); color: var(--prod-info); }
+    .btn-action.reviews:hover { background: var(--prod-info); color: white; }
+
+    .pagination-rounded .page-link {
+        border-radius: 50% !important;
+        margin: 0 4px;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        color: #495057;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .pagination-rounded .page-item.active .page-link {
+        background-color: var(--prod-primary);
+        box-shadow: 0 4px 10px var(--prod-primary-light);
+    }
+
+    .pagination-rounded .page-item:not(.active) .page-link:hover {
+        background-color: #f1f5f9;
+        color: var(--prod-primary);
+    }
+</style>
+
+<!-- Header Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="prod-page-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h4 class="mb-1 fw-bold" style="color: #495057;">
+                    <i class="bx bx-package text-primary me-2" style="font-size: 1.4rem;"></i>Kho Sản phẩm
+                </h4>
+                <div class="text-muted small">
+                    Quản lý danh sách, phân loại và theo dõi trạng thái hiển thị của <span class="fw-bold text-primary">@Model.TotalItems</span> sản phẩm
                 </div>
             </div>
+            <div class="d-flex align-items-center gap-3">
+                <a asp-area="Admin" asp-controller="Products" asp-action="Create" class="btn-create">
+                    <i class="bx bx-plus-circle font-size-18"></i> Thêm sản phẩm mới
+                </a>
+            </div>
         </div>
+    </div>
+</div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                            <div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="avatar-xs rounded bg-info-subtle text-info-emphasis d-inline-flex align-items-center justify-content-center">
-                                        <i class="bx bx-list-ul"></i>
-                                    </span>
-                                    <h4 class="card-title mb-0">Danh sách sản phẩm</h4>
-                                </div>
-                                <div class="text-muted small mt-1">
-                                    <span class="badge badge-soft-primary rounded-pill">Tổng: @Model.TotalItems</span>
-                                    <span class="ms-2">Sản phẩm</span>
-                                </div>
+<!-- Main Table Card -->
+<div class="row">
+    <div class="col-12">
+        <div class="card prod-card">
+            <div class="card-body p-4">
+                
+                <!-- Filter Section -->
+                <div class="filter-wrapper">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-lg-4 col-md-12">
+                            <label class="form-label text-muted fw-semibold small">TÌM KIẾM THEO TÊN</label>
+                            <div class="search-input-group">
+                                <i class="bx bx-search"></i>
+                                <input class="form-control" name="Search" value="@Model.Query.Search" placeholder="Nhập tên sản phẩm..." />
                             </div>
-
-                            <a class="btn btn-primary" asp-area="Admin" asp-controller="Products" asp-action="Create">
-                                <i class="bx bx-plus-circle me-1"></i>Thêm sản phẩm
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label text-muted fw-semibold small">DANH MỤC</label>
+                            <select class="form-select custom-select" name="CategoryId">
+                                <option value="">Tất cả danh mục</option>
+                                @foreach (var c in Model.CategoryOptions)
+                                {
+                                    <option value="@c.Value" selected="@(Model.Query.CategoryId == c.Value)">@c.Label</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label text-muted fw-semibold small">TRẠNG THÁI</label>
+                            <select class="form-select custom-select" name="Status">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="Active" selected="@(Model.Query.Status == "Active")">Đang bán</option>
+                                <option value="Hidden" selected="@(Model.Query.Status == "Hidden")">Tạm ẩn</option>
+                                <option value="Draft" selected="@(Model.Query.Status == "Draft")">Bản nháp</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-12 d-flex gap-2">
+                            <button class="btn btn-primary w-100" type="submit" style="border-radius: 10px;">
+                                <i class="bx bx-filter-alt me-1"></i>Lọc
+                            </button>
+                            <a class="btn btn-light" asp-area="Admin" asp-controller="Products" asp-action="Index" data-bs-toggle="tooltip" title="Làm mới bộ lọc" style="border-radius: 10px;">
+                                <i class="bx bx-refresh fs-5"></i>
                             </a>
                         </div>
-
-                        <div class="p-3 rounded-3 bg-light border">
-                            <form method="get" class="row g-2 align-items-end">
-                                <div class="col-md-4">
-                                    <label class="form-label">Tìm kiếm</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="bx bx-search"></i></span>
-                                        <input class="form-control" name="Search" value="@Model.Query.Search" placeholder="Tên sản phẩm" />
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Danh mục</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="bx bx-category"></i></span>
-                                        <select class="form-select" name="CategoryId">
-                                            <option value="">Tất cả</option>
-                                            @foreach (var c in Model.CategoryOptions)
-                                            {
-                                                <option value="@c.Value" selected="@(Model.Query.CategoryId == c.Value)">@c.Label</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Trạng thái</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="bx bx-shield-quarter"></i></span>
-                                        <select class="form-select" name="Status">
-                                            <option value="">Tất cả</option>
-                                            <option value="Active" selected="@(Model.Query.Status == "Active")">Đang bán (Active)</option>
-                                            <option value="Hidden" selected="@(Model.Query.Status == "Hidden")">Tạm ẩn (Hidden)</option>
-                                            <option value="Draft" selected="@(Model.Query.Status == "Draft")">Nháp (Draft)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 d-flex gap-2">
-                                    <button class="btn btn-primary w-100" type="submit">
-                                        <i class="bx bx-filter-alt me-1"></i>Lọc
-                                    </button>
-                                    <a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="Products" asp-action="Index" title="Reset bộ lọc">
-                                        <i class="bx bx-refresh"></i>
-                                    </a>
-                                </div>
-
-                                <input type="hidden" name="Page" value="1" />
-                                <input type="hidden" name="PageSize" value="@Model.Query.PageSize" />
-                            </form>
-                        </div>
-
-                        <div class="table-responsive mt-3 border rounded-3 overflow-hidden">
-                            <table class="table table-nowrap align-middle table-hover table-striped mb-0">
-                                <thead class="table-light sticky-top z-1">
-                                    <tr>
-                                        <th style="width: 74px;">Ảnh</th>
-                                        <th>Sản phẩm</th>
-                                        <th>Danh mục</th>
-                                        <th style="width: 120px;">Biến thể</th>
-                                        <th style="width: 140px;">Trạng thái</th>
-                                        <th style="width: 210px;">Thao tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (Model.Products.Count == 0)
-                                    {
-                                        <tr>
-                                            <td colspan="7" class="text-center text-muted py-5">
-                                                <div class="d-inline-flex align-items-center gap-2">
-                                                    <i class="bx bx-info-circle"></i>
-                                                    <span>Không có sản phẩm phù hợp bộ lọc.</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                    else
-                                    {
-                                        foreach (var p in Model.Products)
-                                        {
-                                            var statusUi = ResolveStatusUi(p.Status);
-                                            var dotClass = string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase)
-                                                ? "bg-success"
-                                                : string.Equals(p.Status, "Hidden", StringComparison.OrdinalIgnoreCase)
-                                                    ? "bg-warning"
-                                                    : string.Equals(p.Status, "Draft", StringComparison.OrdinalIgnoreCase)
-                                                        ? "bg-secondary"
-                                                        : "bg-light";
-                                            <tr>
-                                                <td>
-                                                    <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="d-inline-block">
-                                                        @if (!string.IsNullOrWhiteSpace(p.PrimaryImageUrl))
-                                                        {
-                                                            <img src="@p.PrimaryImageUrl" alt="@p.Name" class="rounded border" style="width: 52px; height: 52px; object-fit: cover;" />
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="avatar-sm rounded bg-light border d-inline-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
-                                                                <i class="bx bx-image text-muted font-size-18"></i>
-                                                            </span>
-                                                        }
-                                                    </a>
-                                                </td>
-                                                <td>
-                                                    <div>
-                                                        <div class="fw-medium">
-                                                            <div class="d-flex align-items-center gap-2">
-                                                                <span class="rounded-circle @dotClass" style="width: 8px; height: 8px;"></span>
-                                                                <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="text-reset text-decoration-none">@p.Name</a>
-                                                            </div>
-                                                        </div>
-                                                        <div class="text-muted small d-flex flex-wrap align-items-center gap-2">
-                                                            <span class="badge bg-light text-muted border">#@p.Id</span>
-                                                            <span><i class="bx bx-calendar me-1"></i>@p.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span class="text-muted">@(p.CategoryName ?? "-")</span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge badge-soft-primary rounded-pill">
-                                                        <i class="bx bx-layer me-1"></i>@p.VariantCount biến thể
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge rounded-pill @statusUi.BadgeClass">
-                                                        <i class="@statusUi.Icon me-1"></i>@statusUi.Label
-                                                    </span>
-                                                </td>
-                                                <td class="text-nowrap">
-                                                    <div class="btn-group btn-group-sm" role="group" aria-label="Thao tác">
-                                                        <a class="btn btn-soft-secondary" asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" title="Xem chi tiết">
-                                                            <i class="bx bx-show-alt"></i>
-                                                            <span class="ms-1 d-none d-xl-inline">Xem</span>
-                                                        </a>
-                                                        <a class="btn btn-soft-primary" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@p.Id" title="Cập nhật">
-                                                            <i class="bx bx-edit-alt"></i>
-                                                            <span class="ms-1 d-none d-xl-inline">Cập nhật</span>
-                                                        </a>
-                                                        <a class="btn btn-soft-info" asp-area="Admin" asp-controller="Products" asp-action="Reviews" asp-route-id="@p.Id" title="Đánh giá">
-                                                            <i class="bx bx-message-square-dots"></i>
-                                                            <span class="ms-1 d-none d-xl-inline">Đánh giá</span>
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        }
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-
-                        @if (Model.TotalPages > 1)
-                        {
-                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
-                                <div class="text-muted">
-                                    Trang <strong>@Model.Query.Page</strong>/<strong>@Model.TotalPages</strong>
-                                </div>
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination mb-0 pagination-rounded">
-                                        @{
-                                            string BuildUrl(int page)
-                                            {
-                                                return Url.Action("Index", "Products", new
-                                                {
-                                                    area = "Admin",
-                                                    Search = Model.Query.Search,
-                                                    CategoryId = Model.Query.CategoryId,
-                                                    Status = Model.Query.Status,
-                                                    Page = page,
-                                                    PageSize = Model.Query.PageSize
-                                                }) ?? "#";
-                                            }
-                                        }
-
-                                        <li class="page-item @(Model.Query.Page <= 1 ? "disabled" : "")">
-                                            <a class="page-link" href="@BuildUrl(Model.Query.Page - 1)"><i class="bx bx-chevron-left"></i></a>
-                                        </li>
-
-                                        @for (var i = 1; i <= Model.TotalPages; i++)
-                                        {
-                                            <li class="page-item @(i == Model.Query.Page ? "active" : "")">
-                                                <a class="page-link" href="@BuildUrl(i)">@i</a>
-                                            </li>
-                                        }
-
-                                        <li class="page-item @(Model.Query.Page >= Model.TotalPages ? "disabled" : "")">
-                                            <a class="page-link" href="@BuildUrl(Model.Query.Page + 1)"><i class="bx bx-chevron-right"></i></a>
-                                        </li>
-                                    </ul>
-                                </nav>
-                            </div>
-                        }
-                    </div>
+                        <input type="hidden" name="Page" value="1" />
+                        <input type="hidden" name="PageSize" value="@Model.Query.PageSize" />
+                    </form>
                 </div>
+
+                <!-- Table Section -->
+                @if (Model.Products.Count == 0)
+                {
+                    <div class="text-center py-5">
+                        <img src="~/admin/assets/images/illustrator/empty-cart.svg" alt="Empty" style="width: 150px; opacity: 0.5;" class="mb-4">
+                        <h5 class="text-muted fw-bold">Không tìm thấy sản phẩm nào</h5>
+                        <p class="text-muted mb-4">Thử thay đổi bộ lọc hoặc thêm một sản phẩm mới vào hệ thống.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-prod table-nowrap align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;" class="text-center">Hình ảnh</th>
+                                    <th>Thông tin sản phẩm</th>
+                                    <th>Phân loại</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-end">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in Model.Products)
+                                {
+                                    var statusUi = ResolveStatusUi(p.Status);
+                                    <tr>
+                                        <td class="text-center">
+                                            <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">
+                                                @if (!string.IsNullOrWhiteSpace(p.PrimaryImageUrl))
+                                                {
+                                                    <img src="@p.PrimaryImageUrl" alt="@p.Name" class="prod-img" onerror="this.src='/admin/assets/images/users/avatar-1.jpg'" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="prod-img-placeholder">
+                                                        <i class="bx bx-image"></i>
+                                                    </div>
+                                                }
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="text-dark fw-bold mb-1 d-block text-decoration-none" style="font-size: 1.05rem;">
+                                                @p.Name
+                                            </a>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge badge-soft-secondary">Mã: #@p.Id</span>
+                                                <span class="text-muted small"><i class="bx bx-time-five me-1"></i>@p.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold text-muted mb-1">@(p.CategoryName ?? "Chưa phân loại")</div>
+                                            <span class="badge badge-soft-info">
+                                                <i class="bx bx-layer me-1"></i>@p.VariantCount biến thể
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge-soft @statusUi.BadgeClass">
+                                                <i class="@statusUi.Icon fs-6"></i> @statusUi.Label
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-inline-flex gap-2">
+                                                <a class="btn-action view" asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" data-bs-toggle="tooltip" title="Xem chi tiết">
+                                                    <i class="bx bx-show-alt"></i>
+                                                </a>
+                                                <a class="btn-action edit" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@p.Id" data-bs-toggle="tooltip" title="Chỉnh sửa">
+                                                    <i class="bx bx-edit-alt"></i>
+                                                </a>
+                                                <a class="btn-action reviews" asp-area="Admin" asp-controller="Products" asp-action="Reviews" asp-route-id="@p.Id" data-bs-toggle="tooltip" title="Đánh giá khách hàng">
+                                                    <i class="bx bx-message-square-dots"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (Model.TotalPages > 1)
+                    {
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4 pt-3 border-top">
+                            <div class="text-muted fw-medium">
+                                Hiển thị trang <span class="text-primary fw-bold">@Model.Query.Page</span> trên tổng số <span class="fw-bold">@Model.TotalPages</span>
+                            </div>
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination mb-0 pagination-rounded">
+                                    @{
+                                        string BuildUrl(int page)
+                                        {
+                                            return Url.Action("Index", "Products", new
+                                            {
+                                                area = "Admin",
+                                                Search = Model.Query.Search,
+                                                CategoryId = Model.Query.CategoryId,
+                                                Status = Model.Query.Status,
+                                                Page = page,
+                                                PageSize = Model.Query.PageSize
+                                            }) ?? "#";
+                                        }
+                                    }
+
+                                    <li class="page-item @(Model.Query.Page <= 1 ? "disabled" : "")">
+                                        <a class="page-link" href="@BuildUrl(Model.Query.Page - 1)"><i class="bx bx-chevron-left"></i></a>
+                                    </li>
+
+                                    @for (var i = 1; i <= Model.TotalPages; i++)
+                                    {
+                                        <li class="page-item @(i == Model.Query.Page ? "active" : "")">
+                                            <a class="page-link" href="@BuildUrl(i)">@i</a>
+                                        </li>
+                                    }
+
+                                    <li class="page-item @(Model.Query.Page >= Model.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" href="@BuildUrl(Model.Query.Page + 1)"><i class="bx bx-chevron-right"></i></a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+                }
             </div>
         </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Khởi tạo tooltips cho các nút icon
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+        });
+    </script>
+}

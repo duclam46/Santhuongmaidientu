@@ -1,0 +1,303 @@
+@model DOAN_BANHANG.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Bảng điều khiển Admin";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0 font-size-18">Bảng điều khiển Quản trị</h4>
+
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a href="javascript: void(0);">Hệ thống</a></li>
+                    <li class="breadcrumb-item active">Bảng điều khiển</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card overflow-hidden">
+            <div class="bg-primary-subtle">
+                <div class="row">
+                    <div class="col-7">
+                        <div class="text-primary p-3">
+                            <h5 class="text-primary">Chào mừng trở lại!</h5>
+                            <p>Sellzy Admin Dashboard</p>
+                        </div>
+                    </div>
+                    <div class="col-5 align-self-end">
+                        <img src="/admin/assets/images/profile-img.png" alt="" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+            <div class="card-body pt-0">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="avatar-md profile-user-wid mb-4">
+                            <img src="/admin/assets/images/users/avatar-1.jpg" alt="" class="img-thumbnail rounded-circle">
+                        </div>
+                        <h5 class="font-size-15 text-truncate">Admin</h5>
+                        <p class="text-muted mb-0 text-truncate">Quản trị viên</p>
+                    </div>
+
+                    <div class="col-sm-8">
+                        <div class="pt-4">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h5 class="font-size-15">@Model.TotalShops</h5>
+                                    <p class="text-muted mb-0">Đối tác</p>
+                                </div>
+                                <div class="col-6">
+                                    <h5 class="font-size-15">@Model.RevenueGrowthRate%</h5>
+                                    <p class="text-muted mb-0">Tăng trưởng</p>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <a href="javascript:void(0);" class="btn btn-primary waves-effect waves-light btn-sm">Xem hồ sơ <i class="mdi mdi-arrow-right ms-1"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Doanh thu tháng này</h4>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <p class="text-muted">Tổng doanh thu</p>
+                        <h3>@Model.TotalRevenue.ToString("C0")</h3>
+                        <p class="text-muted"><span class="text-success me-2"> @Model.RevenueGrowthRate% <i class="mdi mdi-arrow-up"></i> </span> So với tháng trước</p>
+
+                        <div class="mt-4">
+                            <a href="javascript:void(0);" class="btn btn-primary waves-effect waves-light btn-sm">Xem chi tiết <i class="mdi mdi-arrow-right ms-1"></i></a>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div id="revenue-radial-chart" class="apex-charts"></div>
+                    </div>
+                </div>
+                <p class="text-muted mb-0">Hệ thống đang hoạt động ổn định với hiệu suất cao.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card mini-stats-wid">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <p class="text-muted fw-medium">Tổng Đơn hàng</p>
+                                <h4 class="mb-0">@Model.TotalOrders</h4>
+                            </div>
+
+                            <div class="flex-shrink-0 align-self-center">
+                                <div class="mini-stat-icon avatar-sm rounded-circle bg-primary">
+                                    <span class="avatar-title">
+                                        <i class="bx bx-copy-alt font-size-24"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mini-stats-wid">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <p class="text-muted fw-medium">Tổng Khách hàng</p>
+                                <h4 class="mb-0">@Model.TotalCustomers</h4>
+                            </div>
+
+                            <div class="flex-shrink-0 align-self-center ">
+                                <div class="avatar-sm rounded-circle bg-primary mini-stat-icon">
+                                    <span class="avatar-title rounded-circle bg-primary">
+                                        <i class="bx bx-user-circle font-size-24"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mini-stats-wid">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <p class="text-muted fw-medium">Trung bình đơn</p>
+                                <h4 class="mb-0">@Model.AverageOrderValue.ToString("C0")</h4>
+                            </div>
+
+                            <div class="flex-shrink-0 align-self-center">
+                                <div class="avatar-sm rounded-circle bg-primary mini-stat-icon">
+                                    <span class="avatar-title rounded-circle bg-primary">
+                                        <i class="bx bx-purchase-tag-alt font-size-24"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end row -->
+
+        <div class="card">
+            <div class="card-body">
+                <div class="d-sm-flex flex-wrap">
+                    <h4 class="card-title mb-4">Biểu đồ Doanh thu Hệ thống</h4>
+                    <div class="ms-auto">
+                        <ul class="nav nav-pills">
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">Tuần</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">Tháng</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" href="#">Năm</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div id="stacked-column-chart" class="apex-charts" dir="ltr"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end row -->
+
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Phân tích Danh mục</h4>
+                <div id="category-donut-chart" class="apex-charts"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Top Cửa hàng Doanh thu</h4>
+                <div class="table-responsive">
+                    <table class="table align-middle table-nowrap mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cửa hàng</th>
+                                <th>Doanh thu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.TopStoreNames.Count; i++)
+                            {
+                                <tr>
+                                    <td>@Model.TopStoreNames[i]</td>
+                                    <td>@Model.TopStoreRevenues[i].ToString("C0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Trạng thái Đơn hàng</h4>
+                <div id="order-status-pie-chart" class="apex-charts"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Line Chart - Revenue
+        var optionsRevenue = {
+            chart: {
+                height: 350,
+                type: 'area',
+                toolbar: { show: false }
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            series: [{
+                name: 'Doanh thu',
+                data: @Html.Raw(Json.Serialize(Model.RevenueValues))
+            }],
+            colors: ['#556ee6'],
+            xaxis: {
+                categories: @Html.Raw(Json.Serialize(Model.RevenueLabels)),
+            },
+            grid: { borderColor: '#f1f1f1' },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.7,
+                    opacityTo: 0.9,
+                    stops: [0, 90, 100]
+                }
+            }
+        };
+        var chartRevenue = new ApexCharts(document.querySelector("#stacked-column-chart"), optionsRevenue);
+        chartRevenue.render();
+
+        // Donut Chart - Categories
+        var optionsCats = {
+            chart: { height: 320, type: 'donut' },
+            series: @Html.Raw(Json.Serialize(Model.CategoryRevenue.Select(r => (double)r))),
+            labels: @Html.Raw(Json.Serialize(Model.CategoryNames)),
+            colors: ['#556ee6', '#34c38f', '#f1b44c', '#f46a6a', '#50a5f1'],
+            legend: { show: true, position: 'bottom' },
+            plotOptions: { pie: { donut: { size: '70%' } } }
+        };
+        var chartCats = new ApexCharts(document.querySelector("#category-donut-chart"), optionsCats);
+        chartCats.render();
+
+        // Pie Chart - Order Status
+        var optionsStatus = {
+            chart: { height: 320, type: 'pie' },
+            series: @Html.Raw(Json.Serialize(Model.OrderStatusValues)),
+            labels: @Html.Raw(Json.Serialize(Model.OrderStatusLabels)),
+            colors: ['#34c38f', '#556ee6', '#f1b44c', '#f46a6a'],
+            legend: { show: true, position: 'bottom' }
+        };
+        var chartStatus = new ApexCharts(document.querySelector("#order-status-pie-chart"), optionsStatus);
+        chartStatus.render();
+
+        // Radial Chart - Performance
+        var optionsRadial = {
+            chart: { height: 200, type: 'radialBar' },
+            series: [@Model.OrderCompletionRate],
+            plotOptions: {
+                radialBar: {
+                    hollow: { size: '70%' },
+                    dataLabels: {
+                        name: { show: false },
+                        value: {
+                            fontSize: '22px',
+                            show: true,
+                            formatter: function (val) { return val + '%' }
+                        }
+                    }
+                }
+            },
+            colors: ['#556ee6'],
+            labels: ['Hiệu suất'],
+        };
+        var chartRadial = new ApexCharts(document.querySelector("#revenue-radial-chart"), optionsRadial);
+        chartRadial.render();
+    </script>
+}

@@ -1,0 +1,45 @@
+@model dynamic
+@{
+    var productId = Model.ProductId;
+    var shopId = Model.ShopId;
+}
+
+<button type="button" onclick="openChatWithShop(@productId, @shopId)" class="flex-1 bg-white border border-primary text-primary hover:bg-primary/5 rounded-[100px] font-semibold text-sm h-12 flex items-center justify-center gap-x-2 transition-colors">
+    <i class="hgi hgi-stroke hgi-chatting-01 text-xl"></i>
+    Hỏi Shop
+</button>
+
+<!-- Thêm đoạn script này vào cuối trang hoặc để trong _Layout -->
+<script>
+    function openChatWithShop(productId, shopId) {
+        fetch('/Chat/StartOrOpen', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ShopId: shopId,
+                ProductId: productId
+            })
+        })
+        .then(res => {
+            if (res.status === 401) {
+                window.location.href = '/Auth/Login';
+                throw new Error('Chưa đăng nhập');
+            }
+            if (!res.ok) throw new Error('Có lỗi xảy ra');
+            return res.json();
+        })
+        .then(data => {
+            if (data && data.conversationId) {
+                window.location.href = '/Chat/Index?id=' + data.conversationId;
+            }
+        })
+        .catch(err => {
+            if(err.message !== 'Chưa đăng nhập') {
+                console.error(err);
+                alert("Không thể kết nối đến Shop. Vui lòng thử lại sau.");
+            }
+        });
+    }
+</script>

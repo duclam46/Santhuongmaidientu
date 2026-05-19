@@ -100,10 +100,20 @@ public sealed class OrderSummaryVm
     public string OrderCode { get; set; } = string.Empty;
     public string OrderStatus { get; set; } = string.Empty;
     public string PaymentStatus { get; set; } = string.Empty;
+    public string PaymentMethod { get; set; } = string.Empty;
+    public DateTime? PaymentDeadlineUtc { get; set; }
     public decimal FinalAmount { get; set; }
     public decimal ShippingFee { get; set; }
     public int ItemCount { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public string FirstProductSlug { get; set; } = string.Empty;
+    public bool HasReviewed { get; set; }
+    public int FirstProductId { get; set; }
+    public string FirstProductName { get; set; } = string.Empty;
+    public string? FirstProductImageUrl { get; set; }
+    public string? FirstProductVariantName { get; set; }
+    public bool IsReceivedByCustomer { get; set; }
 }
 
 public sealed class UserAddressVm

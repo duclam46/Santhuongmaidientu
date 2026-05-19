@@ -7,6 +7,12 @@ public class HomeIndexVm
     public List<ProductCardVm> FeaturedProducts { get; set; } = new();
 
     public List<ProductCardVm> LatestProducts { get; set; } = new();
+
+    public List<ProductCardVm> TopSellers { get; set; } = new();
+
+    public List<ProductCardVm> MostWanted { get; set; } = new();
+
+    public Dictionary<string, List<ProductCardVm>> CategoryDeals { get; set; } = new();
 }
 
 public class CategoryLinkVm

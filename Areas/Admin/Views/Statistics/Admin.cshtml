@@ -1,0 +1,175 @@
+@model DOAN_BANHANG.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Phân tích Chuyên sâu Hệ thống";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0 font-size-18">Báo cáo Phân tích Chiến lược Hệ thống</h4>
+            <div class="page-title-right">
+                <a href="/Admin/SystemStatistics/FinancialReport" class="btn btn-primary btn-sm me-2"><i class="bx bx-file"></i> Báo cáo Tài chính</a>
+                <button class="btn btn-success btn-sm"><i class="mdi mdi-file-export"></i> Xuất Báo cáo PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-9">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Biến động Thị trường & Dòng tiền (Nâng cao)</h4>
+                <div id="deep-revenue-chart" style="height: 450px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Sức khỏe Vận hành</h4>
+                <div class="text-center mb-4">
+                    <div id="system-health-gauge" style="height: 200px;"></div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-nowrap mb-0">
+                        <tbody>
+                            <tr>
+                                <td><p class="mb-0">Tải CPU</p></td>
+                                <td class="text-end"><span class="badge bg-success">Thấp</span></td>
+                            </tr>
+                            <tr>
+                                <td><p class="mb-0">Ram Usage</p></td>
+                                <td class="text-end"><span class="badge bg-warning">4.2GB</span></td>
+                            </tr>
+                            <tr>
+                                <td><p class="mb-0">Disk I/O</p></td>
+                                <td class="text-end"><span class="badge bg-info">Ổn định</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Cơ cấu Ngành hàng & Tiềm năng Tăng trưởng</h4>
+                <div id="category-radar" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">So sánh Hiệu suất giữa các Đối tác Top</h4>
+                <div id="store-comparison-scatter" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Phân tích Người dùng Mới (24h)</h4>
+                <div id="user-growth-sparkline" style="height: 250px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Bản đồ Nhiệt Hoạt động Giao dịch</h4>
+                <div id="activity-heatmap" style="height: 250px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="/admin/assets/libs/echarts/echarts.min.js"></script>
+    <script>
+        $(function() {
+            // 1. Deep Revenue Chart (ECharts Area with Zoom)
+            var revenueChart = echarts.init(document.getElementById('deep-revenue-chart'));
+            var option = {
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+                xAxis: { type: 'category', boundaryGap: false, data: @Html.Raw(Json.Serialize(Model.RevenueLabels)) },
+                yAxis: { type: 'value' },
+                dataZoom: [{ type: 'inside', start: 0, end: 100 }, { start: 0, end: 100 }],
+                series: [{
+                    name: 'Doanh thu', type: 'line', smooth: true, symbol: 'none',
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(85, 110, 230, 0.5)'}, {offset: 1, color: 'rgba(85, 110, 230, 0.1)'}]) },
+                    data: @Html.Raw(Json.Serialize(Model.RevenueValues))
+                }]
+            };
+            revenueChart.setOption(option);
+
+            // 2. System Health Gauge
+            var healthChart = echarts.init(document.getElementById('system-health-gauge'));
+            healthChart.setOption({
+                series: [{
+                    type: 'gauge',
+                    progress: { show: true, width: 8 },
+                    axisLine: { lineStyle: { width: 8 } },
+                    axisTick: { show: false },
+                    splitLine: { length: 5, lineStyle: { width: 2, color: '#999' } },
+                    axisLabel: { distance: 10, color: '#999', fontSize: 10 },
+                    anchor: { show: true, showAbove: true, size: 15, itemStyle: { borderWidth: 5 } },
+                    title: { show: false },
+                    detail: { valueAnimation: true, fontSize: 30, offsetCenter: [0, '70%'], formatter: '{value}%' },
+                    data: [{ value: 94 }]
+                }]
+            });
+
+            // 3. Category Radar
+            var radarChart = echarts.init(document.getElementById('category-radar'));
+            radarChart.setOption({
+                radar: {
+                    indicator: @Html.Raw(Json.Serialize(Model.CategoryNames.Select(n => new { name = n, max = 10000000 })))
+                },
+                series: [{
+                    name: 'Phân tích Ngành', type: 'radar',
+                    data: [{ value: @Html.Raw(Json.Serialize(Model.CategoryRevenue)), name: 'Thực tế' }]
+                }]
+            });
+
+            // 4. Store Scatter
+            var scatterChart = echarts.init(document.getElementById('store-comparison-scatter'));
+            scatterChart.setOption({
+                xAxis: { name: 'Số đơn' }, yAxis: { name: 'Doanh thu' },
+                series: [{
+                    symbolSize: 20,
+                    data: [[10, 5000000], [15, 8000000], [8, 3000000], [20, 12000000], [12, 6000000]],
+                    type: 'scatter'
+                }]
+            });
+
+            // 5. Heatmap
+            var heatmapChart = echarts.init(document.getElementById('activity-heatmap'));
+            var hours = ['12a', '1a', '2a', '3a', '4a', '5a', '6a', '7a', '8a', '9a', '10a', '11a', '12p', '1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p', '10p', '11p'];
+            var days = ['Sat', 'Fri', 'Thu', 'Wed', 'Tue', 'Mon', 'Sun'];
+            var data = [];
+            for (let i = 0; i < 7; i++) {
+                for (let j = 0; j < 24; j++) {
+                    data.push([j, i, Math.floor(Math.random() * 10)]);
+                }
+            }
+            heatmapChart.setOption({
+                tooltip: { position: 'top' },
+                grid: { height: '50%', top: '10%' },
+                xAxis: { type: 'category', data: hours, splitArea: { show: true } },
+                yAxis: { type: 'category', data: days, splitArea: { show: true } },
+                visualMap: { min: 0, max: 10, calculable: true, orient: 'horizontal', left: 'center', bottom: '15%' },
+                series: [{ name: 'Activity', type: 'heatmap', data: data, label: { show: true }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } } }]
+            });
+        });
+    </script>
+}

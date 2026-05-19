@@ -25,10 +25,28 @@ public sealed class CheckoutPageVm
     public decimal ShippingFee { get; set; }
 
     public decimal FinalAmount { get; set; }
+    
+    public decimal VatAmount { get; set; }
+
+    public decimal GlobalVatRate { get; set; } = 0.08m;
 
     public string PaymentMethod { get; set; } = "COD";
 
     public string? ErrorMessage { get; set; }
+
+    public string? AppliedVoucherCode { get; set; }
+
+    public string? AppliedShippingVoucherCode { get; set; }
+
+    public string? AppliedDiscountVoucherCode { get; set; }
+
+    public decimal ShippingVoucherDiscountAmount { get; set; }
+
+    public decimal DiscountVoucherDiscountAmount { get; set; }
+
+    public decimal VoucherDiscountAmount { get; set; }
+
+    public List<CheckoutVoucherVm> AvailableVouchers { get; set; } = new();
 }
 
 public sealed class CheckoutAddressVm
@@ -65,6 +83,21 @@ public sealed class CheckoutItemVm
     public int Quantity { get; set; }
 
     public decimal LineTotal { get; set; }
+    
+    public decimal VatRate { get; set; }
+}
+
+public sealed class CheckoutVoucherVm
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string DiscountType { get; set; } = string.Empty;
+    public decimal DiscountValue { get; set; }
+    public decimal MinOrderValue { get; set; }
+    public decimal? MaxDiscountValue { get; set; }
+    public DateTime EndDate { get; set; }
+    public bool IsEligible { get; set; }
+    public string? IneligibleReason { get; set; }
 }
 
 public sealed class PlaceOrderRequest
@@ -76,4 +109,10 @@ public sealed class PlaceOrderRequest
     public int? BuyNowVariantId { get; set; }
 
     public int? BuyNowQuantity { get; set; }
+
+    public string? VoucherCode { get; set; }
+
+    public string? ShippingVoucherCode { get; set; }
+
+    public string? DiscountVoucherCode { get; set; }
 }

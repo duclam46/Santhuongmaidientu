@@ -1,0 +1,667 @@
+@model List<DOAN_BANHANG.Models.ReturnRequest>
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Quản lý Yêu cầu trả hàng";
+    
+    var totalCount = Model.Count;
+    var pendingCount = Model.Count(r => r.Status == "Pending");
+    var approvedCount = Model.Count(r => r.Status == "Approved");
+    var rejectedCount = Model.Count(r => r.Status == "Rejected");
+}
+
+<style>
+    /* Complete Custom Style System independent of Tailwind CSS - Compact & Elegant */
+    .dashboard-container {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: #1e293b;
+        font-size: 13px;
+    }
+
+    /* Premium Gradient Banner - Compact */
+    .title-banner {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+        border-radius: 14px;
+        padding: 18px 24px;
+        color: #ffffff;
+        box-shadow: 0 8px 25px -5px rgba(99, 102, 241, 0.25);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    
+    .title-banner::before {
+        content: '';
+        position: absolute;
+        width: 250px;
+        height: 250px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 50%;
+        top: -125px;
+        right: -40px;
+        filter: blur(35px);
+        pointer-events: none;
+    }
+
+    .banner-icon-box {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(8px);
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #ffffff;
+        box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        flex-shrink: 0;
+    }
+    
+    .banner-badge {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        padding: 6px 12px;
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+    }
+
+    /* KPI Cards Styles - Compact */
+    .kpi-card {
+        background: #ffffff;
+        border-radius: 14px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        padding: 16px 20px;
+        box-shadow: 0 4px 15px -2px rgba(148, 163, 184, 0.05);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .kpi-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+    }
+    
+    .kpi-card.total::after { background: linear-gradient(90deg, #6366f1, #3b82f6); }
+    .kpi-card.pending::after { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .kpi-card.approved::after { background: linear-gradient(90deg, #10b981, #059669); }
+    .kpi-card.rejected::after { background: linear-gradient(90deg, #ec4899, #f43f5e); }
+
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 25px -8px rgba(148, 163, 184, 0.12);
+    }
+
+    .kpi-icon-box {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+    
+    .kpi-card:hover .kpi-icon-box {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    /* Filters Toolbar - Compact */
+    .toolbar-container {
+        background: #ffffff;
+        border-radius: 14px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        padding: 12px 18px;
+        box-shadow: 0 4px 15px -2px rgba(148, 163, 184, 0.05);
+        border-left: 4px solid #6366f1;
+        margin-bottom: 20px;
+    }
+
+    .filter-pill {
+        cursor: pointer;
+        padding: 8px 16px !important;
+        border-radius: 9999px !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border: 2px solid transparent !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .filter-pill:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+    
+    .filter-pill.active {
+        box-shadow: 0 6px 14px -4px rgba(99, 102, 241, 0.4) !important;
+        color: #ffffff !important;
+    }
+    
+    .filter-pill.total.active { background: linear-gradient(135deg, #6366f1, #3b82f6) !important; }
+    .filter-pill.pending.active { background: linear-gradient(135deg, #f59e0b, #ef4444) !important; }
+    .filter-pill.approved.active { background: linear-gradient(135deg, #10b981, #059669) !important; }
+    .filter-pill.rejected.active { background: linear-gradient(135deg, #ec4899, #f43f5e) !important; }
+
+    .search-input-box {
+        position: relative;
+        max-width: 280px;
+        width: 100%;
+    }
+    
+    .search-input-box i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 16px;
+        pointer-events: none;
+    }
+    
+    .search-input-box input {
+        padding-left: 36px !important;
+        padding-right: 12px !important;
+        height: 38px;
+        border-radius: 10px !important;
+        border: 2px solid #e2e8f0 !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        background: #ffffff !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .search-input-box input:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+        outline: none !important;
+    }
+
+    /* Premium Table Styles - Compact & Fine-tuned */
+    .table-container {
+        background: #ffffff;
+        border-radius: 14px;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow: 0 4px 15px -2px rgba(148, 163, 184, 0.05);
+        overflow: hidden;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 0;
+    }
+
+    .custom-table th {
+        background: #f8fafc;
+        padding: 12px 16px;
+        font-size: 11px;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .custom-row {
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .custom-row td {
+        padding: 12px 16px;
+        vertical-align: middle !important;
+        border-bottom: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+    }
+
+    /* Left Accent Indicator */
+    .custom-row[data-status="Pending"] td:first-child { border-left: 4px solid #f59e0b !important; }
+    .custom-row[data-status="Approved"] td:first-child { border-left: 4px solid #10b981 !important; }
+    .custom-row[data-status="Rejected"] td:first-child { border-left: 4px solid #ec4899 !important; }
+
+    .custom-row:hover td {
+        background-color: #f8fafc;
+    }
+
+    /* Avatars and Icons - Scaled down */
+    .circle-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        flex-shrink: 0;
+    }
+
+    .icon-wrapper {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e0e7ff;
+        color: #4f46e5;
+        border: 1px solid #c7d2fe;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    /* Reason Alert Box - Scaled down */
+    .reason-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #334155;
+        line-height: 1.5;
+        max-width: 240px;
+        word-break: break-word;
+    }
+
+    /* Glow Status Badges - Compact */
+    .glow-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 800;
+        border-width: 1px;
+        border-style: solid;
+        white-space: nowrap;
+    }
+    
+    .glow-badge-pending {
+        background: #fffbeb !important;
+        color: #d97706 !important;
+        border-color: #fde68a !important;
+        box-shadow: 0 3px 8px rgba(217, 119, 6, 0.05) !important;
+    }
+    
+    .glow-badge-approved {
+        background: #ecfdf5 !important;
+        color: #059669 !important;
+        border-color: #a7f3d0 !important;
+        box-shadow: 0 3px 8px rgba(5, 150, 105, 0.05) !important;
+    }
+    
+    .glow-badge-rejected {
+        background: #fff1f2 !important;
+        color: #e11d48 !important;
+        border-color: #fecdd3 !important;
+        box-shadow: 0 3px 8px rgba(225, 29, 72, 0.05) !important;
+    }
+
+    /* Action button - Elegant & Compact */
+    .btn-action-glow {
+        background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+        color: #ffffff !important;
+        border-radius: 10px !important;
+        padding: 7px 14px !important;
+        font-size: 11.5px !important;
+        font-weight: 700 !important;
+        box-shadow: 0 3px 10px rgba(99, 102, 241, 0.2) !important;
+        border: none !important;
+        white-space: nowrap !important;
+        text-decoration: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 5px !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .btn-action-glow:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 14px rgba(99, 102, 241, 0.3) !important;
+        background: linear-gradient(135deg, #4f46e5, #3b82f6) !important;
+    }
+</style>
+
+<div class="container-fluid py-4 px-4 dashboard-container">
+    
+    <!-- Header Page Title Banner -->
+    <div class="title-banner d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4">
+        <div class="d-flex align-items-center gap-3">
+            <div class="banner-icon-box">
+                <i class="bx bx-subdirectory-left"></i>
+            </div>
+            <div>
+                <h2 class="m-0 font-weight-bold text-white d-flex align-items-center gap-2 flex-wrap" style="font-size: 24px; font-weight: 900;">
+                    Yêu cầu trả hàng 
+                    <span class="banner-badge">Hệ thống hoàn tiền</span>
+                </h2>
+                <p class="text-white-50 m-0 mt-1" style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.75) !important;">Danh sách xét duyệt và liên kết vận chuyển bưu tá GHN tự động</p>
+            </div>
+        </div>
+        <div class="banner-badge d-flex align-items-center gap-2">
+            <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px; animation-duration: 1.2s;"></span>
+            Xét duyệt tức thì
+        </div>
+    </div>
+
+    <!-- Alert / Notice Toast -->
+    @if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+    {
+        var alertClass = toast.Contains("thất bại") || toast.Contains("Lỗi") ? "alert-danger text-danger bg-danger-subtle border-danger" : "alert-success text-success bg-success-subtle border-success";
+        var alertIcon = toast.Contains("thất bại") || toast.Contains("Lỗi") ? "bx bx-error-circle" : "bx bx-check-circle";
+        <div class="alert @alertClass d-flex align-items-start gap-3 p-3 rounded-3 mb-4 border" role="alert">
+            <i class="@alertIcon text-xl mt-0.5" style="font-size: 20px;"></i>
+            <div style="font-size: 14px; font-weight: 650;">@toast</div>
+        </div>
+    }
+
+    @if (totalCount == 0)
+    {
+        <div class="text-center py-5 table-container" style="background: #ffffff; border-radius: 20px; padding: 60px 20px;">
+            <div style="font-size: 60px; animation: bounce 2s infinite;">📭</div>
+            <h4 class="mt-4" style="font-weight: 900; color: #1e293b;">Chưa có yêu cầu trả hàng nào</h4>
+            <p style="color: #64748b; font-size: 14px; margin-top: 5px;">Danh sách hiện tại đang trống. Các yêu cầu hoàn trả mới sẽ xuất hiện ở đây.</p>
+        </div>
+    }
+    else
+    {
+        <!-- KPI Dashboard Panel -->
+        <div class="row g-4 mb-4">
+            <!-- KPI 1: All requests -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="kpi-card total h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div style="color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Tổng nhận yêu cầu</div>
+                            <div class="mt-2" style="font-size: 28px; font-weight: 900; color: #1e293b;">@totalCount</div>
+                        </div>
+                        <div class="kpi-icon-box" style="background: #e0e7ff; color: #4f46e5; border: 1px solid #c7d2fe;">
+                            <i class="bx bx-list-ul"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- KPI 2: Pending requests -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="kpi-card pending h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div style="color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Đang chờ xét duyệt</div>
+                            <div class="mt-2" style="font-size: 28px; font-weight: 900; color: #1e293b;">@pendingCount</div>
+                        </div>
+                        <div class="kpi-icon-box" style="background: #fef3c7; color: #d97706; border: 1px solid #fde68a;">
+                            <i class="bx bx-time-five" style="font-size: 26px;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- KPI 3: Approved requests -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="kpi-card approved h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div style="color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Phê duyệt thành công</div>
+                            <div class="mt-2" style="font-size: 28px; font-weight: 900; color: #1e293b;">@approvedCount</div>
+                        </div>
+                        <div class="kpi-icon-box" style="background: #d1fae5; color: #059669; border: 1px solid #a7f3d0;">
+                            <i class="bx bx-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- KPI 4: Rejected requests -->
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="kpi-card rejected h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div style="color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Từ chối giải quyết</div>
+                            <div class="mt-2" style="font-size: 28px; font-weight: 900; color: #1e293b;">@rejectedCount</div>
+                        </div>
+                        <div class="kpi-icon-box" style="background: #ffe4e6; color: #e11d48; border: 1px solid #fecdd3;">
+                            <i class="bx bx-x-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters & Search Toolbar -->
+        <div class="toolbar-container d-flex flex-column flex-lg-row justify-content-between align-items-stretch align-items-lg-center gap-4">
+            <!-- Status filters -->
+            <div class="d-flex flex-wrap gap-2">
+                <button class="status-filter filter-pill total active" data-status="all">
+                    <i class="bx bx-grid-alt" style="font-size: 16px;"></i> Tất cả (@totalCount)
+                </button>
+                <button class="status-filter filter-pill pending" data-status="Pending">
+                    <i class="bx bx-time-five" style="font-size: 16px;"></i> Chờ duyệt (@pendingCount)
+                </button>
+                <button class="status-filter filter-pill approved" data-status="Approved">
+                    <i class="bx bx-check-circle" style="font-size: 16px;"></i> Đã duyệt (@approvedCount)
+                </button>
+                <button class="status-filter filter-pill rejected" data-status="Rejected">
+                    <i class="bx bx-x-circle" style="font-size: 16px;"></i> Từ chối (@rejectedCount)
+                </button>
+            </div>
+            
+            <!-- Search input box -->
+            <div class="search-input-box">
+                <i class="bx bx-search"></i>
+                <input type="text" id="searchQuery" class="form-control" placeholder="Tìm mã đơn, tên, lý do..." />
+            </div>
+        </div>
+
+        <!-- Data Table Card -->
+        <div class="table-container">
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th class="text-start"><i class="bx bx-hash" style="color: #94a3b8; margin-right: 4px;"></i> Mã</th>
+                            <th class="text-start"><i class="bx bx-shopping-bag" style="color: #94a3b8; margin-right: 4px;"></i> Đơn gốc</th>
+                            <th class="text-start"><i class="bx bx-user" style="color: #94a3b8; margin-right: 4px;"></i> Khách hàng</th>
+                            <th class="text-start" style="width: 30%;"><i class="bx bx-comment-detail" style="color: #94a3b8; margin-right: 4px;"></i> Lý do trả</th>
+                            <th class="text-center"><i class="bx bx-badge-check" style="color: #94a3b8; margin-right: 4px;"></i> Trạng thái</th>
+                            <th class="text-start"><i class="bx bx-calendar" style="color: #94a3b8; margin-right: 4px;"></i> Ngày gửi</th>
+                            <th class="text-center" style="width: 150px;"><i class="bx bx-cog" style="color: #94a3b8; margin-right: 4px;"></i> Tác vụ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            var custName = r.Customer?.Profile?.FullName ?? r.Customer?.Email ?? "Khách Hàng";
+                            var firstChar = string.IsNullOrEmpty(custName) ? 'K' : custName[0];
+                            var charCode = (int)firstChar;
+                            var gradientStyle = (charCode % 4) switch
+                            {
+                                0 => "background: linear-gradient(135deg, #6366f1, #3b82f6);",
+                                1 => "background: linear-gradient(135deg, #ec4899, #f43f5e);",
+                                2 => "background: linear-gradient(135deg, #10b981, #059669);",
+                                _ => "background: linear-gradient(135deg, #f59e0b, #eab308);"
+                            };
+
+                            <tr class="custom-row" data-status="@r.Status" data-order="@(r.Order?.OrderCode ?? "")" data-customer="@(r.Customer?.Profile?.FullName ?? r.Customer?.Email ?? "")" data-reason="@r.Reason">
+                                <!-- ID -->
+                                <td class="align-middle-cell text-start">
+                                    <span style="font-family: monospace; font-weight: 950; color: #94a3b8; font-size: 12px;">#@r.Id</span>
+                                </td>
+                                
+                                <!-- Order Code -->
+                                <td class="align-middle-cell text-start">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="icon-wrapper">
+                                            <i class="bx bx-shopping-bag" style="font-size: 16px;"></i>
+                                        </div>
+                                        <div>
+                                            @if (r.Order is not null)
+                                            {
+                                                <a href="@Url.Action("Details", "Orders", new { area = "Admin", id = r.Order.Id })" style="font-weight: 850; color: #4f46e5; text-decoration: none; font-size: 13px; transition: color 0.2s;">
+                                                    @r.Order.OrderCode
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span style="font-weight: 850; color: #94a3b8; font-size: 13px;">-</span>
+                                            }
+                                            <div style="font-size: 9.5px; color: #94a3b8; font-weight: 700; margin-top: 2px;">Mã đơn hàng</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                
+                                <!-- Customer -->
+                                <td class="align-middle-cell text-start">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="circle-avatar" style="@gradientStyle">
+                                            @firstChar
+                                        </div>
+                                        <div style="min-width: 0;">
+                                            <div style="font-size: 13px; font-weight: 900; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@(r.Customer?.Profile?.FullName ?? "-")</div>
+                                            <div style="font-size: 10px; color: #94a3b8; font-weight: 700; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@(r.Customer?.Email ?? "-")</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                
+                                <!-- Reason -->
+                                <td class="align-middle-cell text-start">
+                                    <div class="reason-box">
+                                        @r.Reason
+                                    </div>
+                                </td>
+                                
+                                <!-- Status Badge -->
+                                <td class="align-middle-cell text-center">
+                                    @if (r.Status == "Approved")
+                                    {
+                                        <span class="glow-badge glow-badge-approved">
+                                            <i class="bx bx-check-circle" style="font-size: 14px;"></i> Đã duyệt hoàn
+                                        </span>
+                                    }
+                                    else if (r.Status == "Rejected")
+                                    {
+                                        <span class="glow-badge glow-badge-rejected">
+                                            <i class="bx bx-x-circle" style="font-size: 14px;"></i> Từ chối
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="glow-badge glow-badge-pending">
+                                            <i class="bx bx-time-five" style="font-size: 14px; color: #d97706 !important;"></i> Chờ duyệt
+                                        </span>
+                                    }
+                                </td>
+                                
+                                <!-- Created Date -->
+                                <td class="align-middle-cell text-start" style="font-size: 12px; font-weight: 750;">
+                                    <div style="color: #334155;">@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                    <div style="font-size: 9.5px; color: #94a3b8; font-weight: 700; margin-top: 2px;">@r.CreatedAt.ToLocalTime().ToString("HH:mm")</div>
+                                </td>
+                                
+                                <!-- Actions -->
+                                <td class="align-middle-cell text-center">
+                                    <a href="@Url.Action("Details", "ReturnRequests", new { area = "Admin", id = r.Id })"
+                                       class="btn-action-glow">
+                                        Xem chi tiết <i class="bx bx-right-arrow-alt" style="font-size: 16px;"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                        
+                        <!-- No Results client side placeholder row -->
+                        <tr id="noResultsRow" style="display: none;">
+                            <td colspan="7" class="text-center py-5" style="color: #94a3b8; padding: 60px 0;">
+                                <div style="font-size: 50px;">🔍</div>
+                                <h4 class="mt-4" style="font-weight: 900; color: #1e293b;">Không tìm thấy kết quả</h4>
+                                <p style="font-size: 14px; margin-top: 5px;">Vui lòng thử tìm kiếm với các từ khóa khác.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('searchQuery');
+    const statusFilters = document.querySelectorAll('.status-filter');
+    const rows = document.querySelectorAll('.custom-row');
+    
+    let currentStatus = 'all';
+    let searchQuery = '';
+    
+    function filterTable() {
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status').toLowerCase();
+            const orderCode = row.getAttribute('data-order').toLowerCase();
+            const customer = row.getAttribute('data-customer').toLowerCase();
+            const reason = row.getAttribute('data-reason').toLowerCase();
+            
+            const matchStatus = (currentStatus === 'all' || status === currentStatus);
+            const matchSearch = (!searchQuery || 
+                orderCode.includes(searchQuery) || 
+                customer.includes(searchQuery) || 
+                reason.includes(searchQuery)
+            );
+            
+            if (matchStatus && matchSearch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        const noResults = document.getElementById('noResultsRow');
+        if (noResults) {
+            noResults.style.display = (visibleCount === 0) ? '' : 'none';
+        }
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            searchQuery = this.value.trim().toLowerCase();
+            filterTable();
+        });
+    }
+    
+    statusFilters.forEach(filter => {
+        filter.addEventListener('click', function() {
+            // Remove active classes from all filters
+            statusFilters.forEach(f => {
+                f.classList.remove('active');
+            });
+            
+            const status = this.getAttribute('data-status');
+            this.classList.add('active');
+            
+            currentStatus = status.toLowerCase();
+            filterTable();
+        });
+    });
+});
+</script>

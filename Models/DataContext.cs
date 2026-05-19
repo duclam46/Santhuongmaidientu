@@ -50,6 +50,33 @@ public class DataContext : DbContext
 
     public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
 
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+
+    public DbSet<WarehouseRoute> WarehouseRoutes => Set<WarehouseRoute>();
+
+    public DbSet<PartnerApplication> PartnerApplications => Set<PartnerApplication>();
+
+    public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
+
+    public DbSet<BlogComment> BlogComments => Set<BlogComment>();
+
+    public DbSet<BlogPostProduct> BlogPostProducts => Set<BlogPostProduct>();
+
+    // ── Messaging ──
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<Message> Messages => Set<Message>();
+    public DbSet<SystemNotification> SystemNotifications => Set<SystemNotification>();
+    public DbSet<SystemNotificationRead> SystemNotificationReads => Set<SystemNotificationRead>();
+
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+
+    // ── Wallet ──
+    public DbSet<Wallet> Wallets => Set<Wallet>();
+    public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
+
+    // ── Return Requests ──
+    public DbSet<ReturnRequest> ReturnRequests => Set<ReturnRequest>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -91,7 +118,10 @@ public class DataContext : DbContext
 
             entity.Property(x => x.IsDeleted).HasDefaultValue(false);
 
-            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
 
             entity.HasIndex(x => x.Email).IsUnique();
 
@@ -99,6 +129,35 @@ public class DataContext : DbContext
                 .WithOne(p => p.Account)
                 .HasForeignKey<UserProfile>(p => p.AccountId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PartnerApplication>(entity =>
+        {
+            entity.ToTable("PartnerApplications");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Email).HasMaxLength(255).IsRequired();
+            entity.Property(x => x.FullName).HasMaxLength(150);
+            entity.Property(x => x.PhoneNumber).HasMaxLength(20);
+            entity.Property(x => x.ShopName).HasMaxLength(200);
+            entity.Property(x => x.Address).HasMaxLength(500);
+
+            entity.Property(x => x.ProvinceName).HasMaxLength(100);
+            entity.Property(x => x.DistrictName).HasMaxLength(100);
+            entity.Property(x => x.WardCode).HasMaxLength(50);
+            entity.Property(x => x.WardName).HasMaxLength(100);
+            entity.Property(x => x.StreetAddress).HasMaxLength(500);
+
+            entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.RejectionReason).HasMaxLength(500);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.AccountId);
+            entity.HasIndex(x => x.Email);
+            entity.HasIndex(x => x.Status);
+            entity.HasIndex(x => x.CreatedAt);
         });
 
         modelBuilder.Entity<UserProfile>(entity =>
@@ -525,6 +584,350 @@ public class DataContext : DbContext
             entity.HasOne(x => x.Account)
                 .WithMany()
                 .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Warehouse>(entity =>
+        {
+            entity.ToTable("Warehouses");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(255).IsRequired();
+            entity.Property(x => x.NodeType).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Region).HasMaxLength(20);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.Code).IsUnique();
+            entity.HasIndex(x => x.GhnProvinceId);
+            entity.HasIndex(x => x.GhnDistrictId);
+
+            entity.HasMany(x => x.Children)
+                .WithOne(x => x.Parent)
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<WarehouseRoute>(entity =>
+        {
+            entity.ToTable("WarehouseRoutes");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.RouteKind).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasOne(x => x.FromWarehouse)
+                .WithMany()
+                .HasForeignKey(x => x.FromWarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.ToWarehouse)
+                .WithMany()
+                .HasForeignKey(x => x.ToWarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => new { x.FromWarehouseId, x.ToWarehouseId }).IsUnique();
+        });
+
+        modelBuilder.Entity<BlogPost>(entity =>
+        {
+            entity.ToTable("BlogPosts");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Title).HasMaxLength(300).IsRequired();
+            entity.Property(x => x.Slug).HasMaxLength(300).IsRequired();
+            entity.Property(x => x.Summary).HasMaxLength(500);
+            entity.Property(x => x.CoverImageUrl).HasMaxLength(500);
+            entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.ViewCount).HasDefaultValue(0);
+            entity.Property(x => x.IsDeleted).HasDefaultValue(false);
+
+            entity.Property(x => x.PublishedAt)
+                .HasColumnType("datetime2");
+
+            entity.Property(x => x.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.Property(x => x.UpdatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.Slug).IsUnique();
+            entity.HasIndex(x => x.ShopId);
+            entity.HasIndex(x => x.Status);
+            entity.HasIndex(x => x.PublishedAt);
+
+            entity.HasOne(x => x.Shop)
+                .WithMany()
+                .HasForeignKey(x => x.ShopId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Comments)
+                .WithOne(c => c.BlogPost)
+                .HasForeignKey(c => c.BlogPostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(x => x.BlogPostProducts)
+                .WithOne(bp => bp.BlogPost)
+                .HasForeignKey(bp => bp.BlogPostId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BlogComment>(entity =>
+        {
+            entity.ToTable("BlogComments");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Content).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.IsDeleted).HasDefaultValue(false);
+
+            entity.Property(x => x.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.Property(x => x.UpdatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+
+            entity.HasIndex(x => x.BlogPostId);
+            entity.HasIndex(x => x.AccountId);
+
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Replies)
+                .WithOne(x => x.ParentComment)
+                .HasForeignKey(x => x.ParentCommentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BlogPostProduct>(entity =>
+        {
+            entity.ToTable("BlogPostProducts");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.SortOrder).HasDefaultValue(0);
+
+            entity.HasIndex(x => new { x.BlogPostId, x.ProductId }).IsUnique();
+            entity.HasIndex(x => x.BlogPostId);
+
+            entity.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── Messaging: Conversations ──
+        modelBuilder.Entity<Conversation>(entity =>
+        {
+            entity.ToTable("Conversations");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.LastMessageAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.IsArchivedByShop).HasDefaultValue(false);
+            entity.Property(x => x.IsArchivedByCustomer).HasDefaultValue(false);
+
+            // Unique: 1 pair (Customer, Shop) = 1 conversation
+            entity.HasIndex(x => new { x.CustomerId, x.ShopId }).IsUnique();
+            entity.HasIndex(x => x.ShopId);
+            entity.HasIndex(x => x.LastMessageAt);
+
+            entity.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Shop)
+                .WithMany()
+                .HasForeignKey(x => x.ShopId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Messages)
+                .WithOne(m => m.Conversation)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Messaging: Messages ──
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.ToTable("Messages");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Content).HasMaxLength(2000);
+            entity.Property(x => x.MessageType).HasMaxLength(30).HasDefaultValue("text");
+            entity.Property(x => x.IsReadByCustomer).HasDefaultValue(false);
+            entity.Property(x => x.IsReadByShop).HasDefaultValue(false);
+            entity.Property(x => x.IsDeleted).HasDefaultValue(false);
+
+            entity.Property(x => x.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.ConversationId);
+            entity.HasIndex(x => x.CreatedAt);
+
+            entity.HasOne(x => x.Sender)
+                .WithMany()
+                .HasForeignKey(x => x.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.AttachedProduct)
+                .WithMany()
+                .HasForeignKey(x => x.AttachedProductId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(x => x.AttachedVoucher)
+                .WithMany()
+                .HasForeignKey(x => x.AttachedVoucherId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── Messaging: SystemNotifications ──
+        modelBuilder.Entity<SystemNotification>(entity =>
+        {
+            entity.ToTable("SystemNotifications");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Content).HasMaxLength(2000).IsRequired();
+            entity.Property(x => x.TargetType).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.TargetRole).HasMaxLength(30);
+
+            entity.Property(x => x.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.TargetType);
+            entity.HasIndex(x => x.CreatedAt);
+
+            entity.HasOne(x => x.SentByAdmin)
+                .WithMany()
+                .HasForeignKey(x => x.SentByAdminId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.TargetAccount)
+                .WithMany()
+                .HasForeignKey(x => x.TargetAccountId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(x => x.Reads)
+                .WithOne(r => r.SystemNotification)
+                .HasForeignKey(r => r.SystemNotificationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Messaging: SystemNotificationReads ──
+        modelBuilder.Entity<SystemNotificationRead>(entity =>
+        {
+            entity.ToTable("SystemNotificationReads");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.ReadAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => new { x.SystemNotificationId, x.AccountId }).IsUnique();
+            entity.HasIndex(x => x.AccountId);
+
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── Wallet ──
+        modelBuilder.Entity<Wallet>(entity =>
+        {
+            entity.ToTable("Wallets");
+            entity.HasKey(x => x.WalletId);
+
+            entity.Property(x => x.Balance)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0m);
+
+            entity.Property(x => x.Status).HasDefaultValue(1);
+
+            entity.Property(x => x.UpdatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            // Mỗi user chỉ có 1 ví
+            entity.HasIndex(x => x.UserId).IsUnique();
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Transactions)
+                .WithOne(t => t.Wallet)
+                .HasForeignKey(t => t.WalletId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── WalletTransactions ──
+        modelBuilder.Entity<WalletTransaction>(entity =>
+        {
+            entity.ToTable("WalletTransactions");
+            entity.HasKey(x => x.TransactionId);
+
+            entity.Property(x => x.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(x => x.BalanceAfter).HasColumnType("decimal(18,2)");
+
+            entity.Property(x => x.TransactionType).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.ReferenceId).HasMaxLength(100);
+            entity.Property(x => x.Description).HasMaxLength(500);
+
+            entity.Property(x => x.CreatedAt)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.WalletId);
+            entity.HasIndex(x => x.CreatedAt);
+            entity.HasIndex(x => x.TransactionType);
+        });
+
+        // ── ReturnRequests ──
+        modelBuilder.Entity<ReturnRequest>(entity =>
+        {
+            entity.ToTable("ReturnRequests");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Reason).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.MediaUrlsJson).HasMaxLength(4000);
+            entity.Property(x => x.Status).HasMaxLength(30).IsRequired().HasDefaultValue("Pending");
+            entity.Property(x => x.RejectionNote).HasMaxLength(500);
+            entity.Property(x => x.ReturnTrackingCode).HasMaxLength(100);
+            entity.Property(x => x.EstimatedPickupTime).HasMaxLength(100);
+
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.OrderId);
+            entity.HasIndex(x => x.CustomerId);
+            entity.HasIndex(x => x.Status);
+
+            entity.HasOne(x => x.Order)
+                .WithMany()
+                .HasForeignKey(x => x.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

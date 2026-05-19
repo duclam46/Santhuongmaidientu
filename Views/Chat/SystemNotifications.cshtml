@@ -1,0 +1,79 @@
+@model IEnumerable<DOAN_BANHANG.Models.SystemNotification>
+@{
+    ViewData["Title"] = "Thông báo hệ thống";
+    var accountId = (int)ViewBag.AccountId;
+}
+
+<div class="container py-8 max-w-4xl">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Thông báo từ Ban quản trị</h2>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        @if (!Model.Any())
+        {
+            <div class="p-8 text-center text-gray-500">
+                <i class="hgi hgi-stroke hgi-notification-02 text-5xl mb-4 text-gray-300"></i>
+                <p>Bạn không có thông báo hệ thống nào.</p>
+            </div>
+        }
+        else
+        {
+            <div class="divide-y divide-gray-100">
+                @foreach (var notif in Model)
+                {
+                    var isRead = notif.Reads.Any(r => r.AccountId == accountId);
+
+                    <div class="p-5 flex gap-4 transition-colors notification-item @(isRead ? "bg-white" : "bg-blue-50/50")" data-id="@notif.Id">
+                        <div class="shrink-0 w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                            <i class="hgi hgi-stroke hgi-notification-03 text-2xl"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="text-lg font-bold text-gray-900 @(isRead ? "" : "text-primary")">@notif.Title</h4>
+                                <span class="text-xs text-gray-500 whitespace-nowrap ml-4">
+                                    @notif.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                </span>
+                            </div>
+                            <p class="text-gray-700 whitespace-pre-wrap mt-2">@notif.Content</p>
+                        </div>
+                        @if (!isRead)
+                        {
+                            <div class="w-2.5 h-2.5 bg-blue-500 rounded-full shrink-0 mt-2"></div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Khi người dùng cuộn xem hoặc click, đánh dấu đã đọc
+            const items = document.querySelectorAll('.notification-item.bg-blue-50\\/50');
+            
+            items.forEach(item => {
+                // Tự động đánh dấu đã đọc sau 2 giây nếu user nhìn thấy
+                setTimeout(() => {
+                    const id = item.getAttribute('data-id');
+                    fetch('/Chat/MarkSystemNotificationRead', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(parseInt(id))
+                    }).then(() => {
+                        item.classList.remove('bg-blue-50/50');
+                        item.classList.add('bg-white');
+                        const dot = item.querySelector('.bg-blue-500');
+                        if(dot) dot.remove();
+                        const title = item.querySelector('h4');
+                        if(title) title.classList.remove('text-primary');
+                    });
+                }, 1500);
+            });
+        });
+    </script>
+}

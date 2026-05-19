@@ -1,0 +1,832 @@
+@model DOAN_BANHANG.Components.NotificationViewModel
+
+<li class="relative">
+    <div id="notification-sidebar-btn" 
+         class="notification-trigger cursor-pointer flex items-center text-sm leading-[22px] text-white pr-[19px] mr-[19px] py-3.5 relative after:absolute after:h-7.5 after:w-px after:bg-primary-light after:right-0 after:top-1/2 after:-translate-y-1/2 hover:opacity-80 transition-all group">
+        <div class="relative flex items-center justify-center h-7 w-7" style="margin-right: 12px; position: relative !important;">
+            <i class="hgi hgi-stroke hgi-notification-03 text-[22px] text-white"></i>
+            @if (Model.IsSignedIn && Model.UnreadCount > 0)
+            {
+                <div class="bg-error text-white font-bold flex items-center justify-center" 
+                     style="position: absolute !important; top: -4px !important; right: -8px !important; width: 17px !important; height: 17px !important; border-radius: 50% !important; font-size: 9px !important; border: 1.5px solid #1E4D48 !important; z-index: 20 !important;">
+                    @(Model.UnreadCount > 9 ? "9+" : Model.UnreadCount.ToString())
+                </div>
+            }
+        </div>
+        <span class="font-normal">Thông báo</span>
+    </div>
+</li>
+
+    @* Notification Sidebar (Ultra-Sophisticated & Colorful Edition) *@
+    <div id="notification-sidebar" 
+         data-state="close"
+         class="notif-sidebar-container"
+         style="width: 100%; max-width: 440px;">
+        
+        @* Gorgeous Header *@
+        <div class="notif-header-wrapper">
+            <div class="notif-header">
+                <div class="notif-header-top">
+                    <div class="notif-title-wrap">
+                        <div class="notif-title-icon"><i class="hgi hgi-stroke hgi-notification-03"></i></div>
+                        <h5>Thông báo</h5>
+                        @if(Model.UnreadCount > 0) {
+                            <span class="notif-count-badge pulse-anim">@Model.UnreadCount</span>
+                        }
+                    </div>
+                    <button type="button" class="notification-sidebar-close notif-close-btn">
+                        <i class="hgi hgi-stroke hgi-multiplication-sign"></i>
+                    </button>
+                </div>
+            </div>
+            
+            @if (Model.IsSignedIn && Model.Notifications.Any())
+            {
+                <div class="notif-header-actions">
+                    <button type="button" class="notif-action-btn btn-read-all mark-all-read">
+                        <div class="btn-icon-wrap"><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i></div>
+                        Đọc tất cả
+                    </button>
+                    <div class="notif-action-divider"></div>
+                    <button type="button" class="notif-action-btn btn-clear-all clear-all-notifications">
+                        <div class="btn-icon-wrap"><i class="hgi hgi-stroke hgi-delete-02"></i></div>
+                        Xóa tất cả
+                    </button>
+                </div>
+            }
+        </div>
+
+        @* Content *@
+        <div class="notif-body custom-scrollbar">
+            @if (!Model.IsSignedIn)
+            {
+                <div class="notif-empty-state">
+                    <div class="notif-empty-icon lock-icon-glow"><i class="hgi hgi-stroke hgi-lock-sync-01"></i></div>
+                    <h6 class="gradient-text">Đăng nhập ngay</h6>
+                    <p>Khám phá thế giới ưu đãi và theo dõi hành trình đơn hàng của riêng bạn.</p>
+                    <button type="button" class="login-page-btn notif-primary-btn">
+                        Đăng nhập tài khoản
+                    </button>
+                </div>
+            }
+            else if (Model.Notifications.Any())
+            {
+                <div class="notif-list">
+                    @foreach (var item in Model.Notifications)
+                    {
+                        var themeClass = "theme-system";
+                        var iconClass = "hgi-notification-02";
+                        var labelText = "Hệ thống";
+
+                        if (item.Title.Contains("Đơn hàng") || item.Content.Contains("vận chuyển")) { 
+                            themeClass = "theme-order"; iconClass = "hgi-package-box"; labelText = "Đơn hàng";
+                        }
+                        else if (item.Title.Contains("Khuyến mãi") || item.Title.Contains("FlashSale") || item.Content.Contains("Voucher")) { 
+                            themeClass = "theme-promo"; iconClass = "hgi-ticket-01"; labelText = "Ưu đãi";
+                        }
+
+                        <div class="notif-item @(!item.IsRead ? "unread" : "") @themeClass" data-id="@item.Id">
+                            @if (!item.IsRead) {
+                                <div class="notif-unread-indicator"></div>
+                            }
+                            
+                            <div class="notif-item-icon-container">
+                                <div class="notif-item-icon">
+                                    <i class="hgi hgi-stroke @iconClass"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="notif-item-content">
+                                <div class="notif-item-header">
+                                    <span class="notif-category-label">@labelText</span>
+                                    <span class="notif-time">
+                                        <i class="hgi hgi-stroke hgi-clock-01"></i> @item.CreatedAt.ToString("HH:mm")
+                                    </span>
+                                </div>
+                                <h6>@item.Title</h6>
+                                <p>@item.Content</p>
+                            </div>
+                            
+                            @if(!item.IsRead) {
+                                <button type="button" class="notif-quick-read-btn mark-as-read-btn" title="Đánh dấu đã đọc">
+                                    <i class="hgi hgi-stroke hgi-check text-white"></i>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="notif-empty-state">
+                    <div class="notif-empty-icon empty-icon-glow"><i class="hgi hgi-stroke hgi-notification-off-01"></i></div>
+                    <h6 class="gradient-text">Tuyệt vời!</h6>
+                    <p>Hộp thư của bạn đã được dọn sạch. Bạn không bỏ lỡ điều gì.</p>
+                </div>
+            }
+        </div>
+
+        @* Removed Footer based on user feedback *@
+    </div>
+
+    @* Ultra-Sophisticated Custom CSS *@
+    <style>
+        .notif-sidebar-container {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            height: calc(100vh - 40px);
+            border-radius: 32px;
+            overflow: hidden;
+            background-color: #fcfcfd;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.8);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+        }
+
+        .notif-sidebar-container[data-state="open"] {
+            transform: translateX(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .notif-sidebar-container[data-state="close"] {
+            transform: translateX(120%);
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* Header Styles: Vibrant Multi-stop Gradient */
+        .notif-header-wrapper {
+            flex-shrink: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        .notif-header {
+            background: linear-gradient(135deg, #0f3443 0%, #1d4d4f 50%, #3d7a72 100%);
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            padding: 32px 28px 24px 28px;
+        }
+
+        /* Decorative Header Orbs */
+        .notif-header::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -30px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(77, 182, 172, 0.4) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .notif-header::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: -20px;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .notif-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .notif-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .notif-title-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.05));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .notif-title-wrap h5 {
+            font-size: 26px;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .notif-count-badge {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+            font-size: 12px;
+            font-weight: 900;
+            padding: 3px 10px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(255, 65, 108, 0.4);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        @@keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 65, 108, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0); }
+        }
+        .pulse-anim { animation: pulse-glow 2s infinite; }
+
+        .notif-close-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .notif-close-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: rotate(90deg);
+        }
+
+        /* Sophisticated Action Bar */
+        .notif-header-actions {
+            display: flex;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 12px 24px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .notif-action-btn {
+            background: none;
+            border: none;
+            font-size: 12px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 10px 16px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            flex: 1;
+            justify-content: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+        }
+
+        .btn-icon-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-read-all:hover {
+            background-color: #f0fdf4;
+            color: #16a34a;
+        }
+        .btn-read-all:hover .btn-icon-wrap { transform: scale(1.2); color: #16a34a; }
+
+        .btn-clear-all:hover {
+            background-color: #fff1f2;
+            color: #e11d48;
+        }
+        .btn-clear-all:hover .btn-icon-wrap { transform: scale(1.2); color: #e11d48; }
+
+        .notif-action-divider {
+            width: 2px;
+            height: 24px;
+            background-color: #f1f5f9;
+            margin: 0 8px;
+            border-radius: 2px;
+        }
+
+        /* Body & Cards Styles */
+        .notif-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .notif-item {
+            display: flex;
+            gap: 16px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
+        }
+
+        .notif-item:hover {
+            transform: translateY(-3px);
+            border-color: transparent;
+        }
+
+        /* Thematic Colorful Styles */
+        /* 1. Theme: Order (Orange/Yellow) */
+        .theme-order .notif-item-icon {
+            background: linear-gradient(135deg, #f59e0b, #ea580c);
+            box-shadow: 0 8px 16px rgba(234, 88, 12, 0.25);
+        }
+        .theme-order .notif-category-label { color: #ea580c; background: #fff7ed; border: 1px solid #ffedd5; }
+        .theme-order:hover { box-shadow: 0 20px 25px -5px rgba(234, 88, 12, 0.1), 0 10px 10px -5px rgba(234, 88, 12, 0.04); }
+
+        /* 2. Theme: Promo (Pink/Rose) */
+        .theme-promo .notif-item-icon {
+            background: linear-gradient(135deg, #ec4899, #e11d48);
+            box-shadow: 0 8px 16px rgba(225, 29, 72, 0.25);
+        }
+        .theme-promo .notif-category-label { color: #e11d48; background: #fff1f2; border: 1px solid #ffe4e6; }
+        .theme-promo:hover { box-shadow: 0 20px 25px -5px rgba(225, 29, 72, 0.1), 0 10px 10px -5px rgba(225, 29, 72, 0.04); }
+
+        /* 3. Theme: System (Blue/Cyan) */
+        .theme-system .notif-item-icon {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
+        }
+        .theme-system .notif-category-label { color: #2563eb; background: #eff6ff; border: 1px solid #dbeafe; }
+        .theme-system:hover { box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.1), 0 10px 10px -5px rgba(37, 99, 235, 0.04); }
+
+        /* Unread State Highlight */
+        .notif-item.unread {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .notif-unread-indicator {
+            position: absolute;
+            left: 0;
+            top: 20px;
+            bottom: 20px;
+            width: 4px;
+            background: linear-gradient(to bottom, #14b8a6, #0f766e);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .notif-item-icon-container {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .notif-item-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            transition: transform 0.4s ease;
+        }
+
+        .notif-item:hover .notif-item-icon {
+            transform: scale(1.05) rotate(5deg);
+        }
+
+        .notif-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notif-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .notif-category-label {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .notif-item-content h6 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 6px 0;
+            line-height: 1.4;
+            transition: color 0.3s;
+        }
+
+        .notif-item:hover .notif-item-content h6 {
+            color: #0f766e; /* Brand hover color */
+        }
+
+        .notif-item-content p {
+            font-size: 14px;
+            color: #64748b;
+            margin: 0 0 0 0;
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-weight: 500;
+        }
+
+        .notif-time {
+            font-size: 12px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+        }
+
+        /* Quick Read Button */
+        .notif-quick-read-btn {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%) scale(0.8);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #14b8a6, #0f766e);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            box-shadow: 0 4px 10px rgba(15, 118, 110, 0.3);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .notif-item:hover .notif-quick-read-btn {
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+        }
+        
+        .notif-quick-read-btn:hover {
+            transform: translateY(-50%) scale(1.1) !important;
+            box-shadow: 0 6px 14px rgba(15, 118, 110, 0.4);
+        }
+
+        /* Footer Styles */
+        .notif-footer {
+            padding: 20px 24px;
+            background-color: #ffffff;
+            border-top: 1px solid #f1f5f9;
+            flex-shrink: 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
+            z-index: 10;
+        }
+
+        .notif-footer-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #ffffff;
+            font-weight: 800;
+            border-radius: 16px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 15px;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notif-footer-link::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.5s ease;
+        }
+
+        .notif-footer-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(15, 23, 42, 0.3);
+            color: #ffffff;
+        }
+        
+        .notif-footer-link:hover::after {
+            left: 150%;
+        }
+
+        .footer-link-icon {
+            width: 28px; height: 28px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.3s ease;
+        }
+
+        .notif-footer-link:hover .footer-link-icon {
+            transform: translateX(4px);
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Empty State */
+        .notif-empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .notif-empty-icon {
+            width: 90px;
+            height: 90px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 44px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        
+        .lock-icon-glow {
+            background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+            color: #0d9488;
+            box-shadow: 0 10px 25px rgba(13, 148, 136, 0.2);
+        }
+        
+        .empty-icon-glow {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            color: #94a3b8;
+            box-shadow: 0 10px 25px rgba(148, 163, 184, 0.15);
+        }
+
+        .gradient-text {
+            font-size: 24px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #0f172a, #334155);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .notif-empty-state p {
+            font-size: 15px;
+            color: #64748b;
+            margin-bottom: 32px;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .notif-primary-btn {
+            background: linear-gradient(135deg, #14b8a6, #0f766e);
+            color: white;
+            border: none;
+            padding: 16px 28px;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 10px 20px rgba(15, 118, 110, 0.25);
+            transition: all 0.3s ease;
+        }
+
+        .notif-primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(15, 118, 110, 0.35);
+        }
+    </style>
+
+
+    <style>
+        .custom-scrollbar-hidden::-webkit-scrollbar { display: none; }
+        @@keyframes shine { 100% { transform: translateX(100%); } }
+        .animate-shine { animation: shine 0.8s ease-in-out infinite; }
+        @@keyframes shine-slow { 100% { transform: translateX(100%); } }
+        .group:hover .animate-shine-slow { animation: shine-slow 1.5s ease-in-out; }
+        @@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+        @@keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .animate-bounce-slow { animation: bounce-slow 4s ease-in-out infinite; }
+    </style>
+</li>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e5e7eb;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #d1d5db;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('notification-sidebar-btn');
+        const sidebar = document.getElementById('notification-sidebar');
+        const closeBtn = document.querySelector('.notification-sidebar-close');
+        const overlay = document.querySelector('.modal-overlay');
+        const body = document.body;
+        
+        function openSidebar() {
+            if(!sidebar) return;
+            sidebar.setAttribute('data-state', 'open');
+            if(overlay) {
+                overlay.style.display = 'block';
+                overlay.setAttribute('data-overlay-for', '#notification-sidebar');
+            }
+            body.classList.add('overflow-hidden', 'scrollbar-offset');
+        }
+
+        function closeSidebar() {
+            if(!sidebar) return;
+            sidebar.setAttribute('data-state', 'close');
+            if(overlay) {
+                overlay.style.display = 'none';
+                overlay.removeAttribute('data-overlay-for');
+            }
+            body.classList.remove('overflow-hidden', 'scrollbar-offset');
+        }
+
+        if (btn && sidebar) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openSidebar();
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeSidebar);
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', function() {
+                if(this.getAttribute('data-overlay-for') === '#notification-sidebar') {
+                    closeSidebar();
+                }
+            });
+        }
+
+        const notificationItems = document.querySelectorAll('.notif-item');
+        
+        notificationItems.forEach(item => {
+            const markReadBtn = item.querySelector('.mark-as-read-btn');
+            
+            const handleRead = async function(e) {
+                if(e) e.stopPropagation(); // prevent clicking card if button clicked
+                
+                const id = item.dataset.id;
+                
+                if (item.classList.contains('unread')) {
+                    try {
+                        const response = await fetch(`/notifications/mark-read?id=${id}`, {
+                            method: 'POST'
+                        });
+                        
+                        if (response.ok) {
+                            // Update UI instantly
+                            item.classList.remove('unread');
+                            
+                            const unreadIndicator = item.querySelector('.notif-unread-indicator');
+                            if(unreadIndicator) unreadIndicator.remove();
+                            
+                            const newTag = item.querySelector('.notif-new-tag');
+                            if(newTag) newTag.remove();
+
+                            if(markReadBtn) markReadBtn.remove();
+                            
+                            // Update counters
+                            const badge = document.querySelector('.notification-trigger .bg-error');
+                            const headerBadge = document.querySelector('.notif-count-badge');
+                            
+                            [badge, headerBadge].forEach(b => {
+                                if (b) {
+                                    let count = parseInt(b.textContent);
+                                    if (!isNaN(count) && count > 0) {
+                                        count--;
+                                        if (count === 0) b.remove();
+                                        else b.textContent = count > 99 ? "99+" : count.toString();
+                                    }
+                                }
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Failed to mark notification as read:', err);
+                    }
+                }
+            };
+
+            // Bind click events
+            item.addEventListener('click', handleRead);
+            if(markReadBtn) {
+                markReadBtn.addEventListener('click', handleRead);
+            }
+        });
+
+        // Mark All As Read Logic
+        const markAllBtn = document.querySelector('.mark-all-read');
+        if(markAllBtn) {
+            markAllBtn.addEventListener('click', async function() {
+                try {
+                    const response = await fetch('/notifications/mark-all-read', {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        // Smoothly update UI without reloading
+                        document.querySelectorAll('.notif-item.unread').forEach(item => {
+                            item.classList.remove('unread');
+                            const ind = item.querySelector('.notif-unread-indicator');
+                            if(ind) ind.remove();
+                            const tag = item.querySelector('.notif-new-tag');
+                            if(tag) tag.remove();
+                            const btn = item.querySelector('.mark-as-read-btn');
+                            if(btn) btn.remove();
+                        });
+                        
+                        document.querySelectorAll('.notification-trigger .bg-error, .notif-count-badge').forEach(b => b.remove());
+                    }
+                } catch (err) {
+                    console.error('Failed to mark all notifications as read:', err);
+                }
+            });
+        }
+
+        // Clear All Logic (Hide for this account)
+        const clearAllBtn = document.querySelector('.clear-all-notifications');
+        if(clearAllBtn) {
+            clearAllBtn.addEventListener('click', function() {
+                const notifList = document.querySelector('.notif-list');
+                const notifBody = document.querySelector('.notif-body');
+                
+                if(notifList && notifBody) {
+                    // Replace list with Empty State
+                    notifBody.innerHTML = `
+                        <div class="notif-empty-state">
+                            <div class="notif-empty-icon empty-icon-glow"><i class="hgi hgi-stroke hgi-notification-off-01"></i></div>
+                            <h6 class="gradient-text">Tuyệt vời!</h6>
+                            <p>Hộp thư của bạn đã được dọn sạch. Bạn không bỏ lỡ điều gì.</p>
+                        </div>
+                    `;
+                    
+                    // Remove badges
+                    document.querySelectorAll('.notification-trigger .bg-error, .notif-count-badge').forEach(b => b.remove());
+                    
+                    // Hide action bar
+                    const actionBar = document.querySelector('.notif-header-actions');
+                    if(actionBar) actionBar.style.display = 'none';
+                    
+                    // Fire-and-forget: mark all as read on backend so they don't show up as unread next time
+                    fetch('/notifications/mark-all-read', { method: 'POST' }).catch(e => {});
+                }
+            });
+        }
+    });
+</script>

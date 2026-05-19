@@ -6,238 +6,434 @@
     var variants = selected?.Variants ?? new List<DOAN_BANHANG.ViewModels.AdminInventoryVariantRowVm>();
 }
 
+<style>
+    /* Premium Inventory Dashboard Styles */
+    :root {
+        --inv-primary: #556ee6;
+        --inv-primary-light: rgba(85, 110, 230, 0.1);
+        --inv-success: #34c38f;
+        --inv-success-light: rgba(52, 195, 143, 0.1);
+        --inv-danger: #f46a6a;
+        --inv-danger-light: rgba(244, 106, 106, 0.1);
+        --inv-warning: #f1b44c;
+        --inv-warning-light: rgba(241, 180, 76, 0.1);
+        --inv-info: #50a5f1;
+        --inv-info-light: rgba(80, 165, 241, 0.1);
+    }
+
+    .inv-page-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+        padding: 24px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .inv-page-header::after {
+        content: '';
+        position: absolute;
+        top: -40px;
+        right: -30px;
+        width: 150px;
+        height: 150px;
+        background: var(--inv-success-light);
+        border-radius: 50%;
+        filter: blur(40px);
+    }
+
+    .inv-card {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        background: #fff;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .inv-search-box {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .inv-search-box i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 1.2rem;
+    }
+
+    .inv-search-box input {
+        border-radius: 12px;
+        padding: 12px 16px 12px 45px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        transition: all 0.3s;
+    }
+
+    .inv-search-box input:focus {
+        background: #fff;
+        border-color: var(--inv-primary);
+        box-shadow: 0 0 0 3px var(--inv-primary-light);
+    }
+
+    .product-list {
+        max-height: 600px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    /* Custom Scrollbar */
+    .product-list::-webkit-scrollbar { width: 6px; }
+    .product-list::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    .product-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .product-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .product-item {
+        border-radius: 12px;
+        border: 1px solid transparent;
+        padding: 12px;
+        margin-bottom: 8px;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+    }
+
+    .product-item:hover {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        transform: translateX(4px);
+    }
+
+    .product-item.active {
+        background: linear-gradient(135deg, var(--inv-primary), #3b82f6);
+        border-color: transparent;
+        box-shadow: 0 4px 15px rgba(85, 110, 230, 0.25);
+    }
+
+    .product-item.active * {
+        color: white !important;
+    }
+    
+    .product-item.active .badge {
+        background: rgba(255,255,255,0.2) !important;
+        border-color: transparent !important;
+    }
+
+    .product-item img {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        object-fit: cover;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        background: #fff;
+    }
+
+    .table-inv th {
+        background-color: #f8fafc;
+        color: #495057;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        padding: 16px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .table-inv td {
+        padding: 16px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        color: #495057;
+    }
+
+    .table-inv tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .inv-input {
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        padding: 8px 12px;
+        transition: all 0.3s;
+        width: 100px;
+        text-align: right;
+    }
+
+    .inv-input:focus {
+        border-color: var(--inv-primary);
+        box-shadow: 0 0 0 3px var(--inv-primary-light);
+    }
+
+    .badge-soft {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+
+    .badge-soft-success { background: var(--inv-success-light); color: var(--inv-success); }
+    .badge-soft-danger { background: var(--inv-danger-light); color: var(--inv-danger); }
+    .badge-soft-secondary { background: #f1f5f9; color: #64748b; }
+
+    .sticky-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid #e2e8f0;
+        padding: 16px 24px;
+        border-radius: 0 0 16px 16px;
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-gradient {
+        background: linear-gradient(135deg, var(--inv-success), #2cb57e);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(52, 195, 143, 0.3);
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 195, 143, 0.4);
+        color: white;
+    }
+
+    .btn-outline-custom {
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-weight: 600;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        color: #495057;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-outline-custom:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+    }
+</style>
+
 <div class="row">
     <div class="col-12">
-        <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-            <div class="card-body bg-success-subtle border-start border-4 border-success">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="avatar-sm rounded bg-success text-white d-inline-flex align-items-center justify-content-center">
-                            <i class="bx bx-box font-size-18"></i>
-                        </span>
-                        <div>
-                            <h4 class="mb-0">Cập nhật kho hàng</h4>
-                            <div class="text-muted small">Điều chỉnh tồn kho theo từng biến thể (tự ghi log)</div>
-                        </div>
-                    </div>
-
-                    <div class="page-title-right">
-                        <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
-                            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Products" asp-action="Index">Sản phẩm</a></li>
-                            <li class="breadcrumb-item active">Kho hàng</li>
-                        </ol>
-                    </div>
+        <div class="inv-page-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="avatar-sm">
+                    <span class="avatar-title rounded-circle bg-success text-white shadow-sm">
+                        <i class="bx bx-package font-size-20"></i>
+                    </span>
                 </div>
+                <div>
+                    <h4 class="mb-1 fw-bold text-dark">Kiểm kê & Cập nhật kho</h4>
+                    <div class="text-muted small">Quản lý số lượng tồn kho theo từng biến thể sản phẩm. Mọi thay đổi đều được ghi log tự động.</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-light shadow-sm" style="border-radius: 10px; font-weight: 600;" asp-area="Admin" asp-controller="Products" asp-action="Index">
+                    <i class="bx bx-arrow-back me-1"></i>Trở lại Danh sách
+                </a>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-xl-4">
-        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-            <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="avatar-xs">
-                        <span class="avatar-title rounded-circle bg-primary text-white">
-                            <i class="bx bx-search-alt"></i>
-                        </span>
-                    </span>
-                    <div>
-                        <div class="fw-semibold">Chọn sản phẩm</div>
-                        <div class="text-muted small">Tìm nhanh theo tên</div>
-                    </div>
+<div class="row align-items-stretch">
+    <!-- Left Column: Product List -->
+    <div class="col-xl-4 mb-4 mb-xl-0">
+        <div class="inv-card">
+            <div class="p-4 border-bottom border-light">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bx bx-search-alt fs-4 text-primary"></i>
+                    <h5 class="my-0 fw-bold text-dark">Chọn Sản Phẩm</h5>
                 </div>
-            </div>
-            <div class="card-body">
-
-                <form method="get" asp-area="Admin" asp-controller="Products" asp-action="Inventory" class="mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="bx bx-search"></i></span>
-                        <input class="form-control" name="Search" value="@Model.Query.Search" placeholder="Tìm theo tên sản phẩm..." />
-                        <button class="btn btn-soft-primary" type="submit"><i class="bx bx-search-alt-2 me-1"></i>Tìm</button>
+                <form method="get" asp-area="Admin" asp-controller="Products" asp-action="Inventory">
+                    <div class="inv-search-box mb-0">
+                        <i class="bx bx-search"></i>
+                        <input class="form-control" name="Search" value="@Model.Query.Search" placeholder="Tìm tên hoặc mã sản phẩm..." onchange="this.form.submit()" />
                     </div>
                 </form>
-
+            </div>
+            
+            <div class="p-3 flex-grow-1">
                 @if (Model.Products.Count == 0)
                 {
-                    <div class="text-muted">Chưa có sản phẩm.</div>
+                    <div class="text-center py-5">
+                        <i class="bx bx-box text-muted opacity-25" style="font-size: 4rem;"></i>
+                        <p class="text-muted mt-3">Không tìm thấy sản phẩm nào.</p>
+                    </div>
                 }
                 else
                 {
-                    <div class="list-group" style="max-height: 520px; overflow:auto;">
+                    <div class="product-list">
                         @foreach (var p in Model.Products)
                         {
                             var isActive = selected != null && p.ProductId == selected.ProductId;
-                            <a class="list-group-item list-group-item-action d-flex align-items-center gap-2 @(isActive ? "active" : "")"
+                            <a class="product-item @(isActive ? "active" : "")"
                                asp-area="Admin" asp-controller="Products" asp-action="Inventory"
                                asp-route-productId="@p.ProductId" asp-route-search="@Model.Query.Search">
-                                <img src="@(string.IsNullOrWhiteSpace(p.PrimaryImageUrl) ? "/admin/assets/images/logo.svg" : p.PrimaryImageUrl)"
-                                     alt="@p.Name" style="width:44px;height:44px;object-fit:cover;border-radius:8px;" />
-                                <div class="flex-grow-1">
-                                    <div class="fw-semibold text-truncate">@p.Name</div>
-                                    <div class="small opacity-75 d-flex flex-wrap align-items-center gap-2">
+                                <img src="@(string.IsNullOrWhiteSpace(p.PrimaryImageUrl) ? "/admin/assets/images/logo.svg" : p.PrimaryImageUrl)" alt="@p.Name" onerror="this.src='/admin/assets/images/logo.svg'" />
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 0.95rem;">@p.Name</div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 small">
                                         <span class="badge bg-light text-muted border">#@p.ProductId</span>
-                                        <span>@p.VariantCount biến thể</span>
-                                        <span>•</span>
-                                        <span>Tồn: <span class="fw-semibold">@p.TotalStockQuantity</span></span>
+                                        <span class="text-muted">@p.VariantCount biến thể</span>
+                                        <span class="text-muted">•</span>
+                                        <span class="text-muted">Kho: <span class="fw-bold">@p.TotalStockQuantity</span></span>
                                     </div>
                                 </div>
                             </a>
                         }
                     </div>
-                    <div class="form-text mt-2">Hiển thị tối đa 50 sản phẩm gần nhất.</div>
+                    <div class="text-center text-muted small mt-3 border-top pt-2">Hiển thị tối đa 50 sản phẩm gần nhất.</div>
                 }
             </div>
         </div>
     </div>
 
+    <!-- Right Column: Inventory Details -->
     <div class="col-xl-8">
-        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-            <div class="card-header bg-success-subtle border-0 border-start border-4 border-success">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="avatar-xs">
-                            <span class="avatar-title rounded-circle bg-success text-white">
-                                <i class="bx bx-list-check"></i>
-                            </span>
-                        </span>
-                        <div>
-                            <div class="fw-semibold">Tồn kho theo biến thể</div>
-                            <div class="text-muted small">Cập nhật số lượng và lưu thay đổi</div>
-                        </div>
-                    </div>
-
-                    @if (selected != null)
-                    {
-                        <a class="btn btn-sm btn-soft-info" asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@selected.ProductId">
-                            <i class="bx bx-show-alt me-1"></i>Xem chi tiết
-                        </a>
-                    }
+        <div class="inv-card">
+            @if (selected is null)
+            {
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 p-5 text-center">
+                    <img src="~/admin/assets/images/illustrator/empty-cart.svg" alt="Select Product" style="width: 250px; opacity: 0.6;" class="mb-4">
+                    <h4 class="fw-bold text-dark mb-2">Chưa chọn sản phẩm</h4>
+                    <p class="text-muted">Vui lòng chọn một sản phẩm từ danh sách bên trái để xem và cập nhật chi tiết tồn kho.</p>
                 </div>
-            </div>
-            <div class="card-body">
-                <div class="text-muted">Nhập số lượng tồn kho mới (StockQuantity). Hệ thống sẽ tự ghi log vào bảng InventoryTransactions (Adjust).</div>
+            }
+            else
+            {
+                <div class="p-4 border-bottom border-light bg-light rounded-top" style="border-radius: 16px 16px 0 0;">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="@(string.IsNullOrWhiteSpace(selected.PrimaryImageUrl) ? "/admin/assets/images/logo.svg" : selected.PrimaryImageUrl)"
+                                 alt="@selected.Name" style="width: 64px; height: 64px; object-fit: cover; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+                            <div>
+                                <h4 class="mb-1 fw-bold text-dark">@selected.Name</h4>
+                                <div class="text-muted small d-flex flex-wrap align-items-center gap-2">
+                                    <span class="badge bg-white text-dark border shadow-sm">Mã: #@selected.ProductId</span>
+                                    <span><i class="bx bx-layer me-1"></i>@variants.Count biến thể</span>
+                                </div>
+                            </div>
+                        </div>
+                        <a class="btn btn-outline-custom btn-sm py-2" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@selected.ProductId" asp-route-tab="variants">
+                            <i class="bx bx-edit-alt"></i> Sửa biến thể
+                        </a>
+                    </div>
+                </div>
 
-                @if (selected is null)
+                @if (variants.Count == 0)
                 {
-                    <div class="alert alert-warning mt-3 mb-0">Vui lòng chọn 1 sản phẩm bên trái để cập nhật tồn kho.</div>
-                }
-                else if (variants.Count == 0)
-                {
-                    <div class="alert alert-warning mt-3 mb-0">Sản phẩm này chưa có biến thể.</div>
+                    <div class="p-5 text-center">
+                        <i class="bx bx-error-circle text-warning mb-3" style="font-size: 3rem;"></i>
+                        <h5 class="fw-bold">Sản phẩm chưa có biến thể</h5>
+                        <p class="text-muted">Bạn cần tạo ít nhất một biến thể (màu sắc/kích cỡ) trước khi cập nhật kho.</p>
+                        <a class="btn btn-primary mt-2" style="border-radius: 10px;" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@selected.ProductId" asp-route-tab="variants">Tạo biến thể ngay</a>
+                    </div>
                 }
                 else
                 {
-                    <hr class="my-3" />
-
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <img src="@(string.IsNullOrWhiteSpace(selected.PrimaryImageUrl) ? "/admin/assets/images/logo.svg" : selected.PrimaryImageUrl)"
-                             alt="@selected.Name" style="width:56px;height:56px;object-fit:cover;border-radius:10px;" />
-                        <div>
-                            <div class="fw-semibold">@selected.Name</div>
-                            <div class="text-muted small d-flex flex-wrap align-items-center gap-2">
-                                <span class="badge bg-light text-muted border">#@selected.ProductId</span>
-                                <span>@variants.Count biến thể</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <form asp-area="Admin" asp-controller="Products" asp-action="Inventory" method="post">
+                    <form asp-area="Admin" asp-controller="Products" asp-action="Inventory" method="post" class="d-flex flex-column flex-grow-1">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="ProductId" value="@selected.ProductId" />
 
-                        <div class="mb-3">
-                            <label class="form-label">Ghi chú (tuỳ chọn)</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="bx bx-note"></i></span>
-                                <input class="form-control" name="Note" value="@Model.Update.Note" placeholder="VD: Nhập thêm hàng / kiểm kê" />
+                        <div class="p-4 flex-grow-1">
+                            <div class="mb-4">
+                                <label class="form-label text-muted fw-bold small">LÝ DO CẬP NHẬT (GHI CHÚ)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bx bx-notepad text-muted"></i></span>
+                                    <input class="form-control border-start-0 ps-0" name="Note" value="@Model.Update.Note" placeholder="Ví dụ: Nhập thêm hàng mới, kiểm kê định kỳ..." style="box-shadow: none;" />
+                                </div>
+                            </div>
+
+                            <div class="table-responsive border rounded-3 overflow-hidden">
+                                <table class="table table-inv table-nowrap align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã Sku</th>
+                                            <th>Phân loại</th>
+                                            <th class="text-end" title="Số lượng khách hàng đã đặt nhưng chưa giao">Đã giữ (Reserved)</th>
+                                            <th class="text-end" style="width: 160px;">Thực tế (In Stock)</th>
+                                            <th class="text-end" title="Số lượng sẵn sàng bán">Khả dụng</th>
+                                            <th class="text-center">Trạng thái hiển thị</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (var i = 0; i < variants.Count; i++)
+                                        {
+                                            var v = variants[i];
+                                            var isBad = v.AvailableStock < 0;
+                                            var typeText = $"{(v.ColorName ?? "-")} / {(v.SizeName ?? "-")}";
+                                            <tr>
+                                                <td class="fw-bold text-dark">@v.Sku</td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border px-2 py-1">@typeText</span>
+                                                </td>
+                                                <td class="text-end text-muted fw-semibold">@v.ReservedStock</td>
+                                                <td class="text-end">
+                                                    <input type="hidden" name="Variants[@i].VariantId" value="@v.VariantId" />
+                                                    <input class="inv-input" type="number" min="0" step="1" name="Variants[@i].StockQuantity" value="@v.StockQuantity" />
+                                                </td>
+                                                <td class="text-end">
+                                                    @if (isBad)
+                                                    {
+                                                        <span class="badge-soft badge-soft-danger">@v.AvailableStock</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge-soft badge-soft-success">@v.AvailableStock</span>
+                                                    }
+                                                </td>
+                                                <td class="text-center">
+                                                    @if (v.IsActive)
+                                                    {
+                                                        <span class="badge-soft badge-soft-success"><i class="bx bx-check me-1"></i>Đang bán</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge-soft badge-soft-secondary"><i class="bx bx-hide me-1"></i>Tạm tắt</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-nowrap align-middle table-striped table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>SKU</th>
-                                        <th>Màu</th>
-                                        <th>Quy cách</th>
-                                        <th class="text-end">Đã giữ</th>
-                                        <th style="width: 170px;" class="text-end">Tồn kho</th>
-                                        <th class="text-end">Khả dụng</th>
-                                        <th>Trạng thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @for (var i = 0; i < variants.Count; i++)
-                                    {
-                                        var v = variants[i];
-                                        var isBad = v.AvailableStock < 0;
-                                        <tr>
-                                            <td class="fw-semibold">@v.Sku</td>
-                                            <td>@(v.ColorName ?? "-")</td>
-                                            <td>@(v.SizeName ?? "-")</td>
-                                            <td class="text-end">@v.ReservedStock</td>
-                                            <td class="text-end">
-                                                <input type="hidden" name="Variants[@i].VariantId" value="@v.VariantId" />
-                                                <input class="form-control form-control-sm text-end" type="number" min="0" step="1" name="Variants[@i].StockQuantity" value="@v.StockQuantity" />
-                                            </td>
-                                            <td class="text-end">
-                                                @if (isBad)
-                                                {
-                                                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">@v.AvailableStock</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">@v.AvailableStock</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                @if (v.IsActive)
-                                                {
-                                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Đang bán</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">Tạm tắt</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="admin-inventory-actions d-flex flex-wrap gap-2 mt-3 pt-3">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bx bx-save me-1"></i>Lưu tồn kho
+                        <div class="sticky-actions">
+                            <button type="submit" class="btn-gradient">
+                                <i class="bx bx-save fs-5"></i> Lưu toàn bộ thay đổi
                             </button>
-                            <a class="btn btn-soft-secondary" asp-area="Admin" asp-controller="Products" asp-action="Inventory" asp-route-productId="@selected.ProductId" asp-route-search="@Model.Query.Search">
-                                <i class="bx bx-refresh me-1"></i>Tải lại
+                            <a class="btn-outline-custom" asp-area="Admin" asp-controller="Products" asp-action="Inventory" asp-route-productId="@selected.ProductId" asp-route-search="@Model.Query.Search">
+                                <i class="bx bx-refresh fs-5"></i> Hủy
                             </a>
                         </div>
                     </form>
                 }
-            </div>
+            }
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <style>
-        .admin-inventory-actions {
-            position: sticky;
-            bottom: 0;
-            z-index: 5;
-            background: var(--bs-body-bg);
-            border-top: 1px solid var(--bs-border-color);
-        }
-
-        .table-responsive thead th {
-            position: sticky;
-            top: 0;
-            z-index: 3;
-        }
-    </style>
-}

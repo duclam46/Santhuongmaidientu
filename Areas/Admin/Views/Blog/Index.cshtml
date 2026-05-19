@@ -1,0 +1,179 @@
+@using DOAN_BANHANG.ViewModels
+@model AdminBlogListVm
+
+@{
+    ViewData["Title"] = "Quản lý bài viết Blog";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0 font-size-18">Quản lý bài viết Blog</h4>
+
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a asp-action="Index" asp-controller="Home">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Blog</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form asp-action="Index" method="get" class="row mb-4 align-items-end">
+                    <div class="col-sm-4">
+                        <div class="search-box me-2 mb-2 d-inline-block w-100">
+                            <div class="position-relative">
+                                <label for="search" class="form-label">Tìm kiếm</label>
+                                <input type="text" class="form-control" name="search" value="@Model.SearchQuery" placeholder="Tiêu đề bài viết...">
+                                <i class="bx bx-search-alt search-icon" style="top: 36px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="mb-2">
+                            <label for="status" class="form-label">Trạng thái</label>
+                            <select name="status" class="form-select">
+                                <!option value="All" @(Model.StatusFilter == "All" ? "selected" : "")>Tất cả trạng thái</!option>
+                                <!option value="Published" @(Model.StatusFilter == "Published" ? "selected" : "")>Đã xuất bản</!option>
+                                <!option value="Draft" @(Model.StatusFilter == "Draft" ? "selected" : "")>Bản nháp</!option>
+                                <!option value="Hidden" @(Model.StatusFilter == "Hidden" ? "selected" : "")>Đã ẩn</!option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <div class="mb-2">
+                            <button type="submit" class="btn btn-primary w-100"><i class="bx bx-filter-alt"></i> Lọc</button>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 text-sm-end">
+                        <div class="mb-2">
+                            <a asp-action="Create" class="btn btn-success btn-rounded waves-effect waves-light w-100"><i class="mdi mdi-plus me-1"></i> Viết bài mới</a>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table align-middle table-nowrap table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Bài viết</th>
+                                <th>Trạng thái</th>
+                                <th>Lượt xem</th>
+                                <th>Bình luận</th>
+                                <th>SP liên kết</th>
+                                <th>Ngày tạo</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Posts.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <i class="bx bx-news display-4 text-light d-block mb-3"></i>
+                                        Chưa có bài viết nào.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var item in Model.Posts)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex">
+                                                <div class="me-3">
+                                                    @if (!string.IsNullOrEmpty(item.CoverImageUrl))
+                                                    {
+                                                        <img src="@item.CoverImageUrl" alt="" class="avatar-sm rounded object-cover">
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="avatar-sm">
+                                                            <span class="avatar-title rounded bg-primary-subtle text-primary font-size-16">
+                                                                <i class="bx bx-image-alt"></i>
+                                                            </span>
+                                                        </div>
+                                                    }
+                                                </div>
+                                                <div class="flex-grow-1 overflow-hidden">
+                                                    <h5 class="text-truncate font-size-14 mb-1">
+                                                        <a href="@Url.Action("Details", "Blog", new { area = "", slug = item.Slug })" target="_blank" class="text-dark">@item.Title</a>
+                                                    </h5>
+                                                    <p class="text-muted mb-0 font-size-12">slug: @item.Slug</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if (item.Status == "Published")
+                                            {
+                                                <span class="badge badge-pill badge-soft-success font-size-11">Đã xuất bản</span>
+                                                @if (item.PublishedAt.HasValue)
+                                                {
+                                                    <div class="text-muted font-size-11 mt-1">@item.PublishedAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                                }
+                                            }
+                                            else if (item.Status == "Draft")
+                                            {
+                                                <span class="badge badge-pill badge-soft-warning font-size-11">Bản nháp</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-pill badge-soft-secondary font-size-11">@item.Status</span>
+                                            }
+                                        </td>
+                                        <td><i class="bx bx-show me-1"></i> @item.ViewCount</td>
+                                        <td><i class="bx bx-comment-dots me-1"></i> @item.CommentCount</td>
+                                        <td><i class="bx bx-link me-1"></i> @item.ProductCount</td>
+                                        <td>@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            <div class="d-flex gap-3">
+                                                <a asp-action="Edit" asp-route-id="@item.Id" class="text-success" title="Sửa"><i class="mdi mdi-pencil font-size-18"></i></a>
+                                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa bài viết này?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-link p-0 text-danger" title="Xóa"><i class="mdi mdi-delete font-size-18"></i></button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (Model.TotalPages > 1)
+                {
+                    <div class="row mt-4">
+                        <div class="col-sm-6">
+                            <p class="mb-sm-0">Trang @Model.CurrentPage / @Model.TotalPages</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="float-sm-end">
+                                <ul class="pagination pagination-rounded mb-sm-0">
+                                    <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
+                                        <a href="?page=@(Model.CurrentPage - 1)&search=@Model.SearchQuery&status=@Model.StatusFilter" class="page-link"><i class="mdi mdi-chevron-left"></i></a>
+                                    </li>
+                                    @for (var i = 1; i <= Model.TotalPages; i++)
+                                    {
+                                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                            <a href="?page=@i&search=@Model.SearchQuery&status=@Model.StatusFilter" class="page-link">@i</a>
+                                        </li>
+                                    }
+                                    <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                                        <a href="?page=@(Model.CurrentPage + 1)&search=@Model.SearchQuery&status=@Model.StatusFilter" class="page-link"><i class="mdi mdi-chevron-right"></i></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

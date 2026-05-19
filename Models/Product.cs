@@ -43,6 +43,10 @@ public class Product
 
     public string? Description { get; set; }
 
+    [NotMapped]
+    public decimal VatRate { get; set; } = 0.08m;
+
+
     public bool IsDeleted { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

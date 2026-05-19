@@ -1,0 +1,412 @@
+@model DOAN_BANHANG.ViewModels.PartnerStoreManageVm
+@{
+    ViewData["Title"] = "Quản lý cửa hàng đối tác";
+}
+
+<style>
+    .store-logo-preview {
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        margin-top: -65px;
+        margin-left: 30px;
+        background-color: #fff;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .nav-pills-custom .nav-link {
+        color: #495057;
+        background-color: transparent;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .nav-pills-custom .nav-link.active {
+        color: #fff;
+        background: linear-gradient(45deg, #556ee6, #34c38f);
+        box-shadow: 0 4px 10px rgba(85, 110, 230, 0.3);
+    }
+    .nav-pills-custom .nav-link:hover:not(.active) {
+        background-color: rgba(85, 110, 230, 0.1);
+        color: #556ee6;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0 font-size-18">Quản lý cửa hàng đối tác</h4>
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a href="javascript: void(0);">Đối tác</a></li>
+                    <li class="breadcrumb-item active">Quản lý cửa hàng</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card overflow-hidden">
+            <div class="position-relative bg-light" style="height: 300px; overflow: hidden;">
+                <!-- Ảnh nền (Cover) hiển thị toàn bộ chiều rộng -->
+                <img src="@(string.IsNullOrWhiteSpace(Model.ShopCoverUrl) ? "/admin/assets/images/profile-img.png" : Model.ShopCoverUrl)" 
+                     alt="" class="position-absolute top-0 start-0 w-100 h-100" id="header-cover" style="object-fit: cover; z-index: 1;">
+                
+                <!-- Lớp overlay phủ mờ để làm nổi bật text -->
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 100%); z-index: 2;"></div>
+                
+                <!-- Text thông tin -->
+                <div class="position-absolute top-0 start-0 p-4" style="z-index: 3;">
+                    <h5 class="text-white fw-bold mb-1" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">Thông tin cửa hàng của bạn</h5>
+                    <p class="text-light" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">Cập nhật thông tin, địa chỉ và ảnh thương hiệu để thu hút khách hàng.</p>
+                </div>
+            </div>
+            <div class="card-body pt-0">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <!-- Áp dụng CSS store-logo-preview để logo nổi nửa chừng trên ảnh bìa -->
+                        <div class="position-relative" style="z-index: 4; margin-bottom: 1rem;">
+                            <img src="@(string.IsNullOrWhiteSpace(Model.ShopLogoUrl) ? "/admin/assets/images/companies/img-1.png" : Model.ShopLogoUrl)" 
+                                 alt="" class="store-logo-preview" id="header-logo">
+                        </div>
+                        <h5 class="font-size-15 text-truncate" id="header-shop-name">@(string.IsNullOrWhiteSpace(Model.ShopName) ? "Chưa có tên" : Model.ShopName)</h5>
+                        <p class="text-muted mb-0 text-truncate" id="header-shop-slug">@Model.ShopSlug</p>
+                    </div>
+
+                    <div class="col-sm-8">
+                        <div class="pt-4">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h5 class="font-size-15">Trạng thái</h5>
+                                    <p class="text-muted mb-0"><span class="badge bg-success">Hoạt động</span></p>
+                                </div>
+                                <div class="col-6">
+                                    <div class="mt-4 mt-sm-0">
+                                        <a asp-area="Admin" asp-controller="PartnerStores" asp-action="Index" class="btn btn-outline-primary btn-sm w-md">
+                                            <i class="bx bx-refresh me-1"></i>Tải lại
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        @if (TempData["PartnerStoreSuccess"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="mdi mdi-check-all me-2"></i> @okMsg
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["PartnerStoreError"] is string errMsg && !string.IsNullOrWhiteSpace(errMsg))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="mdi mdi-block-helper me-2"></i> @errMsg
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body">
+                <ul class="nav nav-pills nav-pills-custom mb-4 gap-2" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active px-4" data-bs-toggle="pill" data-bs-target="#tab-info" type="button" role="tab">
+                            <i class="bx bx-info-circle me-1"></i> Thông tin cơ bản
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link px-4" data-bs-toggle="pill" data-bs-target="#tab-address" type="button" role="tab">
+                            <i class="bx bx-map-pin me-1"></i> Địa chỉ (GHN)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link px-4" data-bs-toggle="pill" data-bs-target="#tab-media" type="button" role="tab">
+                            <i class="bx bx-image-alt me-1"></i> Nhận diện thương hiệu
+                        </button>
+                    </li>
+                </ul>
+
+                <form method="post" asp-area="Admin" asp-controller="PartnerStores" asp-action="Update" id="store-form" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="tab-content text-muted">
+                        <!-- TAB: THÔNG TIN CƠ BẢN -->
+                        <div class="tab-pane fade show active" id="tab-info" role="tabpanel">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Email tài khoản</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0"><i class="bx bx-envelope text-muted"></i></span>
+                                            <input class="form-control bg-light border-start-0 ps-0" value="@Model.Email" readonly />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Shop Slug</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0"><i class="bx bx-link text-muted"></i></span>
+                                            <input class="form-control bg-light border-start-0 ps-0" value="@Model.ShopSlug" readonly />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Tên cửa hàng <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="bx bx-store-alt text-primary"></i></span>
+                                            <input class="form-control border-start-0 ps-0" name="ShopName" id="input-shop-name" value="@Model.ShopName" placeholder="Nhập tên cửa hàng của bạn" required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Số điện thoại liên hệ</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="bx bx-phone text-primary"></i></span>
+                                            <input class="form-control border-start-0 ps-0" name="PhoneNumber" value="@Model.PhoneNumber" placeholder="Số điện thoại CSKH" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Mô tả cửa hàng</label>
+                                        <textarea class="form-control" name="ShopDescription" id="input-shop-desc" rows="4" placeholder="Giới thiệu về cửa hàng, sản phẩm và dịch vụ...">@Model.ShopDescription</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: ĐỊA CHỈ GHN -->
+                        <div class="tab-pane fade" id="tab-address" role="tabpanel">
+                            <div class="alert alert-info border-0 bg-info bg-soft text-info mb-4">
+                                <i class="bx bx-info-circle me-1"></i> Địa chỉ này được dùng để tính phí vận chuyển và tạo đơn hàng qua Giao Hàng Nhanh (GHN).
+                            </div>
+                            
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Tỉnh / Thành phố <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="ghn_province">
+                                            <option value="">Chọn Tỉnh/Thành phố</option>
+                                        </select>
+                                        <input type="hidden" name="ProvinceName" id="ghn_province_name" value="@Model.ProvinceName" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Quận / Huyện <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="ghn_district" disabled>
+                                            <option value="">Chọn Quận/Huyện</option>
+                                        </select>
+                                        <input type="hidden" name="DistrictName" id="ghn_district_name" value="@Model.DistrictName" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Phường / Xã <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="ghn_ward" disabled>
+                                            <option value="">Chọn Phường/Xã</option>
+                                        </select>
+                                        <input type="hidden" name="WardName" id="ghn_ward_name" value="@Model.WardName" />
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Số nhà, tên đường <span class="text-danger">*</span></label>
+                                        <input class="form-control" name="StreetAddress" id="ghn_street_address" value="@Model.StreetAddress" placeholder="Ví dụ: 123 Đường ABC..." />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: ẢNH VÀ PREVIEW -->
+                        <div class="tab-pane fade" id="tab-media" role="tabpanel">
+                            <div class="alert alert-info border-0 bg-info bg-soft text-info mb-4">
+                                <i class="bx bx-info-circle me-1"></i> Ảnh nền và logo sẽ được hiển thị trực tiếp ở phần đầu trang. Hãy chọn các hình ảnh đẹp để cửa hàng chuyên nghiệp hơn.
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-4">
+                                        <label class="form-label fw-semibold">Tải lên Logo cửa hàng</label>
+                                        <input type="hidden" name="ShopLogoUrl" id="input-logo-url" value="@Model.ShopLogoUrl" />
+                                        <input type="file" class="form-control" name="ShopLogoFile" id="input-logo-file" accept="image/png, image/jpeg, image/webp" />
+                                        <small class="text-muted mt-1 d-block">Định dạng JPG, PNG, WEBP. Tối đa 5MB. Khuyên dùng ảnh vuông.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label fw-semibold">Tải lên Ảnh nền (Cover)</label>
+                                        <input type="hidden" name="ShopCoverUrl" id="input-cover-url" value="@Model.ShopCoverUrl" />
+                                        <input type="file" class="form-control" name="ShopCoverFile" id="input-cover-file" accept="image/png, image/jpeg, image/webp" />
+                                        <small class="text-muted mt-1 d-block">Định dạng JPG, PNG, WEBP. Tối đa 5MB. Khuyên dùng ảnh ngang tỉ lệ 16:9.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-end border-top pt-3">
+                        <button type="submit" class="btn btn-primary px-4 btn-lg rounded-pill shadow-sm" id="btn-submit">
+                            <i class="bx bx-save me-1"></i> Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Live Preview Logic
+            let currentLogoUrl = $('#input-logo-url').val();
+            let currentCoverUrl = $('#input-cover-url').val();
+
+            const updatePreviewText = () => {
+                const shopName = $('#input-shop-name').val() || 'Chưa có tên';
+                $('#header-shop-name').text(shopName);
+            };
+
+            $('#input-shop-name').on('input', updatePreviewText);
+
+            // Handle file selection for local preview
+            $('#input-logo-file').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#header-logo').attr('src', e.target.result);
+                    }
+                    reader.readAsDataURL(file);
+                } else if (currentLogoUrl) {
+                    $('#header-logo').attr('src', currentLogoUrl);
+                } else {
+                    $('#header-logo').attr('src', '/admin/assets/images/companies/img-1.png');
+                }
+            });
+
+            $('#input-cover-file').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#header-cover').attr('src', e.target.result);
+                    }
+                    reader.readAsDataURL(file);
+                } else if (currentCoverUrl) {
+                    $('#header-cover').attr('src', currentCoverUrl);
+                } else {
+                    $('#header-cover').attr('src', '/admin/assets/images/profile-img.png');
+                }
+            });
+
+            // GHN Address Logic
+            const endpoints = {
+                provinces: '/api/ghn/provinces',
+                districts: (pId) => `/api/ghn/districts?provinceId=${pId}`,
+                wards: (dId) => `/api/ghn/wards?districtId=${dId}`
+            };
+
+            const $prov = $('#ghn_province');
+            const $dist = $('#ghn_district');
+            const $ward = $('#ghn_ward');
+            const $provName = $('#ghn_province_name');
+            const $distName = $('#ghn_district_name');
+            const $wardName = $('#ghn_ward_name');
+
+            // Values from model
+            const initProvName = $provName.val();
+            const initDistName = $distName.val();
+            const initWardName = $wardName.val();
+
+            const loadOptions = async (url, $select, placeholder, valueKey, textKey, defaultText = '') => {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    
+                    $select.empty().append(`<option value="">${placeholder}</option>`);
+                    let selectedVal = '';
+                    
+                    data.forEach(item => {
+                        const isMatch = defaultText && (item[textKey] === defaultText || defaultText.includes(item[textKey]) || item[textKey].includes(defaultText));
+                        if (isMatch) selectedVal = item[valueKey];
+                        $select.append(`<option value="${item[valueKey]}" ${isMatch ? 'selected' : ''}>${item[textKey]}</option>`);
+                    });
+                    
+                    $select.prop('disabled', false);
+                    return selectedVal;
+                } catch (e) {
+                    $select.empty().append(`<option value="">Lỗi tải dữ liệu</option>`).prop('disabled', true);
+                    return null;
+                }
+            };
+
+            const initGHN = async () => {
+                const selectedProvId = await loadOptions(endpoints.provinces, $prov, 'Chọn Tỉnh/Thành phố', 'id', 'name', initProvName);
+                
+                if (selectedProvId) {
+                    const selectedDistId = await loadOptions(endpoints.districts(selectedProvId), $dist, 'Chọn Quận/Huyện', 'id', 'name', initDistName);
+                    
+                    if (selectedDistId) {
+                        await loadOptions(endpoints.wards(selectedDistId), $ward, 'Chọn Phường/Xã', 'code', 'name', initWardName);
+                    }
+                }
+            };
+
+            // Bind change events
+            $prov.on('change', async function() {
+                const id = $(this).val();
+                $provName.val(id ? $(this).find('option:selected').text() : '');
+                $distName.val('');
+                $wardName.val('');
+                $dist.empty().append('<option value="">Chọn Quận/Huyện</option>').prop('disabled', true);
+                $ward.empty().append('<option value="">Chọn Phường/Xã</option>').prop('disabled', true);
+                
+                if (id) {
+                    await loadOptions(endpoints.districts(id), $dist, 'Chọn Quận/Huyện', 'id', 'name');
+                }
+            });
+
+            $dist.on('change', async function() {
+                const id = $(this).val();
+                $distName.val(id ? $(this).find('option:selected').text() : '');
+                $wardName.val('');
+                $ward.empty().append('<option value="">Chọn Phường/Xã</option>').prop('disabled', true);
+                
+                if (id) {
+                    await loadOptions(endpoints.wards(id), $ward, 'Chọn Phường/Xã', 'code', 'name');
+                }
+            });
+
+            $ward.on('change', function() {
+                $wardName.val($(this).val() ? $(this).find('option:selected').text() : '');
+            });
+
+            // Start loading GHN data
+            initGHN();
+            
+            // Form validation before submit
+            $('#store-form').on('submit', function(e) {
+                if (!$provName.val() || !$distName.val() || !$wardName.val()) {
+                    e.preventDefault();
+                    alert('Vui lòng chọn đầy đủ Tỉnh/Thành phố, Quận/Huyện và Phường/Xã!');
+                    // Switch to address tab
+                    $('button[data-bs-target="#tab-address"]').tab('show');
+                }
+            });
+        });
+    </script>
+}

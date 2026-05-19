@@ -3,126 +3,232 @@
 @model DOAN_BANHANG.ViewModels.ShopDetailsVm
 
 @{
-  ViewData["Title"] = Model.Shop.Name;
-  var viVn = CultureInfo.GetCultureInfo("vi-VN");
+    ViewData["Title"] = Model.Shop.Name;
+    var viVn = CultureInfo.GetCultureInfo("vi-VN");
 
-  string ResolveImageUrl(string? raw)
-  {
-    var normalized = ImageUrlHelper.NormalizeStaticFileUrl(raw);
-    return !string.IsNullOrWhiteSpace(normalized)
-      ? normalized
-      : Url.Content("~/assets/images/vendors-list/vendor-profile.png");
-  }
+    string ResolveImageUrl(string? raw)
+    {
+        var normalized = ImageUrlHelper.NormalizeStaticFileUrl(raw);
+        return !string.IsNullOrWhiteSpace(normalized)
+          ? normalized
+          : Url.Content("~/assets/images/vendors-list/vendor-profile.png");
+    }
 
-  var shopLogo = ResolveImageUrl(Model.Shop.LogoUrl);
+    var shopLogo = ResolveImageUrl(Model.Shop.LogoUrl);
+
+    string PageUrl(int page) => Url.RouteUrl("shop_details", new { slug = Model.Shop.Slug, page }) ?? "#";
+    
+    // Hardcoded Rainbow Palette
+    var color1 = "#FF0080"; // Pink
+    var color2 = "#7928CA"; // Purple
+    var color3 = "#0070F3"; // Blue
+    var color4 = "#00DFD8"; // Cyan
+    var color5 = "#FF4D4D"; // Red
+    var color6 = "#F5A623"; // Gold
 }
 
-<section class="breadcrumb-section py-6">
-  <div class="container">
-    <div class="flex items-center gap-x-2 text-sm text-light-secondary-text">
-      <a href="/" class="hover:underline">Trang chủ</a>
-      <span>/</span>
-      <span class="text-light-primary-text font-semibold">@Model.Shop.Name</span>
-    </div>
-  </div>
-</section>
+<div class="shop-rainbow-page" style="background-color: #f8f9ff; min-height: 100vh; font-family: 'Inter', sans-serif; padding-bottom: 80px;">
+    
+    <!-- ========== RAINBOW HERO HEADER ========== -->
+    <section style="background: linear-gradient(135deg, @color1, @color2, @color3); padding: 50px 0; position: relative; overflow: hidden; border-bottom: 8px solid white;">
+        <!-- Abstract Decoration -->
+        <div style="position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: rgba(255,255,255,0.1); border-radius: 50%; blur: 100px;"></div>
+        
+        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 10;">
+            <!-- Split Layout: Info Left, Stats Right -->
+            <div style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 40px;">
+                
+                <!-- LEFT: Shop Identity (approx 40-45%) -->
+                <div style="flex: 1; min-width: 350px; display: flex; align-items: center; gap: 25px; background: rgba(0,0,0,0.15); backdrop-filter: blur(15px); padding: 30px; border-radius: 40px; border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);">
+                    <!-- Logo -->
+                    <div style="position: relative; flex-shrink: 0;">
+                        <div style="width: 120px; height: 120px; background: white; border-radius: 50%; padding: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                            <img src="@shopLogo" alt="@Model.Shop.Name" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />
+                        </div>
+                        <div style="position: absolute; bottom: 5px; right: 5px; background: #22c55e; width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                            <i class="hgi hgi-stroke hgi-flash" style="color: white; font-size: 14px;"></i>
+                        </div>
+                    </div>
 
-<section class="shop-details-section pb-12">
-  <div class="container">
-    <div class="border border-gray-300 rounded-3xl p-6 mb-6">
-      <div class="flex items-center justify-between gap-4 flex-wrap">
-        <div class="flex items-center gap-3">
-          <div class="size-12 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center">
-            <img src="@shopLogo" alt="@Model.Shop.Name" class="w-full h-full object-cover" />
-          </div>
-          <div>
-            <h3 class="text-lg font-semibold leading-7">@Model.Shop.Name</h3>
-            @if (!string.IsNullOrWhiteSpace(Model.Shop.Location))
-            {
-              <p class="text-sm text-light-secondary-text">@Model.Shop.Location</p>
-            }
-          </div>
-        </div>
-
-        <div class="flex items-center gap-6">
-          <div class="text-center">
-            <p class="text-sm text-light-secondary-text">Đánh giá</p>
-            <p class="font-semibold text-light-primary-text">@Model.Shop.RatingAverage.ToString("0.0", viVn)</p>
-          </div>
-          <div class="text-center">
-            <p class="text-sm text-light-secondary-text">Sản phẩm</p>
-            <p class="font-semibold text-light-primary-text">@Model.Shop.ProductCount.ToString("N0", viVn)</p>
-          </div>
-          <div class="text-center">
-            <p class="text-sm text-light-secondary-text">Phản hồi chat</p>
-            <p class="font-semibold text-light-primary-text">@(Model.Shop.ChatResponseRate.HasValue ? (Model.Shop.ChatResponseRate.Value + "%") : "-")</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-12 gap-6">
-      @if (Model.Products is null || Model.Products.Count == 0)
-      {
-        <div class="col-span-12">
-          <div class="border border-gray-300 rounded-2xl p-6 text-center">
-            <p class="text-light-secondary-text">Shop này chưa có sản phẩm.</p>
-          </div>
-        </div>
-      }
-      else
-      {
-        foreach (var p in Model.Products)
-        {
-          var imageUrl = ResolveImageUrl(p.PrimaryImageUrl);
-          var detailsUrl = Url.RouteUrl("product_details", new { slug = p.Slug }) ?? "#";
-          var ratingPct = (int)Math.Round(Math.Clamp((double)(p.RatingAverage / 5m * 100m), 0d, 100d));
-
-          <div class="xl:col-span-4 md:col-span-6 col-span-12">
-            <div class="border border-gray-300 rounded-2xl product-card-1 p-4 group">
-              <div class="product-image-container relative">
-                <div class="product-image rounded-xl bg-[#F4F3F5] mb-4 overflow-hidden">
-                  <a href='@detailsUrl'>
-                    <img src="@imageUrl" alt="@p.Name" class="group-hover:scale-110 transition-all transform group-hover:-rotate-3 ease-in-out duration-300" />
-                  </a>
-                </div>
-              </div>
-
-              <div class="product-content">
-                <h5 class="text-base leading-6 font-semibold font-dm-sans mb-4">
-                  <a href='@detailsUrl'>@p.Name</a>
-                </h5>
-
-                <div class="rating-section flex items-center mb-4">
-                  <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
-                    <div style="width: @ratingPct%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
-                  </div>
-                  <span class="text-sm leading-[22px] font-normal inline-block ml-1">(@p.RatingCount)</span>
+                    <!-- Name & Buttons -->
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                            <span style="background: @color6; color: white; padding: 3px 10px; border-radius: 6px; font-size: 9px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">YÊU THÍCH+</span>
+                        </div>
+                        <h1 style="font-size: 32px; font-weight: 900; color: white; margin: 0 0 10px 0; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">@Model.Shop.Name</h1>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 14px; font-weight: 600; margin: 0 0 20px 0;">
+                            <i class="hgi hgi-stroke hgi-location-01" style="color: @color4;"></i> @Model.Shop.Location
+                        </p>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" onclick="openChatWithShop(null, @Model.Shop.ShopId)" style="background: white; color: @color2; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 6px;">
+                                <i class="hgi hgi-stroke hgi-chatting-01"></i> CHAT NGAY
+                            </button>
+                            <button style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 12px; font-weight: 900; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                <i class="hgi hgi-stroke hgi-user-add-01"></i> THEO DÕI
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="price-section flex items-center gap-x-3 mb-2">
-                  <span class="current-price text-base font-semibold text-light-primary-text">@p.Price.ToString("N0", viVn) VNĐ</span>
-                  @if (p.OldPrice.HasValue)
-                  {
-                    <span class="old-price text-sm leading-[22px] font-normal text-light-disabled-text line-through">@p.OldPrice.Value.ToString("N0", viVn) VNĐ</span>
-                  }
-                  @if (p.DiscountPercent > 0)
-                  {
-                    <span class="discount-percentage text-sm leading-[22px] font-semibold text-error">@p.DiscountPercent% OFF</span>
-                  }
+                <!-- RIGHT: Stats Row (approx 55-60%) -->
+                <div style="flex: 1.5; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
+                    <div style="background: white; padding: 25px; border-radius: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); text-align: center; border-bottom: 6px solid @color3; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div style="color: @color3; font-size: 24px; margin-bottom: 5px;"><i class="hgi hgi-stroke hgi-package"></i></div>
+                        <div style="font-size: 24px; font-weight: 900; color: #333;">@Model.Shop.ProductCount</div>
+                        <div style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase;">Sản phẩm</div>
+                    </div>
+                    <div style="background: white; padding: 25px; border-radius: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); text-align: center; border-bottom: 6px solid @color1; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div style="color: @color1; font-size: 24px; margin-bottom: 5px;"><i class="hgi hgi-stroke hgi-chatting-01"></i></div>
+                        <div style="font-size: 24px; font-weight: 900; color: #333;">99%</div>
+                        <div style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase;">Phản hồi</div>
+                    </div>
+                    <div style="background: white; padding: 25px; border-radius: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); text-align: center; border-bottom: 6px solid @color6; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div style="color: @color6; font-size: 24px; margin-bottom: 5px;"><i class="hgi hgi-stroke hgi-favourite"></i></div>
+                        <div style="font-size: 24px; font-weight: 900; color: #333;">4.9</div>
+                        <div style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase;">Hài lòng</div>
+                    </div>
+                    <div style="background: white; padding: 25px; border-radius: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); text-align: center; border-bottom: 6px solid @color4; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div style="color: @color4; font-size: 24px; margin-bottom: 5px;"><i class="hgi hgi-stroke hgi-delivery-truck-01"></i></div>
+                        <div style="font-size: 24px; font-weight: 900; color: #333;">FAST</div>
+                        <div style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase;">Giao hàng</div>
+                    </div>
                 </div>
 
-                <div class="btn-section flex items-center gap-x-4">
-                  <a class='btn btn-primary rounded-full font-semibold text-sm leading-6 px-6.5 py-2 flex-1' href='@detailsUrl'>
-                    <i class="hgi hgi-stroke hgi-shopping-cart-02 text-xl text-white"></i>
-                    <span>Xem chi tiết</span>
-                  </a>
-                </div>
-              </div>
             </div>
-          </div>
+        </div>
+    </section>
+
+    <!-- ========== PRODUCTS SHOWCASE ========== -->
+    <div class="container" style="max-width: 1200px; margin: 60px auto; padding: 0 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; background: white; padding: 20px 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-left: 10px solid @color3;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h2 style="font-size: 28px; font-weight: 900; color: #333; margin: 0; letter-spacing: -1px;">TẤT CẢ SẢN PHẨM</h2>
+                <span style="background: #f0f2f5; color: #888; padding: 4px 12px; border-radius: 10px; font-weight: 700; font-size: 14px;">@Model.TotalItems</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span style="font-size: 14px; font-weight: 700; color: #999;">Sắp xếp:</span>
+                <select style="background: #f9fafb; border: 1px solid #eee; padding: 8px 15px; border-radius: 12px; font-weight: 800; outline: none; cursor: pointer;">
+                    <option>Mới nhất</option>
+                    <option>Bán chạy</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px;">
+            @if (Model.Products is null || Model.Products.Count == 0)
+            {
+                <div style="grid-column: 1 / -1; padding: 80px; text-align: center; background: white; border-radius: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+                    <i class="hgi hgi-stroke hgi-package-01" style="font-size: 60px; color: #eee; display: block; margin-bottom: 20px;"></i>
+                    <p style="font-size: 18px; font-weight: 700; color: #ccc;">Chưa có sản phẩm nào.</p>
+                </div>
+            }
+            else
+            {
+                foreach (var p in Model.Products)
+                {
+                    var imageUrl = ResolveImageUrl(p.PrimaryImageUrl);
+                    var detailsUrl = Url.RouteUrl("product_details", new { slug = p.Slug }) ?? "#";
+                    var cardColor = (p.GetHashCode() % 3 == 0) ? color1 : (p.GetHashCode() % 3 == 1) ? color2 : color3;
+
+                    <div class="product-card" style="background: white; border-radius: 40px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.05); transition: all 0.5s; border-bottom: 8px solid @cardColor; position: relative;">
+                        <!-- Discount -->
+                        @if (p.DiscountPercent > 0)
+                        {
+                            <div style="position: absolute; top: 20px; left: 20px; z-index: 10; background: @color5; color: white; padding: 6px 12px; border-radius: 12px; font-weight: 900; font-size: 11px; box-shadow: 0 10px 20px rgba(239,68,68,0.3);">
+                                GIẢM @p.DiscountPercent%
+                            </div>
+                        }
+
+                        <div style="position: relative; aspect-ratio: 1/1; overflow: hidden; background: #f9fafb;">
+                            <a href="@detailsUrl">
+                                <img src="@imageUrl" alt="@p.Name" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s;" onmouseover="this.style.transform='scale(1.1) rotate(2deg)'" onmouseout="this.style.transform='scale(1) rotate(0deg)'" />
+                            </a>
+                        </div>
+
+                        <div style="padding: 25px;">
+                            <h3 style="font-size: 16px; font-weight: 800; margin: 0 0 15px 0; height: 45px; overflow: hidden; line-height: 1.4;">
+                                <a href="@detailsUrl" style="color: #333; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='@cardColor'" onmouseout="this.style.color='#333'">@p.Name</a>
+                            </h3>
+                            
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                <div style="display: flex; color: @color6; font-size: 11px; gap: 2px;">
+                                    @for(int i=1; i<=5; i++) { <i class="hgi hgi-solid hgi-star @(i <= (int)p.RatingAverage ? "" : "opacity-20")"></i> }
+                                    <span style="color: #bbb; font-weight: 800; margin-left: 5px;">(@p.RatingCount)</span>
+                                </div>
+                                <span style="font-size: 10px; font-weight: 800; color: @cardColor; background: @cardColor; color: white; padding: 2px 8px; border-radius: 6px;">HOT</span>
+                            </div>
+
+                            <div style="display: flex; align-items: center; justify-content: space-between; border-top: 2px solid #f9fafb; pt-20px; padding-top: 20px;">
+                                <div>
+                                    @if (p.OldPrice.HasValue)
+                                    {
+                                        <div style="font-size: 11px; color: #ddd; text-decoration: line-through; font-weight: 700;">@p.OldPrice.Value.ToString("N0", viVn) đ</div>
+                                    }
+                                    <div style="font-size: 22px; font-weight: 900; color: @color5;">@p.Price.ToString("N0", viVn)<span style="font-size: 14px; margin-left: 2px;">đ</span></div>
+                                </div>
+                                <button type="button" onclick="openChatWithShop(@p.ProductId, @Model.Shop.ShopId)" style="width: 50px; height: 50px; background: @cardColor; border: none; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                                    <i class="hgi hgi-stroke hgi-shopping-basket-01" style="font-size: 24px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 80px;">
+                @for (var i = 1; i <= Model.TotalPages; i++)
+                {
+                    var isActive = i == Model.Page;
+                    <a href="@PageUrl(i)" style="width: 55px; height: 55px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: 900; text-decoration: none; background: @(isActive ? color2 : "white"); color: @(isActive ? "white" : "#ccc"); box-shadow: 0 10px 30px rgba(0,0,0,0.05); font-size: 18px; transition: all 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">@i</a>
+                }
+            </div>
         }
-      }
     </div>
-  </div>
-</section>
+</div>
+
+<script>
+    function openChatWithShop(productId, shopId) {
+        fetch('/Chat/StartOrOpen', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ShopId: shopId,
+                ProductId: productId
+            })
+        })
+        .then(res => {
+            if (res.status === 401) {
+                window.location.href = '/Auth/Login';
+                throw new Error('Chưa đăng nhập');
+            }
+            if (!res.ok) throw new Error('Có lỗi xảy ra');
+            return res.json();
+        })
+        .then(data => {
+            if (data && data.conversationId) {
+                window.location.href = '/Chat/Index?id=' + data.conversationId;
+            }
+        })
+        .catch(err => {
+            if(err.message !== 'Chưa đăng nhập') {
+                console.error(err);
+                alert("Không thể kết nối đến Shop. Vui lòng thử lại sau.");
+            }
+        });
+    }
+</script>
+
+<style>
+    .shop-details-wrap .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+</style>

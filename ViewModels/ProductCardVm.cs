@@ -1,5 +1,11 @@
 namespace DOAN_BANHANG.ViewModels;
 
+public class ColorVm
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Code { get; set; }
+}
+
 public class ProductCardVm
 {
     public int ProductId { get; set; }
@@ -21,4 +27,7 @@ public class ProductCardVm
     public int DiscountPercent { get; set; }
 
     public string? PrimaryImageUrl { get; set; }
+    public List<string> ImageUrls { get; set; } = new();
+    public List<string> Sizes { get; set; } = new();
+    public List<ColorVm> Colors { get; set; } = new();
 }

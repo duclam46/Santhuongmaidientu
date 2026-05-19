@@ -7,6 +7,19 @@ public sealed class GhnOptions
     public string Token { get; set; } = string.Empty;
 
     /// <summary>
+    /// Optional: a separate token used only for station/get.
+    /// Some GHN environments/policies reject older token formats on this endpoint.
+    /// </summary>
+    public string? StationToken { get; set; }
+
+    /// <summary>
+    /// Optional: a separate base url used only for station/get.
+    /// Useful when other endpoints work on dev/prod but station/get only works on a different gateway.
+    /// Example: https://online-gateway.ghn.vn/shiip/public-api
+    /// </summary>
+    public string? StationBaseUrl { get; set; }
+
+    /// <summary>
     /// GHN ShopId used in request headers. Required for fee calculation endpoints.
     /// </summary>
     public int ShopId { get; set; }

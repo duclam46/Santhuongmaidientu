@@ -1,0 +1,376 @@
+@model DOAN_BANHANG.Controllers.VnPayFailedVm
+
+@{
+    ViewData["Title"] = "Thanh toán không thành công";
+    var retryUrl = $"/checkout/vnpay-retry?codes={Uri.EscapeDataString(string.Join(",", Model.OrderCodes))}";
+
+    var remainingSeconds = (Model.PaymentDeadlineUtc - DateTime.Now).TotalSeconds;
+    if (remainingSeconds < 0 || remainingSeconds > 1800)
+    {
+        var altDiff = (Model.PaymentDeadlineUtc - DateTime.UtcNow).TotalSeconds;
+        if (altDiff >= 0 && altDiff <= 1800)
+        {
+            remainingSeconds = altDiff;
+        }
+    }
+    if (remainingSeconds < 0) remainingSeconds = 0;
+    if (remainingSeconds > 900) remainingSeconds = 900;
+}
+
+<style>
+    .payment-failed-container {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .payment-failed-card {
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04);
+        max-width: 520px;
+        width: 100%;
+        overflow: hidden;
+        text-align: center;
+    }
+
+    .pf-header {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 50%, #e74c3c 100%);
+        padding: 2.5rem 2rem 2rem;
+        position: relative;
+    }
+
+    .pf-header::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 20px;
+        background: #fff;
+        border-radius: 24px 24px 0 0;
+    }
+
+    .pf-icon-wrapper {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        backdrop-filter: blur(10px);
+        animation: shake 0.6s ease-in-out;
+    }
+
+    .pf-icon-wrapper i {
+        font-size: 40px;
+        color: #fff;
+    }
+
+    .pf-header h2 {
+        color: #fff;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .pf-body {
+        padding: 2rem 2rem 1.5rem;
+    }
+
+    .pf-error-code {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 0.4rem 1rem;
+        border-radius: 100px;
+        margin-bottom: 1rem;
+        letter-spacing: 0.05em;
+    }
+
+    .pf-message {
+        font-size: 1rem;
+        color: #374151;
+        line-height: 1.7;
+        margin-bottom: 1.5rem;
+        padding: 0 0.5rem;
+    }
+
+    .pf-order-info {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .pf-order-info label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.4rem;
+    }
+
+    .pf-order-info span {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1f2937;
+        word-break: break-all;
+    }
+
+    /* Countdown timer */
+    .pf-countdown-wrapper {
+        background: linear-gradient(135deg, #fff7ed, #fef3c7);
+        border: 1.5px solid #f59e0b;
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pf-countdown-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #b45309;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+    }
+
+    .pf-countdown-timer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 1.8rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        color: #dc2626;
+        letter-spacing: 0.05em;
+    }
+
+    .pf-countdown-timer .separator {
+        color: #f87171;
+        animation: blink 1s step-end infinite;
+    }
+
+    .pf-countdown-expired {
+        color: #991b1b;
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .pf-countdown-hint {
+        font-size: 0.75rem;
+        color: #92400e;
+        margin-top: 0.4rem;
+    }
+
+    .pf-footer {
+        padding: 0 2rem 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .pf-btn-retry {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.85rem 1.5rem;
+        border-radius: 100px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        cursor: pointer;
+        transition: all 0.25s;
+        text-decoration: none;
+        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+    }
+
+    .pf-btn-retry:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(245, 158, 11, 0.45);
+        color: #fff;
+    }
+
+    .pf-btn-retry.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+        background: #d1d5db;
+        box-shadow: none;
+    }
+
+    .pf-btn-secondary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.85rem 1.5rem;
+        border-radius: 100px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #6b7280;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        cursor: pointer;
+        transition: all 0.25s;
+        text-decoration: none;
+    }
+
+    .pf-btn-secondary:hover {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
+    @@keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        15% { transform: translateX(-8px) rotate(-5deg); }
+        30% { transform: translateX(8px) rotate(5deg); }
+        45% { transform: translateX(-6px) rotate(-3deg); }
+        60% { transform: translateX(6px) rotate(3deg); }
+        75% { transform: translateX(-3px) rotate(-1deg); }
+        90% { transform: translateX(3px) rotate(1deg); }
+    }
+
+    @@keyframes blink {
+        50% { opacity: 0; }
+    }
+</style>
+
+<div class="payment-failed-container">
+    <div class="payment-failed-card">
+        <div class="pf-header">
+            <div class="pf-icon-wrapper">
+                <i class="hgi hgi-stroke hgi-cancel-circle"></i>
+            </div>
+            <h2>Thanh toán không thành công</h2>
+        </div>
+
+        <div class="pf-body">
+            <div class="pf-error-code">
+                <i class="hgi hgi-stroke hgi-alert-02"></i>
+                Mã lỗi: @Model.ResponseCode
+            </div>
+
+            <p class="pf-message">@Model.Message</p>
+
+            @if (Model.OrderCodes.Count > 0)
+            {
+                <div class="pf-order-info">
+                    <label>Đơn hàng liên quan</label>
+                    <span>@string.Join(", ", Model.OrderCodes)</span>
+                </div>
+            }
+
+            <!-- Countdown Timer -->
+            <div class="pf-countdown-wrapper" id="countdownWrapper">
+                <div class="pf-countdown-label">
+                    <i class="hgi hgi-stroke hgi-time-04"></i>
+                    Thời gian còn lại để thanh toán
+                </div>
+                <div class="pf-countdown-timer" id="countdownTimer" data-remaining-seconds="@((int)remainingSeconds)">
+                    <span id="countdownMinutes">--</span>
+                    <span class="separator">:</span>
+                    <span id="countdownSeconds">--</span>
+                </div>
+                <div class="pf-countdown-hint" id="countdownHint">
+                    Đơn hàng sẽ bị hủy tự động khi hết thời gian
+                </div>
+            </div>
+        </div>
+
+        <div class="pf-footer">
+            <a href="@retryUrl" class="pf-btn-retry" id="retryBtn">
+                <i class="hgi hgi-stroke hgi-refresh"></i>
+                Thanh toán lại qua VNPay
+            </a>
+            <a href="/my-orders" class="pf-btn-secondary">
+                <i class="hgi hgi-stroke hgi-delivery-box-01"></i>
+                Xem đơn hàng của tôi
+            </a>
+            <a href="/" class="pf-btn-secondary">
+                <i class="hgi hgi-stroke hgi-home-01"></i>
+                Về trang chủ
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var timerEl = document.getElementById('countdownTimer');
+    var minutesEl = document.getElementById('countdownMinutes');
+    var secondsEl = document.getElementById('countdownSeconds');
+    var hintEl = document.getElementById('countdownHint');
+    var retryBtn = document.getElementById('retryBtn');
+    var wrapperEl = document.getElementById('countdownWrapper');
+
+    var remainingSeconds = parseInt(timerEl.getAttribute('data-remaining-seconds') || '0', 10);
+
+    function pad(n) {
+        return n < 10 ? '0' + n : '' + n;
+    }
+
+    function update() {
+        if (remainingSeconds <= 0) {
+            minutesEl.textContent = '00';
+            secondsEl.textContent = '00';
+            hintEl.innerHTML = '<strong style="color:#dc2626;">⚠️ Đã hết thời gian! Đơn hàng sẽ bị hủy tự động.</strong>';
+            wrapperEl.style.borderColor = '#dc2626';
+            wrapperEl.style.background = 'linear-gradient(135deg, #fef2f2, #fee2e2)';
+
+            if (retryBtn) {
+                retryBtn.classList.add('disabled');
+                retryBtn.removeAttribute('href');
+                retryBtn.innerHTML = '<i class="hgi hgi-stroke hgi-time-04"></i> Đã hết hạn thanh toán';
+            }
+
+            clearInterval(intervalId);
+            return;
+        }
+
+        var m = Math.floor(remainingSeconds / 60);
+        var s = remainingSeconds % 60;
+
+        minutesEl.textContent = pad(m);
+        secondsEl.textContent = pad(s);
+
+        // Change color when less than 2 minutes
+        if (remainingSeconds < 120) {
+            timerEl.style.color = '#dc2626';
+            timerEl.style.animation = 'none';
+            wrapperEl.style.borderColor = '#ef4444';
+        } else if (remainingSeconds < 300) {
+            timerEl.style.color = '#ea580c';
+        }
+
+        remainingSeconds--;
+    }
+
+    update();
+    var intervalId = setInterval(update, 1000);
+})();
+</script>

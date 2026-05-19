@@ -1,0 +1,305 @@
+@model DOAN_BANHANG.ViewModels.CheckoutSuccessPageVm
+
+@{
+    ViewData["Title"] = "Đặt hàng thành công";
+
+    string FormatVnd(decimal amount)
+    {
+        return string.Format("{0:N0}đ", amount);
+    }
+
+    (string label, string buttonClass) ResolveOrderStatusUi(string? rawStatus)
+    {
+        var s = (rawStatus ?? string.Empty).Trim();
+        var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
+
+        const string baseBtn = "text-[12px] leading-[18px] rounded-md font-normal px-2 py-[7px]";
+
+        return norm switch
+        {
+            "pendingconfirmation" or "waitconfirm" or "waitingconfirm" or "confirming" or "pending" or "confirmationpending" or "processing" or "inprocess" or "inprocessing" or "chờxácnhận" or "choxacnhan" => (
+                "Chờ xác nhận",
+                $"{baseBtn} text-warning-dark bg-[rgba(255,193,7,0.16)]"
+            ),
+            "awaitingpickup" or "waitpickup" or "waitingpickup" or "readytopick" or "pickup" or "chờlấyhàng" or "cholayhang" or "confirmed" or "accepted" or "đãxácnhận" or "daxacnhan" => (
+                "Chờ lấy hàng",
+                $"{baseBtn} text-warning-dark bg-[rgba(255,193,7,0.16)]"
+            ),
+            "shipping" or "delivering" or "intransit" or "đanggiao" or "danggiao" => (
+                "Đang giao",
+                $"{baseBtn} text-primary bg-[rgba(0,171,85,0.08)]"
+            ),
+            "completed" or "success" or "hoàntất" or "hoantat" or "delivered" or "deliverysuccess" or "dagiao" or "đãgiao" => (
+                "Hoàn tất",
+                $"{baseBtn} text-primary bg-[rgba(0,171,85,0.08)]"
+            ),
+            "returned" or "return" or "refund" or "returnrequest" or "returning" or "trahang" or "trảhàng" => (
+                "Trả hàng",
+                $"{baseBtn} text-warning-dark bg-[rgba(255,193,7,0.16)]"
+            ),
+            "rejected" or "cancelled" or "canceled" or "cancel" or "đãhủy" or "dahuy" => (
+                "Đã hủy",
+                $"{baseBtn} text-error bg-[rgba(255,86,48,0.12)]"
+            ),
+            _ => (
+                "Chờ xác nhận",
+                $"{baseBtn} text-warning-dark bg-[rgba(255,193,7,0.16)]"
+            )
+        };
+    }
+
+    bool IsPaid(string? rawPaymentStatus)
+    {
+        var s = (rawPaymentStatus ?? string.Empty).Trim();
+        var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
+        return norm is "paid" or "success" or "completed";
+    }
+
+    var orderCount = Model.Orders?.Count ?? 0;
+    var grandTotal = Model.Orders?.Sum(o => o.FinalAmount) ?? 0m;
+}
+
+<!-- ========== Breadcrumb Section Start ========== -->
+<div class="container py-12">
+    <div class="breadcrumb">
+        <ul>
+            <li>
+                <a href='@Url.Action("Index", "Home")'>
+                    <span class="inline-flex items-center justify-center">
+                        <i class="hgi hgi-stroke hgi-home-01 text-2xl leading-6"></i>
+                    </span>
+                    Trang chủ
+                </a>
+            </li>
+            <li class="text-light-disabled-text">&#8226;</li>
+            <li><span class="text-sm leading-[22px]">Đặt hàng thành công</span></li>
+        </ul>
+    </div>
+</div>
+<!-- ========== Breadcrumb Section End ========== -->
+
+<!-- ========== Order Success Section Start ========== -->
+<section class="pb-[70px]">
+    <div class="container">
+        <div class="flex items-center justify-center flex-col">
+            <div class="mb-10">
+                <img
+                    src='@Url.Content("~/assets/images/order-success-Illustration.png")'
+                    alt="order-success-image"
+                />
+            </div>
+            <h2 class="mb-4">
+                Đặt hàng thành công
+            </h2>
+            <p class="md:w-[520px] w-[96%] text-center mb-6">
+                Chúng tôi đã nhận được đơn hàng của bạn và đang xử lý.
+                @if (orderCount > 1)
+                {
+                    <span>Bạn có <span class="font-semibold text-light-primary-text">@orderCount</span> đơn trong lần thanh toán này.</span>
+                }
+            </p>
+            <div class="flex items-center justify-center flex-wrap gap-3">
+                <a class='btn btn-primary btn-large rounded-[80px] px-[19px] py-[11px]' href='@Url.Action("Index", "Home")'>Về trang chủ</a>
+                <a class='btn btn-default outline btn-large rounded-[80px] px-[19px] py-[11px] shadow-none' href="/my-orders">Theo dõi đơn hàng</a>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- ========== Order Success Section End ========== -->
+
+<!-- ========== PAYMENT Section Start ========== -->
+<div>
+    <div class="container">
+        @if (orderCount <= 0)
+        {
+            <div class="border border-gray-300 rounded-2xl p-6">
+                <h5 class="mb-2">Không tìm thấy đơn hàng</h5>
+                <p class="text-light-secondary-text">Vui lòng kiểm tra lại hoặc vào trang đơn hàng của bạn.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var o in Model.Orders)
+            {
+                var statusUi = ResolveOrderStatusUi(o.OrderStatus);
+                var paid = IsPaid(o.PaymentStatus);
+
+                <div class="grid grid-cols-12 gap-x-6 gap-y-6 mb-6">
+                    <!-- Address part -->
+                    <div class="xl:col-span-8 col-span-12">
+                        <div class="flex flex-col gap-y-6">
+                            <!-- Order Details -->
+                            <div class="border border-gray-300 rounded-2xl">
+                                <div class="py-4 px-6 bg-gray-200 rounded-t-2xl">
+                                    <h5>Chi tiết đơn hàng</h5>
+                                </div>
+                                <div class="md:px-6 px-3 py-6">
+                                    <ul class="flex flex-col gap-y-4">
+                                        <li class="flex items-center justify-between">
+                                            <p class="text-light-primary-text font-normal inline-flex items-center gap-x-4">
+                                                <span class="inline-flex items-center justify-center">
+                                                    <i class="hgi hgi-stroke hgi-delivery-box-01 text-2xl leading-6"></i>
+                                                </span>
+                                                Mã đơn hàng
+                                            </p>
+                                            <span class="font-semibold text-light-primary-text">#@(!string.IsNullOrWhiteSpace(o.OrderCode) ? o.OrderCode : o.Id.ToString())</span>
+                                        </li>
+
+                                        <li class="flex items-center justify-between">
+                                            <p class="text-light-primary-text font-normal inline-flex items-center gap-x-4">
+                                                <span class="inline-flex items-center justify-center">
+                                                    <i class="hgi hgi-stroke hgi-delivery-box-01 text-2xl leading-6"></i>
+                                                </span>
+                                                Trạng thái đơn hàng
+                                            </p>
+                                            <button class="@statusUi.buttonClass">@statusUi.label</button>
+                                        </li>
+
+                                        <li class="flex items-center justify-between">
+                                            <p class="text-light-primary-text font-normal inline-flex items-center gap-x-4">
+                                                <span class="inline-flex items-center justify-center">
+                                                    <i class="hgi hgi-stroke hgi-payment-success-01 text-2xl leading-6"></i>
+                                                </span>
+                                                Số tiền thanh toán
+                                            </p>
+                                            <p class="font-semibold text-light-primary-text">
+                                                @FormatVnd(o.FinalAmount)
+                                                <span class="text-primary ml-0.5">(@(paid ? "Đã thanh toán" : "Chưa thanh toán"))</span>
+                                            </p>
+                                        </li>
+
+                                        <li class="flex items-center justify-between">
+                                            <p class="text-light-primary-text font-normal inline-flex items-center gap-x-4">
+                                                <span class="inline-flex items-center justify-center">
+                                                    <i class="hgi hgi-stroke hgi-calendar-03 text-2xl leading-6"></i>
+                                                </span>
+                                                Ngày đặt hàng:
+                                            </p>
+                                            <span class="font-semibold text-light-primary-text">
+                                                @o.CreatedAt.ToLocalTime().ToString("HH:mm, dd/MM/yyyy")
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Shipping Address -->
+                            <div class="border border-gray-300 rounded-2xl">
+                                <div class="py-4 px-6 bg-gray-200 rounded-t-2xl">
+                                    <h5 class="text-light-primary-text">Địa chỉ giao hàng</h5>
+                                </div>
+                                <div class="md:px-6 px-3 py-6">
+                                    <ul class="flex flex-col gap-y-5">
+                                        <li class="flex items-center gap-x-3 text-light-primary-text">
+                                            <span class="inline-flex items-center justify-center">
+                                                <i class="hgi hgi-stroke hgi-user-square text-2xl leading-6"></i>
+                                            </span>
+                                            @o.RecipientName
+                                        </li>
+                                        <li class="flex items-center gap-x-3 text-light-primary-text">
+                                            <span class="inline-flex items-center justify-center">
+                                                <i class="hgi hgi-stroke hgi-call text-2xl leading-6"></i>
+                                            </span>
+                                            @o.RecipientPhone
+                                        </li>
+                                        <li class="flex items-center gap-x-3 text-light-primary-text">
+                                            <span class="inline-flex items-center justify-center">
+                                                <i class="hgi hgi-stroke hgi-location-06 text-2xl leading-6"></i>
+                                            </span>
+                                            @o.ShippingAddress
+                                        </li>
+                                        <li class="flex items-center gap-x-3 text-light-primary-text">
+                                            <span class="inline-flex items-center justify-center">
+                                                <i class="hgi hgi-stroke hgi-cargo-ship text-2xl leading-6"></i>
+                                            </span>
+                                            @(o.ShippingFee <= 0 ? "Miễn phí vận chuyển" : $"Phí vận chuyển: {FormatVnd(o.ShippingFee)}")
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cart items part -->
+                    <div class="xl:col-span-4 col-span-12">
+                        <div class="border border-gray-300 rounded-2xl md:px-6 px-3 py-6 flex flex-col gap-y-6">
+                            <h5>Sản phẩm đã mua</h5>
+
+                            <div class="border border-gray-300 rounded-xl overflow-x-auto">
+                                <table class="w-full cart-items-table">
+                                    <tbody class="space-y-6">
+                                        @foreach (var i in o.Items)
+                                        {
+                                            var variant = string.Join(", ", new[] { i.ColorName, i.SizeName }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+                                            <tr>
+                                                <td class="py-4 px-4 product-thumbnail">
+                                                    <div class="w-[60px] h-[60px] rounded-xl bg-[#FFEFF6] overflow-hidden"></div>
+                                                </td>
+                                                <td class="py-4 md:pr-4 pr-2 align-bottom w-full">
+                                                    <div class="flex flex-col gap-y-2">
+                                                        <span class="text-light-primary-text font-semibold truncate product-title">
+                                                            @i.ProductName
+                                                        </span>
+                                                        <div class="flex items-center justify-between">
+                                                            <p class="text-sm leading-[22px] font-normal text-light-secondary-text cart-item-quantity">
+                                                                @i.Quantity x @(string.IsNullOrWhiteSpace(variant) ? "Sản phẩm" : variant)
+                                                            </p>
+                                                            <div class="flex items-center gap-x-1.5">
+                                                                <span class="line-through text-light-disabled-text font-normal product-total-price hidden">@FormatVnd(i.UnitPrice)</span>
+                                                                <span class="text-primary font-semibold product-offer-price">@FormatVnd(i.LineTotal)</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- order-summary -->
+                            <div class="bg-gray-100 md:px-6 px-4 py-6 rounded-2xl">
+                                <div class="flex flex-col gap-y-6">
+                                    <h5>Tóm tắt đơn hàng</h5>
+                                    <div>
+                                        <div class="flex flex-col gap-y-4 pb-4 border-b border-gray-300">
+                                            <p class="flex items-center justify-between">
+                                                Tạm tính<span class="text-gray-900">@FormatVnd(o.SubTotal)</span>
+                                            </p>
+                                            @{
+                                                var calculatedVat = o.FinalAmount - o.SubTotal - o.ShippingFee + o.DiscountAmount;
+                                                if (calculatedVat < 0) calculatedVat = 0m;
+                                                var calculatedVatRate = o.SubTotal > 0 ? Math.Round(calculatedVat / o.SubTotal * 100) : 0;
+                                            }
+                                            <p class="flex items-center justify-between">
+                                                VAT (@(calculatedVatRate)%)<span class="text-gray-900">@FormatVnd(calculatedVat)</span>
+                                            </p>
+                                            <p class="flex items-center justify-between">
+                                                Giảm giá<span class="text-gray-900">@(o.DiscountAmount > 0 ? $"-{FormatVnd(o.DiscountAmount)}" : FormatVnd(0))</span>
+                                            </p>
+                                            <p class="flex items-center justify-between">
+                                                Vận chuyển<span class="text-gray-900">@FormatVnd(o.ShippingFee)</span>
+                                            </p>
+                                        </div>
+                                        <h6 class="flex items-center justify-between text-light-primary-text pt-4">
+                                            Tổng cộng<span class="text-gray-900">@FormatVnd(o.FinalAmount)</span>
+                                        </h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="border border-gray-300 rounded-2xl p-6 mb-6">
+                <div class="flex items-center justify-between flex-wrap gap-3">
+                    <h5 class="text-light-primary-text">Tổng thanh toán</h5>
+                    <h5 class="text-light-primary-text">@FormatVnd(grandTotal)</h5>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+<!-- ========== PAYMENT Section End ========== -->

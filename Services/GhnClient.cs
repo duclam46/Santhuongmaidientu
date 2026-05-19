@@ -11,19 +11,33 @@ public sealed class GhnClient
     private readonly HttpClient _http;
     private readonly GhnOptions _options;
 
+    // GHN docs and many samples use header name "token".
+    // HTTP header names are case-insensitive, but we keep it identical to samples.
+    private const string TokenHeaderName = "token";
+
     public GhnClient(HttpClient http, IOptions<GhnOptions> options)
     {
         _http = http;
         _options = options.Value;
     }
 
-    private string GetNormalizedTokenOrThrow()
+    private string GetNormalizedTokenOrThrow(string? tokenOverride = null)
     {
-        var token = (_options.Token ?? string.Empty).Trim();
+        // Only use override token when it is actually provided.
+        // Important: configuration often binds missing strings as "" (empty),
+        // and we must not treat an empty StationToken as overriding the main Token.
+        var effective = !string.IsNullOrWhiteSpace(tokenOverride)
+            ? tokenOverride
+            : (_options.Token ?? string.Empty);
+
+        var token = effective.Trim();
         if (token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
             token = token[7..].Trim();
         }
+
+        // Defend against copy/paste mistakes (embedded newline/space).
+        token = string.Concat(token.Where(c => !char.IsWhiteSpace(c)));
 
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -31,6 +45,121 @@ public sealed class GhnClient
         }
 
         return token;
+    }
+
+    private static bool LooksLikeJwt(string token)
+        => token.Count(c => c == '.') == 2;
+
+    private string GetEffectiveBaseUrlForStationGet()
+        => string.IsNullOrWhiteSpace(_options.StationBaseUrl) ? _options.BaseUrl : _options.StationBaseUrl;
+
+    public GhnAuthDebugInfo GetAuthDebugInfo(bool forStationGet = false)
+    {
+        var tokenOverride = forStationGet && !string.IsNullOrWhiteSpace(_options.StationToken)
+            ? _options.StationToken
+            : null;
+        var token = GetNormalizedTokenOrThrow(tokenOverride);
+        var dots = token.Count(c => c == '.');
+
+        var effectiveBaseUrl = forStationGet ? GetEffectiveBaseUrlForStationGet() : _options.BaseUrl;
+
+        string masked;
+        if (token.Length <= 8)
+        {
+            masked = new string('*', token.Length);
+        }
+        else
+        {
+            masked = token[..3] + "…" + token[^3..];
+        }
+
+        return new GhnAuthDebugInfo(
+            BaseUrl: effectiveBaseUrl,
+            ShopId: _options.ShopId,
+            TokenLength: token.Length,
+            DotCount: dots,
+            LooksLikeJwt: LooksLikeJwt(token),
+            TokenMasked: masked,
+            TokenSource: forStationGet && !string.IsNullOrWhiteSpace(_options.StationToken) ? "StationToken" : "Token");
+    }
+
+    private void ApplyAuthHeaders(
+        HttpRequestMessage req,
+        int? shopId = null,
+        string? tokenOverride = null,
+        bool forceAuthorizationHeader = false,
+        bool suppressAuthorizationHeader = false)
+    {
+        var token = GetNormalizedTokenOrThrow(tokenOverride);
+
+        req.Headers.TryAddWithoutValidation(TokenHeaderName, token);
+
+        // Some gateways/auth layers expect JWT tokens in Authorization header.
+        // We only add this when it actually looks like a JWT to avoid confusing UUID-like tokens.
+        if (!suppressAuthorizationHeader && (forceAuthorizationHeader || LooksLikeJwt(token)) && req.Headers.Authorization is null)
+        {
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        var resolvedShopId = shopId.GetValueOrDefault(_options.ShopId);
+        if (resolvedShopId > 0)
+        {
+            req.Headers.TryAddWithoutValidation("ShopId", resolvedShopId.ToString());
+        }
+    }
+
+    private static bool IsSecurityCheckFailed(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return false;
+        return body.Contains("SECURITY_CHECK_FAILED", StringComparison.OrdinalIgnoreCase)
+            || body.Contains("invalid number of segments", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsAuthorizationRequired(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return false;
+        return body.Contains("Authorization header is required", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? GetAlternativeBaseUrl(string baseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl)) return null;
+
+        // Common GHN environment hosts.
+        // dev: dev-online-gateway.ghn.vn
+        // prod: online-gateway.ghn.vn
+        if (baseUrl.Contains("dev-online-gateway.ghn.vn", StringComparison.OrdinalIgnoreCase))
+        {
+            return baseUrl.Replace("dev-online-gateway.ghn.vn", "online-gateway.ghn.vn", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (baseUrl.Contains("online-gateway.ghn.vn", StringComparison.OrdinalIgnoreCase)
+            && !baseUrl.Contains("dev-online-gateway.ghn.vn", StringComparison.OrdinalIgnoreCase))
+        {
+            return baseUrl.Replace("online-gateway.ghn.vn", "dev-online-gateway.ghn.vn", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return null;
+    }
+
+    private async Task<(HttpResponseMessage Resp, string Body)> SendJsonAsync(
+        HttpMethod method,
+        string url,
+        string jsonBody,
+        int? shopId,
+        string? tokenOverride,
+        bool forceAuthorizationHeader,
+        bool suppressAuthorizationHeader,
+        CancellationToken cancellationToken)
+    {
+        using var req = new HttpRequestMessage(method, url);
+        ApplyAuthHeaders(req, shopId, tokenOverride, forceAuthorizationHeader, suppressAuthorizationHeader);
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        req.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+        var resp = await _http.SendAsync(req, cancellationToken);
+        var body = await resp.Content.ReadAsStringAsync(cancellationToken);
+        return (resp, body);
     }
 
     public async Task<IReadOnlyList<GhnProvince>> GetProvincesAsync(CancellationToken cancellationToken)
@@ -56,10 +185,7 @@ public sealed class GhnClient
 
     public async Task<GhnFeeData> CalculateFeeAsync(GhnCalculateFeeRequest reqBody, int? shopId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.Token))
-        {
-            throw new InvalidOperationException("GHN token is missing. Configure Ghn:Token in appsettings or user-secrets.");
-        }
+        _ = GetNormalizedTokenOrThrow();
 
         var resolvedShopId = shopId.GetValueOrDefault(_options.ShopId);
         if (resolvedShopId <= 0)
@@ -69,8 +195,7 @@ public sealed class GhnClient
 
         var json = JsonSerializer.Serialize(reqBody, JsonOptions);
         using var req = new HttpRequestMessage(HttpMethod.Post, "v2/shipping-order/fee");
-        req.Headers.TryAddWithoutValidation("Token", _options.Token);
-        req.Headers.TryAddWithoutValidation("ShopId", resolvedShopId.ToString());
+        ApplyAuthHeaders(req, shopId: resolvedShopId);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -101,10 +226,7 @@ public sealed class GhnClient
 
     public async Task<GhnCreateOrderData> CreateShippingOrderAsync(GhnCreateOrderRequest reqBody, int? shopId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.Token))
-        {
-            throw new InvalidOperationException("GHN token is missing. Configure Ghn:Token in appsettings or user-secrets.");
-        }
+        _ = GetNormalizedTokenOrThrow();
 
         var resolvedShopId = shopId.GetValueOrDefault(_options.ShopId);
         if (resolvedShopId <= 0)
@@ -114,8 +236,7 @@ public sealed class GhnClient
 
         var json = JsonSerializer.Serialize(reqBody, JsonOptions);
         using var req = new HttpRequestMessage(HttpMethod.Post, "v2/shipping-order/create");
-        req.Headers.TryAddWithoutValidation("Token", _options.Token);
-        req.Headers.TryAddWithoutValidation("ShopId", resolvedShopId.ToString());
+        ApplyAuthHeaders(req, shopId: resolvedShopId);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -143,10 +264,7 @@ public sealed class GhnClient
 
     public async Task<string> GenerateA5TokenAsync(IEnumerable<string> orderCodes, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.Token))
-        {
-            throw new InvalidOperationException("GHN token is missing. Configure Ghn:Token in appsettings or user-secrets.");
-        }
+        _ = GetNormalizedTokenOrThrow();
 
         var codes = orderCodes
             .Select(x => (x ?? string.Empty).Trim())
@@ -161,7 +279,7 @@ public sealed class GhnClient
 
         var json = JsonSerializer.Serialize(new GhnA5GenTokenRequest { OrderCodes = codes }, JsonOptions);
         using var req = new HttpRequestMessage(HttpMethod.Post, "v2/a5/gen-token");
-        req.Headers.TryAddWithoutValidation("Token", _options.Token);
+        ApplyAuthHeaders(req);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -189,10 +307,8 @@ public sealed class GhnClient
 
     public async Task<IReadOnlyList<GhnPickupShift>> GetPickupShiftsAsync(CancellationToken cancellationToken)
     {
-        var token = GetNormalizedTokenOrThrow();
-
         using var req = new HttpRequestMessage(HttpMethod.Get, "v2/shift/date");
-        req.Headers.TryAddWithoutValidation("Token", token);
+        ApplyAuthHeaders(req);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
         using var resp = await _http.SendAsync(req, cancellationToken);
@@ -218,12 +334,14 @@ public sealed class GhnClient
     }
 
     /// <summary>
-    /// Get list of GHN stations (bưu cục) via docs id=96.
+    /// Get list of GHN stations (bưu cục).
     /// Endpoint: POST v2/station/get
     /// </summary>
     public async Task<IReadOnlyList<GhnStation>> GetStationsAsync(GhnStationGetRequest reqBody, CancellationToken cancellationToken)
     {
-        var token = GetNormalizedTokenOrThrow();
+        var stationToken = string.IsNullOrWhiteSpace(_options.StationToken) ? null : _options.StationToken;
+        _ = GetNormalizedTokenOrThrow(stationToken);
+        var shopId = _options.ShopId;
 
         if (reqBody is null) throw new ArgumentNullException(nameof(reqBody));
         if (reqBody.DistrictId <= 0) throw new InvalidOperationException("district_id is required.");
@@ -233,18 +351,150 @@ public sealed class GhnClient
         if (reqBody.Offset < 0) reqBody.Offset = 0;
 
         var json = JsonSerializer.Serialize(reqBody, JsonOptions);
-        using var req = new HttpRequestMessage(HttpMethod.Post, "v2/station/get");
-        req.Headers.TryAddWithoutValidation("Token", token);
-        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        using var resp = await _http.SendAsync(req, cancellationToken);
-        var body = await resp.Content.ReadAsStringAsync(cancellationToken);
+        var stationBaseUrl = GetEffectiveBaseUrlForStationGet();
+        var stationUrl = stationBaseUrl.TrimEnd('/') + "/v2/station/get";
+
+        // Some docs/samples use GET with JSON body for station/get.
+        // Some gateways treat POST differently (and may enforce different security rules), so we try GET first.
+        // Strategy:
+        // - Try without Authorization header first (some gateways treat non-JWT Bearer as invalid segments).
+        // - If GHN explicitly requires Authorization, retry with Authorization: Bearer <token>.
+        var (resp, body) = await SendJsonAsync(
+            HttpMethod.Get,
+            stationUrl,
+            json,
+            shopId: shopId > 0 ? shopId : null,
+            tokenOverride: stationToken,
+            forceAuthorizationHeader: false,
+            suppressAuthorizationHeader: true,
+            cancellationToken);
+
+        // If GET isn't supported by the gateway, fall back to POST.
+        if (!resp.IsSuccessStatusCode && (int)resp.StatusCode is 404 or 405)
+        {
+            resp.Dispose();
+            (resp, body) = await SendJsonAsync(
+                HttpMethod.Post,
+                stationUrl,
+                json,
+                shopId: shopId > 0 ? shopId : null,
+                tokenOverride: stationToken,
+                forceAuthorizationHeader: false,
+                suppressAuthorizationHeader: true,
+                cancellationToken);
+        }
+
+        if (!resp.IsSuccessStatusCode && IsAuthorizationRequired(body))
+        {
+            resp.Dispose();
+            (resp, body) = await SendJsonAsync(
+                HttpMethod.Get,
+                stationUrl,
+                json,
+                shopId: shopId > 0 ? shopId : null,
+                tokenOverride: stationToken,
+                forceAuthorizationHeader: true,
+                suppressAuthorizationHeader: false,
+                cancellationToken);
+
+            if (!resp.IsSuccessStatusCode && (int)resp.StatusCode is 404 or 405)
+            {
+                resp.Dispose();
+                (resp, body) = await SendJsonAsync(
+                    HttpMethod.Post,
+                    stationUrl,
+                    json,
+                    shopId: shopId > 0 ? shopId : null,
+                    tokenOverride: stationToken,
+                    forceAuthorizationHeader: true,
+                    suppressAuthorizationHeader: false,
+                    cancellationToken);
+            }
+        }
+
+        // If the configured BaseUrl is wrong (dev vs prod), GHN's security layer may reject the token.
+        // In that case, we automatically retry the same request against the alternative gateway.
+        if (!resp.IsSuccessStatusCode && IsSecurityCheckFailed(body))
+        {
+            var altBase = GetAlternativeBaseUrl(stationBaseUrl);
+            if (!string.IsNullOrWhiteSpace(altBase))
+            {
+                var altUrl = altBase.TrimEnd('/') + "/v2/station/get";
+
+                // Retry on alternative gateway using the same method pattern: GET first, then POST if needed.
+                var (altResp, altBody) = await SendJsonAsync(
+                    HttpMethod.Get,
+                    altUrl,
+                    json,
+                    shopId: shopId > 0 ? shopId : null,
+                    tokenOverride: stationToken,
+                    forceAuthorizationHeader: false,
+                    suppressAuthorizationHeader: true,
+                    cancellationToken);
+                if (!altResp.IsSuccessStatusCode && (int)altResp.StatusCode is 404 or 405)
+                {
+                    altResp.Dispose();
+                    (altResp, altBody) = await SendJsonAsync(
+                        HttpMethod.Post,
+                        altUrl,
+                        json,
+                        shopId: shopId > 0 ? shopId : null,
+                        tokenOverride: stationToken,
+                        forceAuthorizationHeader: false,
+                        suppressAuthorizationHeader: true,
+                        cancellationToken);
+                }
+
+                if (!altResp.IsSuccessStatusCode && IsAuthorizationRequired(altBody))
+                {
+                    altResp.Dispose();
+                    (altResp, altBody) = await SendJsonAsync(
+                        HttpMethod.Get,
+                        altUrl,
+                        json,
+                        shopId: shopId > 0 ? shopId : null,
+                        tokenOverride: stationToken,
+                        forceAuthorizationHeader: true,
+                        suppressAuthorizationHeader: false,
+                        cancellationToken);
+                    if (!altResp.IsSuccessStatusCode && (int)altResp.StatusCode is 404 or 405)
+                    {
+                        altResp.Dispose();
+                        (altResp, altBody) = await SendJsonAsync(
+                            HttpMethod.Post,
+                            altUrl,
+                            json,
+                            shopId: shopId > 0 ? shopId : null,
+                            tokenOverride: stationToken,
+                            forceAuthorizationHeader: true,
+                            suppressAuthorizationHeader: false,
+                            cancellationToken);
+                    }
+                }
+                if (altResp.IsSuccessStatusCode)
+                {
+                    resp.Dispose();
+                    resp = altResp;
+                    body = altBody;
+                }
+                else
+                {
+                    altResp.Dispose();
+                    throw new HttpRequestException(
+                        $"GHN station/get request failed ({(int)resp.StatusCode}) on '{_options.BaseUrl}': {body} " +
+                        $"| Retry on '{altBase}' failed ({(int)altResp.StatusCode}): {altBody}");
+                }
+            }
+        }
 
         if (!resp.IsSuccessStatusCode)
         {
+            resp.Dispose();
             throw new HttpRequestException($"GHN station/get request failed ({(int)resp.StatusCode}): {body}");
         }
+
+        resp.Dispose();
 
         var parsed = JsonSerializer.Deserialize<GhnListResponse<GhnStation>>(body, JsonOptions);
         if (parsed is null)
@@ -265,10 +515,7 @@ public sealed class GhnClient
 
     public async Task<IReadOnlyList<GhnAvailableService>> GetAvailableServicesAsync(int fromDistrictId, int toDistrictId, int? shopId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.Token))
-        {
-            throw new InvalidOperationException("GHN token is missing. Configure Ghn:Token in appsettings or user-secrets.");
-        }
+        _ = GetNormalizedTokenOrThrow();
 
         var resolvedShopId = shopId.GetValueOrDefault(_options.ShopId);
         if (resolvedShopId <= 0)
@@ -284,8 +531,7 @@ public sealed class GhnClient
         }, JsonOptions);
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "v2/shipping-order/available-services");
-        req.Headers.TryAddWithoutValidation("Token", _options.Token);
-        req.Headers.TryAddWithoutValidation("ShopId", resolvedShopId.ToString());
+        ApplyAuthHeaders(req, shopId: resolvedShopId);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -316,10 +562,7 @@ public sealed class GhnClient
 
     public async Task<GhnLeadTimeData> GetLeadTimeAsync(GhnLeadTimeRequest reqBody, int? shopId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.Token))
-        {
-            throw new InvalidOperationException("GHN token is missing. Configure Ghn:Token in appsettings or user-secrets.");
-        }
+        _ = GetNormalizedTokenOrThrow();
 
         var resolvedShopId = shopId.GetValueOrDefault(_options.ShopId);
         if (resolvedShopId <= 0)
@@ -329,8 +572,7 @@ public sealed class GhnClient
 
         var json = JsonSerializer.Serialize(reqBody, JsonOptions);
         using var req = new HttpRequestMessage(HttpMethod.Post, "v2/shipping-order/leadtime");
-        req.Headers.TryAddWithoutValidation("Token", _options.Token);
-        req.Headers.TryAddWithoutValidation("ShopId", resolvedShopId.ToString());
+        ApplyAuthHeaders(req, shopId: resolvedShopId);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -365,10 +607,7 @@ public sealed class GhnClient
 
     public async Task<GhnShippingOrderDetail> GetShippingOrderDetailAsync(string orderCode, int? shopId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.Token))
-        {
-            throw new InvalidOperationException("GHN token is missing. Configure Ghn:Token in appsettings or user-secrets.");
-        }
+        _ = GetNormalizedTokenOrThrow();
 
         var code = (orderCode ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(code))
@@ -381,11 +620,7 @@ public sealed class GhnClient
 
         var json = JsonSerializer.Serialize(new GhnShippingOrderDetailRequest { OrderCode = code }, JsonOptions);
         using var req = new HttpRequestMessage(HttpMethod.Post, "v2/shipping-order/detail");
-        req.Headers.TryAddWithoutValidation("Token", _options.Token);
-        if (resolvedShopId > 0)
-        {
-            req.Headers.TryAddWithoutValidation("ShopId", resolvedShopId.ToString());
-        }
+        ApplyAuthHeaders(req, shopId: resolvedShopId > 0 ? resolvedShopId : null);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -425,10 +660,7 @@ public sealed class GhnClient
     /// </summary>
     public async Task<IReadOnlyList<GhnCancelOrderResult>> CancelShippingOrdersAsync(IEnumerable<string> orderCodes, int? shopId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.Token))
-        {
-            throw new InvalidOperationException("GHN token is missing. Configure Ghn:Token in appsettings or user-secrets.");
-        }
+        _ = GetNormalizedTokenOrThrow();
 
         var resolvedShopId = shopId.GetValueOrDefault(_options.ShopId);
         if (resolvedShopId <= 0)
@@ -449,8 +681,7 @@ public sealed class GhnClient
 
         var json = JsonSerializer.Serialize(new GhnCancelOrderRequest { OrderCodes = codes }, JsonOptions);
         using var req = new HttpRequestMessage(HttpMethod.Post, "v2/switch-status/cancel");
-        req.Headers.TryAddWithoutValidation("Token", _options.Token);
-        req.Headers.TryAddWithoutValidation("ShopId", resolvedShopId.ToString());
+        ApplyAuthHeaders(req, shopId: resolvedShopId);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -478,10 +709,8 @@ public sealed class GhnClient
 
     private async Task<T> SendAsync<T>(string relativeUrl, CancellationToken cancellationToken)
     {
-        var token = GetNormalizedTokenOrThrow();
-
         using var req = new HttpRequestMessage(HttpMethod.Get, relativeUrl);
-        req.Headers.TryAddWithoutValidation("Token", token);
+        ApplyAuthHeaders(req);
         req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
         using var resp = await _http.SendAsync(req, cancellationToken);
@@ -506,6 +735,15 @@ public sealed class GhnClient
         PropertyNameCaseInsensitive = true
     };
 }
+
+public sealed record GhnAuthDebugInfo(
+    string BaseUrl,
+    int ShopId,
+    int TokenLength,
+    int DotCount,
+    bool LooksLikeJwt,
+    string TokenMasked,
+    string TokenSource);
 
 public sealed class GhnShippingOrderDetailRequest
 {

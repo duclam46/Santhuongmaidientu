@@ -19,6 +19,8 @@ public sealed class CustomerOrderDetailsVm
 
     public string PaymentStatus { get; set; } = string.Empty;
 
+    public DateTime? PaymentDeadlineUtc { get; set; }
+
     public decimal SubTotal { get; set; }
 
     public decimal ShippingFee { get; set; }
@@ -27,6 +29,14 @@ public sealed class CustomerOrderDetailsVm
 
     public decimal FinalAmount { get; set; }
 
+    public string? VoucherCode { get; set; }
+
+    public string? VoucherDiscountType { get; set; }
+
+    public decimal VoucherDiscount { get; set; }
+
+    public decimal ShippingDiscount { get; set; }
+
     public string RecipientName { get; set; } = string.Empty;
 
     public string RecipientPhone { get; set; } = string.Empty;
@@ -34,6 +44,10 @@ public sealed class CustomerOrderDetailsVm
     public string ShippingAddress { get; set; } = string.Empty;
 
     public string? TrackingCode { get; set; }
+
+    public string? ShipperName { get; set; }
+
+    public string? ShipperPhone { get; set; }
 
     public DateTime? EstimatedDeliveryAt { get; set; }
 
@@ -44,6 +58,7 @@ public sealed class CustomerOrderDetailsVm
     public List<CustomerOrderItemVm> Items { get; set; } = new();
 
     public List<CustomerOrderTrackingLogVm> TrackingLogs { get; set; } = new();
+    public bool IsReceivedByCustomer { get; set; }
 }
 
 public sealed class CustomerOrderItemVm

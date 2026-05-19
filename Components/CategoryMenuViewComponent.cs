@@ -19,13 +19,13 @@ public class CategoryMenuViewComponent : ViewComponent
         var all = await _context.Categories
             .AsNoTracking()
             .Where(x => x.IsActive)
-            .OrderBy(x => x.Name)
+            .OrderBy(x => x.SortOrder)
             .ToListAsync(cancellationToken);
 
         // 3 levels: root -> dropdown -> sub_category
         var byParent = all.ToLookup(x => x.ParentId);
         var roots = byParent[null]
-            .OrderBy(x => x.Name)
+            .OrderBy(x => x.SortOrder)
             .ToList();
 
         var menu = roots.Select(r => BuildNode(r, byParent, depth: 3)).ToList();
@@ -48,7 +48,7 @@ public class CategoryMenuViewComponent : ViewComponent
         if (children.Any())
         {
             node.Children = children
-            .OrderBy(x => x.Name)
+                .OrderBy(x => x.SortOrder)
                 .Select(c => BuildNode(c, byParent, depth - 1))
                 .ToList();
         }

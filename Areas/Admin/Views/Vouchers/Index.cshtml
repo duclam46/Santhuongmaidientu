@@ -1,0 +1,234 @@
+@using DOAN_BANHANG.ViewModels
+@model VoucherAdminListVm
+
+@{
+    ViewData["Title"] = "Quản lý Voucher";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0 font-size-18">Quản lý Voucher @(Model.IsAdmin ? "Toàn Sàn" : "Của Shop")</h4>
+
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a asp-action="Index" asp-controller="Home">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Voucher</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                
+                <form asp-action="Index" method="get" class="row mb-4 align-items-end">
+                    <div class="col-sm-4">
+                        <div class="search-box me-2 mb-2 d-inline-block w-100">
+                            <div class="position-relative">
+                                <label for="Search" class="form-label">Tìm kiếm</label>
+                                <input type="text" class="form-control" name="Search" value="@Model.Query.Search" placeholder="Nhập mã voucher...">
+                                <i class="bx bx-search-alt search-icon" style="top: 36px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="mb-2">
+                            <label for="Status" class="form-label">Trạng thái</label>
+                            <select name="Status" class="form-select">
+                                <!option value="All" @(Model.Query.Status == "All" ? "selected" : "")>Tất cả trạng thái</!option>
+                                <!option value="Active" @(Model.Query.Status == "Active" ? "selected" : "")>Đang diễn ra</!option>
+                                <!option value="Inactive" @(Model.Query.Status == "Inactive" ? "selected" : "")>Đã ẩn</!option>
+                                <!option value="Expired" @(Model.Query.Status == "Expired" ? "selected" : "")>Đã kết thúc / Hết lượt</!option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <div class="mb-2">
+                            <button type="submit" class="btn btn-primary w-100"><i class="bx bx-filter-alt"></i> Lọc</button>
+                        </div>
+                    </div>
+                    <div class="col-sm-3 text-sm-end">
+                        <div class="mb-2">
+                            <a asp-action="Create" class="btn btn-success btn-rounded waves-effect waves-light w-100"><i class="mdi mdi-plus me-1"></i> Thêm Voucher mới</a>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table align-middle table-nowrap table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã Voucher</th>
+                                <th>Loại mức giảm</th>
+                                <th>Điều kiện</th>
+                                <th>Số lượng</th>
+                                <th>Thời gian sử dụng</th>
+                                <th>Trạng thái</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Items.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <div class="mb-3">
+                                            <i class="bx bx-package display-4 text-light"></i>
+                                        </div>
+                                        Không tìm thấy voucher nào.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var item in Model.Items)
+                                {
+                                    var isFreeShip = item.DiscountType == "FreeShipping";
+                                    
+                                    var discountText = "";
+                                    if (item.DiscountType == "Percent") discountText = $"Giảm {item.DiscountValue}%";
+                                    else if (item.DiscountType == "FixedAmount") discountText = $"Giảm {item.DiscountValue:N0}đ";
+                                    else if (item.DiscountType == "FreeShipping") discountText = $"Tối đa {item.DiscountValue:N0}đ";
+
+                                    var maxDiscountText = item.MaxDiscountValue.HasValue && item.DiscountType == "Percent" 
+                                        ? $" (Tối đa {item.MaxDiscountValue:N0}đ)" : "";
+                                    
+                                    var now = DateTime.Now;
+                                    var statusClass = "";
+                                    var statusText = "";
+
+                                    if (!item.IsActive)
+                                    {
+                                        statusClass = "badge bg-secondary font-size-12";
+                                        statusText = "Đã ẩn";
+                                    }
+                                    else if (item.EndDate < now)
+                                    {
+                                        statusClass = "badge bg-danger font-size-12";
+                                        statusText = "Đã kết thúc";
+                                    }
+                                    else if (item.UsageLimit > 0 && item.UsedCount >= item.UsageLimit)
+                                    {
+                                        statusClass = "badge bg-warning font-size-12";
+                                        statusText = "Hết lượt";
+                                    }
+                                    else if (item.StartDate > now)
+                                    {
+                                        statusClass = "badge bg-info font-size-12";
+                                        statusText = "Sắp diễn ra";
+                                    }
+                                    else
+                                    {
+                                        statusClass = "badge bg-success font-size-12";
+                                        statusText = "Đang diễn ra";
+                                    }
+
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm me-3">
+                                                    <span class="avatar-title rounded-circle @(isFreeShip ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning") font-size-20">
+                                                        <i class="bx @(isFreeShip ? "bx-truck" : "bxs-discount")"></i>
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <h5 class="font-size-15 mb-1">
+                                                        <span class="text-dark fw-bold" style="letter-spacing: 0.5px;">@item.Code</span>
+                                                    </h5>
+                                                    <p class="text-muted mb-0 font-size-12">Tạo ngày: @item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold @(isFreeShip ? "text-success" : "text-warning")">
+                                                @(isFreeShip ? "Miễn phí vận chuyển" : "Mã giảm giá")
+                                            </div>
+                                            <div class="text-muted font-size-13">
+                                                @discountText @maxDiscountText
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="font-size-13">
+                                                Đơn tối thiểu <br/>
+                                                <span class="fw-semibold">@(item.MinOrderValue > 0 ? $"{item.MinOrderValue:N0}đ" : "0đ")</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="font-size-13">
+                                                Đã dùng: <span class="fw-semibold">@item.UsedCount / @(item.UsageLimit == 0 ? "∞" : item.UsageLimit.ToString())</span>
+                                            </div>
+                                            <div class="progress mt-2" style="height: 5px;">
+                                                @{
+                                                    var percent = item.UsageLimit > 0 ? (int)((double)item.UsedCount / item.UsageLimit * 100) : 0;
+                                                    if (percent > 100) percent = 100;
+                                                }
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: @percent%;" aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="font-size-13">
+                                                <i class="bx bx-calendar-event text-muted me-1"></i> @item.StartDate.ToLocalTime().ToString("dd/MM HH:mm") <br/>
+                                                <i class="bx bx-calendar-x text-muted me-1"></i> @item.EndDate.ToLocalTime().ToString("dd/MM HH:mm")
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="@statusClass">@statusText</span>
+                                        </td>
+                                        <td>
+                                            <ul class="list-inline font-size-20 contact-links mb-0">
+                                                <li class="list-inline-item px-1">
+                                                    <a asp-action="Edit" asp-route-id="@item.Id" class="text-primary" title="Chỉnh sửa" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bx bx-edit-alt"></i></a>
+                                                </li>
+                                                <li class="list-inline-item px-1">
+                                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa/ngưng kích hoạt voucher này?');">
+                                                        <button type="submit" class="btn btn-link text-danger p-0" title="Xóa/Ẩn" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bx bx-trash-alt"></i></button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (Model.TotalItems > Model.Query.PageSize)
+                {
+                    <div class="row mt-4">
+                        <div class="col-sm-6">
+                            <div>
+                                <p class="mb-sm-0">Hiển thị @((Model.Query.Page - 1) * Model.Query.PageSize + 1) đến @(Math.Min(Model.Query.Page * Model.Query.PageSize, Model.TotalItems)) của @Model.TotalItems mục</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="float-sm-end">
+                                <ul class="pagination pagination-rounded mb-sm-0">
+                                    @{
+                                        var totalPages = (int)Math.Ceiling((double)Model.TotalItems / Model.Query.PageSize);
+                                    }
+                                    <li class="page-item @(Model.Query.Page <= 1 ? "disabled" : "")">
+                                        <a href="?Page=@(Model.Query.Page - 1)&Search=@Model.Query.Search&Status=@Model.Query.Status" class="page-link"><i class="mdi mdi-chevron-left"></i></a>
+                                    </li>
+                                    @for (var i = 1; i <= totalPages; i++)
+                                    {
+                                        <li class="page-item @(i == Model.Query.Page ? "active" : "")">
+                                            <a href="?Page=@i&Search=@Model.Query.Search&Status=@Model.Query.Status" class="page-link">@i</a>
+                                        </li>
+                                    }
+                                    <li class="page-item @(Model.Query.Page >= totalPages ? "disabled" : "")">
+                                        <a href="?Page=@(Model.Query.Page + 1)&Search=@Model.Query.Search&Status=@Model.Query.Status" class="page-link"><i class="mdi mdi-chevron-right"></i></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

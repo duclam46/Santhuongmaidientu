@@ -129,6 +129,14 @@ public class AuthController : Controller
         HttpContext.Session.Remove(SessionCartKey);
     }
 
+    [HttpGet("login")]
+    public IActionResult Login(string? returnUrl)
+    {
+        // Redirect to Home with authPopup=login to trigger the login modal/sidebar
+        // We include returnUrl so that after login, the user can be redirected back.
+        return RedirectToAction("Index", "Home", new { returnUrl = GetSafeReturnUrl(returnUrl), authPopup = "login" });
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req, CancellationToken cancellationToken)
     {
@@ -233,11 +241,11 @@ public class AuthController : Controller
         return Ok(new { ok = true });
     }
 
-    [HttpPost("logout")]
+    [HttpGet("logout")]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return Ok(new { ok = true });
+        return Redirect("/");
     }
 
     [HttpGet("external-login")]
@@ -364,5 +372,10 @@ public class AuthController : Controller
         await SignInAccountAsync(account);
         await MergeSessionCartToDbAsync(account.Id, cancellationToken);
         return LocalRedirect(returnUrl);
+    }
+    [HttpGet("access-denied")]
+    public IActionResult AccessDenied()
+    {
+        return View();
     }
 }

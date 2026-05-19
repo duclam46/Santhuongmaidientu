@@ -1,0 +1,253 @@
+@inject DOAN_BANHANG.Models.DataContext _context
+@using Microsoft.EntityFrameworkCore
+@{
+    ViewData["Title"] = "Máy tính lợi nhuận";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    var settings = await _context.SystemSettings.ToDictionaryAsync(s => s.Id, s => s.Value);
+    decimal GetSettingPercent(string id, decimal defaultValue)
+    {
+        if (settings.TryGetValue(id, out var valStr) && decimal.TryParse(valStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var val))
+        {
+            return val;
+        }
+        return defaultValue;
+    }
+
+    var vatRateVal = GetSettingPercent("Tax_VAT_Default", 8m);
+    var sellerTaxRateVal = GetSettingPercent("Tax_Seller_Rate", 1.5m);
+    var sellerThresholdVal = GetSettingPercent("Tax_Seller_Threshold", 500000000m);
+    var commFashionRateVal = GetSettingPercent("Fee_Commission_Fashion", 12m);
+    var commCosmeticsRateVal = GetSettingPercent("Fee_Commission_Cosmetics", 10m);
+    var marketingRateVal = GetSettingPercent("Fee_Marketing", 6m);
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0 font-size-18">Máy tính Lợi nhuận & Thuế (2026)</h4>
+
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a href="javascript: void(0);">Công cụ</a></li>
+                    <li class="breadcrumb-item active">Máy tính Lợi nhuận</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card border border-primary">
+            <div class="card-header bg-transparent border-primary">
+                <h5 class="my-0 text-primary"><i class="bx bx-calculator me-2"></i>Nhập thông số sản phẩm</h5>
+            </div>
+            <div class="card-body">
+                <form id="calculator-form">
+                    <div class="mb-3">
+                        <label for="cogs" class="form-label">Giá nhập kho (VNĐ)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="cogs" value="200000" min="0" required>
+                            <span class="input-group-text">₫</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sellingPrice" class="form-label">Giá bán mong muốn (VNĐ)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="sellingPrice" value="500000" min="0" required>
+                            <span class="input-group-text">₫</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Ngành hàng</label>
+                        <select class="form-select" id="category">
+                            <option value="fashion" selected>Thời trang (Commission @(commFashionRateVal)%)</option>
+                            <option value="cosmetics">Mỹ phẩm (Commission @(commCosmeticsRateVal)%)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sellerType" class="form-label">Loại hình kinh doanh</label>
+                        <select class="form-select" id="sellerType">
+                            <option value="individual_under">Cá nhân (Doanh thu ≤ @(string.Format("{0:N0}", sellerThresholdVal / 1000000))tr) - Thuế 0%</option>
+                            <option value="individual_over" selected>Cá nhân (Doanh thu > @(string.Format("{0:N0}", sellerThresholdVal / 1000000))tr) - Thuế @(sellerTaxRateVal)%</option>
+                            <option value="enterprise">Doanh nghiệp (Mall) - Thuế 20% trên lợi nhuận</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="hasVoucher" checked>
+                        <label class="form-check-label" for="hasVoucher">Áp dụng FreeShip/Voucher Xtra (Phí @(marketingRateVal)%)</label>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Báo cáo Phân tích Lợi nhuận</h4>
+
+                <div class="table-responsive">
+                    <table class="table table-nowrap align-middle mb-0">
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-money text-success me-2"></i> Doanh thu (Giá bán)</h5>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold fs-5 text-success" id="lbl-revenue">500,000 ₫</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-receipt text-info me-2"></i> Thuế VAT (@(vatRateVal)% Khách trả thêm)</h5>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-info" id="lbl-vat">+ 40,000 ₫</span>
+                                </td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td>
+                                    <h5 class="text-truncate font-size-14 m-0 fw-bold">Tổng tiền khách thanh toán</h5>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold" id="lbl-total-customer">540,000 ₫</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="pt-4">
+                                    <h5 class="text-truncate font-size-14 m-0 text-muted">CHI PHÍ & CHIẾT KHẤU:</h5>
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-package text-warning me-2"></i> Giá vốn hàng bán</h5>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-muted" id="lbl-cogs">- 200,000 ₫</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-store text-danger me-2"></i> Chiết khấu Sàn (Commission)</h5>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-danger" id="lbl-commission">- 60,000 ₫</span>
+                                </td>
+                            </tr>
+                            <tr id="row-marketing" class="bg-light">
+                                <td>
+                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-gift text-danger me-2"></i> Phí Marketing (@(marketingRateVal)%)</h5>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-danger" id="lbl-marketing">- 30,000 ₫</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-building-house text-danger me-2"></i> Thuế Thu nhập / Doanh nghiệp</h5>
+                                    <small class="text-muted" id="lbl-tax-desc">Cá nhân > @(string.Format("{0:N0}", sellerThresholdVal / 1000000))tr (@(sellerTaxRateVal)% doanh thu)</small>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-danger" id="lbl-seller-tax">- 7,500 ₫</span>
+                                </td>
+                            </tr>
+                            <tr class="bg-primary bg-soft">
+                                <td>
+                                    <h5 class="font-size-16 m-0 text-primary">Lợi nhuận ròng (Net Profit)</h5>
+                                </td>
+                                <td class="text-end">
+                                    <span class="fw-bold fs-4 text-primary" id="lbl-profit">202,500 ₫</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-sm-6">
+                        <div class="alert alert-info">
+                            <strong>Biên lợi nhuận: </strong> <span id="lbl-margin">27.5%</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const formatter = new Intl.NumberFormat('vi-VN');
+
+            function calculate() {
+                const cogs = parseFloat($('#cogs').val()) || 0;
+                const sellingPrice = parseFloat($('#sellingPrice').val()) || 0;
+                const category = $('#category').val();
+                const sellerType = $('#sellerType').val();
+                const hasVoucher = $('#hasVoucher').is(':checked');
+
+                const vatRate = @(vatRateVal / 100m);
+                const commFashionRate = @(commFashionRateVal / 100m);
+                const commCosmeticsRate = @(commCosmeticsRateVal / 100m);
+                const marketingRateVal = @(marketingRateVal / 100m);
+                const sellerTaxRate = @(sellerTaxRateVal / 100m);
+
+                const commRate = category === 'fashion' ? commFashionRate : commCosmeticsRate;
+                const marketingRate = hasVoucher ? marketingRateVal : 0;
+
+                const vatAmount = sellingPrice * vatRate;
+                const totalCustomer = sellingPrice + vatAmount;
+                const commission = sellingPrice * commRate;
+                const marketingFee = sellingPrice * marketingRate;
+
+                let sellerTax = 0;
+                let profitBeforeEnterpriseTax = sellingPrice - cogs - commission - marketingFee;
+
+                $('#lbl-tax-desc').text('');
+                
+                if (sellerType === 'individual_under') {
+                    sellerTax = 0;
+                    $('#lbl-tax-desc').text('Miễn thuế (Doanh thu ≤ ' + '@(string.Format("{0:N0}", sellerThresholdVal / 1000000))' + 'tr)');
+                } else if (sellerType === 'individual_over') {
+                    sellerTax = sellingPrice * sellerTaxRate; // dynamic tax rate
+                    $('#lbl-tax-desc').text('Cá nhân > ' + '@(string.Format("{0:N0}", sellerThresholdVal / 1000000))' + 'tr (' + '@(sellerTaxRateVal)' + '% doanh thu)');
+                } else if (sellerType === 'enterprise') {
+                    // Enterprise tax is 20% on profit
+                    if (profitBeforeEnterpriseTax > 0) {
+                        sellerTax = profitBeforeEnterpriseTax * 0.20;
+                    }
+                    $('#lbl-tax-desc').text('Thuế TNDN (20% Lợi nhuận)');
+                }
+
+                const netProfit = profitBeforeEnterpriseTax - sellerTax;
+                const margin = sellingPrice > 0 ? (netProfit / sellingPrice) * 100 : 0;
+
+                // Update UI
+                $('#lbl-revenue').text(formatter.format(sellingPrice) + ' ₫');
+                $('#lbl-vat').text('+ ' + formatter.format(vatAmount) + ' ₫');
+                $('#lbl-total-customer').text(formatter.format(totalCustomer) + ' ₫');
+                $('#lbl-cogs').text('- ' + formatter.format(cogs) + ' ₫');
+                $('#lbl-commission').text('- ' + formatter.format(commission) + ' ₫');
+                
+                if (marketingFee > 0) {
+                    $('#row-marketing').show();
+                    $('#lbl-marketing').text('- ' + formatter.format(marketingFee) + ' ₫');
+                } else {
+                    $('#row-marketing').hide();
+                }
+
+                $('#lbl-seller-tax').text('- ' + formatter.format(sellerTax) + ' ₫');
+                $('#lbl-profit').text(formatter.format(netProfit) + ' ₫');
+                $('#lbl-margin').text(margin.toFixed(2) + '%');
+            }
+
+            $('#calculator-form input, #calculator-form select').on('input change', calculate);
+            calculate(); // init
+        });
+    </script>
+}

@@ -1,0 +1,454 @@
+@model DOAN_BANHANG.Models.SystemNotification
+@{
+    ViewData["Title"] = "Soạn thông báo hệ thống";
+    var accounts = ViewBag.Accounts as List<DOAN_BANHANG.Models.Account>;
+}
+
+<style>
+    :root {
+        --primary: #088178;
+        --primary-soft: #f0fdfa;
+        --secondary: #6366f1;
+        --bg-body: #f8fafc;
+        --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    body {
+        background-color: var(--bg-body);
+    }
+
+    .main-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    /* Header Styling */
+    .view-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2.5rem;
+    }
+
+    .back-btn {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        background: white;
+        color: #64748b;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none !important;
+    }
+
+    .back-btn:hover {
+        transform: translateX(-5px);
+        background: var(--primary);
+        color: white;
+    }
+
+    /* Layout Split */
+    .composer-grid {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    @@media (max-width: 1024px) {
+        .composer-grid { grid-template-columns: 1fr; }
+        .preview-pane { position: static !important; }
+    }
+
+    /* Card Styling */
+    .glass-card {
+        background: white;
+        border-radius: 24px;
+        border: 1px solid rgba(255,255,255,0.7);
+        box-shadow: var(--card-shadow);
+        padding: 2.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-label span {
+        height: 2px;
+        flex: 1;
+        background: linear-gradient(to right, var(--primary-soft), transparent);
+    }
+
+    /* Input Styling */
+    .form-group-modern {
+        margin-bottom: 1.5rem;
+    }
+
+    .input-label {
+        display: block;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .modern-input {
+        width: 100%;
+        padding: 1rem 1.25rem;
+        border-radius: 16px;
+        border: 2px solid #e2e8f0;
+        background: #f8fafc;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+
+    .modern-input:focus {
+        background: white;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(8, 129, 120, 0.1);
+        outline: none;
+    }
+
+    /* Target Selection Grid */
+    .target-options {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .target-option {
+        cursor: pointer;
+    }
+
+    .target-option input { display: none; }
+
+    .target-box {
+        padding: 1.25rem;
+        border: 2px solid #f1f5f9;
+        border-radius: 20px;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #fcfdfe;
+        height: 100%;
+    }
+
+    .target-box i {
+        font-size: 1.5rem;
+        color: #94a3b8;
+        margin-bottom: 0.75rem;
+        display: block;
+    }
+
+    .target-box p {
+        margin: 0;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .target-option input:checked + .target-box {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(8, 129, 120, 0.1);
+    }
+
+    .target-option input:checked + .target-box i { color: var(--primary); }
+    .target-option input:checked + .target-box p { color: var(--primary); }
+
+    /* Preview Pane */
+    .preview-pane {
+        position: sticky;
+        top: 2rem;
+    }
+
+    .phone-mockup {
+        background: #1e293b;
+        border-radius: 36px;
+        padding: 12px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        border: 4px solid #334155;
+    }
+
+    .phone-screen {
+        background: #f1f5f9;
+        border-radius: 24px;
+        height: 500px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .phone-header {
+        height: 40px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #94a3b8;
+    }
+
+    .preview-content {
+        padding: 1rem;
+    }
+
+    .notif-bubble {
+        background: white;
+        border-radius: 18px;
+        padding: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        display: flex;
+        gap: 0.75rem;
+        animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .notif-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--primary);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-title { font-weight: 800; font-size: 0.85rem; color: #1e293b; margin-bottom: 2px; }
+    .notif-text { font-size: 0.75rem; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .notif-time { font-size: 0.65rem; color: #94a3b8; margin-top: 6px; }
+
+    /* Animations */
+    @@keyframes bounceIn {
+        from { opacity: 0; transform: scale(0.8) translateY(20px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .btn-submit {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 1.25rem 2rem;
+        border-radius: 18px;
+        font-weight: 800;
+        width: 100%;
+        margin-top: 2rem;
+        transition: all 0.3s;
+        box-shadow: 0 10px 15px -3px rgba(8, 129, 120, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 25px -5px rgba(8, 129, 120, 0.4);
+        filter: brightness(1.1);
+    }
+
+    /* Custom Selection Styling */
+    .detail-selection {
+        background: #f8fafc;
+        border-radius: 20px;
+        padding: 1.5rem;
+        border: 2px dashed #e2e8f0;
+        margin-top: 1rem;
+    }
+</style>
+
+<div class="main-wrapper">
+    <div class="view-header">
+        <div class="d-flex align-items-center gap-3">
+            <a href="@Url.Action("Index")" class="back-btn">
+                <i class="hgi hgi-stroke hgi-arrow-left-01"></i>
+            </a>
+            <div>
+                <h1 class="h3 font-extrabold m-0 text-slate-900">Thiết kế thông báo</h1>
+                <p class="text-slate-500 m-0 fw-medium">Tạo nội dung và lựa chọn đối tượng mục tiêu</p>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="Create" method="post">
+        <div class="composer-grid">
+            <!-- Left: Form -->
+            <div class="glass-card">
+                <div class="section-label">
+                    <i class="hgi hgi-stroke hgi-edit-02"></i>
+                    BƯỚC 1: NỘI DUNG THÔNG BÁO
+                    <span></span>
+                </div>
+
+                <div class="form-group-modern">
+                    <label class="input-label">Tiêu đề ngắn gọn</label>
+                    <input asp-for="Title" id="inputTitle" class="modern-input" required placeholder="Ví dụ: Ưu đãi đặc biệt hôm nay" autocomplete="off" />
+                </div>
+
+                <div class="form-group-modern">
+                    <label class="input-label">Nội dung chi tiết</label>
+                    <textarea asp-for="Content" id="inputContent" rows="6" class="modern-input" required placeholder="Viết nội dung thông báo tại đây..."></textarea>
+                </div>
+
+                <div class="section-label mt-5">
+                    <i class="hgi hgi-stroke hgi-user-group"></i>
+                    BƯỚC 2: ĐỐI TƯỢNG MỤC TIÊU
+                    <span></span>
+                </div>
+
+                <div class="target-options">
+                    <label class="target-option">
+                        <input type="radio" asp-for="TargetType" value="All" id="targetAll" checked>
+                        <div class="target-box">
+                            <i class="hgi hgi-stroke hgi-global"></i>
+                            <p>Tất cả</p>
+                        </div>
+                    </label>
+
+                    <label class="target-option">
+                        <input type="radio" asp-for="TargetType" value="Role" id="targetRole">
+                        <div class="target-box">
+                            <i class="hgi hgi-stroke hgi-user-settings-01"></i>
+                            <p>Theo nhóm</p>
+                        </div>
+                    </label>
+
+                    <label class="target-option">
+                        <input type="radio" asp-for="TargetType" value="Account" id="targetAccount">
+                        <div class="target-box">
+                            <i class="hgi hgi-stroke hgi-user"></i>
+                            <p>Cá nhân</p>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="roleSelectBox" class="detail-selection" style="display: none;">
+                    <label class="input-label">Lựa chọn nhóm quyền</label>
+                    <select asp-for="TargetRole" class="modern-input">
+                        <option value="Customer">👨‍💼 Tất cả Khách hàng</option>
+                        <option value="Shop">🏪 Tất cả Chủ Shop</option>
+                    </select>
+                </div>
+
+                <div id="accountSelectBox" class="detail-selection" style="display: none;">
+                    <label class="input-label">Tìm tài khoản nhận tin</label>
+                    <select asp-for="TargetAccountId" class="modern-input">
+                        <option value="">-- Chọn người nhận --</option>
+                        @if (accounts != null)
+                        {
+                            foreach (var acc in accounts)
+                            {
+                                var name = acc.Profile?.FullName ?? acc.Profile?.ShopName ?? acc.Email;
+                                <option value="@acc.Id">@name - @acc.Email</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="hgi hgi-solid hgi-sent"></i>
+                    GỬI THÔNG BÁO NGAY
+                </button>
+            </div>
+
+            <!-- Right: Preview -->
+            <div class="preview-pane">
+                <div class="section-label justify-content-center">
+                    <i class="hgi hgi-stroke hgi-view"></i>
+                    XEM TRƯỚC GIAO DIỆN
+                </div>
+                
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header">
+                            11:41 AM
+                        </div>
+                        <div class="preview-content">
+                            <div class="notif-bubble">
+                                <div class="notif-icon">
+                                    <i class="hgi hgi-stroke hgi-notification-01"></i>
+                                </div>
+                                <div class="notif-body">
+                                    <div class="notif-title" id="previewTitle">Tiêu đề thông báo</div>
+                                    <div class="notif-text" id="previewContent">Nội dung thông báo sẽ xuất hiện tại đây khi bạn nhập vào ô bên trái...</div>
+                                    <div class="notif-time">Bây giờ • Hệ thống</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-4 rounded-3xl bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium d-flex gap-3">
+                    <i class="hgi hgi-stroke hgi-information-circle text-lg flex-shrink-0"></i>
+                    <span>Thông báo sẽ được gửi qua SignalR tới người dùng đang trực tuyến và lưu vào hộp thư của họ.</span>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const radioAll = document.getElementById("targetAll");
+            const radioRole = document.getElementById("targetRole");
+            const radioAccount = document.getElementById("targetAccount");
+            
+            const roleSelectBox = document.getElementById("roleSelectBox");
+            const accountSelectBox = document.getElementById("accountSelectBox");
+            
+            const inputTitle = document.getElementById("inputTitle");
+            const inputContent = document.getElementById("inputContent");
+            const previewTitle = document.getElementById("previewTitle");
+            const previewContent = document.getElementById("previewContent");
+
+            // Live Preview Logic
+            inputTitle.addEventListener("input", function() {
+                previewTitle.innerText = this.value || "Tiêu đề thông báo";
+            });
+
+            inputContent.addEventListener("input", function() {
+                previewContent.innerText = this.value || "Nội dung thông báo sẽ xuất hiện tại đây khi bạn nhập vào ô bên trái...";
+            });
+
+            function toggleBoxes() {
+                // Clear animations and reset visibility
+                [roleSelectBox, accountSelectBox].forEach(el => {
+                    el.style.display = "none";
+                    el.classList.remove("animate-fade-in");
+                });
+
+                if(radioRole.checked) {
+                    roleSelectBox.style.display = "block";
+                    roleSelectBox.classList.add("animate-fade-in");
+                } else if(radioAccount.checked) {
+                    accountSelectBox.style.display = "block";
+                    accountSelectBox.classList.add("animate-fade-in");
+                }
+            }
+
+            radioAll.addEventListener("change", toggleBoxes);
+            radioRole.addEventListener("change", toggleBoxes);
+            radioAccount.addEventListener("change", toggleBoxes);
+            
+            toggleBoxes();
+        });
+    </script>
+}

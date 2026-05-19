@@ -1,0 +1,382 @@
+@model IEnumerable<DOAN_BANHANG.Models.Category>
+
+@{
+    ViewData["Title"] = "Cấu trúc Danh mục";
+    var rootCategories = Model.Where(c => c.ParentId == null).OrderBy(c => c.SortOrder).ToList();
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    :root {
+        --tree-line-color: #cbd5e0;
+        --lvl0-bg: #ffffff;
+        --lvl1-bg: #f8fafc;
+        --lvl2-bg: #f1f5f9;
+    }
+
+    .cat-tree-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    /* Level 0 - Root Cards */
+    .root-node {
+        margin-bottom: 1.5rem;
+        background: var(--lvl0-bg);
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        border: 1px solid #edf2f7;
+        overflow: hidden;
+    }
+
+    .node-header {
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background 0.2s;
+    }
+
+    .node-header:hover {
+        background: #fcfdfe;
+    }
+
+    .node-main {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+    }
+
+    .collapse-trigger {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #718096;
+        transition: transform 0.2s;
+    }
+
+    .collapsed .collapse-trigger {
+        transform: rotate(-90deg);
+    }
+
+    .node-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: #fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .node-info h6 {
+        margin: 0;
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 1.05rem;
+    }
+
+    .node-info .slug {
+        font-size: 0.75rem;
+        color: #a0aec0;
+        font-family: monospace;
+    }
+
+    /* Sub-nodes / Children */
+    .child-container {
+        padding-left: 1.5rem;
+        border-left: 2px solid #edf2f7;
+        margin-left: 2.75rem;
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .sub-node {
+        position: relative;
+        padding: 0.75rem 1.25rem;
+        background: #fff;
+        border: 1px solid #f1f5f9;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .sub-node::before {
+        content: '';
+        position: absolute;
+        left: -1.5rem;
+        top: 50%;
+        width: 1.5rem;
+        border-top: 2px solid #edf2f7;
+    }
+
+    .lvl-badge {
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Action Buttons */
+    .action-btns {
+        display: flex;
+        gap: 0.5rem;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+
+    .node-header:hover .action-btns, .sub-node:hover .action-btns {
+        opacity: 1;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        transition: all 0.2s;
+        background: #f8fafc;
+        color: #64748b;
+    }
+
+    .btn-icon:hover { background: #556ee6; color: #fff; }
+    .btn-del-icon:hover { background: #f46a6a; color: #fff; }
+
+    /* Drag and Drop */
+    .drag-handle {
+        cursor: grab;
+        color: #cbd5e0;
+        padding: 5px;
+        display: none;
+    }
+
+    .sorting-active .drag-handle {
+        display: block;
+    }
+
+    .sorting-active .node-header, .sorting-active .sub-node {
+        border: 1px dashed #556ee6;
+    }
+
+    .sortable-ghost {
+        opacity: 0.3;
+        background: #ebf4ff !important;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between bg-white p-4 rounded-4 shadow-sm border">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="bx bx-category-alt text-primary me-2"></i>Cấu trúc Ngành hàng</h4>
+                <p class="text-muted mb-0">Quản lý sơ đồ danh mục sản phẩm của cửa hàng</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button id="toggleSortBtn" class="btn btn-soft-primary btn-rounded">
+                    <i class="bx bx-sort me-1"></i> Thay đổi thứ tự
+                </button>
+                <button id="saveOrderBtn" class="btn btn-success btn-rounded" style="display:none;">
+                    <i class="bx bx-save me-1"></i> Lưu cấu trúc mới
+                </button>
+                <a asp-action="Create" class="btn btn-primary btn-rounded px-4">
+                    <i class="bx bx-plus me-1"></i> Thêm danh mục
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cat-tree-container sorting-inactive" id="masterContainer">
+    @{
+        foreach (var cat in rootCategories)
+        {
+            await RenderCategoryRecursive(cat, 0);
+        }
+    }
+</div>
+
+@functions {
+    async Task RenderCategoryRecursive(DOAN_BANHANG.Models.Category category, int level)
+    {
+        string[] gradients = {
+            "linear-gradient(135deg, #556ee6 0%, #3b4cb8 100%)",
+            "linear-gradient(135deg, #34c38f 0%, #2ca579 100%)",
+            "linear-gradient(135deg, #f1b44c 0%, #e1a336 100%)",
+            "linear-gradient(135deg, #f46a6a 0%, #e85252 100%)",
+            "linear-gradient(135deg, #50a5f1 0%, #398cdb 100%)"
+        };
+        
+        string[] icons = { "bx-folder", "bx-category", "bx-layer", "bx-purchase-tag", "bx-bookmark" };
+        int colorIdx = level % gradients.Length;
+        var children = Model.Where(c => c.ParentId == category.Id).OrderBy(c => c.SortOrder).ToList();
+        bool isRoot = level == 0;
+
+        <div class="@(isRoot ? "root-node" : "node-item") @(children.Any() ? "collapsed" : "")" data-id="@category.Id">
+            <div class="@(isRoot ? "node-header" : "sub-node")">
+                <div class="node-main">
+                    <div class="drag-handle">
+                        <i class="bx bx-grid-vertical fs-4"></i>
+                    </div>
+                    
+                    @if (children.Any())
+                    {
+                        <div class="collapse-trigger" onclick="toggleCollapse(this, '@category.Id')">
+                            <i class="bx bx-chevron-down fs-4"></i>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="width: 24px;"></div>
+                    }
+
+                    <div class="node-icon" style="background: @gradients[colorIdx]; width: @(isRoot ? "42px" : "32px"); height: @(isRoot ? "42px" : "32px"); font-size: @(isRoot ? "1.25rem" : "0.9rem");">
+                        <i class="bx @icons[colorIdx]"></i>
+                    </div>
+                    
+                    <div class="node-info">
+                        <div class="d-flex align-items-center gap-2">
+                            <h6>@category.Name</h6>
+                            <span class="lvl-badge @(category.IsActive ? "bg-soft-success text-success" : "bg-soft-danger text-danger")">
+                                L@(level+1) @(category.IsActive ? "" : "• ẨN")
+                            </span>
+                        </div>
+                        <span class="slug">/@category.Slug</span>
+                    </div>
+                </div>
+
+                <div class="action-btns">
+                    @if (isRoot) {
+                        <span class="badge bg-light text-muted border me-2 align-self-center">@children.Count con</span>
+                    }
+                    <a asp-action="Edit" asp-route-id="@category.Id" class="btn-icon" title="Chỉnh sửa">
+                        <i class="bx bx-edit-alt"></i>
+                    </a>
+                    <form asp-action="Delete" asp-route-id="@category.Id" method="post" class="d-inline" onsubmit="return confirm('Xác nhận xóa danh mục này?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-icon btn-del-icon" title="Xóa">
+                            <i class="bx bx-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            @if (children.Any())
+            {
+                <div class="child-container" id="container-@category.Id" style="display: none;">
+                    @{
+                        foreach (var child in children)
+                        {
+                            await RenderCategoryRecursive(child, level + 1);
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script>
+        function toggleCollapse(btn, id) {
+            const container = document.getElementById('container-' + id);
+            const node = btn.closest('.root-node, .node-item');
+            if (container) {
+                if (container.style.display === 'none') {
+                    $(container).slideDown(200);
+                    node.classList.remove('collapsed');
+                } else {
+                    $(container).slideUp(200);
+                    node.classList.add('collapsed');
+                }
+            }
+        }
+
+        $(document).ready(function() {
+            let isSorting = false;
+            let sortables = [];
+
+            function initSortables() {
+                const config = {
+                    animation: 150,
+                    handle: '.drag-handle',
+                    ghostClass: 'sortable-ghost',
+                    group: 'nested',
+                    onEnd: () => $('#saveOrderBtn').fadeIn()
+                };
+
+                const masterContainer = document.getElementById('masterContainer');
+                if (masterContainer) {
+                    sortables.push(new Sortable(masterContainer, config));
+                }
+                
+                $('.child-container').each(function() {
+                    sortables.push(new Sortable(this, config));
+                });
+            }
+
+            initSortables();
+
+            $('#toggleSortBtn').click(function() {
+                isSorting = !isSorting;
+                if (isSorting) {
+                    $(this).html('<i class="bx bx-x me-1"></i> Hủy sắp xếp').addClass('btn-danger').removeClass('btn-soft-primary');
+                    $('#masterContainer').removeClass('sorting-inactive').addClass('sorting-active');
+                    $('.child-container').slideDown(); 
+                    $('.root-node, .node-item').removeClass('collapsed');
+                } else {
+                    $(this).html('<i class="bx bx-sort me-1"></i> Thay đổi thứ tự').addClass('btn-soft-primary').removeClass('btn-danger');
+                    $('#masterContainer').addClass('sorting-inactive').removeClass('sorting-active');
+                    $('#saveOrderBtn').fadeOut();
+                }
+            });
+
+            $('#saveOrderBtn').click(function() {
+                const btn = $(this);
+                btn.html('<i class="bx bx-loader bx-spin me-1"></i> Đang lưu...').prop('disabled', true);
+
+                let allIds = [];
+                function collectIds(container) {
+                    $(container).children('.root-node, .node-item').each(function() {
+                        allIds.push($(this).data('id'));
+                        const sub = $(this).find('> .child-container');
+                        if (sub.length) collectIds(sub);
+                    });
+                }
+                collectIds('#masterContainer');
+
+                $.ajax({
+                    url: '@Url.Action("UpdateOrder", "Categories", new { area = "Admin" })',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    data: JSON.stringify(allIds),
+                    success: function() {
+                        Swal.fire({ icon: 'success', title: 'Thành công', text: 'Cấu trúc đã được lưu!', timer: 1000, showConfirmButton: false })
+                            .then(() => location.reload());
+                    },
+                    error: () => {
+                        Swal.fire('Lỗi', 'Không thể lưu!', 'error');
+                        btn.html('<i class="bx bx-save me-1"></i> Lưu cấu trúc mới').prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+}

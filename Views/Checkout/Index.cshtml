@@ -81,217 +81,673 @@
       <input type="hidden" name="AddressId" value="0" />
       }
 
+      <input type="hidden" name="ShippingVoucherCode" value="@Model.AppliedShippingVoucherCode" />
+      <input type="hidden" name="DiscountVoucherCode" value="@Model.AppliedDiscountVoucherCode" />
+
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="flex flex-col gap-y-6 lg:col-span-1">
+        <!-- ========== CỘT TRÁI (1/3): Địa chỉ, Thanh toán, Voucher ========== -->
+        <div class="lg:col-span-1 flex flex-col gap-y-6">
+
+          <!-- Địa chỉ giao hàng -->
           <div class="p-6 border border-gray-300 rounded-2xl">
             <div class="flex items-center justify-between gap-x-4">
               <h5>Địa chỉ giao hàng</h5>
-            <a class="text-primary font-semibold" href="/my-account?tab=address">Thay đổi</a>
+              <a class="text-primary font-semibold text-sm" href="/my-account?tab=address">Thay đổi</a>
             </div>
 
-          @if (!hasAddresses)
+            @if (!hasAddresses)
             {
               <p class="mt-3 text-light-secondary-text">Bạn chưa có địa chỉ giao hàng mặc định.</p>
             }
             else
             {
-            <div class="mt-4">
-              <label class="block text-sm font-semibold text-light-primary-text mb-2">Chọn địa chỉ</label>
-
-              <div class="flex flex-col gap-3">
-                @foreach (var a in Model.Addresses!)
-                {
-                  var isSelected = a.Id == Model.SelectedAddressId;
-                  var cardClass = isSelected
-                    ? "border-primary bg-primary/8"
-                    : "border-gray-300";
-
-                  <label class="p-4 border rounded-2xl cursor-pointer flex items-start gap-3 @cardClass">
-                    <input
-                      type="radio"
-                      name="AddressId"
-                      value="@a.Id"
-                      checked="@(isSelected ? "checked" : null)"
-                      class="mt-1 js-checkout-address"
-                      aria-label="Chọn địa chỉ"
-                    />
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-start justify-between gap-x-4">
-                        <div class="font-semibold text-light-primary-text truncate">@a.FullName</div>
-                        <div class="text-light-secondary-text whitespace-nowrap">@a.PhoneNumber</div>
-                      </div>
-                      <div class="text-light-secondary-text mt-1 break-words">@a.FullAddress</div>
-                    </div>
-                  </label>
-                }
-              </div>
-            </div>
-            }
-          </div>
-
-          <div class="p-6 border border-gray-300 rounded-2xl">
-            <h5>Phương thức thanh toán</h5>
-
-            <div class="mt-4 flex flex-col gap-y-3">
-              <label class="flex items-center gap-x-3 cursor-pointer">
-                <input type="radio" name="PaymentMethod" value="COD" @(string.Equals(Model.PaymentMethod, "COD", StringComparison.OrdinalIgnoreCase) ? "checked" : null) />
-                <span class="text-light-primary-text">Thanh toán khi nhận hàng (COD)</span>
-              </label>
-              <label class="flex items-center gap-x-3 cursor-pointer">
-                <input type="radio" name="PaymentMethod" value="BANK" @(string.Equals(Model.PaymentMethod, "BANK", StringComparison.OrdinalIgnoreCase) ? "checked" : null) />
-                <span class="text-light-primary-text">Chuyển khoản ngân hàng</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-y-6 lg:col-span-2">
-          <div class="p-6 border border-gray-300 rounded-2xl">
-            <div class="flex items-center justify-between gap-x-4">
-              <h5>Sản phẩm đã chọn</h5>
-              @if (!Model.IsBuyNow)
-              {
-                <a class="text-primary font-semibold" href="#" data-show-sidebar=".cart-sidebar">Chỉnh trong giỏ</a>
-              }
-            </div>
-
-            @if (!hasItems)
-            {
-              <p class="mt-3 text-light-secondary-text">Bạn chưa chọn sản phẩm nào để thanh toán.</p>
-            }
-            else
-            {
               <div class="mt-4">
-                <div class="wishlist-table-wrapper border-gray-300 rounded-2xl border overflow-x-auto">
-                  <table class="w-full wishlist-table">
-                    <thead class="bg-gray-200">
-                      <tr>
-                        <th class="product text-left font-semibold pl-4">
-                          <p class="product-name">Product</p>
-                        </th>
-                        <th class="product-price text-left py-2.5 font-semibold">Price</th>
-                        <th class="product-quantity text-left py-2.5 font-semibold">Quantity</th>
-                        <th class="product-total-price text-left py-2.5 font-semibold">Total Price</th>
-                        <th class="product-actions text-center py-2.5 font-semibold pr-4">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @foreach (var it in Model.Items)
-                      {
-                        var detailsUrl = !string.IsNullOrWhiteSpace(it.ProductSlug) ? $"/product/{Uri.EscapeDataString(it.ProductSlug)}" : "#";
-                        var variantText = string.Join(", ", new[]
-                        {
-                          !string.IsNullOrWhiteSpace(it.Color) ? $"Color: {it.Color}" : null,
-                          !string.IsNullOrWhiteSpace(it.Size) ? $"Size: {it.Size}" : null
-                        }.Where(x => x is not null));
-
-                        <tr class="py-4" data-checkout-item data-cart-item-id="@it.CartItemId" data-variant-id="@it.VariantId">
-                          <td data-title="Product" class="py-4 px-3 lg:px-4 product">
-                            <div class="flex items-end md:items-start gap-x-4 flex-col md:flex-row gap-y-4">
-                              <div class="product-thumbnail max-w-[120px] h-[120px] rounded-2xl bg-[#F4F3F5] overflow-hidden">
-                                <a href="@detailsUrl">
-                                  <img src="@ResolveImageUrl(it.ImageUrl)" alt="@it.ProductName" class="rounded-2xl h-full w-full object-cover" />
-                                </a>
-                              </div>
-                              <div class="flex flex-col gap-y-2 items-end md:items-start min-w-0">
-                                <a class="product-name text-light-primary-text font-semibold truncate hover:text-primary transition-colors duration-300" href="@detailsUrl">
-                                  @it.ProductName
-                                </a>
-                                @if (!string.IsNullOrWhiteSpace(variantText))
-                                {
-                                  <p class="text-sm leading-[22px] font-normal text-light-secondary-text inline-flex items-center gap-x-2.5">
-                                    @variantText
-                                  </p>
-                                }
-                              </div>
-                            </div>
-                          </td>
-
-                          <td data-title="Price" class="capitalize py-4 px-3 lg:px-0 product-price">
-                            <div class="flex items-center gap-x-3">
-                              <span class="text-light-primary-text font-semibold" data-checkout-unit-price>@FormatVnd(it.UnitPrice)</span>
-                            </div>
-                          </td>
-
-                          <td data-title="Quantity" class="capitalize py-4 px-3 lg:px-0 product-quantity">
-                            <div class="border border-gray-300 inline-flex items-center justify-center rounded-[80px] max-w-[108px] py-2.5 px-4">
-                              <button type="button" class="inline-flex items-center justify-center hover:text-primary" data-checkout-qty-action="dec" aria-label="Decrease quantity">
-                                <i class="hgi hgi-stroke hgi-remove-circle text-xl leading-6"></i>
-                              </button>
-                              <input type="text" readonly value="@it.Quantity" class="quantity-input border-0 w-full grow text-center focus:outline-none font-semibold text-light-primary-text" data-checkout-qty-input />
-                              <button type="button" class="inline-flex items-center justify-center hover:text-primary" data-checkout-qty-action="inc" aria-label="Increase quantity">
-                                <i class="hgi hgi-stroke hgi-add-circle text-xl leading-6"></i>
-                              </button>
-                            </div>
-                          </td>
-
-                          <td data-title="Total Price" class="capitalize py-4 px-3 lg:px-0 product-total-price">
-                            <p class="font-semibold text-light-primary-text" data-checkout-line-total>@FormatVnd(it.LineTotal)</p>
-                          </td>
-
-                          <td data-title="Action" class="capitalize py-4 px-3 lg:px-4 product-actions">
-                            <div class="flex items-center justify-center gap-x-2 md:gap-x-6">
-                              @if (!Model.IsBuyNow && it.CartItemId > 0)
-                              {
-                                <button type="button" class="inline-flex items-center justify-center product-remove" data-checkout-remove data-cart-item-id="@it.CartItemId" aria-label="Remove">
-                                  <i class="hgi hgi-stroke hgi-delete-01 text-2xl leading-6 text-light-primary-text"></i>
-                                </button>
-                              }
-                              else
-                              {
-                                <button type="button" class="inline-flex items-center justify-center opacity-50 cursor-not-allowed" disabled aria-label="Remove">
-                                  <i class="hgi hgi-stroke hgi-delete-01 text-2xl leading-6 text-light-primary-text"></i>
-                                </button>
-                              }
-                            </div>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
+                <label class="block text-sm font-semibold text-light-primary-text mb-2">Chọn địa chỉ</label>
+                <div class="flex flex-col gap-3">
+                  @foreach (var addr in Model.Addresses)
+                  {
+                    var isChecked = addr.Id == Model.SelectedAddressId;
+                    <label class="block cursor-pointer">
+                      <div class="flex items-start gap-3 p-3 border rounded-xl transition-all @(isChecked ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/50")">
+                        <input
+                          type="radio"
+                          name="AddressId"
+                          value="@addr.Id"
+                          class="js-checkout-address mt-1 accent-[var(--color-primary)]"
+                          @(isChecked ? "checked" : "")
+                        />
+                        <div class="min-w-0">
+                          <div class="font-semibold text-light-primary-text">@addr.FullName — @addr.PhoneNumber</div>
+                          <div class="text-sm text-light-secondary-text mt-0.5">@addr.FullAddress</div>
+                        </div>
+                      </div>
+                    </label>
+                  }
                 </div>
               </div>
             }
           </div>
 
-          <div class="p-6 border border-gray-300 rounded-2xl sticky top-6">
+          <!-- Voucher -->
+          <div class="p-6 border border-gray-300 rounded-2xl">
+            <h5 class="mb-4">Mã giảm giá</h5>
+            <button type="button" class="w-full flex items-center justify-between p-3 border border-dashed border-primary rounded-xl text-primary hover:bg-primary/5 transition-all" onclick="openVoucherModal()">
+              <div class="flex items-center gap-2">
+                <i class="hgi hgi-stroke hgi-ticket-01 text-xl"></i>
+                <span class="font-semibold">Chọn hoặc nhập mã</span>
+              </div>
+              <i class="hgi hgi-stroke hgi-arrow-right-01 text-lg"></i>
+            </button>
+            @if (!string.IsNullOrWhiteSpace(Model.AppliedShippingVoucherCode))
+            {
+              <div class="mt-3 flex items-center gap-2 p-2.5 bg-green-50 border border-green-200 rounded-lg">
+                <i class="hgi hgi-stroke hgi-tick-02 text-green-600"></i>
+                <span class="text-sm text-green-700 font-medium">Freeship: <strong>@Model.AppliedShippingVoucherCode</strong></span>
+              </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.AppliedDiscountVoucherCode))
+            {
+              <div class="mt-3 flex items-center gap-2 p-2.5 bg-green-50 border border-green-200 rounded-lg">
+                <i class="hgi hgi-stroke hgi-tick-02 text-green-600"></i>
+                <span class="text-sm text-green-700 font-medium">Giảm giá: <strong>@Model.AppliedDiscountVoucherCode</strong></span>
+              </div>
+            }
+          </div>
+
+          <!-- Phương thức thanh toán -->
+          <div class="p-6 border border-gray-300 rounded-2xl">
+            <h5 class="mb-4">Phương thức thanh toán</h5>
+            <div class="flex flex-col gap-3">
+              <label class="block cursor-pointer">
+                <div class="flex items-center gap-3 p-3 border rounded-xl transition-all @(Model.PaymentMethod == "COD" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/50")">
+                  <input type="radio" name="PaymentMethod" value="COD" class="accent-[var(--color-primary)] js-payment-method-radio" @(Model.PaymentMethod == "COD" ? "checked" : "") />
+                  <div class="flex items-center gap-2">
+                    <i class="hgi hgi-stroke hgi-money-bag text-xl text-primary"></i>
+                    <span class="font-semibold text-light-primary-text">Thanh toán khi nhận hàng (COD)</span>
+                  </div>
+                </div>
+              </label>
+              <label class="block cursor-pointer">
+                <div class="flex items-center gap-3 p-3 border rounded-xl transition-all @(Model.PaymentMethod == "BankTransfer" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/50")">
+                  <input type="radio" name="PaymentMethod" value="BankTransfer" class="accent-[var(--color-primary)] js-payment-method-radio" @(Model.PaymentMethod == "BankTransfer" ? "checked" : "") />
+                  <div class="flex items-center gap-2">
+                    <i class="hgi hgi-stroke hgi-bank text-xl text-primary"></i>
+                    <span class="font-semibold text-light-primary-text">Thanh toán qua VNPay</span>
+                  </div>
+                  <img src="https://sandbox.vnpayment.vn/paymentv2/images/logo_VNPAY.svg" alt="VNPay" class="h-5 ml-auto" onerror="this.style.display='none'" />
+                </div>
+              </label>
+              <label class="block cursor-pointer">
+                <div id="walletPaymentBox" class="flex items-center gap-3 p-3 border rounded-xl transition-all @(Model.PaymentMethod == "Wallet" ? "border-blue-500" : "border-gray-200 hover:border-blue-400")">
+                  <input type="radio" name="PaymentMethod" id="walletRadioInput" value="Wallet" class="accent-blue-600 js-payment-method-radio" @(Model.PaymentMethod == "Wallet" ? "checked" : "") />
+                  <div class="flex items-center gap-2 flex-1">
+                    <span style="font-size:20px">💳</span>
+                    <div>
+                      <div class="font-semibold text-light-primary-text">Số dư tài khoản</div>
+                      <div class="text-xs text-gray-500">Số dư hiện tại: <span id="walletBalanceDisplay" class="font-bold text-blue-600">Đang tải...</span></div>
+                    </div>
+                  </div>
+                  <a href="/my-wallet" class="text-xs text-blue-500 hover:underline ml-auto whitespace-nowrap" onclick="event.stopPropagation()">Nạp tiền</a>
+                </div>
+              </label>
+              <div id="walletInsufficientWarning" class="hidden mt-4 p-5 rounded-2xl border transition-all duration-300" style="background: #ffffff !important; border-color: #e5e7eb !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;">
+                <!-- Thông báo thiếu số dư -->
+                <div class="flex items-start gap-3 p-3.5 rounded-xl mb-5" style="border: 1px solid #fef3c7 !important; background-color: #fffbeb !important;">
+                  <span style="font-size: 16px !important; margin-top: 2px;">⚠️</span>
+                  <div style="font-size: 13px !important; color: #78350f !important; line-height: 1.5 !important; font-weight: 500 !important; text-align: left !important;">
+                    Số dư ví của bạn còn <strong style="color: #d97706 !important; font-weight: 700 !important;" id="visualWalletBalance">0đ</strong>, không đủ thanh toán cho đơn hàng <strong style="color: #111827 !important; font-weight: 700 !important;" id="visualTotalAmt">0đ</strong>.
+                  </div>
+                </div>
+
+                <!-- Bảng phân tích dòng tiền (Payment Breakdown) -->
+                <div style="padding: 16px !important; border-radius: 12px !important; background-color: #f9fafb !important; border: 1px solid #f3f4f6 !important; margin-bottom: 20px !important;">
+                  <div class="flex justify-between items-center mb-2.5">
+                    <span style="font-size: 12px !important; color: #6b7280 !important; font-weight: 600 !important;">Tổng tiền đơn hàng</span>
+                    <span style="font-size: 13.5px !important; font-weight: 700 !important; color: #1f2937 !important;" id="breakdownTotal">0đ</span>
+                  </div>
+                  <div class="flex justify-between items-center mb-3 pb-3" style="border-bottom: 1px dashed #e5e7eb !important;">
+                    <span style="font-size: 12px !important; color: #6b7280 !important; font-weight: 600 !important;">Trừ vào số dư ví</span>
+                    <span style="font-size: 13.5px !important; font-weight: 700 !important; color: #d97706 !important;" id="breakdownWallet">-0đ</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span style="font-size: 11.5px !important; font-weight: 700 !important; color: #4b5563 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important;">Phần còn thiếu cần trả</span>
+                    <span style="font-size: 16.5px !important; font-weight: 900 !important; color: #e11d48 !important;" id="breakdownRemaining">0đ</span>
+                  </div>
+                </div>
+
+                <!-- Tiêu đề chọn phương thức -->
+                <div style="font-size: 11px !important; font-weight: 800 !important; color: #9ca3af !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; margin-bottom: 12px !important; text-align: left !important;">Chọn phương thức trả phần còn thiếu:</div>
+
+                <!-- Bảng các lựa chọn con -->
+                <div class="flex flex-col gap-3">
+                  <!-- Lựa chọn 1: Ví + COD -->
+                  <div id="subCardCod" class="js-wallet-sub-card p-4 bg-white rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-between active-sub-card" style="border: 2px solid #e5e7eb !important;" onclick="selectWalletSubMethod('WalletCOD')">
+                    <input type="radio" id="subMethodCod" name="WalletSubMethod" value="WalletCOD" checked class="hidden" />
+                    <div class="flex-1 pr-3" style="text-align: left !important;">
+                      <div style="font-size: 14.5px !important; font-weight: 800 !important; color: #111827 !important; line-height: 1.3 !important;">1. Trả tiền mặt khi nhận hàng (COD)</div>
+                      <div id="walletCodDesc" style="font-size: 11.5px !important; font-weight: 500 !important; color: #6b7280 !important; margin-top: 5px !important; line-height: 1.4 !important;">Bạn sẽ trả thêm 0đ bằng tiền mặt khi nhận hàng.</div>
+                    </div>
+                    <!-- Custom styled indicator ở bên phải -->
+                    <div class="wallet-custom-indicator shrink-0 transition-all"></div>
+                  </div>
+
+                  <!-- Lựa chọn 2: Ví + VNPay -->
+                  <div id="subCardVnPay" class="js-wallet-sub-card p-4 bg-white rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-between" style="border: 2px solid #e5e7eb !important;" onclick="selectWalletSubMethod('WalletVNPay')">
+                    <input type="radio" id="subMethodVnPay" name="WalletSubMethod" value="WalletVNPay" class="hidden" />
+                    <div class="flex-1 pr-3" style="text-align: left !important;">
+                      <div style="font-size: 14.5px !important; font-weight: 800 !important; color: #111827 !important; line-height: 1.3 !important;">2. Thanh toán trực tuyến VNPay</div>
+                      <div id="walletVnpayDesc" style="font-size: 11.5px !important; font-weight: 500 !important; color: #6b7280 !important; margin-top: 5px !important; line-height: 1.4 !important;">Bạn sẽ thanh toán trực tuyến 0đ qua VNPay.</div>
+                    </div>
+                    <div class="wallet-custom-indicator shrink-0 transition-all"></div>
+                  </div>
+                </div>
+
+                <!-- Nút nạp tiền siêu nhỏ gọn và sang trọng -->
+                <div class="mt-5 pt-4 flex items-center justify-between" style="border-top: 1px solid #f3f4f6 !important;">
+                  <span style="font-size: 11.5px !important; color: #6b7280 !important; font-weight: 500 !important;">Bạn muốn trả 100% bằng ví?</span>
+                  <a href="/my-wallet" class="wallet-btn-recharge flex items-center gap-1.5 transition-all" style="font-size: 11px !important; font-weight: 800 !important; color: #b45309 !important; background: #fffbeb !important; border: 1.5px solid #fde047 !important; padding: 6px 14px !important; border-radius: 9999px !important; text-decoration: none !important;">
+                    <span>💳 Nạp thêm tiền ngay</span>
+                    <span style="font-weight: 900 !important;">→</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ========== CỘT PHẢI (2/3): Danh sách sản phẩm + Tóm tắt ========== -->
+        <div class="lg:col-span-2 flex flex-col gap-y-6">
+
+          <!-- Danh sách sản phẩm -->
+          <div class="p-6 border border-gray-300 rounded-2xl">
+            <h5 class="mb-4">Sản phẩm đặt mua</h5>
+            @if (!hasItems)
+            {
+              <p class="text-light-secondary-text">Bạn chưa chọn sản phẩm nào để thanh toán.</p>
+            }
+            else
+            {
+              <div class="wishlist-table-wrapper border-gray-300 rounded-2xl border overflow-x-auto">
+                <table class="w-full wishlist-table">
+                  <thead class="bg-gray-200">
+                    <tr>
+                      <th class="product text-left font-semibold pl-4">
+                        <p class="product-name">Sản phẩm</p>
+                      </th>
+                      <th class="product-price text-left py-2.5 font-semibold">Đơn giá</th>
+                      <th class="product-quantity text-left py-2.5 font-semibold">Số lượng</th>
+                      <th class="product-total-price text-left py-2.5 font-semibold">Thành tiền</th>
+                      <th class="product-actions text-center py-2.5 font-semibold pr-4">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach (var it in Model.Items)
+                    {
+                      var detailsUrl = !string.IsNullOrWhiteSpace(it.ProductSlug) ? $"/product/{Uri.EscapeDataString(it.ProductSlug)}" : "#";
+                      var variantText = string.Join(", ", new[]
+                      {
+                        !string.IsNullOrWhiteSpace(it.Color) ? $"Màu: {it.Color}" : null,
+                        !string.IsNullOrWhiteSpace(it.Size) ? $"Size: {it.Size}" : null
+                      }.Where(x => x is not null));
+
+                      <tr class="py-4" data-checkout-item data-cart-item-id="@it.CartItemId" data-variant-id="@it.VariantId">
+                        <td data-title="Sản phẩm" class="py-4 px-3 lg:px-4 product">
+                          <div class="flex items-end md:items-start gap-x-4 flex-col md:flex-row gap-y-4">
+                            <div class="product-thumbnail max-w-[120px] h-[120px] rounded-2xl bg-[#F4F3F5] overflow-hidden">
+                              <a href="@detailsUrl">
+                                <img src="@ResolveImageUrl(it.ImageUrl)" alt="@it.ProductName" class="rounded-2xl h-full w-full object-cover" />
+                              </a>
+                            </div>
+                            <div class="flex flex-col gap-y-2 items-end md:items-start min-w-0">
+                              <a class="product-name text-light-primary-text font-semibold truncate hover:text-primary transition-colors duration-300" href="@detailsUrl">
+                                @it.ProductName
+                              </a>
+                              @if (!string.IsNullOrWhiteSpace(variantText))
+                              {
+                                <p class="text-sm leading-[22px] font-normal text-light-secondary-text inline-flex items-center gap-x-2.5">
+                                  @variantText
+                                </p>
+                              }
+                            </div>
+                          </div>
+                        </td>
+
+                        <td data-title="Đơn giá" class="capitalize py-4 px-3 lg:px-0 product-price">
+                          <div class="flex items-center gap-x-3">
+                            <span class="text-light-primary-text font-semibold" data-checkout-unit-price>@FormatVnd(it.UnitPrice)</span>
+                          </div>
+                        </td>
+
+                        <td data-title="Số lượng" class="capitalize py-4 px-3 lg:px-0 product-quantity">
+                          <div class="border border-gray-300 inline-flex items-center justify-center rounded-[80px] max-w-[108px] py-2.5 px-4">
+                            <button type="button" class="inline-flex items-center justify-center hover:text-primary" data-checkout-qty-action="dec" aria-label="Decrease quantity">
+                              <i class="hgi hgi-stroke hgi-remove-circle text-xl leading-6"></i>
+                            </button>
+                            <input type="text" readonly value="@it.Quantity" class="quantity-input border-0 w-full grow text-center focus:outline-none font-semibold text-light-primary-text" data-checkout-qty-input />
+                            <button type="button" class="inline-flex items-center justify-center hover:text-primary" data-checkout-qty-action="inc" aria-label="Increase quantity">
+                              <i class="hgi hgi-stroke hgi-add-circle text-xl leading-6"></i>
+                            </button>
+                          </div>
+                        </td>
+
+                        <td data-title="Thành tiền" class="capitalize py-4 px-3 lg:px-0 product-total-price">
+                          <p class="font-semibold text-light-primary-text" data-checkout-line-total>@FormatVnd(it.LineTotal)</p>
+                        </td>
+
+                        <td data-title="Thao tác" class="capitalize py-4 px-3 lg:px-4 product-actions">
+                          <div class="flex items-center justify-center gap-x-2 md:gap-x-6">
+                            @if (!Model.IsBuyNow && it.CartItemId > 0)
+                            {
+                              <button type="button" class="inline-flex items-center justify-center product-remove" data-checkout-remove data-cart-item-id="@it.CartItemId" aria-label="Remove">
+                                <i class="hgi hgi-stroke hgi-delete-01 text-2xl leading-6 text-light-primary-text"></i>
+                              </button>
+                            }
+                            else
+                            {
+                              <button type="button" class="inline-flex items-center justify-center opacity-50 cursor-not-allowed" disabled aria-label="Remove">
+                                <i class="hgi hgi-stroke hgi-delete-01 text-2xl leading-6 text-light-primary-text"></i>
+                              </button>
+                            }
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+
+          <!-- Tóm tắt đơn hàng -->
+          <div class="p-6 border border-gray-300 rounded-2xl">
             <h5 class="mb-4">Tóm tắt đơn hàng</h5>
 
             <div class="flex items-center justify-between py-2">
-              <span class="text-light-secondary-text">Tạm tính</span>
+              <span class="text-light-secondary-text">Tổng tiền hàng</span>
               <span class="font-semibold text-light-primary-text" data-checkout-subtotal>@FormatVnd(Model.SelectedSubTotal)</span>
             </div>
             <div class="flex items-center justify-between py-2">
               <span class="text-light-secondary-text">Phí vận chuyển</span>
               <span class="font-semibold text-light-primary-text" data-checkout-shipping>@FormatVnd(shippingFee)</span>
             </div>
-            <div class="w-full h-px bg-gray-300 my-3"></div>
+
             <div class="flex items-center justify-between py-2">
-              <span class="text-light-primary-text font-semibold">Tổng cộng</span>
-              <span class="text-light-primary-text font-semibold" data-checkout-total>@FormatVnd(finalAmount)</span>
+              <span class="text-light-secondary-text">Ưu đãi phí vận chuyển</span>
+              <span class="font-semibold @(Model.ShippingVoucherDiscountAmount > 0 ? "text-green-600" : "text-light-primary-text")" data-checkout-shipping-discount-value>
+                <span data-checkout-shipping-discount-sign>@(Model.ShippingVoucherDiscountAmount > 0 ? "-" : "")</span><span data-checkout-shipping-discount>@FormatVnd(Model.ShippingVoucherDiscountAmount)</span>
+              </span>
             </div>
 
-            <button
-              type="submit"
-              class="btn btn-primary btn-large rounded-[80px] w-full mt-4 @(hasItems && hasAddresses ? "" : "opacity-50 cursor-not-allowed")"
-              @(hasItems && hasAddresses ? null : "disabled")
-            >
-              Đặt hàng
-            </button>
+            <div class="flex items-center justify-between py-2">
+              <span class="text-light-secondary-text">Voucher giảm giá</span>
+              <span class="font-semibold @(Model.DiscountVoucherDiscountAmount > 0 ? "text-green-600" : "text-light-primary-text")" data-checkout-discount-voucher-value>
+                <span data-checkout-discount-voucher-sign>@(Model.DiscountVoucherDiscountAmount > 0 ? "-" : "")</span><span data-checkout-discount-voucher>@FormatVnd(Model.DiscountVoucherDiscountAmount)</span>
+              </span>
+            </div>
 
-            <div class="mt-3">
-              <a class="btn btn-default outline btn-large rounded-[80px] w-full shadow-none" href="/">
+            <div class="flex items-center justify-between py-2">
+              <span class="text-light-secondary-text">Thuế VAT (@(Model.GlobalVatRate * 100)%)</span>
+              <span class="font-semibold text-light-primary-text" data-checkout-vat>@FormatVnd(Model.VatAmount)</span>
+            </div>
+
+            <div class="border-t border-gray-200/60 my-5"></div>
+            <div class="flex items-center justify-between py-2">
+              <span class="text-light-primary-text font-semibold text-lg">Tổng cộng</span>
+              <span class="text-primary font-bold text-lg" data-checkout-total>@FormatVnd(finalAmount)</span>
+            </div>
+
+            <div class="mt-6 flex flex-col sm:flex-row gap-4">
+              <button
+                type="submit"
+                class="btn btn-primary btn-large rounded-[80px] flex-1 shadow-none @(hasItems && hasAddresses ? "" : "opacity-50 cursor-not-allowed")"
+                @(hasItems && hasAddresses ? null : "disabled")
+              >
+                Đặt hàng
+              </button>
+
+              <a class="btn btn-default outline btn-large rounded-[80px] flex-1 shadow-none" href="/">
                 Tiếp tục mua sắm
               </a>
             </div>
           </div>
+
         </div>
       </div>
     </form>
   </div>
 </section>
 
+<!-- Voucher Modal -->
+<style>
+  .voucher-ticket{position:relative;display:flex;border-radius:12px;overflow:visible;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:all .2s}
+  .voucher-ticket::before,.voucher-ticket::after{content:'';position:absolute;left:79px;width:14px;height:7px;background:#f3f4f6;border-radius:0 0 7px 7px;z-index:2}
+  .voucher-ticket::before{top:-1px}
+  .voucher-ticket::after{top:auto;bottom:-1px;border-radius:7px 7px 0 0}
+  .voucher-ticket.selected-ticket{box-shadow:0 0 0 2px var(--color-primary),0 4px 16px rgba(0,171,85,.18)}
+  .voucher-left{position:relative;width:88px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 6px;border-right:2px dashed #e5e7eb}
+  .voucher-left-ship{background:linear-gradient(135deg,#00d2c6 0%,#00b894 50%,#00a86b 100%)}
+  .voucher-left-discount{background:linear-gradient(135deg,#ff6b35 0%,#f7421e 50%,#ee0979 100%)}
+  .voucher-left *{color:#fff!important}
+  .voucher-left .voucher-icon{font-size:28px;margin-bottom:4px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
+  .voucher-left .voucher-type{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .voucher-check{width:28px;height:28px;border-radius:50%;border:2.5px solid #d1d5db;display:flex;align-items:center;justify-content:center;transition:all .25s;background:#fff;flex-shrink:0}
+  .voucher-check .check-icon{display:none;color:#fff;font-size:14px;font-weight:700}
+  .peer:checked~.voucher-check.vc-ship{border-color:#00b894;background:linear-gradient(135deg,#00d2c6,#00a86b);box-shadow:0 2px 10px rgba(0,184,148,.45)}
+  .peer:checked~.voucher-check.vc-discount{border-color:#f7421e;background:linear-gradient(135deg,#ff6b35,#ee0979);box-shadow:0 2px 10px rgba(247,66,30,.45)}
+  .peer:checked~.voucher-check .check-icon{display:block}
+  .voucher-badge{position:absolute;top:-6px;right:8px;font-size:10px;font-weight:700;color:#fff;padding:2px 8px;border-radius:0 0 8px 8px;z-index:3}
+  .voucher-badge-ship{background:linear-gradient(90deg,#00d2c6,#00a86b)}
+  .voucher-badge-discount{background:linear-gradient(90deg,#ff6b35,#ee0979)}
+  .modal-header-gradient{background:linear-gradient(135deg,#00b894 0%,#00d2c6 50%,#55efc4 100%)}
+</style>
+<div id="voucherModal" class="fixed inset-0 hidden" style="z-index:2147483647;">
+  <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style="z-index:2147483647;" onclick="if(event.target === this) closeVoucherModal()">
+    <div class="relative flex flex-col overflow-hidden rounded-2xl border-2 border-[#00b894] bg-white shadow-2xl w-full" style="width:100%;max-width:460px;height:75vh;max-height:620px;" onclick="event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="modal-header-gradient p-5 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <span class="text-white text-xl">🎟️</span>
+          </div>
+          <div class="flex-1">
+            <h5 class="text-white font-bold text-lg tracking-wide">Kho Voucher</h5>
+            <p class="text-white/80 text-xs mt-0.5">Chọn mã giảm giá phù hợp nhất</p>
+          </div>
+          <button type="button" class="w-9 h-9 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 transition-colors" onclick="closeVoucherModal()" aria-label="Đóng">
+            <span class="text-xl leading-none font-bold">×</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Input Section -->
+      <div class="p-4 flex gap-2 border-b border-gray-100 flex-shrink-0 bg-gradient-to-r from-green-50 to-teal-50">
+        <div class="relative flex-1">
+          <input type="text" id="manualVoucherCode" class="w-full bg-white border-2 border-gray-200 px-4 py-2.5 rounded-xl uppercase text-sm font-semibold focus:outline-none focus:border-[#00b894] focus:shadow-[0_0_0_3px_rgba(0,184,148,.15)] transition-all placeholder:text-gray-400 placeholder:font-normal" placeholder="Nhập mã voucher tại đây..." />
+        </div>
+        <button type="button" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:shadow-lg active:scale-95" style="background:linear-gradient(135deg,#00b894,#00d2c6)" onclick="applyVoucher(document.getElementById('manualVoucherCode').value)">ÁP DỤNG</button>
+      </div>
+
+      <!-- Voucher List -->
+      <div class="flex-1 overflow-y-auto p-4 bg-[#f5f6fa]">
+        @{
+          var shippingVouchers = Model.AvailableVouchers
+            .Where(v => v.DiscountType == "FreeShipping")
+            .ToList();
+
+          var discountVouchers = Model.AvailableVouchers
+            .Where(v => v.DiscountType != "FreeShipping")
+            .ToList();
+
+          var voucherGroups = new[]
+          {
+            new { Title = "Miễn phí vận chuyển", Items = shippingVouchers },
+            new { Title = "Mã giảm giá", Items = discountVouchers }
+          };
+        }
+
+        @if(!shippingVouchers.Any() && !discountVouchers.Any())
+        {
+          <div class="flex flex-col items-center justify-center h-full py-10">
+            <div class="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mb-4">
+              <span class="text-4xl">🎫</span>
+            </div>
+            <p class="text-gray-500 font-medium">Chưa có mã giảm giá nào</p>
+            <p class="text-gray-400 text-sm mt-1">Hãy quay lại sau nhé!</p>
+          </div>
+        }
+        else
+        {
+          const int initialVisiblePerGroup = 2;
+
+          foreach (var g in voucherGroups)
+          {
+            if (!g.Items.Any()) { continue; }
+
+            var groupKey = g.Title == "Miễn phí vận chuyển" ? "ship" : "discount";
+            var shouldCollapse = g.Items.Count > initialVisiblePerGroup;
+            var groupIcon = groupKey == "ship" ? "🚚" : "💰";
+
+            <div class="mb-6">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-base">@groupIcon</span>
+                <span class="text-[12px] font-extrabold text-gray-600 uppercase tracking-widest">@g.Title</span>
+                <span class="text-[11px] font-bold text-gray-400 bg-gray-200 rounded-full px-2 py-0.5">@g.Items.Count</span>
+              </div>
+
+              <div class="space-y-3">
+                @for (var i = 0; i < g.Items.Count; i++)
+                {
+                  var v = g.Items[i];
+                  var isFreeShip = v.DiscountType == "FreeShipping";
+                  var isSelected = isFreeShip
+                    ? string.Equals(v.Code, Model.AppliedShippingVoucherCode, StringComparison.OrdinalIgnoreCase)
+                    : string.Equals(v.Code, Model.AppliedDiscountVoucherCode, StringComparison.OrdinalIgnoreCase);
+                  var isEligible = v.IsEligible;
+                  var isExtra = shouldCollapse && i >= initialVisiblePerGroup;
+                  var radioId = isFreeShip ? $"radio_ship_{v.Code}" : $"radio_discount_{v.Code}";
+                  var radioName = isFreeShip ? "modalShippingVoucherSelection" : "modalDiscountVoucherSelection";
+
+                  <label for="@radioId" class="block" data-voucher-extra="@(isExtra ? groupKey : "")" style="@(isExtra ? "display:none" : "")">
+                    <div class="voucher-ticket @(isSelected ? "selected-ticket" : "") @(!isEligible ? "opacity-50 grayscale-[40%] cursor-not-allowed" : "cursor-pointer hover:shadow-lg hover:-translate-y-0.5")">
+
+                      @if (i == 0)
+                      {
+                        <div class="voucher-badge @(isFreeShip ? "voucher-badge-ship" : "voucher-badge-discount")">⭐ Tốt nhất</div>
+                      }
+
+                      <div class="voucher-left @(isFreeShip ? "voucher-left-ship" : "voucher-left-discount")" style="border-radius:12px 0 0 12px">
+                        <div class="voucher-icon">@(isFreeShip ? "🚛" : "🏷️")</div>
+                        <div class="voucher-type">@(isFreeShip ? "FREE SHIP" : "SALE")</div>
+                      </div>
+
+                      <div class="flex-1 p-3 min-w-0">
+                        <div class="flex items-start justify-between gap-2">
+                          <div class="min-w-0">
+                            <div class="font-bold text-gray-800 leading-snug text-[14px]">
+                              @if (isFreeShip)
+                              {
+                                <span>Miễn phí vận chuyển</span>
+                              }
+                              else
+                              {
+                                <span>Giảm @(v.DiscountType == "Percent" ? v.DiscountValue.ToString("0.##") + "%" : FormatVnd(v.DiscountValue))</span>
+                              }
+                            </div>
+                            <div class="text-[12px] text-gray-500 mt-1 flex items-center gap-1">
+                              <span>📦</span> Đơn tối thiểu <span class="font-semibold text-gray-700">@FormatVnd(v.MinOrderValue)</span>
+                            </div>
+                            @if (v.MaxDiscountValue.HasValue)
+                            {
+                              <div class="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
+                                <span>📊</span> Giảm tối đa <span class="font-semibold">@FormatVnd(v.MaxDiscountValue.Value)</span>
+                              </div>
+                            }
+                            @if (!string.IsNullOrEmpty(v.IneligibleReason))
+                            {
+                              <div class="text-[11px] text-red-600 mt-1.5 bg-red-50 border border-red-100 inline-flex items-center gap-1 px-2 py-0.5 rounded-md">
+                                <span>⚠️</span> @v.IneligibleReason
+                              </div>
+                            }
+                          </div>
+
+                          <div class="shrink-0 pt-1">
+                            <input type="radio" id="@radioId" name="@radioName" value="@v.Code" class="peer sr-only" @(isSelected ? "checked" : "") @(!isEligible ? "disabled" : "") />
+                            <div class="voucher-check @(isFreeShip ? "vc-ship" : "vc-discount")">
+                              <span class="check-icon">✓</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+                }
+              </div>
+
+              @if (shouldCollapse)
+              {
+                <button type="button" class="w-full mt-3 py-2 text-sm font-bold rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:text-[#00b894] hover:border-[#00b894] flex items-center justify-center gap-2 transition-all" data-voucher-toggle="@groupKey" onclick="toggleVoucherGroup('@groupKey')">
+                  <span class="js-toggle-text">Xem thêm</span>
+                  <span class="js-toggle-icon">▼</span>
+                </button>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 border-t border-gray-100 flex gap-3 flex-shrink-0 bg-white">
+        <button type="button" class="flex-1 py-3 rounded-xl text-sm font-bold border-2 border-gray-200 text-gray-600 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98]" onclick="applyVoucher('')">BỎ CHỌN</button>
+        <button type="button" class="flex-1 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98]" style="background:linear-gradient(135deg,#00b894,#00d2c6)" onclick="confirmVoucherSelection()">XÁC NHẬN</button>
+      </div>
+    </div>
+  </div>
+</div> <!-- End Voucher Modal -->
+
 <script>
+  (function () {
+    function getModal() {
+      return document.getElementById('voucherModal');
+    }
+
+    function ensureModalUnderBody() {
+      var modal = getModal();
+      if (!modal) return null;
+      if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+      return modal;
+    }
+
+    window.openVoucherModal = function () {
+      var modal = ensureModalUnderBody();
+      if (!modal) return;
+      modal.classList.remove('hidden');
+    };
+
+    window.closeVoucherModal = function () {
+      var modal = getModal();
+      if (!modal) return;
+      modal.classList.add('hidden');
+    };
+
+    window.addEventListener('DOMContentLoaded', function () {
+      ensureModalUnderBody();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (!e || e.key !== 'Escape') return;
+      var modal = getModal();
+      if (!modal || modal.classList.contains('hidden')) return;
+      closeVoucherModal();
+    });
+  })();
+
+  window.applyVoucher = function(code) {
+    var url = new URL(window.location.href);
+    if (code) {
+      url.searchParams.set('voucherCode', code);
+      // keep any existing selection
+    } else {
+      url.searchParams.delete('voucherCode');
+      url.searchParams.delete('shippingVoucherCode');
+      url.searchParams.delete('discountVoucherCode');
+    }
+    window.location.href = url.toString();
+  };
+
+  window.confirmVoucherSelection = function() {
+    var ship = document.querySelector('input[name="modalShippingVoucherSelection"]:checked');
+    var disc = document.querySelector('input[name="modalDiscountVoucherSelection"]:checked');
+
+    var url = new URL(window.location.href);
+    if (ship && ship.value) {
+      url.searchParams.set('shippingVoucherCode', ship.value);
+    } else {
+      url.searchParams.delete('shippingVoucherCode');
+    }
+
+    if (disc && disc.value) {
+      url.searchParams.set('discountVoucherCode', disc.value);
+    } else {
+      url.searchParams.delete('discountVoucherCode');
+    }
+
+    url.searchParams.delete('voucherCode');
+    window.location.href = url.toString();
+  };
+
+  window.toggleVoucherGroup = function (groupKey) {
+    var modal = document.getElementById('voucherModal');
+    if (!modal) return;
+
+    var extras = modal.querySelectorAll('[data-voucher-extra="' + groupKey + '"]');
+    var btn = modal.querySelector('[data-voucher-toggle="' + groupKey + '"]');
+    if (!extras || extras.length === 0 || !btn) return;
+
+    // Determine current state by checking any currently-hidden extra item.
+    var anyHidden = false;
+    for (var i = 0; i < extras.length; i++) {
+      if (extras[i].style.display === 'none') { anyHidden = true; break; }
+    }
+
+    for (var j = 0; j < extras.length; j++) {
+      if (anyHidden) {
+        extras[j].style.display = '';
+      } else {
+        extras[j].style.display = 'none';
+      }
+    }
+
+    var textEl = btn.querySelector('.js-toggle-text');
+    var iconEl = btn.querySelector('.js-toggle-icon');
+    if (textEl) textEl.textContent = anyHidden ? 'Thu gọn' : 'Xem thêm';
+    if (iconEl) iconEl.textContent = anyHidden ? '▲' : '▼';
+  };
+
+  // Allow toggling radios off by clicking the already-selected voucher again.
+  (function () {
+    var modal = document.getElementById('voucherModal');
+    if (!modal) return;
+
+    function isVoucherRadio(el) {
+      return !!(el
+        && el.matches
+        && el.matches('input[type="radio"][name="modalShippingVoucherSelection"], input[type="radio"][name="modalDiscountVoucherSelection"]'));
+    }
+
+    function findVoucherRadioFromEventTarget(target) {
+      if (isVoucherRadio(target)) return target;
+      var label = target && target.closest ? target.closest('label') : null;
+      if (!label) return null;
+      var candidate = label.querySelector('input[type="radio"]');
+      return isVoucherRadio(candidate) ? candidate : null;
+    }
+
+    // Capture state before the browser updates the checked radio.
+    modal.addEventListener('pointerdown', function (e) {
+      var input = findVoucherRadioFromEventTarget(e.target);
+      if (!input) return;
+      input.dataset.wasChecked = input.checked ? '1' : '0';
+    }, true);
+
+    // On click, if it was already checked, uncheck it.
+    modal.addEventListener('click', function (e) {
+      var input = findVoucherRadioFromEventTarget(e.target);
+      if (!input) return;
+
+      if (input.dataset.wasChecked === '1') {
+        e.preventDefault();
+        input.checked = false;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      input.dataset.wasChecked = '';
+    }, true);
+  })();
+
   (function () {
     var radios = document.querySelectorAll('input.js-checkout-address[name="AddressId"]');
     if (!radios || radios.length === 0) return;
@@ -309,4 +765,177 @@
       radios[i].addEventListener('change', onChange);
     }
   })();
+
+  // ── Wallet Balance & Insufficient Balance Sub-options Fetch ──
+  (function () {
+    var balanceEl = document.getElementById('walletBalanceDisplay');
+    var warningEl = document.getElementById('walletInsufficientWarning');
+    var submitBtn = document.querySelector('button[type="submit"]');
+    var walletRadio = document.getElementById('walletRadioInput');
+    var totalEl = document.querySelector('[data-checkout-total]');
+    var walletBalance = 0;
+
+    function parseCurrency(text) {
+      if (!text) return 0;
+      // Chỉ giữ lại các chữ số (0-9), loại bỏ hoàn toàn dấu chấm phân cách hàng nghìn và ký tự đ
+      var cleanText = text.replace(/[^0-9]/g, '');
+      return parseInt(cleanText, 10) || 0;
+    }
+
+    function formatVnd(val) {
+      return new Intl.NumberFormat('vi-VN').format(val) + 'đ';
+    }
+
+    // Tiêm style cho active sub-card và custom indicator hoàn hảo
+    (function() {
+      var style = document.createElement('style');
+      style.innerHTML = `
+        .wallet-custom-indicator {
+          width: 20px !important;
+          height: 20px !important;
+          border: 2px solid #cbd5e1 !important;
+          border-radius: 50% !important;
+          background: #ffffff !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          transition: all 0.2s ease !important;
+        }
+        .active-sub-card {
+          border-color: #2563eb !important;
+          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+          box-shadow: 0 8px 25px rgba(37, 99, 235, 0.18) !important;
+          transform: translateY(-1px) !important;
+        }
+        .active-sub-card .wallet-custom-indicator {
+          border-color: #2563eb !important;
+          background: #2563eb !important;
+        }
+        .wallet-custom-indicator::after {
+          content: '✓' !important;
+          font-size: 11px !important;
+          font-weight: 900 !important;
+          color: transparent !important;
+          transition: all 0.15s ease !important;
+          display: block !important;
+          line-height: 1 !important;
+        }
+        .active-sub-card .wallet-custom-indicator::after {
+          color: #ffffff !important;
+        }
+        .wallet-btn-recharge {
+          transition: all 0.2s ease !important;
+          box-shadow: 0 2px 5px rgba(245, 158, 11, 0.05) !important;
+        }
+        .wallet-btn-recharge:hover {
+          background: #fef3c7 !important;
+          border-color: #f59e0b !important;
+          color: #92400e !important;
+          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15) !important;
+          transform: translateY(-0.5px) !important;
+        }
+        .wallet-btn-recharge:active {
+          transform: translateY(0.5px) !important;
+          box-shadow: 0 1px 3px rgba(245, 158, 11, 0.1) !important;
+        }
+      `;
+      document.head.appendChild(style);
+    })();
+
+    // Hàm chọn sub-method từ UI
+    window.selectWalletSubMethod = function(method) {
+      var radioId = method === 'WalletCOD' ? 'subMethodCod' : 'subMethodVnPay';
+      var radioBtn = document.getElementById(radioId);
+      if (radioBtn) radioBtn.checked = true;
+
+      var cards = document.querySelectorAll('.js-wallet-sub-card');
+      cards.forEach(function(card) {
+        card.classList.remove('active-sub-card');
+      });
+      
+      var activeCardId = method === 'WalletCOD' ? 'subCardCod' : 'subCardVnPay';
+      var activeCard = document.getElementById(activeCardId);
+      if (activeCard) activeCard.classList.add('active-sub-card');
+
+      if (walletRadio) {
+        walletRadio.value = method;
+        walletRadio.checked = true;
+      }
+    };
+
+    function checkWalletSufficiency() {
+      if (!walletRadio || !walletRadio.checked) {
+        if (warningEl) warningEl.classList.add('hidden');
+        if (walletRadio) walletRadio.value = "Wallet";
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+
+      var total = totalEl ? parseCurrency(totalEl.textContent) : 0;
+      if (walletBalance >= total) {
+        if (warningEl) warningEl.classList.add('hidden');
+        walletRadio.value = "Wallet"; // Đủ tiền thì thanh toán 100% bằng Ví
+        if (submitBtn) submitBtn.disabled = false;
+      } else {
+        if (warningEl) warningEl.classList.remove('hidden');
+        
+        var remainingAmt = total - walletBalance;
+        
+        // Cập nhật thông tin hóa đơn (Breakdown)
+        var visualWalletBalance = document.getElementById('visualWalletBalance');
+        var visualTotalAmt = document.getElementById('visualTotalAmt');
+        var breakdownTotal = document.getElementById('breakdownTotal');
+        var breakdownWallet = document.getElementById('breakdownWallet');
+        var breakdownRemaining = document.getElementById('breakdownRemaining');
+
+        if (visualWalletBalance) visualWalletBalance.textContent = formatVnd(walletBalance);
+        if (visualTotalAmt) visualTotalAmt.textContent = formatVnd(total);
+        if (breakdownTotal) breakdownTotal.textContent = formatVnd(total);
+        if (breakdownWallet) breakdownWallet.textContent = '-' + formatVnd(walletBalance);
+        if (breakdownRemaining) breakdownRemaining.textContent = formatVnd(remainingAmt);
+
+        // Cập nhật chú thích trong card
+        var codDescEl = document.getElementById('walletCodDesc');
+        var vnpayDescEl = document.getElementById('walletVnpayDesc');
+        if (codDescEl) {
+          codDescEl.innerHTML = "Bạn sẽ trả thêm <span style='color: #e11d48 !important; font-weight: 800 !important;'>" + formatVnd(remainingAmt) + "</span> bằng tiền mặt khi nhận hàng.";
+        }
+        if (vnpayDescEl) {
+          vnpayDescEl.innerHTML = "Bạn sẽ thanh toán trực tuyến <span style='color: #e11d48 !important; font-weight: 800 !important;'>" + formatVnd(remainingAmt) + "</span> qua cổng VNPay.";
+        }
+
+        var checkedSub = document.querySelector('input[name="WalletSubMethod"]:checked');
+        var activeMethod = checkedSub ? checkedSub.value : 'WalletCOD';
+        window.selectWalletSubMethod(activeMethod);
+
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
+
+    // Fetch balance từ API
+    fetch('/my-wallet/balance')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) { if (balanceEl) balanceEl.textContent = 'N/A'; return; }
+        walletBalance = data.balance || 0;
+        if (balanceEl) balanceEl.textContent = (data.balanceFormatted || '0') + 'đ';
+        checkWalletSufficiency();
+      })
+      .catch(function () {
+        if (balanceEl) balanceEl.textContent = 'N/A';
+      });
+
+    // Theo dõi thay đổi của phương thức thanh toán chính
+    var allPaymentRadios = document.querySelectorAll('.js-payment-method-radio');
+    allPaymentRadios.forEach(function (r) {
+      r.addEventListener('change', checkWalletSufficiency);
+    });
+
+    // Re-check khi có thay đổi tổng tiền đơn hàng (nếu có tăng giảm số lượng)
+    if (totalEl) {
+      var observer = new MutationObserver(checkWalletSufficiency);
+      observer.observe(totalEl, { childList: true, characterData: true, subtree: true });
+    }
+  })();
 </script>
+

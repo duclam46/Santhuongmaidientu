@@ -42,7 +42,7 @@
     return string.Format("{0:N0}đ", amount);
   }
 
-  (string tabKey, string label, string pillClass) ResolveOrderStatusUi(string? rawStatus)
+  (string tabKey, string label, string pillClass) ResolveOrderStatusUi(string? rawStatus, bool isReceivedByCustomer = false)
   {
     var s = (rawStatus ?? string.Empty).Trim();
     var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
@@ -76,10 +76,14 @@
         "Hoàn tất",
         $"{basePill} bg-success-light text-success-dark"
       ),
-      "delivered" or "deliverysuccess" or "dagiao" or "đãgiao" => (
+      "delivered" or "deliverysuccess" or "dagiao" or "đãgiao" => isReceivedByCustomer ? (
         "completed",
         "Hoàn tất",
         $"{basePill} bg-success-light text-success-dark"
+      ) : (
+        "delivering",
+        "Đang giao (Đã giao)",
+        $"{basePill} bg-primary/8 text-primary"
       ),
       "returned" or "return" or "refund" or "returnrequest" or "returning" or "trahang" or "trảhàng" => (
         "returned",
@@ -164,6 +168,15 @@
                   Đơn hàng
                 </span>
               </button>
+            </li>
+            <li>
+              <a href="/my-wallet" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-blue-50 hover:text-blue-600 transition-colors duration-300" style="background: linear-gradient(135deg, rgba(37,99,235,0.06), rgba(124,58,237,0.02))">
+                <span class="inline-flex items-center gap-x-3">
+                  <span style="font-size:18px;">💳</span>
+                  Số dư tài khoản
+                </span>
+                <i class="hgi hgi-stroke hgi-arrow-right-01 text-xs text-blue-500"></i>
+              </a>
             </li>
 
             <li class="pt-4 mt-3 border-t border-gray-200">
@@ -254,10 +267,9 @@
               {
                 var orders = Model.Account?.Orders ?? new List<OrderSummaryVm>();
                 var totalOrders = orders.Count;
-                var completedOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "completed");
-                var processingOrdersCount = orders.Count(o =>
-                  ResolveOrderStatusUi(o.OrderStatus).tabKey is "pending-confirmation" or "awaiting-pickup");
-                var cancelledOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "cancelled");
+                var completedOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "completed");
+                var processingOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey is "pending-confirmation" or "awaiting-pickup");
+                var cancelledOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "cancelled");
                 var wishlistCount = 0;
                 var reviewsCount = Model.Account?.ReviewsTotalCount ?? 0;
                 var recentOrders = orders.Take(5).ToList();
@@ -271,6 +283,25 @@
                 </div>
 
                 <div class="grid grid-cols-12 gap-4">
+                  <!-- Card Số dư tài khoản (Premium Wallet Style) -->
+                  <div class="md:col-span-4 col-span-12 rounded-2xl p-5 border border-blue-100 hover:border-blue-200 transition-all shadow-sm"
+                       style="background: linear-gradient(135deg, #eff6ff 0%, #faf5ff 100%)">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-x-3">
+                        <div class="size-12 rounded-2xl bg-blue-600 text-white inline-flex items-center justify-center shadow-md shadow-blue-500/20">
+                          <span style="font-size:20px;">💳</span>
+                        </div>
+                        <div>
+                          <p id="dashboard-wallet-balance" class="text-2xl leading-7 text-blue-700 font-bold">Đang tải...</p>
+                          <p class="text-xs leading-[18px] text-gray-500 font-medium">Số dư tài khoản</p>
+                        </div>
+                      </div>
+                      <a href="/my-wallet" class="btn btn-small rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 shadow-sm transition-all" style="font-size:11px">
+                        Nạp ngay
+                      </a>
+                    </div>
+                  </div>
+
                   <div class="md:col-span-4 col-span-12 bg-success-lighter rounded-2xl p-5">
                     <div class="flex items-center gap-x-4">
                       <div class="size-12 rounded-2xl bg-success-light text-success-dark inline-flex items-center justify-center">
@@ -372,7 +403,7 @@
                         {
                           foreach (var o in recentOrders)
                           {
-                            var ui = ResolveOrderStatusUi(o.OrderStatus);
+                            var ui = ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer);
                             <tr class="border-b border-gray-300">
                               <td class="py-5 px-6 text-light-primary-text font-semibold">#@(!string.IsNullOrWhiteSpace(o.OrderCode) ? o.OrderCode : o.Id.ToString())</td>
                               <td class="py-5 px-6 text-light-secondary-text">@o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
@@ -931,12 +962,12 @@
             <div id="orders" class="menu-tab-pane hidden">
               @{
                 var allOrders = Model.Account?.Orders ?? new List<OrderSummaryVm>();
-                var pendingConfirmOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "pending-confirmation").ToList();
-                var awaitingPickupOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "awaiting-pickup").ToList();
-                var deliveringOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "delivering").ToList();
-                var completedOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "completed").ToList();
-                var returnedOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "returned").ToList();
-                var cancelledOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus).tabKey == "cancelled").ToList();
+                var pendingConfirmOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "pending-confirmation").ToList();
+                var awaitingPickupOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "awaiting-pickup").ToList();
+                var deliveringOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "delivering").ToList();
+                var completedOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "completed").ToList();
+                var returnedOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "returned").ToList();
+                var cancelledOrders = allOrders.Where(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "cancelled").ToList();
 
                 var tabs = new (string key, List<OrderSummaryVm> orders)[]
                 {
@@ -996,7 +1027,7 @@
                       <div class="flex flex-col gap-y-6">
                         @foreach (var o in tab.orders)
                         {
-                          var ui = ResolveOrderStatusUi(o.OrderStatus);
+                          var ui = ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer);
                           <div class="order-history-table-wrapper border-gray-300 rounded-2xl border overflow-hidden">
                             <table class="w-full order-history-table">
                               <thead>
@@ -1051,22 +1082,54 @@
                                 <tr>
                                   <td class="p-4">
                                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                                      <a class="btn btn-large btn-default outline py-1.5 px-6 text-sm leading-[22px] font-semibold rounded-[80px] shadow-none w-full md:w-auto whitespace-nowrap"
+                                      <a class="btn btn-large btn-default outline py-1.5 px-6 text-sm leading-[22px] font-semibold rounded-[80px] shadow-none w-auto whitespace-nowrap"
                                          href='@Url.Action("OrderDetails", "Account", new { id = o.Id })'>
                                         Xem chi tiết
                                       </a>
 
                                       <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center md:justify-end gap-2 w-full md:w-auto">
-                                        @if (ui.tabKey is "pending-confirmation" or "awaiting-pickup")
+                                        @if (ui.tabKey == "delivering")
                                         {
-                                          <form method="post" action="/my-orders/cancel" class="inline-flex w-full sm:w-auto" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');">
+                                          <form method="post" action="/my-orders/received" class="inline-flex w-auto" onsubmit="return confirm('Bạn xác nhận đã nhận được hàng đầy đủ và nguyên vẹn?');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="Id" value="@o.Id" />
                                             <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
-                                            <button type="submit" class="btn btn-large py-1.5 px-6 text-sm leading-[22px] font-semibold rounded-[80px] shadow-none w-full sm:w-auto whitespace-nowrap bg-error text-white ring-1 ring-inset ring-error-dark/20">
+                                            <button type="submit" class="btn btn-large py-[7px] px-6 text-sm leading-[22px] font-semibold rounded-[80px] w-auto whitespace-nowrap text-white shadow-none"
+                                                    style="background: linear-gradient(135deg, #10b981, #059669) !important; border: none !important; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                                              ✓ Đã nhận được hàng
+                                            </button>
+                                          </form>
+                                        }
+                                        @if (ui.tabKey is "pending-confirmation" or "awaiting-pickup")
+                                        {
+                                          <form method="post" action="/my-orders/cancel" class="inline-flex w-auto" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="Id" value="@o.Id" />
+                                            <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                                            <button type="submit" class="btn btn-large py-1.5 px-6 text-sm leading-[22px] font-semibold rounded-[80px] shadow-none w-auto whitespace-nowrap bg-error text-white ring-1 ring-inset ring-error-dark/20">
                                               Hủy đơn
                                             </button>
                                           </form>
+                                        }
+                                        @if (ui.tabKey == "completed")
+                                        {
+                                          var diffCreatedUtc = Math.Abs((DateTime.UtcNow - o.CreatedAt).TotalDays);
+                                          var diffCreatedLocal = Math.Abs((DateTime.Now - o.CreatedAt).TotalDays);
+                                          var diffUpdatedUtc = Math.Abs((DateTime.UtcNow - o.UpdatedAt).TotalDays);
+                                          var diffUpdatedLocal = Math.Abs((DateTime.Now - o.UpdatedAt).TotalDays);
+                                          var isRecent = diffCreatedUtc <= 5 || diffCreatedLocal <= 5 || diffUpdatedUtc <= 5 || diffUpdatedLocal <= 5;
+
+                                          if (isRecent && !o.HasReviewed && !string.IsNullOrWhiteSpace(o.FirstProductSlug) && o.IsReceivedByCustomer)
+                                          {
+                                            <button type="button" class="btn btn-large py-[7px] px-6 text-sm leading-[22px] font-semibold rounded-[80px] w-auto whitespace-nowrap text-white shadow-none js-open-review-modal" 
+                                               style="background-color: #f59e0b !important; border: 1px solid #d97706 !important; display: inline-flex; align-items: center; justify-content: center; gap: 4px;"
+                                               data-product-id="@o.FirstProductId"
+                                               data-product-name="@o.FirstProductName"
+                                               data-product-image="@o.FirstProductImageUrl"
+                                               data-product-variant="@o.FirstProductVariantName">
+                                              Đánh giá
+                                            </button>
+                                          }
                                         }
                                         <a class="btn btn-large btn-primary py-[7px] px-6 text-sm leading-[22px] font-semibold rounded-[80px] w-full sm:w-auto whitespace-nowrap" href='@Url.Action("Index", "Products")'>
                                           Mua lại
@@ -1826,6 +1889,28 @@
 </script>
 
 <script>
+  // Tải số dư ví real-time cho dashboard
+  (() => {
+    const balanceEl = document.getElementById('dashboard-wallet-balance');
+    if (!balanceEl) return;
+
+    fetch('/my-wallet/balance')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.balanceFormatted) {
+          balanceEl.textContent = data.balanceFormatted + 'đ';
+        } else {
+          balanceEl.textContent = '0đ';
+        }
+      })
+      .catch(err => {
+        console.error('Lỗi khi tải số dư:', err);
+        balanceEl.textContent = 'N/A';
+      });
+  })();
+</script>
+
+<script>
   (() => {
     const serverTab = @System.Text.Json.JsonSerializer.Serialize(ViewData["ActiveAccountTab"] as string ?? string.Empty);
     const urlTab = (new URLSearchParams(window.location.search).get('tab') || '').trim();
@@ -1852,4 +1937,768 @@
       try { btn.click(); } catch { }
     }
   })();
+</script>
+
+<!-- ========================================== -->
+<!-- SHOPEE STYLE PREMIUM PRODUCT REVIEW MODAL -->
+<!-- ========================================== -->
+<div id="shopeeReviewModal" class="review-modal-overlay">
+  <div class="review-modal-container">
+    <!-- Header -->
+    <div class="review-modal-header">
+      <button type="button" id="reviewModalCloseBtn" class="review-modal-close-btn">
+        <i class="hgi hgi-stroke hgi-arrow-left-01"></i>
+      </button>
+      <h3 class="review-modal-title">Đánh giá sản phẩm</h3>
+    </div>
+
+
+    <!-- Form Container -->
+    <form id="shopeeReviewForm" method="post" action="/my-account/submit-review" enctype="multipart/form-data">
+      @Html.AntiForgeryToken()
+      <input type="hidden" name="productId" id="reviewProductId" />
+      <input type="file" name="reviewImages" id="reviewFileInput" accept="image/*" multiple class="hidden" />
+
+      <!-- Coin Banner -->
+      <div class="review-coin-bar" style="cursor: pointer; border-bottom: 1px solid rgba(253, 240, 213, 0.4); margin: 0; padding: 14px 20px;" title="Nhấp để xem hướng dẫn nhận 500 xu!">
+        <span class="review-coin-text">
+          <i class="hgi hgi-stroke hgi-coins review-coin-icon"></i>
+          Hướng dẫn nhận ngay 500 xu thưởng từ shop (Nhấp để xem chi tiết)
+        </span>
+        <i class="hgi hgi-stroke hgi-information-circle" style="color: #ea580c; font-size: 19px;"></i>
+      </div>
+
+      <div class="review-modal-body">
+        <div class="review-modal-two-columns">
+          
+          <!-- LEFT COLUMN -->
+          <div class="review-modal-col-left">
+            <!-- Product Details Card -->
+            <div class="review-product-card">
+              <img id="reviewProductImg" src="/assets/images/placeholder.png" alt="Product thumbnail" class="review-product-img" />
+              <div class="review-product-details">
+                <h4 id="reviewProductName" class="review-product-name">Tên sản phẩm</h4>
+                <p id="reviewProductVariant" class="review-product-variant">Phân loại hàng</p>
+              </div>
+            </div>
+
+            <!-- Rating Selection -->
+            <div class="review-rating-section">
+              <h5 class="review-section-title">Chất lượng sản phẩm</h5>
+              <div class="review-stars-row" id="reviewStarsRow">
+                <i class="hgi hgi-stroke hgi-star review-star-item" data-val="1"></i>
+                <i class="hgi hgi-stroke hgi-star review-star-item" data-val="2"></i>
+                <i class="hgi hgi-stroke hgi-star review-star-item" data-val="3"></i>
+                <i class="hgi hgi-stroke hgi-star review-star-item" data-val="4"></i>
+                <i class="hgi hgi-stroke hgi-star review-star-item" data-val="5"></i>
+              </div>
+              <input type="hidden" name="rating" id="reviewRatingInput" value="5" />
+              <span id="reviewRatingLabel" class="review-rating-label">Cực kỳ hài lòng</span>
+            </div>
+
+            <!-- Visual Mockup Image Upload Box -->
+            <div class="review-media-section">
+              <div class="review-media-header">
+                <span class="review-media-title">Hình ảnh thực tế về sản phẩm</span>
+                <span class="review-media-bonus">+500 xu</span>
+              </div>
+              <div class="review-upload-box" id="reviewUploadBox">
+                <span class="review-upload-badge">Yêu cầu: >= 1 ảnh & >= 50 ký tự</span>
+                <div class="review-upload-icon">
+                  <i class="hgi hgi-stroke hgi-camera-01"></i>
+                </div>
+                <p class="review-upload-text">Nhấp vào đây để tải lên nhiều ảnh sản phẩm</p>
+              </div>
+              
+              <!-- Previews Grid -->
+              <div id="reviewPreviewsGrid" class="review-previews-grid hidden"></div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN -->
+          <div class="review-modal-col-right">
+            <!-- Comment Textarea -->
+            <div class="review-text-section" style="flex: 1; display: flex; flex-direction: column;">
+              <h5 class="review-section-title">Viết đánh giá từ 50 ký tự</h5>
+              <div class="review-textarea-container" style="flex: 1; display: flex;">
+                <textarea name="comment" id="reviewTextarea" class="review-textarea" placeholder="Hãy chia sẻ nhận xét cho sản phẩm này bạn nhé!" style="flex: 1; min-height: 120px; resize: none;"></textarea>
+              </div>
+              <div class="review-char-count" id="reviewCharCount">0 ký tự</div>
+
+              <div class="review-anonymous-row">
+                <input type="checkbox" id="reviewAnonymous" class="review-anonymous-checkbox" checked />
+                <label for="reviewAnonymous" class="cursor-pointer">Đánh giá ẩn danh</label>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Footer Action -->
+      <div class="review-modal-footer">
+        <button type="submit" id="reviewSubmitBtn" class="review-submit-btn">Gửi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+/* Modal overlay styling */
+.review-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+}
+.review-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+.review-modal-container {
+    background: #f6f6f6;
+    width: 95%;
+    max-width: 920px;
+    max-height: 90vh;
+    border-radius: 24px;
+    box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.3);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transform: scale(0.93) translateY(15px);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+    box-sizing: border-box;
+}
+@@media (min-width: 768px) {
+    .review-modal-two-columns {
+        display: flex;
+        gap: 20px;
+        align-items: stretch;
+    }
+    .review-modal-col-left {
+        flex: 1.1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .review-modal-col-right {
+        flex: 0.9;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+.review-previews-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.review-preview-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.review-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.review-preview-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(239, 68, 68, 0.85);
+    color: #ffffff;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.review-preview-remove:hover {
+    background: rgb(239, 68, 68);
+}
+.review-modal-overlay.active .review-modal-container {
+    transform: scale(1) translateY(0);
+}
+.review-modal-header {
+    background: #ffffff;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.review-modal-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 22px;
+    color: #ee4d2d;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    margin-right: 16px;
+    transition: transform 0.2s ease;
+}
+.review-modal-close-btn:hover {
+    transform: scale(1.1);
+}
+.review-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+.review-coin-bar {
+    background: #fffcf5;
+    border-bottom: 1px solid #fdf0d5;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14.5px;
+    color: #b7791f;
+    font-weight: 600;
+}
+.review-coin-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.review-coin-icon {
+    color: #eab308;
+    font-size: 19px;
+}
+.review-modal-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.review-product-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.review-product-img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+}
+.review-product-details {
+    flex: 1;
+    min-width: 0;
+}
+.review-product-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 3px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.review-product-variant {
+    font-size: 11.5px;
+    color: #64748b;
+    margin: 0;
+    font-weight: 500;
+}
+.review-rating-section {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.review-section-title {
+    font-size: 13.5px;
+    color: #475569;
+    margin: 0;
+    font-weight: 600;
+}
+.review-stars-row {
+    display: flex;
+    gap: 8px;
+}
+.review-star-item {
+    font-size: 36px;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.review-star-item.active {
+    color: #fbbf24;
+    font-weight: bold;
+}
+.review-star-item:hover {
+    transform: scale(1.18);
+}
+.review-rating-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ee4d2d;
+    height: 18px;
+}
+.review-media-section {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.review-media-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+}
+.review-media-title {
+    color: #475569;
+    font-weight: 600;
+}
+.review-media-bonus {
+    color: #ea580c;
+    font-weight: 700;
+}
+.review-upload-box {
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    background: #f8fafc;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+.review-upload-box:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+.review-upload-icon {
+    font-size: 26px;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+.review-upload-text {
+    font-size: 11.5px;
+    color: #64748b;
+    margin: 0;
+    font-weight: 500;
+}
+.review-upload-badge {
+    position: absolute;
+    top: -9px;
+    right: 12px;
+    background: #ea580c;
+    color: #ffffff;
+    font-size: 9.5px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 650;
+}
+.review-text-section {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.review-textarea-container {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+}
+.review-textarea {
+    width: 100%;
+    min-height: 100px;
+    border: none;
+    background: transparent;
+    resize: none;
+    font-size: 13.5px;
+    color: #1e293b;
+    outline: none;
+    padding: 0;
+    margin: 0;
+}
+.review-textarea::placeholder {
+    color: #94a3b8;
+}
+.review-char-count {
+    text-align: right;
+    font-size: 11.5px;
+    color: #64748b;
+    font-weight: 500;
+}
+.review-anonymous-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+    margin-top: 4px;
+}
+.review-anonymous-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #ee4d2d;
+    cursor: pointer;
+}
+.review-extra-section {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.review-extra-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 500;
+}
+.review-extra-label {
+    color: #475569;
+}
+.review-extra-stars {
+    display: flex;
+    gap: 4px;
+}
+.review-extra-star {
+    font-size: 16px;
+    color: #fbbf24;
+    cursor: pointer;
+}
+.review-modal-footer {
+    background: #ffffff;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(226, 232, 240, 0.8);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+.review-submit-btn {
+    width: 100%;
+    background: #ee4d2d;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 13px;
+    font-size: 15.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    box-sizing: border-box;
+}
+.review-submit-btn:hover {
+    background: #d73211;
+    transform: translateY(-1px);
+}
+.review-submit-btn:active {
+    transform: translateY(0);
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("shopeeReviewModal");
+    const openBtns = document.querySelectorAll(".js-open-review-modal");
+    const closeBtn = document.getElementById("reviewModalCloseBtn");
+    const form = document.getElementById("shopeeReviewForm");
+
+    const pIdInput = document.getElementById("reviewProductId");
+    const pImg = document.getElementById("reviewProductImg");
+    const pName = document.getElementById("reviewProductName");
+    const pVariant = document.getElementById("reviewProductVariant");
+
+    const starInput = document.getElementById("reviewRatingInput");
+    const ratingLabel = document.getElementById("reviewRatingLabel");
+    const stars = document.querySelectorAll("#reviewStarsRow .review-star-item");
+    const textarea = document.getElementById("reviewTextarea");
+    const charCount = document.getElementById("reviewCharCount");
+    const submitBtn = document.getElementById("reviewSubmitBtn");
+
+    const starLabels = {
+        5: "Cực kỳ hài lòng",
+        4: "Rất hài lòng",
+        3: "Hài lòng",
+        2: "Không hài lòng",
+        1: "Tệ"
+    };
+
+    const ratingPlaceholders = {
+        5: "Chất liệu: Tôi thấy chất liệu nhựa dẻo và tròng kính rất chắc chắn, bền đẹp.\nMàu sắc: Đen bóng cực kỳ sang và thời thượng, dễ phối đồ.\nHãy chia sẻ nhận xét chi tiết hơn về sản phẩm này bạn nhé!",
+        4: "Chất liệu: Tốt, cứng cáp so với tầm giá.\nMàu sắc: Đẹp, giống hình mô tả.\nHãy chia sẻ nhận xét chi tiết hơn về sản phẩm này bạn nhé!",
+        3: "Chất liệu: Tạm ổn.\nMàu sắc: Hơi khác ảnh một chút nhưng vẫn chấp nhận được.\nHãy chia sẻ nhận xét chi tiết hơn về sản phẩm này bạn nhé!",
+        2: "Chất liệu: Không như mong đợi, gọng kính hơi yếu.\nMàu sắc: Hơi xỉn màu.\nHãy chia sẻ nhận xét chi tiết hơn về sản phẩm này bạn nhé!",
+        1: "Chất liệu: Quá kém gọng dễ gãy.\nMàu sắc: Không đúng mô tả.\nHãy chia sẻ nhận xét chi tiết hơn về sản phẩm này bạn nhé!"
+    };
+
+    const coinBar = document.querySelector(".review-coin-bar");
+    const uploadBox = document.getElementById("reviewUploadBox");
+    const fileInput = document.getElementById("reviewFileInput");
+
+    const perfectTemplates = {
+        5: "Chất liệu sản phẩm rất tốt, đường may tỉ mỉ chắc chắn. Màu sắc chuẩn đẹp y hệt hình mô tả của shop. Giao hàng cực kỳ nhanh chóng và đóng gói cẩn thận. Rất đáng tiền!",
+        4: "Sản phẩm chất lượng khá ổn, đóng gói kỹ càng. Màu sắc đẹp và thời trang. Thời gian giao hàng nhanh, nhân viên thân thiện. Sẽ ủng hộ shop thêm lần sau.",
+        3: "Sản phẩm dùng tạm ổn, chất lượng bình thường so với giá tiền. Đóng gói đầy đủ, giao hàng không quá lâu.",
+        2: "Sản phẩm không giống mô tả lắm, chất lượng chưa được tốt. Cần cải thiện dịch vụ chăm sóc khách hàng.",
+        1: "Chất lượng sản phẩm quá tệ, khác xa so với quảng cáo. Đóng gói sơ sài, giao hàng rất chậm."
+    };
+
+    function showReviewToast(msg) {
+        let toast = document.createElement("div");
+        toast.style.position = "fixed";
+        toast.style.bottom = "80px";
+        toast.style.left = "50%";
+        toast.style.transform = "translateX(-50%)";
+        toast.style.background = "#10b981";
+        toast.style.color = "#ffffff";
+        toast.style.padding = "10px 20px";
+        toast.style.borderRadius = "30px";
+        toast.style.fontSize = "13px";
+        toast.style.fontWeight = "600";
+        toast.style.zIndex = "100000";
+        toast.style.boxShadow = "0 10px 25px rgba(16, 185, 129, 0.4)";
+        toast.style.transition = "all 0.3s ease";
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 300);
+        }, 2500);
+    }
+
+    // Show detailed guide when clicking the coin bar
+    if (coinBar) {
+        coinBar.addEventListener("click", function() {
+            alert("💡 HƯỚNG DẪN NHẬN 500 XU THƯỞNG:\n\nĐể được cộng ngay 500 xu vào ví của bạn, vui lòng:\n1️⃣ Tải lên ít nhất 1 hình ảnh sản phẩm thực tế.\n2️⃣ Viết nội dung đánh giá từ 50 ký tự trở lên.\n\nChúc bạn nhận xu thành công và mua sắm vui vẻ cùng shop nhé!");
+        });
+    }
+
+    let selectedFiles = [];
+    const previewsGrid = document.getElementById("reviewPreviewsGrid");
+
+    function updatePreviews() {
+        if (!previewsGrid) return;
+        if (selectedFiles.length === 0) {
+            previewsGrid.classList.add("hidden");
+            previewsGrid.innerHTML = "";
+            fileInput.value = "";
+            uploadBox.innerHTML = `
+                <span class="review-upload-badge">Yêu cầu: >= 1 ảnh & >= 50 ký tự</span>
+                <div class="review-upload-icon">
+                  <i class="hgi hgi-stroke hgi-camera-01"></i>
+                </div>
+                <p class="review-upload-text">Nhấp vào đây để tải lên nhiều ảnh sản phẩm</p>
+            `;
+            return;
+        }
+
+        previewsGrid.classList.remove("hidden");
+        previewsGrid.innerHTML = "";
+        
+        const dt = new DataTransfer();
+        
+        selectedFiles.forEach((file, index) => {
+            dt.items.add(file);
+            
+            const reader = new FileReader();
+            const previewItem = document.createElement("div");
+            previewItem.className = "review-preview-item";
+            
+            reader.onload = function(e) {
+                previewItem.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview" />
+                    <button type="button" class="review-preview-remove" data-index="${index}">&times;</button>
+                `;
+                previewItem.querySelector(".review-preview-remove").addEventListener("click", function(event) {
+                    event.stopPropagation();
+                    const removeIdx = parseInt(this.getAttribute("data-index"));
+                    selectedFiles.splice(removeIdx, 1);
+                    updatePreviews();
+                });
+            };
+            reader.readAsDataURL(file);
+            previewsGrid.appendChild(previewItem);
+        });
+
+        fileInput.files = dt.files;
+
+        uploadBox.innerHTML = `
+            <div style="color: #10b981; font-weight: 600; font-size: 13px;">
+                <i class="hgi hgi-stroke hgi-tick-double-02" style="font-size: 20px; vertical-align: middle; margin-right: 4px;"></i>
+                Đã chọn ${selectedFiles.length} hình ảnh thực tế
+            </div>
+            <p style="font-size: 11px; color: #64748b; margin-top: 4px; margin-bottom: 0;">(Nhấp để thêm ảnh thực tế khác)</p>
+        `;
+    }
+
+    // Image Upload Interaction
+    if (uploadBox && fileInput) {
+        uploadBox.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", function() {
+            if (this.files && this.files.length > 0) {
+                for (let file of this.files) {
+                    selectedFiles.push(file);
+                }
+                updatePreviews();
+            }
+        });
+    }
+
+    // Open Modal
+    openBtns.forEach(btn => {
+        btn.addEventListener("click", function () {
+            const pId = this.getAttribute("data-product-id");
+            const name = this.getAttribute("data-product-name");
+            const img = this.getAttribute("data-product-image");
+            const variant = this.getAttribute("data-product-variant");
+
+            pIdInput.value = pId;
+            pName.textContent = name;
+            pVariant.textContent = variant || "Mặc định";
+            pImg.src = img || "/assets/images/placeholder.png";
+
+            // Reset Form Values
+            setStars(5);
+            textarea.value = "";
+            charCount.textContent = "0 ký tự";
+            fileInput.value = "";
+            selectedFiles = [];
+            updatePreviews();
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Gửi";
+
+            modal.classList.add("active");
+        });
+    });
+
+    // Close Modal
+    function closeModal() {
+        modal.classList.remove("active");
+    }
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeModal();
+    });
+
+    // Star Selection Logic
+    stars.forEach(star => {
+        star.addEventListener("click", function () {
+            const val = parseInt(this.getAttribute("data-val"));
+            setStars(val);
+        });
+    });
+
+    function setStars(rating) {
+        starInput.value = rating;
+        ratingLabel.textContent = starLabels[rating] || "";
+        
+        // Update placeholder based on selected rating
+        textarea.placeholder = ratingPlaceholders[rating] || "Hãy chia sẻ nhận xét cho sản phẩm này bạn nhé!";
+
+        stars.forEach(s => {
+            const starVal = parseInt(s.getAttribute("data-val"));
+            if (starVal <= rating) {
+                s.classList.add("active");
+            } else {
+                s.classList.remove("active");
+            }
+        });
+    }
+
+    // Textarea Char Count
+    textarea.addEventListener("input", function () {
+        const count = this.value.length;
+        charCount.textContent = count + " ký tự";
+    });
+
+    // Form Submit via AJAX
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Đang gửi...";
+
+        const formData = new FormData(form);
+
+        fetch("/my-account/submit-review", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert("Cảm ơn bạn! " + data.message);
+                closeModal();
+                // Reload list to update buttons & reviewed states
+                window.location.reload();
+            } else {
+                alert("Lỗi: " + (data.error || "Không thể gửi đánh giá"));
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Gửi";
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Có lỗi kết nối xảy ra. Vui lòng thử lại sau.");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Gửi";
+        });
+    });
+});
 </script>

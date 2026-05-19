@@ -1,0 +1,194 @@
+@model IEnumerable<DOAN_BANHANG.Models.SystemSetting>
+
+@{
+    ViewData["Title"] = "Cấu hình tài chính hệ thống";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@section Styles {
+    <style>
+        .setting-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+            height: 100%;
+        }
+        .setting-card:hover {
+            border-color: #556ee6;
+            box-shadow: 0 4px 15px rgba(85, 110, 230, 0.12);
+        }
+        .setting-icon {
+            width: 42px; height: 42px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem; color: #fff;
+        }
+        .setting-icon.percent { background: linear-gradient(135deg, #556ee6, #34c38f); }
+        .setting-icon.money   { background: linear-gradient(135deg, #f1b44c, #f46a6a); }
+        .setting-label {
+            font-size: 0.82rem; font-weight: 600; color: #495057;
+            margin-bottom: 0.35rem;
+        }
+        .setting-key {
+            font-size: 0.7rem; color: #a0aec0;
+        }
+        .input-unit {
+            min-width: 44px; font-weight: 700; font-size: 0.9rem;
+            background: #f8f9fa; border-left: 0;
+        }
+        .summary-row {
+            background: linear-gradient(135deg, #f8f9fc, #eef1f8);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .summary-badge {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 100px; font-size: 0.78rem; font-weight: 600;
+        }
+    </style>
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0 font-size-18">Cấu hình Thuế và Phí</h4>
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a href="javascript: void(0);">Hệ thống</a></li>
+                    <li class="breadcrumb-item active">Cấu hình Tài chính</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="summary-row d-flex flex-wrap gap-2 align-items-center">
+    <span class="badge bg-primary bg-soft text-primary font-size-13 px-3 py-2 rounded-pill">
+        <i class="bx bx-calendar me-1"></i> Năm 2026
+    </span>
+    <span class="badge bg-success bg-soft text-success font-size-13 px-3 py-2 rounded-pill">
+        <i class="bx bx-check-shield me-1"></i> Theo Nghị định giảm VAT
+    </span>
+    <span class="badge bg-warning bg-soft text-warning font-size-13 px-3 py-2 rounded-pill">
+        <i class="bx bx-store me-1"></i> Thời trang & Mỹ phẩm
+    </span>
+    <span class="ms-auto text-muted font-size-12">
+        <i class="bx bx-info-circle"></i> Giá trị % nhập trực tiếp (VD: 8 = 8%). Tiền VNĐ nhập số nguyên.
+    </span>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="mdi mdi-check-all me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form asp-action="Update" method="post" id="settingsForm">
+    <div class="row g-3">
+        @foreach (var setting in Model)
+        {
+            var isPercent = setting.Type == "percent";
+            var isMoney = setting.Type == "money";
+            var iconClass = isPercent ? "percent" : "money";
+            var iconChar = isPercent ? "bx bx-trending-up" : "bx bx-wallet";
+            var unitLabel = isPercent ? "%" : "₫";
+
+            <div class="col-md-6 col-xl-4">
+                <div class="setting-card">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <div class="setting-icon @iconClass">
+                            <i class="@iconChar"></i>
+                        </div>
+                        <div>
+                            <div class="setting-label">@setting.Description</div>
+                            <div class="setting-key"><code>@setting.Id</code></div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        @if (isMoney)
+                        {
+                            <!-- Money: text input with JS formatting -->
+                            <input type="text"
+                                   class="form-control money-input"
+                                   id="@setting.Id"
+                                   data-raw-name="settings[@setting.Id]"
+                                   value="@setting.Value"
+                                   required
+                                   autocomplete="off" />
+                            <!-- Hidden field sends the raw number -->
+                            <input type="hidden" name="settings[@setting.Id]" value="@setting.Value" />
+                        }
+                        else
+                        {
+                            <input type="number"
+                                   step="any"
+                                   min="0"
+                                   class="form-control"
+                                   id="@setting.Id"
+                                   name="settings[@setting.Id]"
+                                   value="@setting.Value"
+                                   required />
+                        }
+                        <span class="input-group-text input-unit">@unitLabel</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mt-4 mb-3">
+        <button type="submit" class="btn btn-primary waves-effect waves-light px-4">
+            <i class="bx bx-save me-1"></i> Lưu thay đổi
+        </button>
+        <button type="reset" class="btn btn-outline-secondary waves-effect waves-light" id="btnReset">
+            <i class="bx bx-reset me-1"></i> Khôi phục
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        $(function () {
+            // Format a number string with dots: 500000000 -> 500.000.000
+            function formatMoney(val) {
+                val = (val + '').replace(/[^\d]/g, '');
+                if (!val) return '';
+                return val.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            }
+
+            // Init: format all money inputs on load
+            $('.money-input').each(function () {
+                var raw = $(this).val().replace(/[^\d]/g, '');
+                $(this).val(formatMoney(raw));
+                $(this).siblings('input[type=hidden]').val(raw);
+            });
+
+            // On typing, reformat and sync hidden field
+            $('.money-input').on('input', function () {
+                var raw = $(this).val().replace(/[^\d]/g, '');
+                $(this).val(formatMoney(raw));
+                $(this).siblings('input[type=hidden]').val(raw);
+            });
+
+            // On form reset, re-apply formatting
+            $('#btnReset').on('click', function () {
+                setTimeout(function () {
+                    $('.money-input').each(function () {
+                        var raw = $(this).val().replace(/[^\d]/g, '');
+                        $(this).val(formatMoney(raw));
+                        $(this).siblings('input[type=hidden]').val(raw);
+                    });
+                }, 50);
+            });
+        });
+    </script>
+}

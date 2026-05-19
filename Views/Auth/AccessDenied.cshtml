@@ -1,0 +1,35 @@
+@{
+    ViewData["Title"] = "Từ chối truy cập";
+}
+
+<div class="container py-20 min-h-[60vh] flex items-center justify-center">
+    <div class="max-w-md w-full text-center">
+        <div class="mb-8 relative inline-block">
+            <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                <i class="hgi hgi-stroke hgi-lock-password text-5xl text-red-600"></i>
+            </div>
+            <div class="absolute -right-2 -bottom-2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center">
+                <i class="hgi hgi-stroke hgi-stop-01 text-red-500"></i>
+            </div>
+        </div>
+
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-4">Truy cập bị từ chối</h1>
+        <p class="text-lg text-gray-600 mb-10 leading-relaxed">
+            Rất tiếc, tài khoản của bạn không có quyền truy cập vào trang này. 
+            Vui lòng liên hệ quản trị viên hoặc đăng nhập bằng tài khoản có quyền cao hơn.
+        </p>
+
+        <div class="flex flex-col gap-4">
+            <a href="/" class="btn btn-primary rounded-2xl py-3 font-bold shadow-lg shadow-teal-500/20 hover:scale-105 transition-all">
+                Quay về trang chủ
+            </a>
+            <button onclick="history.back()" class="btn btn-light rounded-2xl py-3 font-bold text-gray-600 hover:bg-gray-100 transition-all border border-gray-200">
+                Quay lại trang trước
+            </button>
+        </div>
+
+        <div class="mt-12 p-4 bg-gray-50 rounded-2xl border border-gray-100 text-sm text-gray-500 italic">
+            Mã lỗi: 403 Forbidden | Quyền hạn yêu cầu không khớp
+        </div>
+    </div>
+</div>

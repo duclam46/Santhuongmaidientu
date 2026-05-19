@@ -61,6 +61,16 @@
             : string.Equals(status, "Hidden", StringComparison.OrdinalIgnoreCase) ? "bg-warning text-dark"
             : "bg-secondary";
     }
+
+    var categoryNameLower = Model.CategoryName?.ToLower() ?? "";
+    var scheme = "all";
+    if (categoryNameLower.Contains("áo") || categoryNameLower.Contains("shirt") || categoryNameLower.Contains("top") || categoryNameLower.Contains("sơ mi") || categoryNameLower.Contains("phông")) {
+        scheme = "ao";
+    } else if (categoryNameLower.Contains("quần") || categoryNameLower.Contains("pants") || categoryNameLower.Contains("jean") || categoryNameLower.Contains("khaki") || categoryNameLower.Contains("short")) {
+        scheme = "quan";
+    } else if (categoryNameLower.Contains("giày") || categoryNameLower.Contains("dép") || categoryNameLower.Contains("shoe") || categoryNameLower.Contains("sneaker")) {
+        scheme = "shoe";
+    }
 }
 
 
@@ -113,7 +123,17 @@
 
                             <div class="flex-grow-1">
                                 <div class="border rounded p-2" style="min-height: 420px; display:flex; align-items:center; justify-content:center;">
-                                    <img id="adminProductMainImg" src="@images[0].Url" alt="@images[0].Alt" class="img-fluid" style="max-height: 420px; object-fit: contain;" />
+                                    @if (images.Count > 0)
+                                    {
+                                        <img id="adminProductMainImg" src="@images[0].Url" alt="@images[0].Alt" class="img-fluid" style="max-height: 420px; object-fit: contain;" />
+                                    }
+                                    else
+                                    {
+                                        <div id="adminProductMainImg" class="text-muted d-flex flex-column align-items-center gap-2">
+                                            <i class="bx bx-image-alt font-size-24"></i>
+                                            <span>Không có ảnh</span>
+                                        </div>
+                                    }
                                 </div>
                                 <div class="form-text mt-2">Bấm thumbnail để xem ảnh lớn.</div>
                             </div>
@@ -342,13 +362,20 @@
                                 else
                                 {
                                     <div class="table-responsive">
-                                        <table class="table table-sm align-middle mb-0">
+                                        <table class="table table-sm align-middle mb-0 text-nowrap">
                                             <thead class="table-light">
                                                 <tr>
-                                                    <th style="width: 110px;">Size</th>
-                                                    <th style="width: 170px;">Chiều cao</th>
-                                                    <th style="width: 170px;">Cân nặng</th>
-                                                    <th>Ghi chú</th>
+                                                    <th style="width: 80px;">Size</th>
+                                                    @if (scheme == "ao" || scheme == "quan" || scheme == "all") { <th>C.Cao người</th> }
+                                                    @if (scheme == "ao" || scheme == "quan" || scheme == "all") { <th>C.Nặng người</th> }
+                                                    @if (scheme == "ao" || scheme == "all") { <th>Vai (cm)</th> }
+                                                    @if (scheme == "ao" || scheme == "all") { <th>Ngực (cm)</th> }
+                                                    @if (scheme == "quan" || scheme == "all") { <th>Eo (cm)</th> }
+                                                    @if (scheme == "quan" || scheme == "all") { <th>Mông (cm)</th> }
+                                                    @if (scheme == "ao" || scheme == "quan" || scheme == "all") { <th>Dài (cm)</th> }
+                                                    @if (scheme == "ao" || scheme == "quan" || scheme == "all") { <th>Rộng (cm)</th> }
+                                                    @if (scheme == "shoe" || scheme == "all") { <th>Dài chân (cm)</th> }
+                                                    <th>Ghi chú / Thông số</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -356,8 +383,15 @@
                                                 {
                                                     <tr>
                                                         <td class="fw-semibold">@(r.SizeLabel ?? "-")</td>
-                                                        <td>@(r.HeightRange ?? "-")</td>
-                                                        <td>@(r.WeightRange ?? "-")</td>
+                                                        @if (scheme == "ao" || scheme == "quan" || scheme == "all") { <td>@(r.HeightRange ?? "-")</td> }
+                                                        @if (scheme == "ao" || scheme == "quan" || scheme == "all") { <td>@(r.WeightRange ?? "-")</td> }
+                                                        @if (scheme == "ao" || scheme == "all") { <td>@(r.ShoulderWidth ?? "-")</td> }
+                                                        @if (scheme == "ao" || scheme == "all") { <td>@(r.Bust ?? "-")</td> }
+                                                        @if (scheme == "quan" || scheme == "all") { <td>@(r.Waist ?? "-")</td> }
+                                                        @if (scheme == "quan" || scheme == "all") { <td>@(r.Hip ?? "-")</td> }
+                                                        @if (scheme == "ao" || scheme == "quan" || scheme == "all") { <td>@(r.ClothingLength ?? "-")</td> }
+                                                        @if (scheme == "ao" || scheme == "quan" || scheme == "all") { <td>@(r.ClothingWidth ?? "-")</td> }
+                                                        @if (scheme == "shoe" || scheme == "all") { <td>@(r.ShoeLength ?? "-")</td> }
                                                         <td>@(r.Note ?? "-")</td>
                                                     </tr>
                                                 }

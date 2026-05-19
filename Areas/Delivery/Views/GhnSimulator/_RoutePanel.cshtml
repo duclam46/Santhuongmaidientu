@@ -1,0 +1,391 @@
+@model DOAN_BANHANG.ViewModels.DeliveryGhnSimulatorVm
+@{
+    var hasOrder = Model.ResolvedOrderId.HasValue && Model.ResolvedOrderId.Value > 0;
+    var hasRoute = Model.RouteSteps is { Count: > 0 };
+    var lastRoutePos = hasRoute
+        ? Model.RouteSteps.FindLastIndex(x => !string.Equals(x.Location, "Log nội bộ", StringComparison.OrdinalIgnoreCase))
+        : -1;
+
+    static string BadgeClass(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status)) return "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle";
+        var s = status.Trim();
+
+        if (s.Contains("Đã hoàn trả thành công về Shop", StringComparison.OrdinalIgnoreCase) || s.Contains("Đã trung chuyển hoàn", StringComparison.OrdinalIgnoreCase))
+            return "bg-success-subtle text-success-emphasis border border-success-subtle";
+        if (s.Contains("Đã nhận tại điểm hoàn", StringComparison.OrdinalIgnoreCase) || s.Contains("Shipper đang giao trả", StringComparison.OrdinalIgnoreCase))
+            return "bg-primary-subtle text-primary-emphasis border border-primary-subtle";
+        if (s.Contains("Chờ trung chuyển hoàn", StringComparison.OrdinalIgnoreCase) || s.Contains("Chờ bàn giao lại", StringComparison.OrdinalIgnoreCase))
+            return "bg-primary-subtle text-primary-emphasis border border-primary-subtle";
+        if (s.Contains("từ chối nhận", StringComparison.OrdinalIgnoreCase))
+            return "bg-danger-subtle text-danger-emphasis border border-danger-subtle";
+
+        if (s.Contains("Đã đến", StringComparison.OrdinalIgnoreCase) || s.Contains("Đã rời", StringComparison.OrdinalIgnoreCase))
+            return "bg-success-subtle text-success-emphasis border border-success-subtle";
+        if (s.Contains("không nhận", StringComparison.OrdinalIgnoreCase))
+            return "bg-danger-subtle text-danger-emphasis border border-danger-subtle";
+        if (s.Contains("Đang chờ", StringComparison.OrdinalIgnoreCase))
+            return "bg-primary-subtle text-primary-emphasis border border-primary-subtle";
+        if (s.Contains("Chưa tới lượt", StringComparison.OrdinalIgnoreCase))
+            return "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle";
+        if (s.Contains("Đã qua", StringComparison.OrdinalIgnoreCase)) return "bg-success-subtle text-success-emphasis border border-success-subtle";
+        if (s.Contains("Đang xử lý", StringComparison.OrdinalIgnoreCase)) return "bg-primary-subtle text-primary-emphasis border border-primary-subtle";
+        if (s.Contains("Dự kiến", StringComparison.OrdinalIgnoreCase)) return "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle";
+        if (s.Contains("hủy", StringComparison.OrdinalIgnoreCase) || s.Contains("Không thực hiện", StringComparison.OrdinalIgnoreCase))
+            return "bg-danger-subtle text-danger-emphasis border border-danger-subtle";
+        return "bg-info-subtle text-info-emphasis border border-info-subtle";
+    }
+
+    static string AccentBorderClass(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status)) return "border-secondary";
+        var s = status.Trim();
+
+        if (s.Contains("Đã hoàn trả thành công về Shop", StringComparison.OrdinalIgnoreCase) || s.Contains("Đã trung chuyển hoàn", StringComparison.OrdinalIgnoreCase))
+            return "border-success";
+        if (s.Contains("Đã nhận tại điểm hoàn", StringComparison.OrdinalIgnoreCase) || s.Contains("Shipper đang giao trả", StringComparison.OrdinalIgnoreCase))
+            return "border-primary";
+        if (s.Contains("Chờ trung chuyển hoàn", StringComparison.OrdinalIgnoreCase) || s.Contains("Chờ bàn giao lại", StringComparison.OrdinalIgnoreCase))
+            return "border-primary";
+        if (s.Contains("từ chối nhận", StringComparison.OrdinalIgnoreCase))
+            return "border-danger";
+
+        if (s.Contains("không nhận", StringComparison.OrdinalIgnoreCase)) return "border-danger";
+        if (s.Contains("Đã giao", StringComparison.OrdinalIgnoreCase)) return "border-success";
+        if (s.Contains("Đã đến", StringComparison.OrdinalIgnoreCase) || s.Contains("Đã rời", StringComparison.OrdinalIgnoreCase) || s.Contains("Đã qua", StringComparison.OrdinalIgnoreCase))
+            return "border-success";
+        if (s.Contains("Đang", StringComparison.OrdinalIgnoreCase) || s.Contains("Chờ", StringComparison.OrdinalIgnoreCase))
+            return "border-primary";
+        if (s.Contains("Dự kiến", StringComparison.OrdinalIgnoreCase))
+            return "border-secondary";
+        return "border-info";
+    }
+
+    static string DotClass(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status)) return "bg-light text-dark border border-secondary";
+        var s = status.Trim();
+
+        if (s.Contains("Đã hoàn trả thành công về Shop", StringComparison.OrdinalIgnoreCase) || s.Contains("Đã trung chuyển hoàn", StringComparison.OrdinalIgnoreCase))
+            return "bg-light text-success border border-success";
+        if (s.Contains("Đã nhận tại điểm hoàn", StringComparison.OrdinalIgnoreCase) || s.Contains("Shipper đang giao trả", StringComparison.OrdinalIgnoreCase))
+            return "bg-light text-primary border border-primary";
+        if (s.Contains("Chờ trung chuyển hoàn", StringComparison.OrdinalIgnoreCase) || s.Contains("Chờ bàn giao lại", StringComparison.OrdinalIgnoreCase))
+            return "bg-light text-primary border border-primary";
+        if (s.Contains("từ chối nhận", StringComparison.OrdinalIgnoreCase))
+            return "bg-light text-danger border border-danger";
+
+        if (s.Contains("không nhận", StringComparison.OrdinalIgnoreCase)) return "bg-light text-danger border border-danger";
+        if (s.Contains("Đã giao", StringComparison.OrdinalIgnoreCase)) return "bg-light text-success border border-success";
+        if (s.Contains("Đã đến", StringComparison.OrdinalIgnoreCase) || s.Contains("Đã rời", StringComparison.OrdinalIgnoreCase) || s.Contains("Đã qua", StringComparison.OrdinalIgnoreCase))
+            return "bg-light text-success border border-success";
+        if (s.Contains("Đang", StringComparison.OrdinalIgnoreCase) || s.Contains("Chờ", StringComparison.OrdinalIgnoreCase))
+            return "bg-light text-primary border border-primary";
+        if (s.Contains("Dự kiến", StringComparison.OrdinalIgnoreCase))
+            return "bg-light text-dark border border-secondary";
+        return "bg-light text-info border border-info";
+    }
+}
+
+<div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+    <div class="card-header bg-light border-0 border-start border-4 border-info">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bx bx-git-branch"></i>
+                <h5 class="mb-0">Lộ trình giao hàng</h5>
+            </div>
+            <div class="text-muted small">@(!hasRoute ? "" : $"Tổng: {Model.RouteSteps.Count}")</div>
+        </div>
+    </div>
+
+    <div class="card-body">
+        @if (!hasOrder)
+        {
+            <div class="text-muted">Nhập mã vận đơn để tải lộ trình.</div>
+        }
+        else
+        {
+            <div class="mb-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="fw-semibold"><i class="bx bx-receipt me-1"></i>@Model.ResolvedOrderCode</div>
+                        @if (Model.IsReturnRequestSim)
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-2"><i class="bx bx-subdirectory-left me-1"></i>Đơn hàng hoàn</span>
+                        }
+                    </div>
+                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">
+                        <i class="bx bx-package me-1"></i>
+                        Vận đơn: @(string.IsNullOrWhiteSpace(Model.ResolvedTrackingCode) ? "(chưa có mã)" : Model.ResolvedTrackingCode)
+                    </span>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.GhnStatusName))
+                {
+                    <div class="text-muted small mt-2"><i class="bx bx-pulse me-1"></i>Trạng thái: @Model.GhnStatusName</div>
+                }
+            </div>
+
+            @if (hasRoute)
+            {
+                var lastStep = Model.RouteSteps.LastOrDefault();
+                var isFinished = lastStep != null && lastStep.SimDeparted;
+
+                if (!isFinished)
+                {
+                    <div class="p-3 mb-3 bg-warning-subtle border border-warning-subtle rounded-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bx bx-bolt-circle text-warning fs-4"></i>
+                            <div class="fw-semibold">Giả lập nhanh lộ trình (Simulator Quick Actions)</div>
+                        </div>
+                        <div class="text-muted small mb-3">Tự động check-in qua toàn bộ các kho trung chuyển và hoàn thành hành trình nhanh chóng:</div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-sm btn-success js-auto-sim-btn" data-outcome="success">
+                                <i class="bx bx-check-double me-1"></i>
+                                @(Model.IsReturnRequestSim ? "1. Hoàn trả thành công luôn" : "1. Giao hàng thành công luôn")
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger js-auto-sim-btn" data-outcome="fail">
+                                <i class="bx bx-error-alt me-1"></i>
+                                @(Model.IsReturnRequestSim ? "2. Shop từ chối nhận luôn" : "2. Giao hàng thất bại luôn")
+                            </button>
+                        </div>
+                    </div>
+                }
+            }
+
+            @if (!hasRoute)
+            {
+                <div class="text-muted">
+                    Chưa có lộ trình dự kiến để hiển thị.
+                    <div class="small mt-1">Kiểm tra đơn hàng đã có <span class="fw-semibold">ShippingDistrictId</span> (địa chỉ nhận) và shop có <span class="fw-semibold">UserAddress</span> (địa chỉ gửi) hay chưa.</div>
+                </div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @for (var i = 0; i < Model.RouteSteps.Count; i++)
+                    {
+                        var s = Model.RouteSteps[i];
+                        var isInternalLogRow = string.Equals(s.Location, "Log nội bộ", StringComparison.OrdinalIgnoreCase);
+                        var isLastMileStep = !isInternalLogRow && i == lastRoutePos;
+                        var locationLabel = string.IsNullOrWhiteSpace(s.Location) ? "(không rõ kho)" : s.Location;
+                        var statusLabel = string.IsNullOrWhiteSpace(s.StatusName) ? "Đang xử lý" : s.StatusName;
+
+                        if (!isInternalLogRow)
+                        {
+                            if (isLastMileStep)
+                            {
+                                if (Model.IsReturnRequestSim)
+                                {
+                                    statusLabel = s.SimDeparted
+                                        ? (s.SimRefused ? "Shop từ chối nhận hàng" : "Đã hoàn trả thành công về Shop")
+                                        : (s.SimArrived
+                                            ? "Shipper đang giao trả về kho Shop"
+                                            : (s.SimIsActive ? "Chờ bàn giao lại cho Shop" : "Chưa tới lượt"));
+                                }
+                                else
+                                {
+                                    statusLabel = s.SimDeparted
+                                        ? (s.SimRefused ? "Khách hàng không nhận đơn" : "Đã giao thành công")
+                                        : (s.SimArrived
+                                            ? "Đang giao cho khách"
+                                            : (s.SimIsActive ? "Chờ nhận đơn giao" : "Chưa tới lượt"));
+                                }
+                            }
+                            else
+                            {
+                                if (Model.IsReturnRequestSim)
+                                {
+                                    statusLabel = s.SimDeparted
+                                        ? "Đã trung chuyển hoàn"
+                                        : (s.SimArrived
+                                            ? "Đã nhận tại điểm hoàn"
+                                            : (s.SimIsActive ? "Chờ trung chuyển hoàn" : "Chưa tới lượt"));
+                                }
+                                else
+                                {
+                                    statusLabel = s.SimDeparted
+                                        ? "Đã rời kho"
+                                        : (s.SimArrived
+                                            ? "Đã đến kho"
+                                            : (s.SimIsActive ? "Đang chờ đến kho" : "Chưa tới lượt"));
+                                }
+                            }
+                        }
+
+                        var accentBorder = isInternalLogRow ? "border-secondary" : AccentBorderClass(statusLabel);
+
+                        <div class="list-group-item px-0 border-0">
+                            <div class="p-3 rounded-3 bg-white border border-start border-4 @accentBorder">
+                                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                                    <div class="d-flex gap-2 align-items-start">
+                                        <span class="badge rounded-pill @DotClass(statusLabel)">@(s.Index)</span>
+                                        <div>
+                                            <div class="fw-semibold">@locationLabel</div>
+                                            @if (!string.IsNullOrWhiteSpace(s.Message))
+                                            {
+                                                <div class="text-muted small">@s.Message</div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="text-end">
+                                        <span class="badge rounded-pill px-3 py-2 @BadgeClass(statusLabel)">@statusLabel</span>
+                                        @if (!string.IsNullOrWhiteSpace(s.TimeRaw))
+                                        {
+                                            <div class="text-muted small mt-1"><i class="bx bx-time-five me-1"></i>@s.TimeRaw</div>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (!isInternalLogRow)
+                                {
+                                    <div class="mt-3">
+                                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                                            @if (!isLastMileStep)
+                                            {
+                                                if (s.SimCanArrive)
+                                                {
+                                                    <form asp-area="Delivery" asp-controller="GhnSimulator" asp-action="CheckIn" method="post" class="ghn-checkin-form m-0">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="TrackingCode" value="@Model.ResolvedTrackingCode" />
+                                                        <input type="hidden" name="OrderId" value="@Model.ResolvedOrderId" />
+                                                        <input type="hidden" name="StepIndex" value="@s.Index" />
+                                                        <input type="hidden" name="Event" value="arrive" />
+                                                        <input type="hidden" name="RouteLocation" value="@locationLabel" />
+                                                        <input type="hidden" name="RouteStatusName" value="@s.StatusName" />
+                                                        <input type="hidden" name="RouteTimeRaw" value="@s.TimeRaw" />
+                                                        <button class="btn btn-sm btn-primary" type="submit">
+                                                            <i class="bx bx-log-in me-1"></i>
+                                                            Đã đến kho
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else if (s.SimArrived)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-3 py-2">Đã đến kho</span>
+                                                }
+
+                                                if (s.SimArrived)
+                                                {
+                                                    if (s.SimCanDepart)
+                                                    {
+                                                        <form asp-area="Delivery" asp-controller="GhnSimulator" asp-action="CheckIn" method="post" class="ghn-checkin-form m-0">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="TrackingCode" value="@Model.ResolvedTrackingCode" />
+                                                            <input type="hidden" name="OrderId" value="@Model.ResolvedOrderId" />
+                                                            <input type="hidden" name="StepIndex" value="@s.Index" />
+                                                            <input type="hidden" name="Event" value="depart" />
+                                                            <input type="hidden" name="RouteLocation" value="@locationLabel" />
+                                                            <input type="hidden" name="RouteStatusName" value="@s.StatusName" />
+                                                            <input type="hidden" name="RouteTimeRaw" value="@s.TimeRaw" />
+                                                            <button class="btn btn-sm btn-outline-primary" type="submit">
+                                                                <i class="bx bx-log-out me-1"></i>
+                                                                Đã rời kho
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                    else if (s.SimDeparted)
+                                                    {
+                                                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-3 py-2">Đã rời kho</span>
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if (s.SimCanArrive)
+                                                {
+                                                    <form asp-area="Delivery" asp-controller="GhnSimulator" asp-action="CheckIn" method="post" class="ghn-checkin-form m-0">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="TrackingCode" value="@Model.ResolvedTrackingCode" />
+                                                        <input type="hidden" name="OrderId" value="@Model.ResolvedOrderId" />
+                                                        <input type="hidden" name="StepIndex" value="@s.Index" />
+                                                        <input type="hidden" name="Event" value="arrive" />
+                                                        <input type="hidden" name="RouteLocation" value="@locationLabel" />
+                                                        <input type="hidden" name="RouteStatusName" value="@s.StatusName" />
+                                                        <input type="hidden" name="RouteTimeRaw" value="@s.TimeRaw" />
+
+                                                        <button class="btn btn-sm btn-primary" type="submit">
+                                                            <i class="bx @(Model.IsReturnRequestSim ? "bx-subdirectory-left" : "bx-user-check") me-1"></i>
+                                                            @(Model.IsReturnRequestSim ? "Bắt đầu giao trả Shop" : "Nhận đơn giao")
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else if (s.SimArrived)
+                                                {
+                                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-3 py-2">
+                                                        @(Model.IsReturnRequestSim ? "Shipper đang giao trả về Shop" : "Đang giao cho khách")
+                                                    </span>
+                                                }
+
+                                                if (s.SimArrived)
+                                                {
+                                                    if (s.SimCanDepart)
+                                                    {
+                                                        <form asp-area="Delivery" asp-controller="GhnSimulator" asp-action="CheckIn" method="post" class="ghn-checkin-form m-0">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="TrackingCode" value="@Model.ResolvedTrackingCode" />
+                                                            <input type="hidden" name="OrderId" value="@Model.ResolvedOrderId" />
+                                                            <input type="hidden" name="StepIndex" value="@s.Index" />
+                                                            <input type="hidden" name="Event" value="depart" />
+                                                            <input type="hidden" name="RouteLocation" value="@locationLabel" />
+                                                            <input type="hidden" name="RouteStatusName" value="@s.StatusName" />
+                                                            <input type="hidden" name="RouteTimeRaw" value="@s.TimeRaw" />
+                                                            <button class="btn btn-sm btn-success" type="submit">
+                                                                <i class="bx @(Model.IsReturnRequestSim ? "bx-subdirectory-left" : "bx-check-circle") me-1"></i>
+                                                                @(Model.IsReturnRequestSim ? "Đã hoàn trả thành công" : "Đã giao thành công")
+                                                            </button>
+                                                        </form>
+
+                                                        <form asp-area="Delivery" asp-controller="GhnSimulator" asp-action="CheckIn" method="post" class="ghn-checkin-form m-0">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="TrackingCode" value="@Model.ResolvedTrackingCode" />
+                                                            <input type="hidden" name="OrderId" value="@Model.ResolvedOrderId" />
+                                                            <input type="hidden" name="StepIndex" value="@s.Index" />
+                                                            <input type="hidden" name="Event" value="refuse" />
+                                                            <input type="hidden" name="RouteLocation" value="@locationLabel" />
+                                                            <input type="hidden" name="RouteStatusName" value="@s.StatusName" />
+                                                            <input type="hidden" name="RouteTimeRaw" value="@s.TimeRaw" />
+                                                            <button class="btn btn-sm btn-outline-danger" type="submit">
+                                                                <i class="bx bx-x-circle me-1"></i>
+                                                                @(Model.IsReturnRequestSim ? "Shop từ chối nhận" : "Khách hàng không nhận")
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                    else if (s.SimDeparted)
+                                                    {
+                                                        if (s.SimRefused)
+                                                        {
+                                                            <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill px-3 py-2">
+                                                                @(Model.IsReturnRequestSim ? "Shop từ chối nhận" : "Khách hàng không nhận")
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-3 py-2">
+                                                                @(Model.IsReturnRequestSim ? "Đã hoàn trả thành công" : "Đã giao thành công")
+                                                            </span>
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        </div>
+
+                                        @if (!s.SimIsActive && !s.SimDeparted)
+                                        {
+                                            <div class="text-muted small mt-2"><i class="bx bx-lock-alt me-1"></i>Chưa tới lượt thao tác bước này.</div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="mt-3 text-muted small"><i class="bx bx-note me-1"></i>Log nội bộ đã ghi nhận trong hệ thống.</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>

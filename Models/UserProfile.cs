@@ -35,6 +35,12 @@ public class UserProfile
 
     public string? ShopDescription { get; set; }
 
+    [NotMapped]
+    public string SellerType { get; set; } = "Individual"; // Individual | Enterprise
+
+    [NotMapped]
+    public decimal AnnualRevenueTracker { get; set; } = 0m;
+
     [MaxLength(500)]
     public string? Address { get; set; }
 

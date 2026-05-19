@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using DOAN_BANHANG.Models;
 using DOAN_BANHANG.Helpers;
 using DOAN_BANHANG.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using System.Text.Json;
 using System.Globalization;
 
@@ -10,6 +12,7 @@ namespace DOAN_BANHANG.Areas.Admin.Controllers;
 
 [Area("Admin")]
 [Route("Admin/[controller]/[action]")]
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "Shop")]
 public class FlashSalesController : Controller
 {
     private readonly DataContext _context;
@@ -29,9 +32,10 @@ public class FlashSalesController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(string? search, CancellationToken cancellationToken)
     {
+        var currentShopId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         var q = _context.Products
             .AsNoTracking()
-            .Where(p => !p.IsDeleted)
+            .Where(p => p.ShopId == currentShopId && !p.IsDeleted)
             .Where(p => p.Variants.Any(v => !v.IsDeleted
                 && v.SalePrice != null
                 && v.SaleStartDate != null
@@ -104,9 +108,10 @@ public class FlashSalesController : Controller
     [HttpGet]
     public async Task<IActionResult> Setup(string? search, CancellationToken cancellationToken)
     {
+        var currentShopId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         var q = _context.Products
             .AsNoTracking()
-            .Where(p => !p.IsDeleted);
+            .Where(p => p.ShopId == currentShopId && !p.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -787,6 +792,41 @@ public class FlashSalesController : Controller
         TempData["AdminToast"] = model.Scope == "all"
             ? "Đã áp dụng FlashSale toàn shop."
             : (model.Scope == "single" ? "Đã áp dụng FlashSale cho sản phẩm." : "Đã áp dụng FlashSale cho các sản phẩm đã chọn.");
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RestartProduct(int productId, DateTime startDate, DateTime endDate, CancellationToken cancellationToken)
+    {
+        if (productId <= 0) return BadRequest();
+
+        if (endDate <= startDate)
+        {
+            TempData["AdminToast"] = "Thời gian kết thúc phải lớn hơn thời gian bắt đầu.";
+            return RedirectToAction(nameof(Setup), new { restartProductId = productId });
+        }
+
+        var variants = await _context.ProductVariants
+            .Where(v => !v.IsDeleted && v.ProductId == productId)
+            .Where(v => v.SalePrice != null)
+            .ToListAsync(cancellationToken);
+
+        if (variants.Count == 0)
+        {
+            TempData["AdminToast"] = "Sản phẩm này không có biến thể nào có mức giảm giá đã được thiết lập. Vui lòng thiết lập mới.";
+            return RedirectToAction(nameof(Setup));
+        }
+
+        foreach (var v in variants)
+        {
+            v.SaleStartDate = startDate;
+            v.SaleEndDate = endDate;
+            v.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        TempData["AdminToast"] = "Đã khởi động lại sự kiện Flash Sale cho sản phẩm.";
         return RedirectToAction(nameof(Index));
     }
 }

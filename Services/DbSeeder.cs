@@ -1,7 +1,12 @@
-﻿using DOAN_BANHANG.Models;
+using DOAN_BANHANG.Models;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Logging;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace DOAN_BANHANG.Services;
 
@@ -99,12 +104,283 @@ public static class DbSeeder
         // Seeding can touch many rows; avoid failing on slow SQL Server operations.
         context.Database.SetCommandTimeout(180);
 
-        await context.Database.MigrateAsync(cancellationToken);
+        await ApplyMigrationsSafelyAsync(context, logger, cancellationToken);
+
+        // Raw SQL fallback for Blog feature if migrations haven't been run manually
+        try
+        {
+            // DIAGNOSTICS: Check column types and log them
+            var diagnostics = await context.Database.SqlQueryRaw<string>(@"
+                SELECT TABLE_NAME + '.' + COLUMN_NAME + ': ' + DATA_TYPE 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME IN ('BlogPosts', 'BlogComments', 'Accounts', 'UserProfiles') 
+                AND COLUMN_NAME IN ('CreatedAt', 'UpdatedAt', 'PublishedAt')
+            ").ToListAsync(cancellationToken);
+            
+            foreach (var diag in diagnostics)
+            {
+                logger.LogInformation("DATABASE SCHEMA DIAGNOSTIC: {Diag}", diag);
+            }
+
+            // AGGRESSIVE SCHEMA REPAIR: Fix columns if they are datetimeoffset
+            await context.Database.ExecuteSqlRawAsync(@"
+                DECLARE @sql NVARCHAR(MAX) = '';
+
+                -- Fix BlogPosts.PublishedAt if it is datetimeoffset
+                IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'BlogPosts' AND COLUMN_NAME = 'PublishedAt' AND DATA_TYPE = 'datetimeoffset')
+                BEGIN
+                    -- Drop default constraints first (if any)
+                    SELECT @sql += 'ALTER TABLE BlogPosts DROP CONSTRAINT ' + d.name + ';'
+                    FROM sys.default_constraints d
+                    INNER JOIN sys.columns c ON d.parent_column_id = c.column_id AND d.parent_object_id = c.object_id
+                    WHERE d.parent_object_id = OBJECT_ID('BlogPosts') AND c.name IN ('PublishedAt');
+
+                    EXEC sp_executesql @sql;
+                    SET @sql = '';
+
+                    ALTER TABLE BlogPosts ALTER COLUMN PublishedAt DATETIME2 NULL;
+                END
+                
+                -- Fix BlogPosts
+                IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'BlogPosts' AND COLUMN_NAME = 'CreatedAt' AND DATA_TYPE = 'datetimeoffset')
+                BEGIN
+                    -- Drop default constraints first
+                    SELECT @sql += 'ALTER TABLE BlogPosts DROP CONSTRAINT ' + d.name + ';'
+                    FROM sys.default_constraints d
+                    INNER JOIN sys.columns c ON d.parent_column_id = c.column_id AND d.parent_object_id = c.object_id
+                    WHERE d.parent_object_id = OBJECT_ID('BlogPosts') AND c.name IN ('PublishedAt', 'CreatedAt', 'UpdatedAt');
+                    
+                    EXEC sp_executesql @sql;
+                    SET @sql = '';
+
+                    ALTER TABLE BlogPosts ALTER COLUMN PublishedAt DATETIME2 NULL;
+                    ALTER TABLE BlogPosts ALTER COLUMN CreatedAt DATETIME2 NOT NULL;
+                    ALTER TABLE BlogPosts ALTER COLUMN UpdatedAt DATETIME2 NOT NULL;
+                    
+                    ALTER TABLE BlogPosts ADD DEFAULT SYSUTCDATETIME() FOR CreatedAt;
+                    ALTER TABLE BlogPosts ADD DEFAULT SYSUTCDATETIME() FOR UpdatedAt;
+                END
+
+                -- Fix BlogComments
+                IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'BlogComments' AND COLUMN_NAME = 'CreatedAt' AND DATA_TYPE = 'datetimeoffset')
+                BEGIN
+                    SELECT @sql += 'ALTER TABLE BlogComments DROP CONSTRAINT ' + d.name + ';'
+                    FROM sys.default_constraints d
+                    INNER JOIN sys.columns c ON d.parent_column_id = c.column_id AND d.parent_object_id = c.object_id
+                    WHERE d.parent_object_id = OBJECT_ID('BlogComments') AND c.name IN ('CreatedAt', 'UpdatedAt');
+                    
+                    EXEC sp_executesql @sql;
+                    SET @sql = '';
+
+                    ALTER TABLE BlogComments ALTER COLUMN CreatedAt DATETIME2 NOT NULL;
+                    ALTER TABLE BlogComments ALTER COLUMN UpdatedAt DATETIME2 NOT NULL;
+                    
+                    ALTER TABLE BlogComments ADD DEFAULT SYSUTCDATETIME() FOR CreatedAt;
+                    ALTER TABLE BlogComments ADD DEFAULT SYSUTCDATETIME() FOR UpdatedAt;
+                END
+
+                -- Ensure tables exist with correct types
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='BlogPosts' AND xtype='U')
+                BEGIN
+                    CREATE TABLE BlogPosts (
+                        Id INT PRIMARY KEY IDENTITY(1,1),
+                        ShopId INT NOT NULL,
+                        Title NVARCHAR(300) NOT NULL,
+                        Slug NVARCHAR(300) NOT NULL,
+                        Summary NVARCHAR(500),
+                        Content NVARCHAR(MAX),
+                        CoverImageUrl NVARCHAR(500),
+                        Status NVARCHAR(30) NOT NULL,
+                        ViewCount INT NOT NULL DEFAULT 0,
+                        IsDeleted BIT NOT NULL DEFAULT 0,
+                        PublishedAt DATETIME2 NULL,
+                        CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                        UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+                    );
+                    CREATE UNIQUE INDEX IX_BlogPosts_Slug ON BlogPosts(Slug);
+                END
+
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='BlogComments' AND xtype='U')
+                BEGIN
+                    CREATE TABLE BlogComments (
+                        Id INT PRIMARY KEY IDENTITY(1,1),
+                        BlogPostId INT NOT NULL,
+                        AccountId INT NOT NULL,
+                        ParentCommentId INT NULL,
+                        Content NVARCHAR(1000) NOT NULL,
+                        IsDeleted BIT NOT NULL DEFAULT 0,
+                        CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                        UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+                    );
+                END
+
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='BlogPostProducts' AND xtype='U')
+                BEGIN
+                    CREATE TABLE BlogPostProducts (
+                        Id INT PRIMARY KEY IDENTITY(1,1),
+                        BlogPostId INT NOT NULL,
+                        ProductId INT NOT NULL,
+                        SortOrder INT NOT NULL DEFAULT 0
+                    );
+                    CREATE UNIQUE INDEX IX_BlogPostProducts_BlogPostId_ProductId ON BlogPostProducts(BlogPostId, ProductId);
+                END
+
+                -- SystemSettings
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SystemSettings' AND xtype='U')
+                BEGIN
+                    CREATE TABLE SystemSettings (
+                        Id NVARCHAR(100) PRIMARY KEY,
+                        Value NVARCHAR(MAX) NOT NULL,
+                        Description NVARCHAR(500),
+                        Type NVARCHAR(50) NOT NULL DEFAULT 'string',
+                        UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+                    );
+                END
+
+                -- ReturnRequests
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ReturnRequests' AND xtype='U')
+                BEGIN
+                    CREATE TABLE ReturnRequests (
+                        Id INT PRIMARY KEY IDENTITY(1,1),
+                        OrderId INT NOT NULL,
+                        CustomerId INT NOT NULL,
+                        Reason NVARCHAR(500) NOT NULL,
+                        MediaUrlsJson NVARCHAR(4000) NULL,
+                        Status NVARCHAR(30) NOT NULL DEFAULT 'Pending',
+                        RejectionNote NVARCHAR(500) NULL,
+                        ReturnTrackingCode NVARCHAR(100) NULL,
+                        EstimatedPickupTime NVARCHAR(100) NULL,
+                        CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                        UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                        CONSTRAINT FK_ReturnRequests_Orders_OrderId FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE CASCADE,
+                        CONSTRAINT FK_ReturnRequests_Accounts_CustomerId FOREIGN KEY (CustomerId) REFERENCES Accounts(Id)
+                    );
+                    CREATE INDEX IX_ReturnRequests_OrderId ON ReturnRequests(OrderId);
+                    CREATE INDEX IX_ReturnRequests_CustomerId ON ReturnRequests(CustomerId);
+                    CREATE INDEX IX_ReturnRequests_Status ON ReturnRequests(Status);
+                END
+
+            ", cancellationToken);
+
+            // DIAGNOSTICS: Check column types again after repair
+            var diagnosticsAfter = await context.Database.SqlQueryRaw<string>(@"
+                SELECT TABLE_NAME + '.' + COLUMN_NAME + ': ' + DATA_TYPE 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME IN ('BlogPosts', 'BlogComments', 'Accounts', 'UserProfiles') 
+                AND COLUMN_NAME IN ('CreatedAt', 'UpdatedAt', 'PublishedAt')
+            ").ToListAsync(cancellationToken);
+
+            foreach (var diag in diagnosticsAfter)
+            {
+                logger.LogInformation("DATABASE SCHEMA DIAGNOSTIC (AFTER REPAIR): {Diag}", diag);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to ensure Blog tables exist via raw SQL.");
+        }
+
+        // ---- CLEANUP MODE (OPT-IN) ----
+        // If the user explicitly wants a clean database, wipe data tables and exit early.
+        // IMPORTANT: This must run BEFORE any seeding (colors/categories/warehouses/etc.).
+        var cleanupMode = IsTruthy(Environment.GetEnvironmentVariable("CLEAN_DB_ON_STARTUP"))
+            || IsTruthy(Environment.GetEnvironmentVariable("PRODUCTION_CLEANUP_MODE"));
+
+        if (cleanupMode)
+        {
+            logger.LogWarning(
+                "CLEANUP MODE enabled (CLEAN_DB_ON_STARTUP/PRODUCTION_CLEANUP_MODE). Wiping data tables and exiting seeding early.");
+
+            var tables = new[]
+            {
+                "SystemNotificationReads", "SystemNotifications", "Messages", "Conversations",
+                "BlogPostProducts", "BlogComments", "BlogPosts", "PartnerApplications",
+                "InventoryTransactions", "OrderTrackingLogs", "OrderItems", "Orders",
+                "Vouchers", "CartItems", "Carts", "WishlistItems", "SizeGuideDetails",
+                "SizeGuides", "VariantImages", "ProductImages", "ProductVariants",
+                "ProductReviews", "Products", "UserAddresses", "UserProfiles"
+            };
+
+            await context.Database.ExecuteSqlRawAsync("EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'", cancellationToken);
+
+            foreach (var table in tables)
+            {
+                try
+                {
+                    await context.Database.ExecuteSqlRawAsync($"DELETE FROM [{table}]", cancellationToken);
+                    logger.LogInformation("Deleted all records from {Table}", table);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Could not clear table {Table}", table);
+                }
+            }
+
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("DELETE FROM [Accounts] WHERE [Role] <> 'Admin'", cancellationToken);
+                logger.LogInformation("Deleted all non-admin accounts.");
+            }
+            catch
+            {
+            }
+
+            await context.Database.ExecuteSqlRawAsync("EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL'", cancellationToken);
+            return;
+        }
+
+        // ---- SEED CONTROL SWITCHES ----
+        // Disable all seeding on startup (migrate-only). Useful after you manually cleaned the DB.
+        var skipDbSeed = IsTruthy(Environment.GetEnvironmentVariable("SKIP_DB_SEED"))
+            || IsTruthy(Environment.GetEnvironmentVariable("DISABLE_DB_SEED"))
+            || IsTruthy(Environment.GetEnvironmentVariable("MIGRATE_ONLY"));
+
+        if (skipDbSeed)
+        {
+            logger.LogInformation(
+                "DB seeding skipped (SKIP_DB_SEED/DISABLE_DB_SEED/MIGRATE_ONLY). Migrations are applied, but no seed data will be inserted.");
+            return;
+        }
 
         var resetSeed = IsTruthy(Environment.GetEnvironmentVariable("RESET_SEED"));
         if (resetSeed)
         {
             await ResetCatalogAsync(context, logger, cancellationToken);
+        }
+
+        var markerPath = Path.Combine(Directory.GetCurrentDirectory(), ".db-seeded");
+        if (File.Exists(markerPath) && !resetSeed)
+        {
+            logger.LogInformation("Database was already seeded once. Skipping automatic sample data seed to prevent overwriting user deletions. Delete the '.db-seeded' file in the root folder or set RESET_SEED=true to re-seed.");
+            return;
+        }
+
+        // ---- GHN Warehouse Network (dense: provinces + districts) ----
+        // This is a one-time seed in Development. It uses GHN master-data endpoints (province/district)
+        // and stores a local network in DB so the simulator can build realistic multi-hop routes.
+        var skipWarehouseSeed = IsTruthy(Environment.GetEnvironmentVariable("SKIP_WAREHOUSE_NETWORK_SEED"));
+        if (!skipWarehouseSeed)
+        {
+            var resetWarehouseSeed = IsTruthy(Environment.GetEnvironmentVariable("RESET_WAREHOUSE_NETWORK"));
+            var provincesOnly = IsTruthy(Environment.GetEnvironmentVariable("SEED_WAREHOUSE_PROVINCES_ONLY"));
+            var includeDistricts = !provincesOnly;
+
+            try
+            {
+                var ghn = scope.ServiceProvider.GetRequiredService<GhnClient>();
+                var warehouseSeeder = new WarehouseNetworkSeeder();
+                await warehouseSeeder.SeedFromGhnAsync(
+                    context,
+                    ghn,
+                    logger,
+                    includeDistricts: includeDistricts,
+                    resetExisting: resetWarehouseSeed,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Warehouse network seed failed (best-effort). You can retry by setting RESET_WAREHOUSE_NETWORK=true.");
+            }
         }
 
         var nowUtc = DateTime.UtcNow;
@@ -248,6 +524,8 @@ public static class DbSeeder
 
         await context.SaveChangesAsync(cancellationToken);
 
+        // Cleanup mode is handled earlier (before any seeding).
+
         // ---- Admin + Customer Accounts (so we can seed carts/orders/reviews) ----
         var adminEmail = "admin@local";
         if (await context.Accounts.AllAsync(a => a.Email != adminEmail, cancellationToken))
@@ -264,6 +542,39 @@ public static class DbSeeder
             });
             await context.SaveChangesAsync(cancellationToken);
         }
+
+        // ---- Sizes (upsert by Name) ----
+        var clothingSizeLabels = new[] { "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL" };
+        var shoeSizeLabels = Enumerable.Range(35, 11).Select(x => x.ToString()).ToArray();
+        var volumeLabels = new[] { "10ml", "30ml", "50ml", "100ml", "150ml", "200ml", "250ml", "500ml", "1L" };
+        var weightLabels = new[] { "50g", "100g", "200g", "250g", "500g", "1kg", "2kg" };
+
+        foreach (var label in clothingSizeLabels
+            .Concat(shoeSizeLabels)
+            .Concat(volumeLabels)
+            .Concat(weightLabels)
+            .Select(x => (x ?? string.Empty).Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var exists = await context.Sizes.FirstOrDefaultAsync(s => s.Name == label, cancellationToken);
+            if (exists is null)
+            {
+                context.Sizes.Add(new Size
+                {
+                    Name = label,
+                    CreatedAt = nowUtc
+                });
+            }
+        }
+        await context.SaveChangesAsync(cancellationToken);
+
+        // Bỏ qua tạo dữ liệu mẫu (mock data) theo yêu cầu của user
+        // Đã tạo xong dữ liệu cấu hình hệ thống (Colors, Categories, Sizes, Admin Account).
+        logger.LogInformation("System configuration data seeded (Colors, Categories, Sizes, Admin Account). Bypassing mock data generation as requested.");
+        return;
+#pragma warning disable CS0162
+        var sizeIdByLabel = new Dictionary<string, int>();
 
         var customerSeeds = new (string Email, string FullName)[]
         {
@@ -365,42 +676,7 @@ public static class DbSeeder
 
         await context.SaveChangesAsync(cancellationToken);
 
-        // ---- Sizes (upsert by Name) ----
-        // IMPORTANT: seed sizes regardless of whether shop accounts exist.
-        // The admin create-product UI depends on these rows to show size schemes (shoe/volume/weight).
-        var clothingSizeLabels = new[] { "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL" };
-        var shoeSizeLabels = Enumerable.Range(35, 11).Select(x => x.ToString()).ToArray(); // 35..45
 
-        // Cosmetic/liquid volumes
-        var volumeLabels = new[] { "10ml", "30ml", "50ml", "100ml", "150ml", "200ml", "250ml", "500ml", "1L" };
-
-        // Powder/solid weights
-        var weightLabels = new[] { "50g", "100g", "200g", "250g", "500g", "1kg", "2kg" };
-
-        foreach (var label in clothingSizeLabels
-            .Concat(shoeSizeLabels)
-            .Concat(volumeLabels)
-            .Concat(weightLabels)
-            .Select(x => (x ?? string.Empty).Trim())
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            var exists = await context.Sizes.FirstOrDefaultAsync(s => s.Name == label, cancellationToken);
-            if (exists is null)
-            {
-                context.Sizes.Add(new Size
-                {
-                    Name = label,
-                    CreatedAt = nowUtc
-                });
-            }
-        }
-
-        await context.SaveChangesAsync(cancellationToken);
-
-        var sizeIdByLabel = await context.Sizes
-            .AsNoTracking()
-            .ToDictionaryAsync(s => s.Name, s => s.Id, StringComparer.OrdinalIgnoreCase, cancellationToken);
 
         var shopAccountIds = await context.Accounts
             .AsNoTracking()
@@ -1018,6 +1294,99 @@ public static class DbSeeder
             totalOrderItems,
             totalAccounts,
             totalProfiles);
+
+        try
+        {
+            var markerPath2 = Path.Combine(Directory.GetCurrentDirectory(), ".db-seeded");
+            await File.WriteAllTextAsync(markerPath2, nowUtc.ToString("O"), cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not write .db-seeded marker file.");
+        }
+    }
+
+    private static async Task ApplyMigrationsSafelyAsync(
+        DataContext context,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await context.Database.MigrateAsync(cancellationToken);
+        }
+        catch (SqlException ex) when (ex.Number == 1801)
+        {
+            // SQL Server: "Database '<name>' already exists".
+            // This can happen due to a race between multiple app instances (or tool restarts)
+            // during EF Core's database existence check + create flow.
+            logger.LogWarning(ex, "Database already exists while applying migrations; falling back to idempotent migration script.");
+            await ApplyMigrationsByIdempotentScriptAsync(context, logger, cancellationToken);
+        }
+    }
+
+    private static async Task ApplyMigrationsByIdempotentScriptAsync(
+        DataContext context,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var migrator = context.Database.GetService<IMigrator>();
+        var script = migrator.GenerateScript(options: MigrationsSqlGenerationOptions.Idempotent);
+
+        var batches = SplitSqlServerBatches(script);
+        var applied = 0;
+
+        foreach (var batch in batches)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await context.Database.ExecuteSqlRawAsync(batch, cancellationToken);
+            applied++;
+        }
+
+        logger.LogInformation("Applied {BatchCount} migration script batches (idempotent).", applied);
+    }
+
+    private static IEnumerable<string> SplitSqlServerBatches(string script)
+    {
+        if (string.IsNullOrWhiteSpace(script)) yield break;
+
+        var goRegex = new Regex(@"^\s*GO(?:\s+(\d+))?\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        var sb = new StringBuilder();
+
+        using var reader = new StringReader(script);
+        string? line;
+        while ((line = reader.ReadLine()) is not null)
+        {
+            var match = goRegex.Match(line);
+            if (match.Success)
+            {
+                var batch = sb.ToString().Trim();
+                sb.Clear();
+
+                if (batch.Length == 0) continue;
+
+                var repeat = 1;
+                if (match.Groups.Count > 1 && match.Groups[1].Success && int.TryParse(match.Groups[1].Value, out var n) && n > 1)
+                {
+                    repeat = n;
+                }
+
+                for (var i = 0; i < repeat; i++)
+                {
+                    yield return batch;
+                }
+
+                continue;
+            }
+
+            sb.AppendLine(line);
+        }
+
+        var last = sb.ToString().Trim();
+        if (last.Length > 0)
+        {
+            yield return last;
+        }
     }
 
     private static bool IsTruthy(string? value)

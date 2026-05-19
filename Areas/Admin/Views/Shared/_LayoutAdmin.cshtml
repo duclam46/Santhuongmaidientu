@@ -1,15 +1,25 @@
 <!doctype html>
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@inject DOAN_BANHANG.Models.DataContext _db
+@{
+    var accountIdClaim = User.FindFirst("AccountId")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    int.TryParse(accountIdClaim, out var accId);
+    var currentAccount = _db.Accounts.Include(a => a.Profile).FirstOrDefault(a => a.Id == accId);
+    var displayName = currentAccount?.Profile?.ShopName ?? currentAccount?.Profile?.FullName ?? currentAccount?.Email ?? "Tài khoản";
+    var avatarUrl = currentAccount?.Profile?.ShopLogoUrl ?? currentAccount?.Profile?.AvatarUrl ?? "/admin/assets/images/users/avatar-1.jpg";
+}
 <html lang="en">
 
     <head>
         
         <meta charset="utf-8" />
-        <title>Dashboard | Skote - Admin & Dashboard Template</title>
+        <title>Sellzy | Admin - Dashboard</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
         <meta content="Themesbrand" name="author" />
         <!-- App favicon -->
-        <link rel="shortcut icon" href="/admin/assets/images/favicon.ico">
+        <link rel="shortcut icon" href="~/assets/images/favicon.png">
 
         <!-- Bootstrap Css -->
         <link href="/admin/assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
@@ -66,6 +76,7 @@
         <!-- App js -->
         <script src="/admin/assets/js/plugin.js"></script>
 
+        @await RenderSectionAsync("Styles", required: false)
     </head>
 
     <body data-sidebar="dark">
@@ -86,7 +97,7 @@
                                     <img src="/admin/assets/images/logo.svg" alt="" height="22">
                                 </span>
                                 <span class="logo-lg">
-                                    <img src="/admin/assets/images/logo-dark.png" alt="" height="17">
+                                    <img src="~/assets/images/logo.png" alt="" height="33">
                                 </span>
                             </a>
 
@@ -95,9 +106,10 @@
                                     <img src="/admin/assets/images/logo-light.svg" alt="" height="22">
                                 </span>
                                 <span class="logo-lg">
-                                    <img src="/admin/assets/images/logo-light.png" alt="" height="19">
+                                    <img src="~/assets/images/logo.png" alt="" height="33">
                                 </span>
                             </a>
+
                         </div>
 
                         <button type="button" class="btn btn-sm px-3 font-size-16 header-item waves-effect" id="vertical-menu-btn">
@@ -361,106 +373,105 @@
                         <div class="dropdown d-inline-block">
                             <button type="button" class="btn header-item noti-icon waves-effect" id="page-header-notifications-dropdown"
                             data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="bx bx-bell bx-tada"></i>
-                                <span class="badge bg-danger rounded-pill">3</span>
+                                <i class="bx bx-bell"></i>
+                                <span class="badge bg-danger rounded-pill d-none" id="noti-badge-count">0</span>
                             </button>
                             <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
                                 aria-labelledby="page-header-notifications-dropdown">
                                 <div class="p-3">
                                     <div class="row align-items-center">
                                         <div class="col">
-                                            <h6 class="m-0" key="t-notifications"> Notifications </h6>
+                                            <h6 class="m-0" key="t-notifications"> Thông báo Hệ thống </h6>
                                         </div>
                                         <div class="col-auto">
-                                            <a href="#!" class="small" key="t-view-all"> View All</a>
+                                            <a href="/Chat/SystemNotifications" class="small" key="t-view-all"> Xem tất cả</a>
                                         </div>
                                     </div>
                                 </div>
-                                <div data-simplebar style="max-height: 230px;">
-                                    <a href="javascript: void(0);" class="text-reset notification-item">
-                                        <div class="d-flex">
-                                            <div class="avatar-xs me-3">
-                                                <span class="avatar-title bg-primary rounded-circle font-size-16">
-                                                    <i class="bx bx-cart"></i>
-                                                </span>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1" key="t-your-order">Your order is placed</h6>
-                                                <div class="font-size-12 text-muted">
-                                                    <p class="mb-1" key="t-grammer">If several languages coalesce the grammar</p>
-                                                    <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span key="t-min-ago">3 min ago</span></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </a>
-                                    <a href="javascript: void(0);" class="text-reset notification-item">
-                                        <div class="d-flex">
-                                            <img src="~/admin/assets/images/users/avatar-3.jpg"
-                                                class="me-3 rounded-circle avatar-xs" alt="user-pic">
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1">James Lemire</h6>
-                                                <div class="font-size-12 text-muted">
-                                                    <p class="mb-1" key="t-simplified">It will seem like simplified English.</p>
-                                                    <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span key="t-hours-ago">1 hours ago</span></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </a>
-                                    <a href="javascript: void(0);" class="text-reset notification-item">
-                                        <div class="d-flex">
-                                            <div class="avatar-xs me-3">
-                                                <span class="avatar-title bg-success rounded-circle font-size-16">
-                                                    <i class="bx bx-badge-check"></i>
-                                                </span>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1" key="t-shipped">Your item is shipped</h6>
-                                                <div class="font-size-12 text-muted">
-                                                    <p class="mb-1" key="t-grammer">If several languages coalesce the grammar</p>
-                                                    <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span key="t-min-ago">3 min ago</span></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </a>
-
-                                    <a href="javascript: void(0);" class="text-reset notification-item">
-                                        <div class="d-flex">
-                                            <img src="~/admin/assets/images/users/avatar-4.jpg"
-                                                class="me-3 rounded-circle avatar-xs" alt="user-pic">
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1">Salena Layfield</h6>
-                                                <div class="font-size-12 text-muted">
-                                                    <p class="mb-1" key="t-occidental">As a skeptical Cambridge friend of mine occidental.</p>
-                                                    <p class="mb-0"><i class="mdi mdi-clock-outline"></i> <span key="t-hours-ago">1 hours ago</span></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </a>
+                                <div data-simplebar style="max-height: 230px;" id="noti-list-container">
+                                    <!-- AJAX Content -->
+                                    <div class="text-center p-3">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                    </div>
                                 </div>
                                 <div class="p-2 border-top d-grid">
-                                    <a class="btn btn-sm btn-link font-size-14 text-center" href="javascript:void(0)">
-                                        <i class="mdi mdi-arrow-right-circle me-1"></i> <span key="t-view-more">View More..</span> 
+                                    <a class="btn btn-sm btn-link font-size-14 text-center" href="/Chat/SystemNotifications">
+                                        <i class="mdi mdi-arrow-right-circle me-1"></i> <span key="t-view-more">Xem thêm thông báo...</span>
                                     </a>
                                 </div>
                             </div>
                         </div>
 
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function() {
+                                const badge = document.getElementById('noti-badge-count');
+                                const container = document.getElementById('noti-list-container');
+
+                                function updateNotifications() {
+                                    fetch('/Chat/GetLatestNotifications')
+                                        .then(res => res.json())
+                                        .then(data => {
+                                            let html = '';
+                                            let unreadCount = data.filter(n => !n.isRead).length;
+
+                                            if (unreadCount > 0) {
+                                                badge.innerText = unreadCount;
+                                                badge.classList.remove('d-none');
+                                            } else {
+                                                badge.classList.add('d-none');
+                                            }
+
+                                            if (data.length === 0) {
+                                                container.innerHTML = '<div class="p-3 text-center text-muted">Không có thông báo mới</div>';
+                                                return;
+                                            }
+
+                                            data.forEach(n => {
+                                                const time = new Date(n.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+                                                const iconClass = 'bg-primary';
+                                                const icon = 'bx-info-circle';
+                                                
+                                                html += `
+                                                    <a href="/Chat/SystemNotifications" class="text-reset notification-item ${n.isRead ? '' : 'bg-light'}">
+                                                        <div class="d-flex">
+                                                            <div class="avatar-xs me-3">
+                                                                <span class="avatar-title ${iconClass} rounded-circle font-size-16">
+                                                                    <i class="bx ${icon}"></i>
+                                                                </span>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="mb-1">${n.title}</h6>
+                                                                <div class="font-size-12 text-muted">
+                                                                    <p class="mb-1 text-truncate" style="max-width: 200px;">${n.content}</p>
+                                                                    <p class="mb-0"><i class="mdi mdi-clock-outline"></i> ${time}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </a>`;
+                                            });
+                                            container.innerHTML = html;
+                                        });
+                                }
+
+                                updateNotifications();
+                                // Refresh every 5 minutes
+                                setInterval(updateNotifications, 300000);
+                            });
+                        </script>
+
                         <div class="dropdown d-inline-block">
                             <button type="button" class="btn header-item waves-effect" id="page-header-user-dropdown"
                             data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <img class="rounded-circle header-profile-user" src="~/admin/assets/images/users/avatar-1.jpg"
-                                    alt="Header Avatar">
-                                <span class="d-none d-xl-inline-block ms-1" key="t-henry">Henry</span>
+                                <img class="rounded-circle header-profile-user" src="@avatarUrl"
+                                    alt="Header Avatar" onerror="this.onerror=null;this.src='/admin/assets/images/users/avatar-1.jpg';">
+                                <span class="d-none d-xl-inline-block ms-1" key="t-henry">@displayName</span>
                                 <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end">
-                                <!-- item-->
-                                <a class="dropdown-item" href="#"><i class="bx bx-user font-size-16 align-middle me-1"></i> <span key="t-profile">Profile</span></a>
-                                <a class="dropdown-item" href="#"><i class="bx bx-wallet font-size-16 align-middle me-1"></i> <span key="t-my-wallet">My Wallet</span></a>
-                                <a class="dropdown-item d-block" href="#"><span class="badge bg-success float-end">11</span><i class="bx bx-wrench font-size-16 align-middle me-1"></i> <span key="t-settings">Settings</span></a>
-                                <a class="dropdown-item" href="#"><i class="bx bx-lock-open font-size-16 align-middle me-1"></i> <span key="t-lock-screen">Lock screen</span></a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item text-danger" href="#"><i class="bx bx-power-off font-size-16 align-middle me-1 text-danger"></i> <span key="t-logout">Logout</span></a>
+                                <a class="dropdown-item text-danger" href="/Auth/Logout">
+                                    <i class="bx bx-power-off font-size-16 align-middle me-1 text-danger"></i> 
+                                    <span key="t-logout">Đăng xuất</span>
+                                </a>
                             </div>
                         </div>
 
@@ -479,6 +490,8 @@
 
                 <div data-simplebar class="h-100">
 
+                    <div class="d-flex flex-column h-100">
+
                     <!--- Sidemenu -->
                     <div id="sidebar-menu">
                         <!-- Left Menu Start -->
@@ -486,94 +499,151 @@
                             <li class="menu-title" key="t-menu">Menu</li>
 
                             <li>
-                                <a asp-area="Admin" asp-controller="HomeController" asp-action="Index" class="waves-effect">
+                                <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="waves-effect">
                                     <i class="bx bx-home-circle"></i>
-                                    <span key="t-dashboards">Dashboards</span>
+                                    <span key="t-dashboards">Bảng điều khiển</span>
                                 </a>
                             </li>
 
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="bx bx-store"></i>
-                                    <span key="t-ecommerce">Quản lý sản phẩm</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a asp-area="Admin" asp-controller="Products" asp-action="Index" key="t-products">Sản phẩm</a></li>
-                                    <li><a asp-area="Admin" asp-controller="Products" asp-action="Create" key="t-add-product">Thêm sản phẩm</a></li>
-                                    <li><a asp-area="Admin" asp-controller="Products" asp-action="Inventory" key="t-orders">Cập nhật kho hàng</a></li>
-                                </ul>
-                            </li>
+                            @if (User.IsInRole("Shop"))
+                            {
+                                <li>
+                                    <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                        <i class="bx bx-store"></i>
+                                        <span key="t-ecommerce">Quản lý sản phẩm</span>
+                                    </a>
+                                    <ul class="sub-menu" aria-expanded="false">
+                                        <li><a asp-area="Admin" asp-controller="Products" asp-action="Index" key="t-products">Sản phẩm</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Products" asp-action="Create" key="t-add-product">Thêm sản phẩm</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Products" asp-action="Inventory" key="t-orders">Cập nhật kho hàng</a></li>
+                                    </ul>
+                                </li>
 
-                            <li>
-                                <a asp-area="Admin" asp-controller="FlashSales" asp-action="Index" class="waves-effect">
-                                    <i class="bx bx-purchase-tag-alt"></i>
-                                    <span key="t-projects">FlashSale</span>
-                                </a>
-                            </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="FlashSales" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-purchase-tag-alt"></i>
+                                        <span key="t-projects">FlashSale</span>
+                                    </a>
+                                </li>
 
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="bx bx-receipt"></i>
-                                    <span key="t-orders">Quản lý đơn hàng</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a asp-area="Admin" asp-controller="Orders" asp-action="Index" key="t-orders">Tất cả đơn</a></li>
-                                    <li><a asp-area="Admin" asp-controller="Orders" asp-action="Index" asp-route-Status="Pending" key="t-orders">Chờ xác nhận</a></li>
-                                    <li><a asp-area="Delivery" asp-controller="GhnSimulator" asp-action="Index" key="t-orders">GHN Simulator (Check-in kho)</a></li>
-                                </ul>
-                            </li>
+                                <li>
+                                    <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                        <i class="bx bx-receipt"></i>
+                                        <span key="t-orders">Quản lý đơn hàng</span>
+                                    </a>
+                                    <ul class="sub-menu" aria-expanded="false">
+                                        <li><a asp-area="Admin" asp-controller="Orders" asp-action="Index" key="t-orders">Tất cả đơn</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Orders" asp-action="Index" asp-route-Status="Pending" key="t-orders">Chờ xác nhận</a></li>
+                                        <li><a asp-area="Admin" asp-controller="ReturnRequests" asp-action="Index" key="t-returns">↩ Yêu cầu trả hàng</a></li>
+                                    </ul>
+                                </li>
+
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Chat" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-chat"></i>
+                                        <span key="t-chat">Quản lý Chat</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a asp-area="Admin" asp-controller="PartnerStores" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-store-alt"></i>
+                                        <span>Quản lý hồ sơ Shop</span>
+                                    </a>
+                                </li>
+                            }
                             
-                            <li>
-                                <a href="chat.html" class="waves-effect">
-                                    <i class="bx bx-chat"></i>
-                                    <span key="t-chat">Tin nhắn</span>
-                                </a>
-                            </li>
-                            
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="bx bxs-user-detail"></i>
-                                    <span key="t-contacts">Quản lý khách hàng</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="contacts-grid.html" key="t-user-grid">Users Grid</a></li>
-                                    <li><a href="contacts-list.html" key="t-user-list">Users List</a></li>
-                                    <li><a href="contacts-profile.html" key="t-profile">Profile</a></li>
-                                </ul>
-                            </li>
-                      
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Vouchers" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-gift"></i>
+                                        <span>Quản lý Voucher Hệ thống</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a asp-area="Admin" asp-controller="PartnerApplications" asp-action="Index" asp-route-Status="Pending" class="waves-effect">
+                                        <i class="bx bx-user-check"></i>
+                                        <span>Duyệt đối tác</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a asp-area="Admin" asp-controller="SystemMessage" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-broadcast"></i>
+                                        <span key="t-system-message">Thông báo hệ thống</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Accounts" asp-action="Index" asp-route-Role="Customer" class="waves-effect">
+                                        <i class="bx bxs-user-detail"></i>
+                                        <span key="t-contacts">Quản lý khách hàng</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a asp-area="Admin" asp-controller="SystemSettings" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-money"></i>
+                                        <span key="t-financial">Cấu hình Tài chính</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                        <i class="bx bx-list-ul"></i>
+                                        <span key="t-attributes">Quản lý thuộc tính</span>
+                                    </a>
+                                    <ul class="sub-menu" aria-expanded="false">
+                                        <li><a asp-area="Admin" asp-controller="Categories" asp-action="Index">Danh mục sản phẩm</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Colors" asp-action="Index">Màu sắc</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Sizes" asp-action="Index">Kích thước</a></li>
+                                    </ul>
+                                </li>
+                            }
+
                             <li>
                                 <a href="javascript: void(0);" class="has-arrow waves-effect">
                                     <i class="bx bx-detail"></i>
-                                    <span key="t-blog">Blog</span>
+                                    <span key="t-blog">Quản lý Blog</span>
                                 </a>
                                 <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="blog-list.html" key="t-blog-list">Blog List</a></li>
-                                    <li><a href="blog-grid.html" key="t-blog-grid">Blog Grid</a></li>
-                                    <li><a href="blog-details.html" key="t-blog-details">Blog Details</a></li>
+                                    <li><a asp-area="Admin" asp-controller="Blog" asp-action="Index" key="t-blog-list">Danh sách bài viết</a></li>
+                                    <li><a asp-area="Admin" asp-controller="Blog" asp-action="Create" key="t-add-post">Viết bài mới</a></li>
                                 </ul>
                             </li>
                             
-                            <li>
+                             <li>
                                 <a href="javascript: void(0);" class="has-arrow waves-effect">
                                     <i class="bx bxs-bar-chart-alt-2"></i>
-                                    <span key="t-charts">Charts</span>
+                                    <span key="t-charts">Thống kê Chuyên sâu</span>
                                 </a>
                                 <ul class="sub-menu" aria-expanded="false">
-                                    <li><a href="charts-apex.html" key="t-apex-charts">Apex Charts</a></li>
-                                    <li><a href="charts-echart.html" key="t-e-charts">E Charts</a></li>
-                                    <li><a href="charts-chartjs.html" key="t-chartjs-charts">Chartjs Charts</a></li>
-                                    <li><a href="charts-flot.html" key="t-flot-charts">Flot Charts</a></li>
-                                    <li><a href="charts-tui.html" key="t-ui-charts">Toast UI Charts</a></li>
-                                    <li><a href="charts-knob.html" key="t-knob-charts">Jquery Knob Charts</a></li>
-                                    <li><a href="charts-sparkline.html" key="t-sparkline-charts">Sparkline Charts</a></li>
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <li><a asp-area="Admin" asp-controller="SystemStatistics" asp-action="Admin">Phân tích Hệ thống (Admin)</a></li>
+                                        <li><a asp-area="Admin" asp-controller="SystemStatistics" asp-action="FinancialReport">Báo cáo Tài chính</a></li>
+                                    }
+                                    @if (User.IsInRole("Shop"))
+                                    {
+                                        <li><a asp-area="Admin" asp-controller="SystemStatistics" asp-action="Seller">Phân tích Cửa hàng (Shop)</a></li>
+                                        <li><a asp-area="Admin" asp-controller="SystemStatistics" asp-action="ProfitCalculator">Máy tính Lợi nhuận</a></li>
+                                    }
                                 </ul>
                             </li>
-
-                            <li class="menu-title" key="t-apps">------ Developed by LA -------</li>
                         </ul>
                     </div>
                     <!-- Sidebar -->
+
+                    <div class="mt-auto p-3 border-top">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-outline-light w-100 waves-effect waves-light">
+                            <i class="bx bx-arrow-back font-size-16 align-middle me-2"></i>
+                            <span>Quay lại trang người dùng</span>
+                        </a>
+                    </div>
+
+                    </div>
                 </div>
             </div>
             <!-- Left Sidebar End -->
@@ -588,6 +658,25 @@
                 <div class="page-content">
                     <div class="container-fluid">
                         @RenderSection("AdminTopNotice", required: false)
+                        
+                        @if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+                        {
+                            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+                                <i class="bx bx-check-circle me-2 font-size-16 align-middle"></i>
+                                @toast
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+                        
+                        @if (TempData["AdminError"] is string error && !string.IsNullOrWhiteSpace(error))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+                                <i class="bx bx-error-circle me-2 font-size-16 align-middle"></i>
+                                @error
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+
                         @RenderBody()
 
                     </div>

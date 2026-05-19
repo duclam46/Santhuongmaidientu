@@ -1,30 +1,17 @@
 @model DOAN_BANHANG.ViewModels.DeliveryGhnSimulatorVm
 @{
-    ViewData["Title"] = "GHN Simulator";
-
-    var hasOrder = Model.ResolvedOrderId.HasValue && Model.ResolvedOrderId.Value > 0;
-    var hasRoute = Model.RouteSteps is { Count: > 0 };
+    ViewData["Title"] = "Delivery Simulator";
 }
 
 @section DeliveryTopNotice {
-    @if (TempData["DeliveryToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
-    {
-        <div class="alert alert-info d-flex align-items-start gap-2 rounded-3" role="alert">
-            <i class="bx bx-info-circle mt-1"></i>
-            <div>@toast</div>
-        </div>
-    }
-
-    <div class="alert alert-warning d-flex align-items-start gap-2 rounded-3" role="alert">
-        <i class="bx bx-error-circle mt-1"></i>
-        <div>
-            <div class="fw-semibold">Lưu ý</div>
-            <div class="small">
-                GHN docs id=96 chỉ là API <span class="fw-semibold">lấy danh sách bưu cục</span>.
-                Trang này sẽ dùng danh sách bưu cục (theo địa chỉ gửi/nhận trong DB) để dựng <span class="fw-semibold">lộ trình dự kiến (giả lập)</span>.
-                Khi bạn bấm “Check-in”, hệ thống sẽ ghi log vào bảng <span class="fw-semibold">OrderTrackingLogs</span> để mô phỏng “đã tới kho/đã rời kho”.
+    <div id="delivery-toast-host">
+        @if (TempData["DeliveryToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+        {
+            <div class="alert alert-info d-flex align-items-start gap-2 rounded-3" role="alert">
+                <i class="bx bx-info-circle mt-1"></i>
+                <div>@toast</div>
             </div>
-        </div>
+        }
     </div>
 }
 
@@ -36,131 +23,259 @@
                     <i class="bx bx-receipt"></i>
                     <h5 class="mb-0">Nhập mã vận đơn</h5>
                 </div>
-                    <div class="text-muted small">Nhập mã vận đơn (TrackingCode) để tải lộ trình dự kiến.</div>
+                <div class="text-muted small">Nhập mã vận đơn (TrackingCode) để tải lộ trình giao hàng.</div>
             </div>
             <div class="card-body">
-                <form method="get" asp-area="Delivery" asp-controller="GhnSimulator" asp-action="Index" class="vstack gap-3">
-                    <div>
-                        <label class="form-label">Mã vận đơn (TrackingCode / GHN order_code)</label>
-                        <input class="form-control" type="text" name="TrackingCode" value="@Model.Query.TrackingCode" placeholder="VD: LTME4P" />
-                        <div class="form-text">Mã này chính là giá trị đang lưu ở <span class="fw-semibold">Orders.TrackingCode</span>.</div>
-                    </div>
-
-                    <button class="btn btn-primary" type="submit">
-                        <i class="bx bx-search-alt me-1"></i>
-                        Tải lộ trình
-                    </button>
-                </form>
-
-                @if (hasOrder)
-                {
-                    <hr />
-                    <div class="border rounded-3 p-3 bg-light">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                            <div class="fw-semibold">@Model.ResolvedOrderCode</div>
-                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-3 py-2">
-                                <i class="bx bx-package me-1"></i>
-                                GHN: @(string.IsNullOrWhiteSpace(Model.ResolvedTrackingCode) ? "(chưa có mã)" : Model.ResolvedTrackingCode)
-                            </span>
+                <div class="p-3 rounded-3 bg-body-tertiary border">
+                    <form id="ghn-sim-form" method="get" asp-area="Delivery" asp-controller="GhnSimulator" asp-action="Index" class="vstack gap-3" novalidate>
+                        <div>
+                            <label class="form-label">Mã vận đơn (TrackingCode)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bx bx-barcode"></i></span>
+                                <input id="ghn-tracking-code" class="form-control" type="text" name="TrackingCode" value="@Model.Query.TrackingCode" placeholder="VD: LTME4P" autocomplete="off" />
+                            </div>
+                            <div class="form-text">Mã này chính là giá trị đang lưu ở <span class="fw-semibold">Orders.TrackingCode</span>.</div>
                         </div>
-                        <div class="text-muted small mt-2">OrderId: @Model.ResolvedOrderId</div>
-                        <div class="text-muted small">Log check-in sẽ hiển thị ở trang người mua (timeline).</div>
-                        @if (!string.IsNullOrWhiteSpace(Model.GhnStatusName))
-                        {
-                            <div class="text-muted small">GHN status: @Model.GhnStatusName</div>
-                        }
-                    </div>
-                }
+
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button id="ghn-load-btn" class="btn btn-primary" type="submit">
+                                <i class="bx bx-search-alt me-1"></i>
+                                <span class="ghn-load-btn-text">Tải lộ trình</span>
+                                <span class="ghn-load-btn-spinner spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+                            </button>
+                            <button id="ghn-clear-btn" class="btn btn-outline-secondary" type="button">Xoá</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="col-12 col-xl-7">
-        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-            <div class="card-header bg-light border-0">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bx bx-git-branch"></i>
-                        <h5 class="mb-0">Lộ trình GHN</h5>
-                    </div>
-                    <div class="text-muted small">@(!hasRoute ? "" : $"Tổng: {Model.RouteSteps.Count}")</div>
-                </div>
-            </div>
-
-            <div class="card-body">
-                @if (!hasOrder)
-                {
-                    <div class="text-muted">Nhập mã vận đơn để tải lộ trình.</div>
-                }
-                else
-                {
-                    @if (!hasRoute)
-                    {
-                        <div class="text-muted">
-                            Chưa có lộ trình dự kiến để hiển thị.
-                            <div class="small mt-1">Kiểm tra đơn hàng đã có <span class="fw-semibold">ShippingDistrictId</span> (địa chỉ nhận) và shop có <span class="fw-semibold">UserAddress</span> (địa chỉ gửi) hay chưa.</div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-sm align-middle">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 42px;">#</th>
-                                        <th>Điểm/Kho</th>
-                                        <th>Trạng thái</th>
-                                        <th>Thời gian</th>
-                                        <th style="width: 260px;">Giả lập check-in</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @for (var i = 0; i < Model.RouteSteps.Count; i++)
-                                    {
-                                        var s = Model.RouteSteps[i];
-                                        <tr>
-                                            <td>@s.Index</td>
-                                            <td>
-                                                <div class="fw-semibold">@(string.IsNullOrWhiteSpace(s.Location) ? "(không rõ kho)" : s.Location)</div>
-                                                @if (!string.IsNullOrWhiteSpace(s.Message))
-                                                {
-                                                    <div class="text-muted small">@s.Message</div>
-                                                }
-                                            </td>
-                                            <td class="text-wrap">@s.StatusName</td>
-                                            <td class="text-muted small">@s.TimeRaw</td>
-                                            <td>
-                                                <form asp-area="Delivery" asp-controller="GhnSimulator" asp-action="CheckIn" method="post" class="d-flex flex-column gap-2">
-                                                    @Html.AntiForgeryToken()
-
-                                                    <input type="hidden" name="TrackingCode" value="@Model.ResolvedTrackingCode" />
-                                                    <input type="hidden" name="OrderId" value="@Model.ResolvedOrderId" />
-                                                    <input type="hidden" name="RouteLocation" value="@(string.IsNullOrWhiteSpace(s.Location) ? "(không rõ kho)" : s.Location)" />
-                                                    <input type="hidden" name="RouteStatusName" value="@s.StatusName" />
-                                                    <input type="hidden" name="RouteTimeRaw" value="@s.TimeRaw" />
-
-                                                    <div class="d-flex gap-2">
-                                                        <select class="form-select form-select-sm" name="Event">
-                                                            <option value="arrive" selected>Đã đến kho</option>
-                                                            <option value="depart">Đã rời kho</option>
-                                                        </select>
-                                                        <button class="btn btn-sm btn-primary" type="submit">
-                                                            <i class="bx bx-log-in me-1"></i>
-                                                            Check-in
-                                                        </button>
-                                                    </div>
-
-                                                    <input class="form-control form-control-sm" name="CustomNote" placeholder="Ghi chú (tuỳ chọn)" maxlength="255" />
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                }
-            </div>
+        <div id="ghn-route-panel">
+            @await Html.PartialAsync("_RoutePanel", Model)
         </div>
     </div>
 </div>
+
+<style>
+    /* Intentionally minimal; route panel renders its own compact list UI */
+</style>
+
+@section Scripts {
+    <script>
+        (function () {
+            const STORAGE_KEY = 'delivery.ghnSim.trackingCode';
+
+            const form = document.getElementById('ghn-sim-form');
+            const input = document.getElementById('ghn-tracking-code');
+            const loadBtn = document.getElementById('ghn-load-btn');
+            const loadText = loadBtn ? loadBtn.querySelector('.ghn-load-btn-text') : null;
+            const loadSpinner = loadBtn ? loadBtn.querySelector('.ghn-load-btn-spinner') : null;
+            const clearBtn = document.getElementById('ghn-clear-btn');
+            const panel = document.getElementById('ghn-route-panel');
+            const toastHost = document.getElementById('delivery-toast-host');
+
+            function setLoading(isLoading) {
+                if (!loadBtn) return;
+                loadBtn.disabled = !!isLoading;
+                if (loadSpinner) loadSpinner.classList.toggle('d-none', !isLoading);
+                if (loadText) loadText.textContent = isLoading ? 'Đang tải…' : 'Tải lộ trình';
+            }
+
+            function setToast(message) {
+                if (!toastHost) return;
+                toastHost.innerHTML = '';
+                if (!message) return;
+
+                const div = document.createElement('div');
+                div.className = 'alert alert-info d-flex align-items-start gap-2 rounded-3';
+                div.setAttribute('role', 'alert');
+                div.innerHTML = '<i class="bx bx-info-circle mt-1"></i><div></div>';
+                div.querySelector('div').textContent = message;
+                toastHost.appendChild(div);
+            }
+
+            async function loadRoutePartial(trackingCode) {
+                if (!panel) return;
+                const code = (trackingCode || '').trim();
+                if (!code) {
+                    setToast('Vui lòng nhập mã vận đơn.');
+                    return;
+                }
+
+                setLoading(true);
+                try {
+                    const url = new URL(window.location.href);
+                    url.pathname = '@Url.Action("RoutePanel", "GhnSimulator", new { area = "Delivery" })';
+                    url.searchParams.set('TrackingCode', code);
+
+                    // Keep URL state (refresh/back works) without reloading the page.
+                    const viewUrl = new URL(window.location.href);
+                    viewUrl.searchParams.set('TrackingCode', code);
+                    history.replaceState({}, '', viewUrl);
+
+                    const resp = await fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    const toastHeader = resp.headers.get('X-Delivery-Toast');
+                    if (toastHeader) {
+                        try { setToast(decodeURIComponent(toastHeader)); } catch { setToast(toastHeader); }
+                    }
+
+                    const html = await resp.text();
+                    panel.innerHTML = html;
+                } catch (e) {
+                    setToast('Không tải được lộ trình. Vui lòng thử lại.');
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            if (input) {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved && !input.value) {
+                    input.value = saved;
+                }
+
+                input.addEventListener('input', function () {
+                    const v = (input.value || '').trim();
+                    if (v) localStorage.setItem(STORAGE_KEY, v);
+                });
+            }
+
+            if (clearBtn && input) {
+                clearBtn.addEventListener('click', function () {
+                    input.value = '';
+                    localStorage.removeItem(STORAGE_KEY);
+                    setToast('');
+                    if (panel) {
+                        panel.innerHTML = `
+                            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                                <div class="card-header bg-light border-0 border-start border-4 border-info">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bx bx-git-branch"></i>
+                                            <h5 class="mb-0">Lộ trình giao hàng</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-muted">Nhập mã vận đơn để tải lộ trình giao hàng.</div>
+                                </div>
+                            </div>`;
+                    }
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('TrackingCode');
+                    history.replaceState({}, '', url);
+                });
+            }
+
+            if (form && input) {
+                form.addEventListener('submit', function (evt) {
+                    evt.preventDefault();
+                    const code = (input.value || '').trim();
+                    if (code) localStorage.setItem(STORAGE_KEY, code);
+                    loadRoutePartial(code);
+                });
+            }
+
+            document.addEventListener('submit', async function (evt) {
+                const target = evt.target;
+                if (!target || !(target instanceof HTMLFormElement)) return;
+                if (!target.classList.contains('ghn-checkin-form')) return;
+
+                evt.preventDefault();
+                setLoading(true);
+
+                try {
+                    const resp = await fetch(target.action, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: new FormData(target)
+                    });
+
+                    const toastHeader = resp.headers.get('X-Delivery-Toast');
+                    if (toastHeader) {
+                        try { setToast(decodeURIComponent(toastHeader)); } catch { setToast(toastHeader); }
+                    }
+
+                    const html = await resp.text();
+                    if (panel) panel.innerHTML = html;
+                } catch (e) {
+                    setToast('Không check-in được. Vui lòng thử lại.');
+                } finally {
+                    setLoading(false);
+                }
+            });
+
+            document.addEventListener('click', async function (evt) {
+                const btn = evt.target.closest('.js-auto-sim-btn');
+                if (!btn) return;
+
+                const outcome = btn.getAttribute('data-outcome');
+                if (!outcome) return;
+
+                evt.preventDefault();
+                setLoading(true);
+                setToast("Đang thực hiện giả lập lộ trình tự động...");
+
+                try {
+                    while (true) {
+                        const forms = document.querySelectorAll('#ghn-route-panel .ghn-checkin-form');
+                        if (forms.length === 0) break;
+
+                        let formToSubmit = null;
+                        if (forms.length === 1) {
+                            formToSubmit = forms[0];
+                        } else {
+                            if (outcome === 'success') {
+                                formToSubmit = Array.from(forms).find(f => {
+                                    const val = f.querySelector('input[name="Event"]')?.value;
+                                    return val === 'arrive' || val === 'depart';
+                                });
+                            } else {
+                                formToSubmit = Array.from(forms).find(f => {
+                                    const val = f.querySelector('input[name="Event"]')?.value;
+                                    return val === 'arrive' || val === 'refuse';
+                                });
+                            }
+                        }
+
+                        if (!formToSubmit) break;
+
+                        const resp = await fetch(formToSubmit.action, {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            body: new FormData(formToSubmit)
+                        });
+
+                        if (!resp.ok) throw new Error('Lỗi phản hồi từ máy chủ.');
+
+                        const toastHeader = resp.headers.get('X-Delivery-Toast');
+                        if (toastHeader) {
+                            try { setToast(decodeURIComponent(toastHeader)); } catch { setToast(toastHeader); }
+                        }
+
+                        const html = await resp.text();
+                        if (panel) panel.innerHTML = html;
+
+                        // Brief delay for visual progression
+                        await new Promise(r => setTimeout(r, 250));
+                    }
+                    setToast(outcome === 'success' 
+                        ? 'Chúc mừng! Giả lập giao hàng thành công hoàn tất!' 
+                        : 'Giả lập giao hàng thất bại hoàn tất (Khách không nhận)!'
+                    );
+                } catch (e) {
+                    setToast('Gặp lỗi khi giả lập tự động: ' + e.message);
+                } finally {
+                    setLoading(false);
+                }
+            });
+        })();
+    </script>
+}

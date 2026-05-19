@@ -1,0 +1,687 @@
+@model DOAN_BANHANG.ViewModels.SellerDashboardViewModel
+@{
+    ViewData["Title"] = "Trung tâm Chiến lược Cửa hàng";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    decimal totalGross = Model.OrderFinancialDetails?.Sum(x => x.GrossSales) ?? 0;
+    decimal totalCommission = Model.OrderFinancialDetails?.Sum(x => x.CommissionAmount) ?? 0;
+    decimal totalVat = Model.OrderFinancialDetails?.Sum(x => x.VatAmount) ?? 0;
+    decimal totalSellerTax = Model.OrderFinancialDetails?.Sum(x => x.SellerTaxAmount) ?? 0;
+    decimal totalMarketing = Model.OrderFinancialDetails?.Sum(x => x.MarketingFeeAmount) ?? 0;
+    decimal totalProfit = Model.OrderFinancialDetails?.Sum(x => x.NetProfit) ?? 0;
+
+    decimal profitMargin = Model.TotalRevenue > 0 ? (Model.TotalProfit / Model.TotalRevenue) * 100 : 0;
+}
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap">
+
+<style>
+    :root {
+        --skote-primary: #556ee6;
+        --skote-success: #34c38f;
+        --skote-info: #50a5f1;
+        --skote-warning: #f1b44c;
+        --skote-danger: #f46a6a;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Outfit', sans-serif !important;
+    }
+
+    .stat-card-premium {
+        border: none;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-card-premium:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .bg-gradient-primary { background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); }
+    .bg-gradient-success { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); }
+    .bg-gradient-warning { background: linear-gradient(135deg, #f83600 0%, #f9d423 100%); }
+    .bg-gradient-info { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); }
+    .bg-gradient-profit { background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%) !important; }
+    .bg-gradient-rating { background: linear-gradient(135deg, #02c4c7 0%, #00b09b 100%) !important; }
+
+    .card-glass {
+        border: none;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .card-glass:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    .table-premium thead th {
+        background-color: #f8f9fa;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+        border: none;
+    }
+
+    .animated-item {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+
+    @@keyframes fadeInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .product-rank-badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 11px;
+    }
+
+    .bg-rank-1 { background-color: #ffd700; color: #fff; }
+    .bg-rank-2 { background-color: #c0c0c0; color: #fff; }
+    .bg-rank-3 { background-color: #cd7f32; color: #fff; }
+    .bg-rank-other { background-color: #f1f3f5; color: #6c757d; }
+</style>
+
+<div class="container-fluid">
+    <!-- Header title -->
+    <div class="row animated-item" style="animation-delay: 0.1s;">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                <div>
+                    <h4 class="mb-sm-0 font-size-18 fw-bold">Trung tâm Chiến lược Cửa hàng</h4>
+                    <p class="text-muted mb-0">Chào mừng trở lại, <strong>@Model.ShopName</strong>. Dưới đây là phân tích dòng tiền chuyên sâu của bạn.</p>
+                </div>
+
+                <div class="page-title-right">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-white btn-sm shadow-sm font-size-12"><i class="bx bx-calendar me-1"></i> 30 ngày qua</button>
+                        <button class="btn btn-primary btn-sm shadow-sm font-size-12" onclick="window.print()"><i class="bx bx-printer me-1"></i> In báo cáo</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid Row (Perfectly symmetric 6 cards) -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Doanh thu bán ra -->
+        <div class="col-xl-2 col-md-4 col-sm-6 animated-item" style="animation-delay: 0.15s;">
+            <div class="card stat-card-premium bg-gradient-primary h-100">
+                <div class="card-body p-3 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="font-size-12 mb-0 text-white-50 text-uppercase tracking-wider">Doanh thu</h6>
+                        <i class="bx bx-dollar-circle font-size-18 text-white-50"></i>
+                    </div>
+                    <div class="text-white mt-2">
+                        <h4 class="mb-1 text-white fw-bold">@Model.TotalRevenue.ToString("N0") ₫</h4>
+                        <p class="text-white-50 mb-0 font-size-10"><i class="bx bx-badge-check me-1"></i> Tổng bán gốc</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Lợi nhuận ròng -->
+        <div class="col-xl-2 col-md-4 col-sm-6 animated-item" style="animation-delay: 0.2s;">
+            <div class="card stat-card-premium bg-gradient-profit h-100">
+                <div class="card-body p-3 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="font-size-12 mb-0 text-white-50 text-uppercase tracking-wider">Lợi nhuận ròng</h6>
+                        <i class="bx bx-trending-up font-size-18 text-white-50"></i>
+                    </div>
+                    <div class="text-white mt-2">
+                        <h4 class="mb-1 text-white fw-bold">@Model.TotalProfit.ToString("N0") ₫</h4>
+                        <a href="javascript:void(0);" class="badge bg-white bg-opacity-20 text-white font-size-9 p-1 rounded-pill mt-1" style="text-decoration: none;" data-bs-toggle="modal" data-bs-target="#deductionsModal">
+                            <i class="bx bx-show me-1"></i> Chi tiết
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Số đơn thành công -->
+        <div class="col-xl-2 col-md-4 col-sm-6 animated-item" style="animation-delay: 0.25s;">
+            <div class="card stat-card-premium bg-gradient-success h-100">
+                <div class="card-body p-3 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="font-size-12 mb-0 text-white-50 text-uppercase tracking-wider">Đơn hàng</h6>
+                        <i class="bx bx-shopping-bag font-size-18 text-white-50"></i>
+                    </div>
+                    <div class="text-white mt-2">
+                        <h4 class="mb-1 text-white fw-bold">@Model.TotalOrders đơn</h4>
+                        <p class="text-white-50 mb-0 font-size-10"><i class="bx bx-check-circle me-1"></i> Hoàn thành @Model.FulfillmentRate%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Giá trị trung bình đơn -->
+        <div class="col-xl-2 col-md-4 col-sm-6 animated-item" style="animation-delay: 0.3s;">
+            <div class="card stat-card-premium bg-gradient-info h-100">
+                <div class="card-body p-3 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="font-size-12 mb-0 text-white-50 text-uppercase tracking-wider">Giá trị TB đơn</h6>
+                        <i class="bx bx-calculator font-size-18 text-white-50"></i>
+                    </div>
+                    <div class="text-white mt-2">
+                        <h4 class="mb-1 text-white fw-bold">@((Model.AverageOrderValue).ToString("N0")) ₫</h4>
+                        <p class="text-white-50 mb-0 font-size-10"><i class="bx bx-bar-chart-alt-2 me-1"></i> Chỉ số AOV shop</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Tỉ lệ Hoàn hàng -->
+        <div class="col-xl-2 col-md-4 col-sm-6 animated-item" style="animation-delay: 0.35s;">
+            <div class="card stat-card-premium bg-gradient-warning h-100">
+                <div class="card-body p-3 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="font-size-12 mb-0 text-white-50 text-uppercase tracking-wider">Tỉ lệ hoàn đơn</h6>
+                        <i class="bx bx-undo font-size-18 text-white-50"></i>
+                    </div>
+                    <div class="text-white mt-2">
+                        <h4 class="mb-1 text-white fw-bold">@Model.ReturnRate%</h4>
+                        <p class="text-white-50 mb-0 font-size-10">
+                            @(Model.ReturnRate > 5 ? "Cần cải thiện chất lượng" : "Ở mức an toàn tốt")
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Đánh giá Shop -->
+        <div class="col-xl-2 col-md-4 col-sm-6 animated-item" style="animation-delay: 0.4s;">
+            <div class="card stat-card-premium bg-gradient-rating h-100">
+                <div class="card-body p-3 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="font-size-12 mb-0 text-white-50 text-uppercase tracking-wider">Đánh giá Shop</h6>
+                        <i class="bx bx-star font-size-18 text-white-50"></i>
+                    </div>
+                    <div class="text-white mt-2">
+                        <h4 class="mb-1 text-white fw-bold">@Model.AverageRating / 5.0 ★</h4>
+                        <p class="text-white-50 mb-0 font-size-10">Độ hài lòng: @Model.CustomerSatisfactionScore%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN Charts section with Dual-series cash flow & AI strategy advisor -->
+    <div class="row g-4 mb-4">
+        <!-- Dual Area line chart -->
+        <div class="col-xl-8 animated-item" style="animation-delay: 0.45s;">
+            <div class="card card-glass h-100 p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <h4 class="card-title mb-1 fw-bold text-dark font-size-16">Phân tích Dòng tiền 30 ngày qua</h4>
+                        <p class="text-muted font-size-12 mb-0">Biểu đồ so sánh tương quan lũy tiến giữa Doanh thu và Lợi nhuận thực tế.</p>
+                    </div>
+                </div>
+                <div id="revenue-analytics-chart" style="height: 340px;"></div>
+            </div>
+        </div>
+
+        <!-- Sellzy AI Strategic Advisor -->
+        <div class="col-xl-4 animated-item" style="animation-delay: 0.5s;">
+            <div class="card card-glass h-100">
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div class="p-2 bg-primary bg-soft text-primary rounded-3">
+                                <i class="bx bx-bot font-size-22"></i>
+                            </div>
+                            <h4 class="card-title mb-0 fw-bold text-dark font-size-16">Cố vấn Chiến lược Sellzy AI</h4>
+                        </div>
+                        <p class="text-muted font-size-12 mb-4">Phân tích chuyên sâu dựa trên số liệu thực tế của shop.</p>
+                        
+                        <div class="p-3 rounded-3 mb-3" style="background: rgba(85, 110, 230, 0.05);">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted font-size-12">Tỷ suất Lợi nhuận Ròng:</span>
+                                <strong class="text-primary font-size-13">@profitMargin.ToString("F1")%</strong>
+                            </div>
+                            <div class="progress progress-sm rounded">
+                                <div class="progress-bar bg-primary" style="width: @profitMargin.ToString("F0")%"></div>
+                            </div>
+                        </div>
+
+                        <div class="font-size-12 text-dark lh-base">
+                            @if (profitMargin > 75)
+                            {
+                                <p class="mb-3"><i class="bx bx-check-circle text-success me-1"></i> <strong>Tỷ suất cực tốt!</strong> Bạn đang vận hành tối ưu chi phí xuất sắc. Hãy cân nhắc chạy thêm **Phóng đại Doanh số** bằng cách tăng ngân sách Marketing để gom đơn hàng nhiều hơn!</p>
+                            }
+                            else if (profitMargin >= 50 && profitMargin <= 75)
+                            {
+                                <p class="mb-3"><i class="bx bx-check-circle text-success me-1"></i> <strong>Sức khỏe tài chính tốt:</strong> Cửa hàng đạt mức lợi nhuận ổn định. Bạn nên tập trung đẩy mạnh tồn kho các sản phẩm bán chạy nhất trong danh mục để tiếp tục gia tăng dòng tiền.</p>
+                            }
+                            else
+                            {
+                                <p class="mb-3"><i class="bx bx-error text-warning me-1"></i> <strong>Cảnh báo biên lợi nhuận:</strong> Tỷ suất của bạn ở mức trung bình. Hãy xem xét tối ưu lại giá bán lẻ hoặc rà soát các loại chiết khấu để nâng cao hiệu suất dòng tiền.</p>
+                            }
+
+                            @if (Model.ReturnRate > 5)
+                            {
+                                <p class="mb-0 text-danger"><i class="bx bx-x-circle me-1"></i> <strong>Rủi ro hoàn đơn:</strong> Tỷ lệ hoàn đơn (@Model.ReturnRate%) đang vượt ngưỡng khuyến nghị (5%). Hãy tập trung cải thiện khâu đóng gói sản phẩm và liên hệ khách hàng xác nhận trước khi giao!</p>
+                            }
+                            else
+                            {
+                                <p class="mb-0 text-success"><i class="bx bx-smile me-1"></i> <strong>Chỉ số giao vận hoàn hảo:</strong> Tỉ lệ hoàn đơn của shop được duy trì ở mức cực kỳ an toàn (@Model.ReturnRate%). Hãy giữ vững phong độ đóng gói và chuẩn bị hàng nhanh!</p>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="border-top pt-3 mt-3 text-center">
+                        <span class="text-muted font-size-11">Cập nhật tự động dựa trên 30 ngày qua</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUMULATIVE Cash Flow Balance Sheet (Bảng cân đối dòng tiền & khấu trừ tích lũy) -->
+    <div class="row mb-4 animated-item" style="animation-delay: 0.55s;">
+        <div class="col-12">
+            <div class="card card-glass p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <h4 class="card-title mb-1 fw-bold text-dark font-size-16">Bảng Cân Đối Dòng Tiền & Khấu Trừ Tích Lũy</h4>
+                        <p class="text-muted font-size-12 mb-0">Tổng hợp các khoản thu hộ và chi phí vận hành chiết khấu lũy kế của toàn bộ đơn hàng thành công.</p>
+                    </div>
+                    <a href="javascript:void(0);" class="btn btn-soft-primary btn-sm rounded-pill px-3 font-size-11" data-bs-toggle="modal" data-bs-target="#deductionsModal">
+                        <i class="bx bx-receipt me-1"></i> Xem chi tiết từng đơn
+                    </a>
+                </div>
+
+                <div class="row g-4">
+                    <!-- 1. Doanh thu bán ra -->
+                    <div class="col-md-4 col-xl-2 border-end">
+                        <p class="text-muted font-size-11 mb-1 text-uppercase tracking-wider">Tổng doanh thu gốc</p>
+                        <h5 class="fw-bold text-dark mb-0">@totalGross.ToString("N0") ₫</h5>
+                        <div class="progress progress-sm rounded mt-2 bg-light">
+                            <div class="progress-bar bg-primary" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <!-- 2. VAT Thu hộ -->
+                    <div class="col-md-4 col-xl-2 border-end">
+                        <p class="text-info font-size-11 mb-1 text-uppercase tracking-wider">VAT Khách trả (Thu hộ)</p>
+                        <h5 class="fw-bold text-info mb-0">+@totalVat.ToString("N0") ₫</h5>
+                        <div class="progress progress-sm rounded mt-2 bg-light">
+                            <div class="progress-bar bg-info" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <!-- 3. Chiết khấu sàn -->
+                    <div class="col-md-4 col-xl-2 border-end">
+                        <p class="text-danger font-size-11 mb-1 text-uppercase tracking-wider">Khấu hao phí sàn</p>
+                        <h5 class="fw-bold text-danger mb-0">-@totalCommission.ToString("N0") ₫</h5>
+                        <div class="progress progress-sm rounded mt-2 bg-light">
+                            <div class="progress-bar bg-danger" style="width: @(totalGross > 0 ? (totalCommission / totalGross * 100).ToString("F0") : "10")%"></div>
+                        </div>
+                    </div>
+                    <!-- 4. Thuế Hộ KD -->
+                    <div class="col-md-4 col-xl-2 border-end">
+                        <p class="text-danger font-size-11 mb-1 text-uppercase tracking-wider">Thuế Hộ kinh doanh</p>
+                        <h5 class="fw-bold text-danger mb-0">-@totalSellerTax.ToString("N0") ₫</h5>
+                        <div class="progress progress-sm rounded mt-2 bg-light">
+                            <div class="progress-bar bg-danger" style="width: @(totalGross > 0 ? (totalSellerTax / totalGross * 100).ToString("F0") : "1.5")%"></div>
+                        </div>
+                    </div>
+                    <!-- 5. Phí Marketing -->
+                    <div class="col-md-4 col-xl-2 border-end">
+                        <p class="text-danger font-size-11 mb-1 text-uppercase tracking-wider">Chi phí Marketing</p>
+                        <h5 class="fw-bold text-danger mb-0">-@totalMarketing.ToString("N0") ₫</h5>
+                        <div class="progress progress-sm rounded mt-2 bg-light">
+                            <div class="progress-bar bg-danger" style="width: @(totalGross > 0 ? (totalMarketing / totalGross * 100).ToString("F0") : "6")%"></div>
+                        </div>
+                    </div>
+                    <!-- 6. Lợi nhuận thực tế -->
+                    <div class="col-md-4 col-xl-2">
+                        <p class="text-success font-size-11 mb-1 text-uppercase tracking-wider">Lợi nhuận ròng thực nhận</p>
+                        <h5 class="fw-bold text-success mb-0">@totalProfit.ToString("N0") ₫</h5>
+                        <div class="progress progress-sm rounded mt-2 bg-light">
+                            <div class="progress-bar bg-success" style="width: @(totalGross > 0 ? (totalProfit / totalGross * 100).ToString("F0") : "80")%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Efficiency Table & Operational Health -->
+    <div class="row g-4 mb-4">
+        <!-- Operation Health gauge chart -->
+        <div class="col-xl-4 animated-item" style="animation-delay: 0.6s;">
+            <div class="card card-glass h-100 p-4">
+                <h4 class="card-title mb-1 fw-bold text-dark font-size-16">Chỉ số Chuỗi cung ứng & Vận hành</h4>
+                <p class="text-muted font-size-12 mb-4">Theo dõi mức độ trễ của kho hàng và luồng logistics.</p>
+                
+                <div class="d-flex justify-content-center align-items-center position-relative my-2">
+                    <div id="operation-health-chart" style="height: 200px; width: 100%;"></div>
+                </div>
+                
+                <div class="mt-2">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted font-size-12">Tồn kho sản phẩm an toàn</span>
+                            <span class="fw-bold text-primary font-size-12">@Model.StockLevelHealth%</span>
+                        </div>
+                        <div class="progress progress-sm rounded">
+                            <div class="progress-bar bg-primary" style="width: @Model.StockLevelHealth%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted font-size-12">Độ trễ xử lý đơn hàng</span>
+                            <span class="fw-bold text-success font-size-12">< 12 giờ</span>
+                        </div>
+                        <div class="progress progress-sm rounded">
+                            <div class="progress-bar bg-success" style="width: 95%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top 10 Product Table -->
+        <div class="col-xl-8 animated-item" style="animation-delay: 0.65s;">
+            <div class="card card-glass h-100 p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <h4 class="card-title mb-1 fw-bold text-dark font-size-16">Hiệu suất Doanh thu Sản phẩm (Top 10)</h4>
+                        <p class="text-muted font-size-12 mb-0">Thống kê doanh thu đóng góp thực tế từ cao xuống thấp của từng mặt hàng.</p>
+                    </div>
+                    <a asp-area="Admin" asp-controller="Products" asp-action="Index" class="btn btn-soft-primary btn-sm rounded-pill font-size-11 px-3">Quản lý kho</a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-premium align-middle table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px;">Hạng</th>
+                                <th>Sản phẩm</th>
+                                <th class="text-end">Doanh thu sản phẩm</th>
+                                <th class="text-center">Đã bán</th>
+                                <th class="text-center">Tồn kho hiện tại</th>
+                                <th class="text-center">Đánh giá</th>
+                                <th class="text-center">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.ProductDetails == null || !Model.ProductDetails.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">Chưa có sản phẩm kinh doanh.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                for (int i = 0; i < Model.ProductDetails.Count; i++)
+                                {
+                                    var product = Model.ProductDetails[i];
+                                    <tr>
+                                        <td>
+                                            <span class="product-rank-badge @(i==0 ? "bg-rank-1" : i==1 ? "bg-rank-2" : i==2 ? "bg-rank-3" : "bg-rank-other")">
+                                                @(i + 1)
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="avatar-sm">
+                                                    @if (!string.IsNullOrEmpty(product.ImageUrl)) {
+                                                        <img src="@product.ImageUrl" class="avatar-title rounded-circle shadow-sm" style="width: 32px; height: 32px; object-fit: cover;" alt="">
+                                                    } else {
+                                                        <span class="avatar-title rounded-circle bg-primary bg-soft text-primary font-size-12" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">@product.ProductName.Substring(0,1)</span>
+                                                    }
+                                                </div>
+                                                <div>
+                                                    <h5 class="font-size-13 fw-semibold text-dark mb-0">@product.ProductName</h5>
+                                                    <p class="text-muted mb-0 font-size-10">ID SP: #@product.ProductId</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-end fw-bold text-primary">@product.Revenue.ToString("N0") ₫</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-success bg-soft text-success font-size-11 rounded-pill px-2 py-1">@product.UnitsSold SP</span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (product.CurrentStock < 10) {
+                                                <span class="badge bg-danger bg-soft text-danger font-size-11 rounded-pill px-2 py-1"><i class="bx bx-error-circle me-1"></i> Sắp hết (@product.CurrentStock)</span>
+                                            } else {
+                                                <span class="text-muted font-size-12 fw-medium">@product.CurrentStock sp</span>
+                                            }
+                                        </td>
+                                        <td class="text-center text-warning fw-semibold font-size-12">
+                                            <i class="bx bxs-star me-1"></i>@product.AverageRating.ToString("F1")
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@product.ProductId" class="btn btn-light btn-sm waves-effect rounded-circle p-2" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">
+                                                <i class="bx bx-pencil text-muted font-size-14"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chi tiết Khấu hao & Lợi nhuận -->
+<div class="modal fade" id="deductionsModal" tabindex="-1" aria-labelledby="deductionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 16px; background-color: #fcfcfd;">
+            <div class="modal-header border-bottom-0 pb-0" style="padding: 1.5rem 1.5rem 0.5rem 1.5rem;">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark font-size-18 d-flex align-items-center gap-2" id="deductionsModalLabel">
+                        <span class="p-2 rounded-3 bg-gradient-profit text-white d-inline-flex"><i class="bx bx-receipt"></i></span>
+                        Báo cáo Khấu hao & Lợi nhuận Chi tiết
+                    </h5>
+                    <p class="text-muted font-size-12 mb-0 mt-1">Danh sách chi tiết doanh thu, thuế và phí được trích xuất cho từng đơn hàng thành công.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pb-4" style="padding: 1rem 1.5rem;">
+                <!-- Config Summary Box -->
+                <div class="alert alert-info border-0 rounded-3 mb-4 d-flex align-items-center justify-content-between p-3" style="background: rgba(80, 165, 241, 0.08); border-left: 4px solid #50a5f1 !important;">
+                    <div class="d-flex align-items-center gap-2 text-info">
+                        <i class="bx bx-info-circle font-size-18"></i>
+                        <span class="font-size-12 fw-semibold text-wrap">Cơ sở chiết khấu: Thuế VAT (8%) | Thuế hộ KD (1.5%) | Phí Marketing (6%) | Chiết khấu cố định Thời trang (12%), Mỹ phẩm (10%), Khác (10%).</span>
+                    </div>
+                    <a asp-area="Admin" asp-controller="SystemSettings" asp-action="Index" class="btn btn-info btn-sm text-white px-3 py-1 font-size-11 rounded-pill"><i class="bx bx-cog me-1"></i> Điều chỉnh</a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table align-middle table-nowrap table-hover mb-0">
+                        <thead class="table-light">
+                            <tr class="text-uppercase font-size-11 fw-bold text-muted" style="letter-spacing: 0.5px;">
+                                <th>Mã đơn hàng</th>
+                                <th>Ngày tạo</th>
+                                <th class="text-end">Doanh thu bán ra</th>
+                                <th class="text-end text-danger">Chiết khấu (Sàn)</th>
+                                <th class="text-end text-info">VAT (Khách trả)</th>
+                                <th class="text-end text-danger">Thuế Hộ KD</th>
+                                <th class="text-end text-danger">Phí Marketing</th>
+                                <th class="text-end text-success fw-bold">Lợi nhuận thực</th>
+                                <th class="text-center">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.OrderFinancialDetails == null || !Model.OrderFinancialDetails.Any())
+                            {
+                                <tr>
+                                    <td colspan="9" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <i class="bx bx-spreadsheet font-size-40 mb-2 text-light"></i>
+                                            <p class="mb-0">Chưa có dữ liệu đơn hàng thành công.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var detail in Model.OrderFinancialDetails)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="font-size-13 fw-semibold text-primary">@detail.OrderCode</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted font-size-12">@detail.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                        </td>
+                                        <td class="text-end fw-semibold">
+                                            @detail.GrossSales.ToString("N0") ₫
+                                        </td>
+                                        <td class="text-end text-danger font-size-12">
+                                            -@detail.CommissionAmount.ToString("N0") ₫
+                                        </td>
+                                        <td class="text-end text-info font-size-12 fw-medium">
+                                            +@detail.VatAmount.ToString("N0") ₫ <span class="badge bg-info bg-soft text-info font-size-9 p-1 rounded-pill">Thu hộ</span>
+                                        </td>
+                                        <td class="text-end text-danger font-size-12">
+                                            -@detail.SellerTaxAmount.ToString("N0") ₫
+                                        </td>
+                                        <td class="text-end text-danger font-size-12">
+                                            -@detail.MarketingFeeAmount.ToString("N0") ₫
+                                        </td>
+                                        <td class="text-end text-success fw-bold font-size-14">
+                                            @detail.NetProfit.ToString("N0") ₫
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-area="Admin" asp-controller="Orders" asp-action="Details" asp-route-id="@detail.OrderId" target="_blank" class="btn btn-light btn-sm waves-effect rounded-pill px-3 font-size-11">
+                                                <i class="bx bx-show me-1"></i> Xem đơn
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0" style="padding: 0 1.5rem 1.5rem 1.5rem;">
+                <button type="button" class="btn btn-outline-secondary waves-effect rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="/admin/assets/libs/echarts/echarts.min.js"></script>
+    <script>
+        $(function() {
+            var charts = [];
+
+            // 1. Dual-series Revenue & Net Profit Analytics (Extremely Advanced Cash Flow Chart!)
+            var revenueChart = echarts.init(document.getElementById('revenue-analytics-chart'));
+            revenueChart.setOption({
+                tooltip: { 
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross', label: { backgroundColor: '#6a7985' } }
+                },
+                legend: {
+                    data: ['Doanh thu bán ra', 'Lợi nhuận ròng'],
+                    bottom: 0,
+                    textStyle: { fontFamily: 'Inter, sans-serif' }
+                },
+                grid: { top: 30, bottom: 50, left: 65, right: 20 },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: @Html.Raw(Json.Serialize(Model.RevenueLabels)),
+                    axisLine: { lineStyle: { color: '#ccc' } }
+                },
+                yAxis: { 
+                    type: 'value', 
+                    splitLine: { lineStyle: { type: 'dashed', color: '#f2f2f2' } },
+                    axisLabel: {
+                        formatter: function (value) {
+                            return (value / 1000).toFixed(0) + "k ₫";
+                        }
+                    }
+                },
+                series: [
+                    {
+                        name: 'Doanh thu bán ra',
+                        type: 'line',
+                        smooth: true,
+                        symbolSize: 6,
+                        itemStyle: { color: '#556ee6' },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(85, 110, 230, 0.25)' },
+                                { offset: 1, color: 'rgba(85, 110, 230, 0)' }
+                            ])
+                        },
+                        data: @Html.Raw(Json.Serialize(Model.RevenueValues))
+                    },
+                    {
+                        name: 'Lợi nhuận ròng',
+                        type: 'line',
+                        smooth: true,
+                        symbolSize: 6,
+                        itemStyle: { color: '#e100ff' },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(225, 0, 255, 0.25)' },
+                                { offset: 1, color: 'rgba(225, 0, 255, 0)' }
+                            ])
+                        },
+                        data: @Html.Raw(Json.Serialize(Model.ProfitValues))
+                    }
+                ]
+            });
+            charts.push(revenueChart);
+
+            // 2. Health Gauge (Sleek gauge styling)
+            var healthChart = echarts.init(document.getElementById('operation-health-chart'));
+            healthChart.setOption({
+                series: [{
+                    type: 'gauge',
+                    startAngle: 180,
+                    endAngle: 0,
+                    min: 0,
+                    max: 100,
+                    radius: '115%',
+                    center: ['50%', '80%'],
+                    progress: { show: true, width: 12, itemStyle: { color: '#34c38f' } },
+                    axisLine: { lineStyle: { width: 12, color: [[1, '#f1f3f5']] } },
+                    axisTick: { show: false },
+                    splitLine: { show: false },
+                    axisLabel: { show: false },
+                    pointer: { show: false },
+                    detail: { valueAnimation: true, offsetCenter: [0, '-10%'], fontSize: 28, fontWeight: 'bold', color: '#333', formatter: '{value}%' },
+                    data: [{ value: @Model.CustomerSatisfactionScore }]
+                }]
+            });
+            charts.push(healthChart);
+
+            window.addEventListener('resize', function() {
+                charts.forEach(c => c.resize());
+            });
+        });
+    </script>
+}

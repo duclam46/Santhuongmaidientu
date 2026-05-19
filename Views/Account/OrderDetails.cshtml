@@ -109,6 +109,21 @@
         var statusUi = ResolveOrderStatusPill(order.OrderStatus);
         var raw = (order.OrderStatus ?? string.Empty).Trim();
         var norm = raw.Replace(" ", string.Empty).ToLowerInvariant();
+        var isCancelled = norm is "rejected" or "cancelled" or "canceled" or "cancel" or "đãhủy" or "dahuy";
+
+        var isDelivered = norm is "delivered" or "deliverysuccess" or "dagiao" or "đãgiao" or "completed" or "success";
+        var isReturnRequest = norm is "returnrequest" or "returning" or "return" or "returned" or "refund" or "trahang" or "trảhàng";
+        var isDelivering = norm is "shipping" or "delivering" or "intransit" or "đanggiao" or "danggiao";
+
+        // Can return: delivered status + within 5 days
+        var canReturn = false;
+        var daysRemainingReturn = 0;
+        if (isDelivered)
+        {
+          var daysSince = (DateTime.UtcNow - order.UpdatedAt).TotalDays;
+          canReturn = daysSince <= 5;
+          daysRemainingReturn = (int)Math.Max(0, Math.Ceiling(5 - daysSince));
+        }
 
         var canCancel = norm switch
         {
@@ -128,11 +143,28 @@
                   Đặt lúc @order.CreatedAt.ToLocalTime().ToString("HH:mm, dd/MM/yyyy")
                 </div>
               </div>
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3 flex-wrap">
                 <span class="@statusUi.pillClass">@statusUi.label</span>
+                @if (isDelivering || (isDelivered && !order.IsReceivedByCustomer))
+                {
+                  <form method="post" action="/my-orders/received" class="inline-flex" onsubmit="return confirm('Bạn xác nhận đã nhận được hàng đầy đủ và nguyên vẹn?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" value="@order.Id" />
+                    <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                    <button type="submit" class="btn btn-small py-[7px] px-3 text-xs leading-[18px] font-semibold rounded-[90px] shadow-none text-white ring-1 ring-inset ring-emerald-600/20"
+                            style="background:linear-gradient(135deg,#10b981,#059669);">
+                      ✓ Đã nhận được hàng
+                    </button>
+                  </form>
+                }
                 @if (canCancel)
                 {
-                  <form method="post" action="/my-orders/cancel" class="inline-flex" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');">
+                  
+                    var cancelConfirmMsg = (order.PaymentStatus == "Paid" && order.PaymentMethod == "BankTransfer")
+                        ? "Bạn có chắc chắn muốn hủy đơn hàng này không? Đơn hàng này đã được thanh toán qua VNPay, số tiền sẽ được hoàn trả về tài khoản thanh toán của bạn. Hành động này không thể hoàn tác."
+                        : "Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.";
+                  
+                                    <form method="post" action="/my-orders/cancel" class="js-cancel-form inline-flex" data-confirm-msg="@cancelConfirmMsg">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="Id" value="@order.Id" />
                     <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
@@ -140,6 +172,22 @@
                       Hủy đơn
                     </button>
                   </form>
+                }
+                @if (canReturn)
+                {
+                  <a href="/my-orders/return/@order.Id"
+                     class="btn btn-small py-[7px] px-3 text-xs leading-[18px] font-semibold rounded-[90px] shadow-none text-white ring-1 ring-inset ring-orange-600/20"
+                     style="background:linear-gradient(135deg,#f97316,#ea580c);">
+                    ↩ Trả hàng (@daysRemainingReturn ngày)
+                  </a>
+                }
+                @if (isReturnRequest)
+                {
+                  <a href="/my-orders/return/@order.Id"
+                     class="btn btn-small py-[7px] px-3 text-xs leading-[18px] font-semibold rounded-[90px] shadow-none ring-1 ring-inset ring-violet-600/20"
+                     style="background:#ede9fe; color:#6d28d9;">
+                    📋 Xem trả hàng
+                  </a>
                 }
               </div>
             </div>
@@ -202,32 +250,80 @@
                   <div class="px-5 py-4">
                     <div class="flex flex-col gap-y-3">
                       <div class="flex items-center justify-between">
-                        <span class="text-light-secondary-text">Tạm tính</span>
+                        <span class="text-light-secondary-text">Tổng tiền hàng</span>
                         <span class="text-light-primary-text font-semibold">@FormatVnd(order.SubTotal)</span>
                       </div>
                       <div class="flex items-center justify-between">
                         <span class="text-light-secondary-text">Phí vận chuyển</span>
-                        <span class="text-light-primary-text font-semibold">@(order.ShippingFee <= 0 ? "Miễn phí" : FormatVnd(order.ShippingFee))</span>
+                        <span class="text-light-primary-text font-semibold">@FormatVnd(order.ShippingFee)</span>
                       </div>
-                      <div class="flex items-center justify-between">
-                        <span class="text-light-secondary-text">Giảm giá</span>
-                        <span class="text-light-primary-text font-semibold">@FormatVnd(order.DiscountAmount)</span>
-                      </div>
+                      @if (order.ShippingDiscount > 0)
+                      {
+                          <div class="flex items-center justify-between">
+                            <span class="text-light-secondary-text">Ưu đãi phí vận chuyển</span>
+                            <span class="text-success font-semibold">-@FormatVnd(order.ShippingDiscount)</span>
+                          </div>
+                      }
+                      @if (order.VoucherDiscount > 0)
+                      {
+                          <div class="flex items-center justify-between">
+                            <span class="text-light-secondary-text">Voucher giảm giá</span>
+                            <span class="text-success font-semibold">-@FormatVnd(order.VoucherDiscount)</span>
+                          </div>
+                      }
+                      @{
+                          var calcVat = order.FinalAmount - order.SubTotal - order.ShippingFee + order.DiscountAmount;
+                          if (calcVat < 0) calcVat = 0m;
+                          var calcVatRate = order.SubTotal > 0 ? (calcVat / order.SubTotal * 100) : 0m;
+                      }
+                      @if (calcVat > 0)
+                      {
+                        <div class="flex items-center justify-between">
+                          <span class="text-light-secondary-text">Thuế VAT (@(calcVatRate.ToString("F2", new System.Globalization.CultureInfo("vi-VN")))%)</span>
+                          <span class="text-light-primary-text font-semibold">@FormatVnd(calcVat)</span>
+                        </div>
+                      }
                     </div>
                   </div>
 
-                  <div class="border-t border-gray-300 px-5 py-4 bg-warning-light/60">
+                  <div class="border-t border-gray-300 px-5 py-4 bg-success-light/30">
                     <div class="flex items-start justify-between gap-3">
                       <div>
-                        <div class="text-light-secondary-text text-sm">Tổng thanh toán</div>
-                        <div class="text-light-primary-text font-bold text-lg">@FormatVnd(order.FinalAmount)</div>
+                        <div class="text-light-secondary-text text-sm font-semibold">Tổng cộng</div>
+                        <div class="font-bold text-2xl text-success-dark">@FormatVnd(order.FinalAmount)</div>
                       </div>
-                      <div class="mt-1">
+                      <div class="mt-1 flex flex-col items-end gap-2">
                         <span class="inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold leading-5 bg-white/70 text-primary ring-1 ring-inset ring-primary/10">
                           @ResolvePaymentBadge(order.PaymentStatus)
                         </span>
+                        @if (!isCancelled && order.PaymentStatus == "AwaitingPayment" && order.PaymentMethod == "BankTransfer" && order.PaymentDeadlineUtc.HasValue)
+                        {
+                            var remainingSeconds = (order.PaymentDeadlineUtc.Value - DateTime.Now).TotalSeconds;
+                            if (remainingSeconds < 0 || remainingSeconds > 1800)
+                            {
+                                var altDiff = (order.PaymentDeadlineUtc.Value - DateTime.UtcNow).TotalSeconds;
+                                if (altDiff >= 0 && altDiff <= 1800)
+                                {
+                                    remainingSeconds = altDiff;
+                                }
+                            }
+                            if (remainingSeconds < 0) remainingSeconds = 0;
+                            if (remainingSeconds > 900) remainingSeconds = 900;
+
+                            <div class="text-error font-bold text-sm bg-white/80 px-3 py-1 rounded-full ring-1 ring-inset ring-error/20 js-payment-countdown" data-remaining-seconds="@((int)remainingSeconds)">
+                                <i class="hgi hgi-stroke hgi-time-04"></i> --:--
+                            </div>
+                        }
                       </div>
                     </div>
+                    @if (!isCancelled && order.PaymentStatus == "AwaitingPayment" && order.PaymentMethod == "BankTransfer")
+                    {
+                        <div class="mt-4">
+                            <a class="btn btn-medium w-full text-white js-payment-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 80px;" href="/checkout/vnpay-retry?codes=@Uri.EscapeDataString(order.OrderCode)">
+                                Thanh toán ngay qua VNPay
+                            </a>
+                        </div>
+                    }
                   </div>
                 </div>
               </div>
@@ -261,6 +357,26 @@
                       <span class="text-light-secondary-text">Dự kiến giao</span>
                       <span class="text-light-primary-text font-semibold">@(order.EstimatedDeliveryAt.HasValue ? order.EstimatedDeliveryAt.Value.ToLocalTime().ToString("HH:mm, dd/MM/yyyy") : "(chưa có)")</span>
                     </div>
+                    @if (!string.IsNullOrWhiteSpace(order.ShipperName) || !string.IsNullOrWhiteSpace(order.ShipperPhone))
+                    {
+                      <div class="flex items-center justify-between text-sm mt-2">
+                        <span class="text-light-secondary-text">Shipper</span>
+                        <span class="text-light-primary-text font-semibold">
+                          @if (!string.IsNullOrWhiteSpace(order.ShipperName) && !string.IsNullOrWhiteSpace(order.ShipperPhone))
+                          {
+                            @order.ShipperName <text>(@order.ShipperPhone)</text>
+                          }
+                          else if (!string.IsNullOrWhiteSpace(order.ShipperName))
+                          {
+                            @order.ShipperName
+                          }
+                          else
+                          {
+                            @order.ShipperPhone
+                          }
+                        </span>
+                      </div>
+                    }
                     <div class="flex items-center justify-between text-sm mt-2">
                       <span class="text-light-secondary-text">Mã vận đơn GHN</span>
                       <span class="text-light-primary-text font-semibold">@(string.IsNullOrWhiteSpace(order.TrackingCode) ? "(chưa có)" : order.TrackingCode)</span>
@@ -446,3 +562,344 @@
     </div>
   </div>
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var countdowns = document.querySelectorAll('.js-payment-countdown');
+    if (countdowns.length === 0) return;
+
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function updateCountdowns() {
+        var now = new Date().getTime();
+        countdowns.forEach(function(el) {
+            var deadlineIso = el.getAttribute('data-deadline');
+            if (!deadlineIso) return;
+            var deadline = new Date(deadlineIso).getTime();
+            var diff = deadline - now;
+
+            if (diff <= 0) {
+                el.innerHTML = '<i class="hgi hgi-stroke hgi-time-04"></i> Đã hết hạn';
+                el.style.color = '#dc2626';
+                var btn = el.closest('.bg-warning-light\\/60').querySelector('.js-payment-btn');
+                if (btn) {
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    btn.removeAttribute('href');
+                    btn.textContent = 'Đã hết hạn';
+                }
+            } else {
+                var m = Math.floor(diff / 1000 / 60);
+                var s = Math.floor((diff / 1000) % 60);
+                el.innerHTML = '<i class="hgi hgi-stroke hgi-time-04"></i> ' + pad(m) + ':' + pad(s);
+            }
+        });
+    }
+
+    updateCountdowns();
+    setInterval(updateCountdowns, 1000);
+});
+</script>
+
+<!-- Custom Confirm Cancel Modal -->
+<style>
+/* Premium Confirmation Modal Styles */
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+}
+
+.confirm-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.confirm-modal-box {
+    background: #ffffff;
+    border-radius: 28px;
+    width: 90%;
+    max-width: 440px;
+    padding: 32px 28px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    text-align: center;
+    transform: scale(0.92) translateY(10px);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+    box-sizing: border-box;
+}
+
+.confirm-modal-overlay.active .confirm-modal-box {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+/* Beautiful Colorful Icon & Glow */
+.confirm-modal-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-modal-icon-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffedd5 0%, #fee2e2 100%);
+    box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.2);
+    animation: pulseGlow 2s infinite ease-in-out;
+}
+
+.confirm-modal-icon {
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@@keyframes pulseGlow {
+    0%, 100% { transform: scale(1); opacity: 0.95; }
+    50% { transform: scale(1.06); opacity: 1; box-shadow: 0 12px 25px -3px rgba(239, 68, 68, 0.35); }
+}
+
+.confirm-modal-title {
+    font-size: 22px;
+    font-weight: 750;
+    color: #0f172a;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+}
+
+.confirm-modal-desc {
+    font-size: 14.5px;
+    color: #475569;
+    line-height: 1.6;
+    margin: 0 0 28px 0;
+    padding: 0 8px;
+}
+
+/* Styled Premium Buttons */
+.confirm-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+@@media (min-width: 480px) {
+    .confirm-modal-actions {
+        flex-direction: row;
+    }
+}
+
+.confirm-modal-btn {
+    flex: 1;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 16px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    text-align: center;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-modal-btn-cancel {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+
+.confirm-modal-btn-cancel:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.confirm-modal-btn-confirm {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.confirm-modal-btn-confirm:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+    transform: translateY(-1px);
+}
+
+.confirm-modal-btn-confirm:active {
+    transform: translateY(0);
+}
+
+/* Dark Mode support - Brighter, modern dark slate card */
+@@media (prefers-color-scheme: dark) {
+    .confirm-modal-box {
+        background: #313c54;
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.65);
+    }
+    .confirm-modal-title {
+        color: #f8fafc;
+    }
+    .confirm-modal-desc {
+        color: #cbd5e1;
+    }
+    .confirm-modal-btn-cancel {
+        background: #475569;
+        color: #f8fafc;
+        border-color: #64748b;
+    }
+    .confirm-modal-btn-cancel:hover {
+        background: #64748b;
+        color: #ffffff;
+    }
+    .confirm-modal-icon-bg {
+        background: rgba(239, 68, 68, 0.2);
+        box-shadow: 0 10px 25px -3px rgba(239, 68, 68, 0.45);
+    }
+}
+</style>
+
+<div id="cancelConfirmModal" class="confirm-modal-overlay">
+  <div class="confirm-modal-box" id="cancelConfirmBox">
+    <!-- Beautiful Glowing & Pulse Multi-color SVG Icon -->
+    <div class="confirm-modal-icon-wrapper">
+      <div class="confirm-modal-icon-bg"></div>
+      <div class="confirm-modal-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="url(#iconWarningGrad)" />
+          <path d="M12 8V13" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+          <circle cx="12" cy="16" r="1.25" fill="#ffffff" />
+          <defs>
+            <linearGradient id="iconWarningGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#f97316" />
+              <stop offset="100%" stop-color="#ef4444" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+    
+    <!-- Title -->
+    <h3 class="confirm-modal-title">Xác nhận hủy đơn</h3>
+    
+    <!-- Description -->
+    <p class="confirm-modal-desc" id="cancelConfirmText">
+      Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.
+    </p>
+    
+    <!-- Action Buttons -->
+    <div class="confirm-modal-actions">
+      <button type="button" id="cancelConfirmBtnClose" class="confirm-modal-btn confirm-modal-btn-cancel">
+        Không, giữ lại đơn
+      </button>
+      <button type="button" id="cancelConfirmBtnSubmit" class="confirm-modal-btn confirm-modal-btn-confirm">
+        Hủy đơn hàng
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const cancelForms = document.querySelectorAll(".js-cancel-form");
+    const modal = document.getElementById("cancelConfirmModal");
+    const modalText = document.getElementById("cancelConfirmText");
+    const btnClose = document.getElementById("cancelConfirmBtnClose");
+    const btnSubmit = document.getElementById("cancelConfirmBtnSubmit");
+    
+    let activeForm = null;
+    
+    cancelForms.forEach(form => {
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            activeForm = this;
+            
+            const msg = this.getAttribute("data-confirm-msg");
+            if (msg) {
+                modalText.innerText = msg;
+            }
+            
+            modal.classList.add("active");
+        });
+    });
+    
+    function closeModal() {
+        modal.classList.remove("active");
+        activeForm = null;
+    }
+    
+    if (btnClose) btnClose.addEventListener("click", closeModal);
+    
+    // Close modal if user clicks outside of confirm-modal-box
+    modal.addEventListener("click", function (e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+    
+    if (btnSubmit) {
+        btnSubmit.addEventListener("click", function () {
+            if (activeForm) {
+                activeForm.submit();
+            }
+            closeModal();
+        });
+    }
+
+    // Robust Countdown Timer logic
+    var countdown = document.querySelector('.js-payment-countdown');
+    if (countdown) {
+        var secAttr = countdown.getAttribute('data-remaining-seconds');
+        var remainingSeconds = parseInt(secAttr || '0', 10);
+        var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+
+        var updateTimer = function() {
+            if (remainingSeconds <= 0) {
+                countdown.textContent = 'Đã hết hạn';
+                countdown.style.color = '#dc2626';
+                var btn = document.querySelector('.js-payment-btn');
+                if (btn) {
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    btn.removeAttribute('href');
+                    btn.textContent = 'Đã hết hạn';
+                }
+                clearInterval(timerId);
+            } else {
+                var m = Math.floor(remainingSeconds / 60);
+                var s = remainingSeconds % 60;
+                countdown.innerHTML = '<i class="hgi hgi-stroke hgi-time-04"></i> ' + pad(m) + ':' + pad(s);
+                remainingSeconds--;
+            }
+        };
+
+        updateTimer();
+        var timerId = setInterval(updateTimer, 1000);
+    }
+});
+</script>

@@ -30,29 +30,75 @@
   <div class="container">
     <div class="grid grid-cols-12 gap-x-[30px] gap-y-10 items-start">
       <div class="lg:col-span-7 col-span-12">
-        <div class="mb-6">
+        <div class="mb-7">
           <h2 class="pb-3 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
             Trở thành Đối tác bán hàng
           </h2>
           <p class="wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
             Mở gian hàng, tiếp cận khách hàng mới và phát triển doanh thu cùng nền tảng của chúng tôi.
           </p>
+
+          <div class="mt-5 grid grid-cols-12 gap-x-[30px] gap-y-4">
+            <div class="md:col-span-4 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+              <div class="p-5 border border-gray-300 bg-white rounded-2xl h-full">
+                <div class="flex items-start gap-x-3">
+                  <span class="inline-flex items-center justify-center size-11 bg-warning-lighter rounded-full flex-none">
+                    <i class="hgi hgi-stroke hgi-store-02 text-2xl text-light-primary-text"></i>
+                  </span>
+                  <div>
+                    <div class="font-semibold text-light-primary-text">Tạo gian hàng</div>
+                    <div class="text-sm leading-[22px] text-light-secondary-text">Điền thông tin cơ bản và địa chỉ lấy hàng.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="md:col-span-4 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
+              <div class="p-5 border border-gray-300 bg-white rounded-2xl h-full">
+                <div class="flex items-start gap-x-3">
+                  <span class="inline-flex items-center justify-center size-11 bg-warning-lighter rounded-full flex-none">
+                    <i class="hgi hgi-stroke hgi-shield-01 text-2xl text-light-primary-text"></i>
+                  </span>
+                  <div>
+                    <div class="font-semibold text-light-primary-text">Xét duyệt</div>
+                    <div class="text-sm leading-[22px] text-light-secondary-text">Hệ thống ghi nhận và chờ Admin kiểm tra.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="md:col-span-4 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".4s">
+              <div class="p-5 border border-gray-300 bg-white rounded-2xl h-full">
+                <div class="flex items-start gap-x-3">
+                  <span class="inline-flex items-center justify-center size-11 bg-warning-lighter rounded-full flex-none">
+                    <i class="hgi hgi-stroke hgi-coins-02 text-2xl text-light-primary-text"></i>
+                  </span>
+                  <div>
+                    <div class="font-semibold text-light-primary-text">Bắt đầu bán</div>
+                    <div class="text-sm leading-[22px] text-light-secondary-text">Đăng sản phẩm và theo dõi doanh thu.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="grid grid-cols-12 gap-x-[30px] gap-y-6">
           <div class="md:col-span-7 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-            <img src="assets/images/2-girls.jpg" alt="Đối tác" class="rounded-2xl w-full h-[340px] object-cover" />
+            <img src="assets/images/2-girls.jpg" alt="Đối tác" class="rounded-2xl w-full h-[320px] object-cover" />
           </div>
           <div class="md:col-span-5 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
-            <img src="assets/images/red-shirt-female.png" alt="Đối tác" class="rounded-2xl w-full h-[340px] object-cover bg-[#F4F3F5]" />
+            <img src="assets/images/red-shirt-female.png" alt="Đối tác" class="rounded-2xl w-full h-[320px] object-cover bg-[#F4F3F5]" />
           </div>
         </div>
       </div>
 
       <div class="lg:col-span-5 col-span-12">
         <div class="border border-gray-300 rounded-2xl p-6 md:p-8 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-          <h4 class="pb-2">Đăng ký trở thành nhà bán hàng</h4>
-          <p class="pb-6 text-light-disabled-text">Điền thông tin cơ bản để bắt đầu.</p>
+          <div class="flex items-start justify-between gap-x-4 pb-6">
+            <div>
+              <h4 class="pb-2">Đăng ký trở thành nhà bán hàng</h4>
+              <p class="text-light-disabled-text">Điền thông tin cơ bản để bắt đầu. Trường có dấu * là bắt buộc.</p>
+            </div>
+          </div>
 
           @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
           {
@@ -70,177 +116,226 @@
             </div>
           }
 
-          <form asp-action="Register" asp-controller="Partners" method="post" class="flex flex-col gap-y-5">
-            @Html.AntiForgeryToken()
-
-            <div class="relative w-full">
-              <input
-                type="text"
-                id="partner-fullname"
-                name="FullName"
-                value="@Model.FullName"
-                class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                placeholder="Họ và tên *" />
-              <label
-                for="partner-fullname"
-                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                Họ và tên
-              </label>
-            </div>
-
-            <div class="relative w-full">
-              <input
-                type="email"
-                id="partner-email"
-                name="Email"
-                value="@Model.Email"
-                @(isSignedIn ? "readonly=\"readonly\"" : "")
-                class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                placeholder="Email *" />
-              <label
-                for="partner-email"
-                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                Email *
-              </label>
-            </div>
-
-            <div class="relative w-full">
-              <input
-                type="text"
-                id="partner-phone"
-                name="PhoneNumber"
-                value="@Model.PhoneNumber"
-                class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                placeholder="Số điện thoại *" />
-              <label
-                for="partner-phone"
-                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                Số điện thoại *
-              </label>
-            </div>
-
-            <div class="relative w-full">
-              <input
-                type="text"
-                id="partner-shopname"
-                name="ShopName"
-                value="@Model.ShopName"
-                class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                placeholder="Tên cửa hàng/đối tác *" />
-              <label
-                for="partner-shopname"
-                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                Tên cửa hàng/đối tác *
-              </label>
-            </div>
-
-            <div class="w-full">
-              <label for="partner-desc" class="block text-sm leading-[22px] font-semibold pb-2">Mô tả (tuỳ chọn)</label>
-              <textarea
-                id="partner-desc"
-                name="ShopDescription"
-                rows="4"
-                class="form-control input-group rounded-2xl px-4 py-3 focus:outline-none"
-                placeholder="Giới thiệu ngắn về cửa hàng của bạn...">@Model.ShopDescription</textarea>
-            </div>
-
-            <div class="w-full">
-              <label class="block text-sm leading-[22px] font-semibold pb-2">Địa chỉ cửa hàng/địa chỉ lấy hàng (GHN) *</label>
-
-              <div id="partner_ghn_debug" class="hidden text-sm leading-[22px] mb-2 p-3 rounded-2xl bg-[rgba(0,0,0,0.03)]"></div>
-
-              <div id="partner-ghn-address" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
-                <div class="w-full">
-                  <select name="ProvinceId" id="partner_province" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none">
-                    <option value="">Chọn Tỉnh/Thành phố</option>
-                  </select>
-                  <input type="hidden" name="ProvinceName" id="partner_province_name" value="@Model.ProvinceName" />
-                </div>
-
-                <div class="w-full">
-                  <select name="DistrictId" id="partner_district" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
-                    <option value="">Chọn Quận/Huyện</option>
-                  </select>
-                  <input type="hidden" name="DistrictName" id="partner_district_name" value="@Model.DistrictName" />
-                </div>
-
-                <div class="w-full">
-                  <select name="WardCode" id="partner_ward" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
-                    <option value="">Chọn Phường/Xã</option>
-                  </select>
-                  <input type="hidden" name="WardName" id="partner_ward_name" value="@Model.WardName" />
-                </div>
-
-                <div class="relative w-full">
-                  <input
-                    name="StreetAddress"
-                    type="text"
-                    id="partner_street_address"
-                    value="@Model.StreetAddress"
-                    class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                    placeholder="Số nhà, đường..." />
-                  <label
-                    for="partner_street_address"
-                    class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                    Số nhà, đường *
-                  </label>
+          @if (Model.HideForm)
+          {
+            <div class="p-5 rounded-2xl border border-gray-300 bg-gray-100 text-light-primary-text">
+              <div class="flex items-start gap-x-3">
+                <span class="inline-flex items-center justify-center size-11 bg-warning-lighter rounded-full flex-none">
+                  <i class="hgi hgi-stroke hgi-checkmark-circle-02 text-2xl text-light-primary-text"></i>
+                </span>
+                <div>
+                  <div class="font-semibold pb-1">Bạn đã nộp đơn đăng ký</div>
+                  <div class="text-sm leading-[22px] text-light-secondary-text">
+                    @(string.IsNullOrWhiteSpace(Model.HideFormMessage)
+                      ? "Hệ thống đã ghi nhận đơn đăng ký của bạn. Vui lòng chờ xét duyệt."
+                      : Model.HideFormMessage)
+                  </div>
+                  <div class="mt-3 text-sm leading-[22px] text-light-secondary-text">
+                    Khi cần bổ sung thông tin, chúng tôi sẽ liên hệ qua email hoặc số điện thoại bạn đã cung cấp.
+                  </div>
                 </div>
               </div>
+            </div>
+          }
+          else
+          {
+            <form asp-action="Register" asp-controller="Partners" method="post" class="flex flex-col gap-y-5">
+              @Html.AntiForgeryToken()
 
-              <p class="pt-2 text-sm leading-[22px] text-light-disabled-text">
-                Hệ thống sẽ dùng địa chỉ này để tính phí vận chuyển (GHN).
+              <div class="pb-1">
+                <div class="font-semibold text-light-primary-text">Thông tin liên hệ</div>
+                <div class="text-sm leading-[22px] text-light-disabled-text">Dùng để xác minh và liên hệ khi cần.</div>
+              </div>
+
+              <div class="relative w-full">
+                <input
+                  type="text"
+                  id="partner-fullname"
+                  name="FullName"
+                  value="@Model.FullName"
+                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                  placeholder="Họ và tên *" />
+                <label
+                  for="partner-fullname"
+                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                  Họ và tên
+                </label>
+              </div>
+
+              <div class="relative w-full">
+                <input
+                  type="email"
+                  id="partner-email"
+                  name="Email"
+                  value="@Model.Email"
+                  @(isSignedIn ? "readonly=\"readonly\"" : "")
+                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                  placeholder="Email *" />
+                <label
+                  for="partner-email"
+                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                  Email *
+                </label>
+              </div>
+
+              <div class="relative w-full">
+                <input
+                  type="text"
+                  id="partner-phone"
+                  name="PhoneNumber"
+                  value="@Model.PhoneNumber"
+                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                  placeholder="Số điện thoại *" />
+                <label
+                  for="partner-phone"
+                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                  Số điện thoại *
+                </label>
+              </div>
+
+              <div class="border-t border-gray-300 pt-5"></div>
+
+              <div class="pb-1">
+                <div class="font-semibold text-light-primary-text">Thông tin cửa hàng</div>
+                <div class="text-sm leading-[22px] text-light-disabled-text">Giúp Admin hiểu rõ mô hình bán hàng của bạn.</div>
+              </div>
+
+              <div class="relative w-full">
+                <input
+                  type="text"
+                  id="partner-shopname"
+                  name="ShopName"
+                  value="@Model.ShopName"
+                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                  placeholder="Tên cửa hàng/đối tác *" />
+                <label
+                  for="partner-shopname"
+                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                  Tên cửa hàng/đối tác *
+                </label>
+              </div>
+
+              <div class="w-full">
+                <label for="partner-desc" class="block text-sm leading-[22px] font-semibold pb-2">Mô tả (tuỳ chọn)</label>
+                <textarea
+                  id="partner-desc"
+                  name="ShopDescription"
+                  rows="4"
+                  class="form-control input-group rounded-2xl px-4 py-3 focus:outline-none"
+                  placeholder="Giới thiệu ngắn về cửa hàng của bạn...">@Model.ShopDescription</textarea>
+              </div>
+
+              <div class="border-t border-gray-300 pt-5"></div>
+
+              <div class="pb-1">
+                <div class="font-semibold text-light-primary-text">Địa chỉ lấy hàng (GHN)</div>
+                <div class="text-sm leading-[22px] text-light-disabled-text">Dùng để tính phí vận chuyển và tạo vận đơn.</div>
+              </div>
+
+              <div class="w-full">
+                <label class="block text-sm leading-[22px] font-semibold pb-2">Khu vực và địa chỉ chi tiết *</label>
+
+                <div id="partner_ghn_debug" class="hidden text-sm leading-[22px] mb-2 p-3 rounded-2xl bg-[rgba(0,0,0,0.03)]"></div>
+
+                <div id="partner-ghn-address" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+                  <div class="w-full">
+                    <select name="ProvinceId" id="partner_province" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none">
+                      <option value="">Chọn Tỉnh/Thành phố</option>
+                    </select>
+                    <input type="hidden" name="ProvinceName" id="partner_province_name" value="@Model.ProvinceName" />
+                  </div>
+
+                  <div class="w-full">
+                    <select name="DistrictId" id="partner_district" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
+                      <option value="">Chọn Quận/Huyện</option>
+                    </select>
+                    <input type="hidden" name="DistrictName" id="partner_district_name" value="@Model.DistrictName" />
+                  </div>
+
+                  <div class="w-full">
+                    <select name="WardCode" id="partner_ward" class="peer form-control input-group medium rounded-[80px] px-3.5 focus:outline-none" disabled>
+                      <option value="">Chọn Phường/Xã</option>
+                    </select>
+                    <input type="hidden" name="WardName" id="partner_ward_name" value="@Model.WardName" />
+                  </div>
+
+                  <div class="relative w-full">
+                    <input
+                      name="StreetAddress"
+                      type="text"
+                      id="partner_street_address"
+                      value="@Model.StreetAddress"
+                      class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                      placeholder="Số nhà, đường..." />
+                    <label
+                      for="partner_street_address"
+                      class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                      Số nhà, đường *
+                    </label>
+                  </div>
+                </div>
+
+                <p class="pt-2 text-sm leading-[22px] text-light-disabled-text">
+                  Hệ thống sẽ dùng địa chỉ này để tính phí vận chuyển (GHN).
+                </p>
+              </div>
+
+              @if (!isSignedIn)
+              {
+                <div class="border-t border-gray-300 pt-5"></div>
+
+                <div class="pb-1">
+                  <div class="font-semibold text-light-primary-text">Tạo tài khoản</div>
+                  <div class="text-sm leading-[22px] text-light-disabled-text">Bạn chưa đăng nhập, hệ thống sẽ tạo tài khoản mới.</div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
+                  <div class="relative w-full">
+                    <input
+                      type="password"
+                      id="partner-password"
+                      name="Password"
+                      value=""
+                      class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                      placeholder="Mật khẩu *" />
+                    <label
+                      for="partner-password"
+                      class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                      Mật khẩu *
+                    </label>
+                  </div>
+                  <div class="relative w-full">
+                    <input
+                      type="password"
+                      id="partner-confirm"
+                      name="ConfirmPassword"
+                      value=""
+                      class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                      placeholder="Xác nhận mật khẩu *" />
+                    <label
+                      for="partner-confirm"
+                      class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                      Xác nhận *
+                    </label>
+                  </div>
+                </div>
+              }
+
+              <button type="submit" class="btn btn-primary btn-large rounded-[80px] w-full">
+                Gửi đăng ký
+              </button>
+
+              <p class="text-sm leading-[22px] text-light-disabled-text">
+                @if (isSignedIn)
+                {
+                  <span>Bạn đang đăng nhập, chỉ cần bổ sung thông tin cửa hàng để nâng cấp thành nhà bán hàng.</span>
+                }
+                else
+                {
+                  <span>Nếu bạn đã có tài khoản, hãy đăng nhập trước rồi quay lại trang này để nâng cấp thành nhà bán hàng.</span>
+                }
               </p>
-            </div>
-
-            @if (!isSignedIn)
-            {
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
-                <div class="relative w-full">
-                  <input
-                    type="password"
-                    id="partner-password"
-                    name="Password"
-                    value=""
-                    class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                    placeholder="Mật khẩu *" />
-                  <label
-                    for="partner-password"
-                    class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                    Mật khẩu *
-                  </label>
-                </div>
-                <div class="relative w-full">
-                  <input
-                    type="password"
-                    id="partner-confirm"
-                    name="ConfirmPassword"
-                    value=""
-                    class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                    placeholder="Xác nhận mật khẩu *" />
-                  <label
-                    for="partner-confirm"
-                    class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                    Xác nhận *
-                  </label>
-                </div>
-              </div>
-            }
-
-            <button type="submit" class="btn btn-primary btn-large rounded-[80px] w-full">
-              Gửi đăng ký
-            </button>
-
-            <p class="text-sm leading-[22px] text-light-disabled-text">
-              @if (isSignedIn)
-              {
-                <span>Bạn đang đăng nhập, chỉ cần bổ sung thông tin cửa hàng để nâng cấp thành nhà bán hàng.</span>
-              }
-              else
-              {
-                <span>Nếu bạn đã có tài khoản, hãy đăng nhập trước rồi quay lại trang này để nâng cấp thành nhà bán hàng.</span>
-              }
-            </p>
-          </form>
+            </form>
+          }
         </div>
       </div>
     </div>
@@ -309,6 +404,15 @@
 
     debugLine('[GHN] Partner script started');
 
+    let initPartnerFormRunning = false;
+    function isEmptyOptions(select) {
+      try {
+        return !(select instanceof HTMLSelectElement) || select.options.length <= 1;
+      } catch {
+        return true;
+      }
+    }
+
     const cache = {
       provinces: null,
       districtsByProvince: new Map(),
@@ -324,6 +428,10 @@
         throw new Error(text || `HTTP ${res.status}`);
       }
       const json = await res.json();
+      if (!Array.isArray(json)) {
+        debugLine('↳ ERROR: response is not an array');
+        throw new Error('Unexpected GHN response shape');
+      }
       if (Array.isArray(json)) {
         debugLine(`↳ OK (${json.length} items)`);
       } else {
@@ -372,49 +480,13 @@
       const $ = window.jQuery;
       if (!$ || !$.fn || !$.fn.niceSelect) return;
       try {
-        const next = select.nextElementSibling;
-        const hasNice = next && next.classList && next.classList.contains('nice-select');
-        if (!hasNice) {
-          // If the plugin hasn't been initialized for this <select>, initialize it.
-          $(select).niceSelect();
-          return;
-        }
-
         $(select).niceSelect('update');
       } catch {
         // ignore
       }
     }
 
-    function updateNiceSelectSoon(select) {
-      // Partners page initializes GHN selects immediately on page load.
-      // Depending on script order, niceSelect may initialize AFTER we set <option>s.
-      // Retry a few times so the rendered dropdown always reflects the latest options.
-      refreshNiceSelect(select);
-
-      let tries = 0;
-      const timer = setInterval(() => {
-        tries++;
-        refreshNiceSelect(select);
-
-        const next = select.nextElementSibling;
-        const hasNice = next && next.classList && next.classList.contains('nice-select');
-        const pluginReady = !!(window.jQuery && window.jQuery.fn && window.jQuery.fn.niceSelect);
-
-        // main.js initializes niceSelect at the bottom of the page; on slower loads
-        // it may take longer than 2s for jQuery + plugin to be ready.
-        if ((hasNice && pluginReady) || tries >= 200) {
-          clearInterval(timer);
-        }
-      }, 100);
-    }
-
     function bindChange(select, handler) {
-      const $ = window.jQuery;
-      if ($) {
-        $(select).on('change', handler);
-        return;
-      }
       select.addEventListener('change', handler);
     }
 
@@ -466,7 +538,7 @@
         select.appendChild(opt);
       }
 
-      updateNiceSelectSoon(select);
+      refreshNiceSelect(select);
     }
 
     function selectedText(select) {
@@ -485,7 +557,7 @@
       select.value = '';
       select.disabled = true;
 
-      updateNiceSelectSoon(select);
+      refreshNiceSelect(select);
     }
 
     function showLoadError(select, message) {
@@ -498,7 +570,7 @@
       select.value = '';
       select.disabled = true;
 
-      updateNiceSelectSoon(select);
+      refreshNiceSelect(select);
     }
 
     async function ensureProvincesLoaded() {
@@ -580,6 +652,9 @@
     }
 
     async function initPartnerForm() {
+      if (initPartnerFormRunning) return;
+      initPartnerFormRunning = true;
+
       const province = document.getElementById('partner_province');
       const district = document.getElementById('partner_district');
       const ward = document.getElementById('partner_ward');
@@ -587,16 +662,27 @@
       const districtNameEl = document.getElementById('partner_district_name');
       const wardNameEl = document.getElementById('partner_ward_name');
 
-      if (!province || !district || !ward || !provinceNameEl || !districtNameEl || !wardNameEl) return;
+      if (!province || !district || !ward || !provinceNameEl || !districtNameEl || !wardNameEl) {
+        initPartnerFormRunning = false;
+        return;
+      }
 
-      const provinceId = @System.Text.Json.JsonSerializer.Serialize(Model.ProvinceId);
-      const districtId = @System.Text.Json.JsonSerializer.Serialize(Model.DistrictId);
-      const wardCode = @System.Text.Json.JsonSerializer.Serialize(Model.WardCode ?? string.Empty);
+      const provinceId = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProvinceId));
+      const districtId = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DistrictId));
+      const wardCode = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WardCode ?? string.Empty));
 
       debugLine(`[GHN] initial ids provinceId=${provinceId} districtId=${districtId} wardCode=${wardCode}`);
 
       try {
         const provinces = await ensureProvincesLoaded();
+        if (!Array.isArray(provinces) || provinces.length === 0) {
+          showLoadError(province, 'Không tải được Tỉnh/Thành phố. Kiểm tra GHN Token.');
+          debugLine('[GHN] provinces empty');
+          resetSelect(district, 'Chọn Quận/Huyện');
+          resetSelect(ward, 'Chọn Phường/Xã');
+          initPartnerFormRunning = false;
+          return;
+        }
         setOptions(province, provinces, 'id', 'name', 'Chọn Tỉnh/Thành phố');
         debugLine('Rendered provinces options');
         province.disabled = false;
@@ -634,6 +720,8 @@
         debugLine(`ERROR: ${(e && e.message) ? e.message : String(e)}`);
         resetSelect(district, 'Chọn Quận/Huyện');
         resetSelect(ward, 'Chọn Phường/Xã');
+      } finally {
+        initPartnerFormRunning = false;
       }
     }
 
@@ -653,10 +741,35 @@
         if (province) refreshNiceSelect(province);
         if (district) refreshNiceSelect(district);
         if (ward) refreshNiceSelect(ward);
+
+        // If provinces didn't load due to race/network, retry once after page load.
+        if (province instanceof HTMLSelectElement && isEmptyOptions(province)) {
+          initPartnerForm();
+        }
       } catch {
         // ignore
       }
     });
+
+    // Lazy-load provinces if the user opens the dropdown and it's still empty.
+    document.addEventListener('click', (e) => {
+      const raw = e.target;
+      const el = (raw instanceof Element)
+        ? raw
+        : (raw && raw.parentElement ? raw.parentElement : null);
+      if (!el) return;
+
+      const nice = el.closest('.nice-select');
+      if (!nice) return;
+
+      const select = nice.previousElementSibling;
+      if (!(select instanceof HTMLSelectElement)) return;
+      if (select.id !== 'partner_province') return;
+
+      if (isEmptyOptions(select)) {
+        initPartnerForm();
+      }
+    }, true);
 
     // Optional smoke test for debugging: /doi-tac?ghnTest=1
     if (hasQueryFlag('ghnTest')) {

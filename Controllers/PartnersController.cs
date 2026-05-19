@@ -1,8 +1,6 @@
-using System.Globalization;
 using System.Diagnostics;
 using System.Security.Claims;
-using System.Text;
-using System.Text.RegularExpressions;
+using DOAN_BANHANG.Helpers;
 using DOAN_BANHANG.Models;
 using DOAN_BANHANG.Services;
 using DOAN_BANHANG.ViewModels;
@@ -56,6 +54,32 @@ public class PartnersController : Controller
 
                 if (account is not null)
                 {
+                    if (string.Equals(account.Role, "Shop", StringComparison.OrdinalIgnoreCase))
+                    {
+                        vm.HideForm = true;
+                        vm.HideFormMessage = "Tài khoản của bạn đã là nhà bán hàng.";
+                        if (string.IsNullOrWhiteSpace(vm.SuccessMessage))
+                        {
+                            vm.SuccessMessage = vm.HideFormMessage;
+                        }
+                    }
+                    else
+                    {
+                        var hasPending = await _db.PartnerApplications
+                            .AsNoTracking()
+                            .AnyAsync(a => a.AccountId == account.Id && a.Status == "Pending", cancellationToken);
+
+                        if (hasPending)
+                        {
+                            vm.HideForm = true;
+                            vm.HideFormMessage = "Bạn đã nộp đơn đăng ký đối tác và đang chờ xét duyệt.";
+                            if (string.IsNullOrWhiteSpace(vm.SuccessMessage))
+                            {
+                                vm.SuccessMessage = vm.HideFormMessage;
+                            }
+                        }
+                    }
+
                     vm.Email = account.Email;
                     vm.FullName = account.Profile?.FullName;
                     vm.PhoneNumber = account.Profile?.PhoneNumber;
@@ -103,9 +127,7 @@ public class PartnersController : Controller
         => ComposeAddress(a.StreetAddress, a.WardName, a.DistrictName, a.ProvinceName);
 
     private static string ComposeAddress(string? streetAddress, string? wardName, string? districtName, string? provinceName)
-        => string.Join(", ", new[] { streetAddress, wardName, districtName, provinceName }
-            .Where(s => !string.IsNullOrWhiteSpace(s))
-            .Select(s => s!.Trim()));
+        => PartnerShopAddressHelper.ComposeAddress(streetAddress, wardName, districtName, provinceName);
 
     private bool HasQueryFlag(string name)
     {
@@ -191,79 +213,18 @@ public class PartnersController : Controller
         string? streetAddress,
         out string error,
         out UserAddress normalized)
-    {
-        error = string.Empty;
-        normalized = new UserAddress();
-
-        fullName = string.IsNullOrWhiteSpace(fullName) ? null : fullName.Trim();
-        phoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
-        provinceName = string.IsNullOrWhiteSpace(provinceName) ? null : provinceName.Trim();
-        districtName = string.IsNullOrWhiteSpace(districtName) ? null : districtName.Trim();
-        wardCode = string.IsNullOrWhiteSpace(wardCode) ? null : wardCode.Trim();
-        wardName = string.IsNullOrWhiteSpace(wardName) ? null : wardName.Trim();
-        streetAddress = string.IsNullOrWhiteSpace(streetAddress) ? null : streetAddress.Trim();
-
-        if (string.IsNullOrWhiteSpace(fullName))
-        {
-            error = "Vui lòng nhập họ và tên.";
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(phoneNumber))
-        {
-            error = "Vui lòng nhập số điện thoại.";
-            return false;
-        }
-
-        if (provinceId <= 0 || string.IsNullOrWhiteSpace(provinceName))
-        {
-            error = "Vui lòng chọn Tỉnh/Thành phố.";
-            return false;
-        }
-
-        if (districtId <= 0 || string.IsNullOrWhiteSpace(districtName))
-        {
-            error = "Vui lòng chọn Quận/Huyện.";
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(wardCode) || string.IsNullOrWhiteSpace(wardName))
-        {
-            error = "Vui lòng chọn Phường/Xã.";
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(streetAddress))
-        {
-            error = "Vui lòng nhập địa chỉ (số nhà, tên đường).";
-            return false;
-        }
-
-        if (fullName.Length > 150) fullName = fullName[..150];
-        if (phoneNumber.Length > 20) phoneNumber = phoneNumber[..20];
-        if (provinceName.Length > 100) provinceName = provinceName[..100];
-        if (districtName.Length > 100) districtName = districtName[..100];
-        if (wardCode.Length > 50) wardCode = wardCode[..50];
-        if (wardName.Length > 100) wardName = wardName[..100];
-        if (streetAddress.Length > 500) streetAddress = streetAddress[..500];
-
-        normalized = new UserAddress
-        {
-            FullName = fullName,
-            PhoneNumber = phoneNumber,
-            ProvinceId = provinceId,
-            ProvinceName = provinceName,
-            DistrictId = districtId,
-            DistrictName = districtName,
-            WardCode = wardCode,
-            WardName = wardName,
-            StreetAddress = streetAddress,
-            AddressType = AddressType.Shop,
-            IsDefault = true
-        };
-
-        return true;
-    }
+        => PartnerShopAddressHelper.TryNormalizeShopAddress(
+            fullName,
+            phoneNumber,
+            provinceId,
+            provinceName,
+            districtId,
+            districtName,
+            wardCode,
+            wardName,
+            streetAddress,
+            out error,
+            out normalized);
 
     [HttpPost("dang-ky")]
     [ValidateAntiForgeryToken]
@@ -381,6 +342,14 @@ public class PartnersController : Controller
             return View("Index", model);
         }
 
+        // Ensure the submitted GHN-style address is complete.
+        if (!TryNormalizePartnerShopAddress(fullName, phoneNumber, provinceId, provinceName, districtId, districtName, wardCode, wardName, streetAddress,
+            out var addrError, out _))
+        {
+            ModelState.AddModelError(string.Empty, addrError);
+            return View("Index", model);
+        }
+
         if (isSignedIn)
         {
             var idRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -402,6 +371,12 @@ public class PartnersController : Controller
                 return View("Index", model);
             }
 
+            if (string.Equals(account.Role, "Shop", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["PartnerSuccess"] = "Tài khoản của bạn đã là nhà bán hàng.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var currentEmail = account.Email;
             if (!string.IsNullOrWhiteSpace(email)
                 && !string.Equals(email, currentEmail, StringComparison.OrdinalIgnoreCase))
@@ -411,100 +386,44 @@ public class PartnersController : Controller
                 return View("Index", model);
             }
 
-            if (account.Profile is null)
+            var hasPending = await _db.PartnerApplications
+                .AsNoTracking()
+                .AnyAsync(a => a.AccountId == account.Id && a.Status == "Pending", cancellationToken);
+
+            if (hasPending)
             {
-                account.Profile = new UserProfile
-                {
-                    AccountId = account.Id,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                _db.UserProfiles.Add(account.Profile);
+                TempData["PartnerSuccess"] = "Bạn đã gửi phiếu đăng ký đối tác và đang chờ xét duyệt.";
+                return RedirectToAction(nameof(Index));
             }
 
-            account.Role = "Shop";
-            account.Status = "Active";
-
-            account.Profile.FullName = fullName;
-            account.Profile.PhoneNumber = phoneNumber;
-            account.Profile.ShopName = shopName;
-            account.Profile.ShopDescription = shopDescription;
-            account.Profile.Address = address;
-            account.Profile.UpdatedAt = DateTime.UtcNow;
-
-            if (!TryNormalizePartnerShopAddress(fullName, phoneNumber, provinceId, provinceName, districtId, districtName, wardCode, wardName, streetAddress,
-                out var addrError, out var normalizedShopAddr))
+            _db.PartnerApplications.Add(new PartnerApplication
             {
-                ModelState.AddModelError(string.Empty, addrError);
-                return View("Index", model);
-            }
+                AccountId = account.Id,
+                FullName = fullName,
+                Email = account.Email,
+                PhoneNumber = phoneNumber,
+                ShopName = shopName,
+                ShopDescription = shopDescription,
+                Address = address,
+                ProvinceId = provinceId,
+                ProvinceName = provinceName,
+                DistrictId = districtId,
+                DistrictName = districtName,
+                WardCode = wardCode,
+                WardName = wardName,
+                StreetAddress = streetAddress,
+                Status = "Pending",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
 
-            var nowUtc = DateTime.UtcNow;
-            var existingShopAddr = await _db.UserAddresses
-                .Where(a => a.AccountId == account.Id && a.AddressType == AddressType.Shop)
-                .OrderByDescending(a => a.IsDefault)
-                .ThenByDescending(a => a.UpdatedAt)
-                .FirstOrDefaultAsync(cancellationToken);
+            await _db.SaveChangesAsync(cancellationToken);
 
-            if (existingShopAddr is null)
-            {
-                existingShopAddr = new UserAddress
-                {
-                    AccountId = account.Id,
-                    AddressType = AddressType.Shop,
-                    IsDefault = true,
-                    CreatedAt = nowUtc,
-                    UpdatedAt = nowUtc
-                };
-                _db.UserAddresses.Add(existingShopAddr);
-            }
-
-            existingShopAddr.FullName = normalizedShopAddr.FullName;
-            existingShopAddr.PhoneNumber = normalizedShopAddr.PhoneNumber;
-            existingShopAddr.ProvinceId = normalizedShopAddr.ProvinceId;
-            existingShopAddr.ProvinceName = normalizedShopAddr.ProvinceName;
-            existingShopAddr.DistrictId = normalizedShopAddr.DistrictId;
-            existingShopAddr.DistrictName = normalizedShopAddr.DistrictName;
-            existingShopAddr.WardCode = normalizedShopAddr.WardCode;
-            existingShopAddr.WardName = normalizedShopAddr.WardName;
-            existingShopAddr.StreetAddress = normalizedShopAddr.StreetAddress;
-            existingShopAddr.AddressType = AddressType.Shop;
-            existingShopAddr.IsDefault = true;
-            existingShopAddr.UpdatedAt = nowUtc;
-
-            var otherDefaults = await _db.UserAddresses
-                .Where(a => a.AccountId == account.Id && a.AddressType == AddressType.Shop && a.Id != existingShopAddr.Id && a.IsDefault)
-                .ToListAsync(cancellationToken);
-
-            foreach (var o in otherDefaults)
-            {
-                o.IsDefault = false;
-                o.UpdatedAt = nowUtc;
-            }
-
-            if (string.IsNullOrWhiteSpace(account.Profile.ShopSlug))
-            {
-                account.Profile.ShopSlug = await GenerateUniqueShopSlugAsync(shopName!, cancellationToken);
-            }
-
-            try
-            {
-                await _db.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException)
-            {
-                // Unique ShopSlug race; retry once.
-                account.Profile.ShopSlug = await GenerateUniqueShopSlugAsync(shopName!, cancellationToken);
-                await _db.SaveChangesAsync(cancellationToken);
-            }
-
-            await RefreshSignInAsync(account);
-
-            TempData["PartnerSuccess"] = "Đăng ký đối tác thành công. Tài khoản của bạn đã được nâng cấp thành nhà bán hàng.";
+            TempData["PartnerSuccess"] = "Đã gửi phiếu đăng ký đối tác. Vui lòng chờ Admin xét duyệt.";
             return RedirectToAction(nameof(Index));
         }
 
-        // Not signed in: create a new Shop account.
+        // Not signed in: create a new Customer account, then submit partner application for approval.
         var existing = await _db.Accounts
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Email == email && !a.IsDeleted, cancellationToken);
@@ -521,7 +440,7 @@ public class PartnersController : Controller
             PasswordHash = null,
             AuthProvider = null,
             AuthProviderUserId = null,
-            Role = "Shop",
+            Role = "Customer",
             Status = "Active",
             IsDeleted = false,
             CreatedAt = DateTime.UtcNow
@@ -531,64 +450,43 @@ public class PartnersController : Controller
         _db.Accounts.Add(accountToCreate);
         await _db.SaveChangesAsync(cancellationToken);
 
-        var shopSlug = await GenerateUniqueShopSlugAsync(shopName!, cancellationToken);
-
         var profile = new UserProfile
         {
             AccountId = accountToCreate.Id,
             FullName = fullName,
             PhoneNumber = phoneNumber,
-            ShopName = shopName,
-            ShopSlug = shopSlug,
-            ShopDescription = shopDescription,
-            Address = address,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
         _db.UserProfiles.Add(profile);
 
-        if (!TryNormalizePartnerShopAddress(fullName, phoneNumber, provinceId, provinceName, districtId, districtName, wardCode, wardName, streetAddress,
-            out var createAddrError, out var normalizedNewShopAddr))
-        {
-            ModelState.AddModelError(string.Empty, createAddrError);
-            return View("Index", model);
-        }
-
-        var createdNowUtc = DateTime.UtcNow;
-        var newShopAddress = new UserAddress
+        _db.PartnerApplications.Add(new PartnerApplication
         {
             AccountId = accountToCreate.Id,
-            FullName = normalizedNewShopAddr.FullName,
-            PhoneNumber = normalizedNewShopAddr.PhoneNumber,
-            ProvinceId = normalizedNewShopAddr.ProvinceId,
-            ProvinceName = normalizedNewShopAddr.ProvinceName,
-            DistrictId = normalizedNewShopAddr.DistrictId,
-            DistrictName = normalizedNewShopAddr.DistrictName,
-            WardCode = normalizedNewShopAddr.WardCode,
-            WardName = normalizedNewShopAddr.WardName,
-            StreetAddress = normalizedNewShopAddr.StreetAddress,
-            AddressType = AddressType.Shop,
-            IsDefault = true,
-            CreatedAt = createdNowUtc,
-            UpdatedAt = createdNowUtc
-        };
-        _db.UserAddresses.Add(newShopAddress);
+            FullName = fullName,
+            Email = email!,
+            PhoneNumber = phoneNumber,
+            ShopName = shopName,
+            ShopDescription = shopDescription,
+            Address = address,
+            ProvinceId = provinceId,
+            ProvinceName = provinceName,
+            DistrictId = districtId,
+            DistrictName = districtName,
+            WardCode = wardCode,
+            WardName = wardName,
+            StreetAddress = streetAddress,
+            Status = "Pending",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
 
-        try
-        {
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            // Unique ShopSlug race; retry once.
-            profile.ShopSlug = await GenerateUniqueShopSlugAsync(shopName!, cancellationToken);
-            await _db.SaveChangesAsync(cancellationToken);
-        }
+        await _db.SaveChangesAsync(cancellationToken);
 
         await RefreshSignInAsync(accountToCreate);
 
-        TempData["PartnerSuccess"] = "Đăng ký đối tác thành công. Bạn đã có thể bắt đầu bán hàng.";
+        TempData["PartnerSuccess"] = "Đã gửi phiếu đăng ký đối tác. Vui lòng chờ Admin xét duyệt.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -611,57 +509,4 @@ public class PartnersController : Controller
             new AuthenticationProperties { IsPersistent = false });
     }
 
-    private async Task<string> GenerateUniqueShopSlugAsync(string shopName, CancellationToken cancellationToken)
-    {
-        var baseSlug = Slugify(shopName);
-        if (string.IsNullOrWhiteSpace(baseSlug)) baseSlug = "doi-tac";
-        if (baseSlug.Length > 180) baseSlug = baseSlug[..180];
-
-        var candidate = baseSlug;
-        var i = 1;
-
-        while (await _db.UserProfiles.AsNoTracking().AnyAsync(p => p.ShopSlug == candidate, cancellationToken))
-        {
-            candidate = $"{baseSlug}-{i}";
-            i++;
-            if (candidate.Length > 200)
-            {
-                candidate = candidate[..200];
-            }
-        }
-
-        return candidate;
-    }
-
-    private static string Slugify(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-
-        var normalized = input.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder(normalized.Length);
-
-        foreach (var ch in normalized)
-        {
-            var uc = CharUnicodeInfo.GetUnicodeCategory(ch);
-            if (uc != UnicodeCategory.NonSpacingMark)
-            {
-                sb.Append(ch);
-            }
-        }
-
-        var noDiacritics = sb
-            .ToString()
-            .Normalize(NormalizationForm.FormC);
-
-        // Replace whitespace with hyphen
-        var slug = Regex.Replace(noDiacritics, @"\s+", "-", RegexOptions.Compiled);
-
-        // Remove invalid chars
-        slug = Regex.Replace(slug, @"[^a-z0-9\-]", string.Empty, RegexOptions.Compiled);
-
-        // Collapse multiple hyphens
-        slug = Regex.Replace(slug, @"\-+", "-", RegexOptions.Compiled).Trim('-');
-
-        return slug;
-    }
 }

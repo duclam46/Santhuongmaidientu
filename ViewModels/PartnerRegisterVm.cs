@@ -34,4 +34,8 @@ public class PartnerRegisterVm
     public string? ConfirmPassword { get; set; }
 
     public string? SuccessMessage { get; set; }
+
+    public bool HideForm { get; set; }
+
+    public string? HideFormMessage { get; set; }
 }

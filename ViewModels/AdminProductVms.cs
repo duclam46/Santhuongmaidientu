@@ -75,6 +75,13 @@ public class ProductAdminUpsertVm
 
     public string? Description { get; set; }
 
+    [Required(ErrorMessage = "Vui lòng nhập giá sản phẩm.")]
+    [Range(0, double.MaxValue, ErrorMessage = "Giá sản phẩm không hợp lệ.")]
+    public decimal Price { get; set; }
+
+    [Range(0, double.MaxValue, ErrorMessage = "Giá khuyến mãi không hợp lệ.")]
+    public decimal? SalePrice { get; set; }
+
     [Required]
     public string Status { get; set; } = "Active";
 
@@ -149,6 +156,10 @@ public class ProductAdminGenerateVariantsVm
 
 public class ProductAdminCustomOptionStockVm
 {
+    public int? ColorId { get; set; }
+
+    public string? ColorName { get; set; }
+
     [StringLength(50)]
     public string? OptionName { get; set; }
 
@@ -158,12 +169,18 @@ public class ProductAdminCustomOptionStockVm
 
 public class ProductAdminInitialSizeStockVm
 {
+    public int? ColorId { get; set; }
+
+    public string? ColorName { get; set; }
+
     public int SizeId { get; set; }
 
     public string? SizeName { get; set; }
 
     [Range(0, int.MaxValue)]
     public int StockQuantity { get; set; }
+
+    public bool IsSelected { get; set; }
 }
 
 public class ProductAdminSizeGuideRowVm
@@ -174,18 +191,13 @@ public class ProductAdminSizeGuideRowVm
 
     public string? WeightRange { get; set; }
 
-    // Per-size product measurements (optional). Unit: cm.
-    [Range(0, double.MaxValue)]
-    public decimal? ClothingLengthCm { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal? ClothingWidthCm { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal? ClothingHeightCm { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal? ShoeLengthCm { get; set; }
+    public string? ClothingLength { get; set; }
+    public string? ClothingWidth { get; set; }
+    public string? ShoeLength { get; set; }
+    public string? ShoulderWidth { get; set; }
+    public string? Bust { get; set; }
+    public string? Waist { get; set; }
+    public string? Hip { get; set; }
 
     public string? Note { get; set; }
 }
@@ -198,6 +210,7 @@ public class ProductAdminVariantRowVm
     public int? ColorId { get; set; }
 
     public string? ColorName { get; set; }
+    public string? ColorHex { get; set; }
 
     public int? SizeId { get; set; }
 
@@ -216,6 +229,7 @@ public class ProductAdminVariantRowVm
     public int StockQuantity { get; set; }
 
     public bool IsActive { get; set; }
+    public string? IsActiveStr { get; set; }
 }
 
 public class ProductAdminVariantEditVm

@@ -30,6 +30,29 @@
         "RESET_SEED": "1"
       }
     },
+    "http (migrate only - no seed)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5041",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_WATCH_SUPPRESS_BROWSER_REFRESH": "1",
+        "SKIP_DB_SEED": "1"
+      }
+    },
+    "http (cleanup db + no seed)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5041",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_WATCH_SUPPRESS_BROWSER_REFRESH": "1",
+        "CLEAN_DB_ON_STARTUP": "1",
+        "SKIP_DB_SEED": "1"
+      }
+    },
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,
@@ -38,6 +61,29 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_WATCH_SUPPRESS_BROWSER_REFRESH": "1"
+      }
+    },
+    "https (migrate only - no seed)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7024;http://localhost:5041",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_WATCH_SUPPRESS_BROWSER_REFRESH": "1",
+        "SKIP_DB_SEED": "1"
+      }
+    },
+    "https (cleanup db + no seed)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7024;http://localhost:5041",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_WATCH_SUPPRESS_BROWSER_REFRESH": "1",
+        "CLEAN_DB_ON_STARTUP": "1",
+        "SKIP_DB_SEED": "1"
       }
     },
     "IIS Express": {

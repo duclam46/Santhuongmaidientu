@@ -4,86 +4,262 @@
     ViewData["Title"] = "Quản lý đánh giá";
 }
 
+<style>
+    :root {
+        --rev-primary: #556ee6;
+        --rev-primary-light: rgba(85, 110, 230, 0.1);
+        --rev-warning: #f1b44c;
+        --rev-warning-light: rgba(241, 180, 76, 0.1);
+        --rev-success: #34c38f;
+        --rev-success-light: rgba(52, 195, 143, 0.1);
+    }
 
-        <div class="row">
-            <div class="col-12">
-                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                    <h4 class="mb-sm-0 font-size-18">Đánh giá sản phẩm</h4>
+    .rev-page-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+        padding: 24px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
 
-                    <div class="page-title-right">
-                        <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Products" asp-action="Index">Sản phẩm</a></li>
-                            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@Model.ProductId">#@Model.ProductId</a></li>
-                            <li class="breadcrumb-item active">Đánh giá</li>
-                        </ol>
-                    </div>
+    .rev-page-header::after {
+        content: '';
+        position: absolute;
+        top: -40px;
+        right: -40px;
+        width: 150px;
+        height: 150px;
+        background: var(--rev-warning-light);
+        border-radius: 50%;
+        filter: blur(40px);
+    }
 
+    .rev-card {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
+        background: #fff;
+        margin-bottom: 20px;
+    }
+
+    .rev-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+        transform: translateY(-2px);
+    }
+
+    .rev-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        background: #f8fafc;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .rev-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .star-rating {
+        color: var(--rev-warning);
+        font-size: 1.1rem;
+    }
+
+    .star-empty {
+        color: #cbd5e1;
+    }
+
+    .rev-body {
+        padding: 20px;
+        color: #495057;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .reply-box {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 16px;
+        margin: 16px 20px 20px 20px;
+        border: 1px solid #e2e8f0;
+        position: relative;
+    }
+
+    .reply-box::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 30px;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-bottom: 10px solid #e2e8f0;
+    }
+
+    .reply-box::after {
+        content: '';
+        position: absolute;
+        top: -8px;
+        left: 30px;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-bottom: 10px solid #f8fafc;
+    }
+
+    .reply-input {
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        transition: all 0.3s;
+        resize: none;
+    }
+
+    .reply-input:focus {
+        border-color: var(--rev-primary);
+        box-shadow: 0 0 0 3px var(--rev-primary-light);
+    }
+
+    .btn-reply {
+        background: linear-gradient(135deg, var(--rev-primary), #3b82f6);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 20px;
+        font-weight: 600;
+        box-shadow: 0 4px 10px rgba(85, 110, 230, 0.2);
+        transition: all 0.3s;
+    }
+
+    .btn-reply:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 15px rgba(85, 110, 230, 0.3);
+        color: white;
+    }
+
+    .badge-rating {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--rev-warning-light);
+        color: #d97706;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="rev-page-header d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h4 class="mb-1 fw-bold" style="color: #495057;">
+                    <i class="bx bxs-star text-warning me-2" style="font-size: 1.4rem;"></i>Đánh giá sản phẩm
+                </h4>
+                <div class="text-muted small">
+                    Phản hồi khách hàng cho <a asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@Model.ProductId" class="fw-bold text-primary text-decoration-none">@Model.ProductName</a>
                 </div>
             </div>
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-light shadow-sm" style="border-radius: 10px; font-weight: 600;" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@Model.ProductId">
+                    <i class="bx bx-arrow-back me-1"></i>Trở lại sản phẩm
+                </a>
+            </div>
         </div>
+    </div>
+</div>
 
-        @if (TempData["AdminToast"] is string msg && !string.IsNullOrWhiteSpace(msg))
+@if (TempData["AdminToast"] is string msg && !string.IsNullOrWhiteSpace(msg))
+{
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 12px;">
+        <i class="bx bx-check-circle me-2 fs-5 align-middle"></i><span class="fw-medium">@msg</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        @if (Model.Reviews.Count == 0)
         {
-            <div class="alert alert-success">@msg</div>
+            <div class="text-center py-5">
+                <img src="~/admin/assets/images/illustrator/empty-cart.svg" alt="Empty" style="width: 150px; opacity: 0.5;" class="mb-4">
+                <h5 class="text-muted fw-bold">Chưa có đánh giá nào</h5>
+                <p class="text-muted mb-4">Sản phẩm này hiện tại chưa nhận được phản hồi từ khách hàng.</p>
+            </div>
         }
-
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
+        else
+        {
+            foreach (var r in Model.Reviews)
+            {
+                <div class="rev-card">
+                    <div class="rev-header">
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(r.AuthorName ?? "U")&background=random&color=fff&rounded=true&bold=true" class="rev-avatar" alt="Avatar">
                             <div>
-                                <h4 class="card-title mb-1">@Model.ProductName</h4>
-                                <div class="text-muted small">Xem và trả lời đánh giá của khách hàng</div>
+                                <div class="fw-bold text-dark fs-5 mb-1">@r.AuthorName</div>
+                                <div class="text-muted small"><i class="bx bx-time-five me-1"></i>@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
                             </div>
-                            <a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@Model.ProductId">Quay lại</a>
                         </div>
-
-                        @if (Model.Reviews.Count == 0)
-                        {
-                            <div class="text-center text-muted py-5">Chưa có đánh giá.</div>
-                        }
-                        else
-                        {
-                            foreach (var r in Model.Reviews)
-                            {
-                                <div class="border rounded p-3 mb-3">
-                                    <div class="d-flex justify-content-between flex-wrap gap-2">
-                                        <div>
-                                            <div class="fw-medium">@r.AuthorName</div>
-                                            <div class="text-muted small">@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
-                                        </div>
-                                        <div>
-                                            <span class="badge bg-info">@r.Rating/5</span>
-                                        </div>
-                                    </div>
-
-                                    @if (!string.IsNullOrWhiteSpace(r.Comment))
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="star-rating">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    if (i <= r.Rating)
                                     {
-                                        <div class="mt-2">@r.Comment</div>
+                                        <i class="bx bxs-star"></i>
                                     }
+                                    else
+                                    {
+                                        <i class="bx bxs-star star-empty"></i>
+                                    }
+                                }
+                            </div>
+                            <span class="badge-rating">
+                                @r.Rating <i class="bx bxs-star"></i>
+                            </span>
+                        </div>
+                    </div>
 
-                                    <div class="mt-3">
-                                        <form asp-area="Admin" asp-controller="Products" asp-action="ReplyReview" method="post">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="ProductId" value="@Model.ProductId" />
-                                            <input type="hidden" name="ReviewId" value="@r.ReviewId" />
+                    @if (!string.IsNullOrWhiteSpace(r.Comment))
+                    {
+                        <div class="rev-body">
+                            <i class="bx bxs-quote-alt-left text-muted opacity-50 fs-4 me-2"></i>
+                            <span class="fst-italic">@r.Comment</span>
+                        </div>
+                    }
 
-                                            <label class="form-label">Phản hồi người bán</label>
-                                            <textarea class="form-control" name="SellerReply" rows="3" placeholder="Nhập phản hồi...">@r.SellerReply</textarea>
+                    <div class="reply-box">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="avatar-xs">
+                                <span class="avatar-title rounded-circle bg-primary text-white" style="width: 28px; height: 28px;">
+                                    <i class="bx bx-store-alt"></i>
+                                </span>
+                            </div>
+                            <span class="fw-bold text-primary">Phản hồi của Shop</span>
+                        </div>
+                        
+                        <form asp-area="Admin" asp-controller="Products" asp-action="ReplyReview" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ProductId" value="@Model.ProductId" />
+                            <input type="hidden" name="ReviewId" value="@r.ReviewId" />
 
-                                            <div class="d-flex justify-content-end mt-2">
-                                                <button type="submit" class="btn btn-sm btn-primary">Gửi phản hồi</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            }
-                        }
+                            <textarea class="form-control reply-input mb-3" name="SellerReply" rows="2" placeholder="Cảm ơn khách hàng hoặc giải quyết khiếu nại tại đây...">@r.SellerReply</textarea>
 
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn-reply">
+                                    <i class="bx bx-send me-1"></i> @(string.IsNullOrWhiteSpace(r.SellerReply) ? "Gửi phản hồi" : "Cập nhật phản hồi")
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </div>
-        </div>
-
-
+            }
+        }
+    </div>
+</div>

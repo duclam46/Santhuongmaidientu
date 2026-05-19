@@ -2,6 +2,9 @@ using DOAN_BANHANG.Models;
 using DOAN_BANHANG.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using DOAN_BANHANG.Helpers;
+using Microsoft.AspNetCore.Http;
+using System.Linq;
 
 namespace DOAN_BANHANG.Controllers;
 
@@ -38,7 +41,7 @@ public class ProductsController : Controller
     {
         if (id <= 0) return NotFound();
 
-        var nowUtc = DateTime.UtcNow;
+        var nowLocal = DateTime.Now;
 
         var product = await _context.Products
             .AsNoTracking()
@@ -72,8 +75,8 @@ public class ProductsController : Controller
                     .Select(v => new
                     {
                         Price = v.SalePrice.HasValue
-                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc)
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal)
                             ? v.SalePrice.Value
                             : v.Price,
                         Stock = v.StockQuantity - v.ReservedStock,
@@ -137,6 +140,331 @@ public class ProductsController : Controller
         return PartialView("_QuickViewSidebarContent", vm);
     }
 
+    [HttpGet("search")]
+    public async Task<IActionResult> Search(
+        string? q,
+        int? childCategoryId,
+        int? rating,
+        string? color,
+        string? size,
+        decimal? minPrice,
+        decimal? maxPrice,
+        int? page,
+        string? sort,
+        CancellationToken cancellationToken)
+    {
+        var nowLocal = DateTime.Now;
+        var queryTerm = (q ?? string.Empty).Trim();
+
+        var baseQuery = _context.Products
+            .AsNoTracking()
+            .Where(p => p.Status == "Active");
+
+        if (!string.IsNullOrWhiteSpace(queryTerm))
+        {
+            baseQuery = baseQuery.Where(p => p.Name.Contains(queryTerm) || p.Description.Contains(queryTerm));
+        }
+
+        var rootCategories = await _context.Categories
+            .AsNoTracking()
+            .Where(c => c.IsActive && !c.IsDeleted && c.ParentId == null)
+            .OrderBy(c => c.Name)
+            .Select(c => new { c.Id, c.Name })
+            .ToListAsync(cancellationToken);
+
+        var validRootCategoryIds = rootCategories.Select(c => c.Id).ToHashSet();
+        int? selectedCategoryId = (childCategoryId.HasValue && validRootCategoryIds.Contains(childCategoryId.Value))
+            ? childCategoryId.Value
+            : null;
+
+        if (selectedCategoryId.HasValue)
+        {
+            var categoryScopeIds = await _context.Categories
+                .AsNoTracking()
+                .Where(c => c.IsActive && (
+                    c.Id == selectedCategoryId.Value ||
+                    c.ParentId == selectedCategoryId.Value ||
+                    c.Parent!.ParentId == selectedCategoryId.Value ||
+                    c.Parent!.Parent!.ParentId == selectedCategoryId.Value
+                ))
+                .Select(c => c.Id)
+                .ToListAsync(cancellationToken);
+
+            baseQuery = baseQuery.Where(p => categoryScopeIds.Contains(p.CategoryId));
+        }
+
+        var childCategoryCounts = new Dictionary<int, int>();
+        foreach (var c in rootCategories)
+        {
+            var scopeIds = await _context.Categories
+                .AsNoTracking()
+                .Where(cat => cat.IsActive && (
+                    cat.Id == c.Id ||
+                    cat.ParentId == c.Id ||
+                    cat.Parent!.ParentId == c.Id ||
+                    cat.Parent!.Parent!.ParentId == c.Id
+                ))
+                .Select(cat => cat.Id)
+                .ToListAsync(cancellationToken);
+
+            var cnt = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.Status == "Active" && (p.Name.Contains(queryTerm) || p.Description.Contains(queryTerm)))
+                .Where(p => scopeIds.Contains(p.CategoryId))
+                .CountAsync(cancellationToken);
+
+            childCategoryCounts[c.Id] = cnt;
+        }
+
+        var effectivePricesQuery =
+            from p in baseQuery.Select(x => x.Id)
+            join v in _context.ProductVariants.AsNoTracking().Where(v => v.IsActive) on p equals v.ProductId into variants
+            from v in variants.DefaultIfEmpty()
+            group v by p into g
+            select new
+            {
+                EffectivePrice = g.Min(x => x == null
+                    ? (decimal?)null
+                    : ((x.SalePrice.HasValue
+                            && (!x.SaleStartDate.HasValue || x.SaleStartDate <= nowLocal)
+                            && (!x.SaleEndDate.HasValue || x.SaleEndDate >= nowLocal))
+                        ? x.SalePrice.Value
+                        : x.Price))
+            };
+
+        var priceStats = await effectivePricesQuery
+            .GroupBy(_ => 1)
+            .Select(g => new { Min = g.Min(x => x.EffectivePrice), Max = g.Max(x => x.EffectivePrice) })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var priceMin = priceStats?.Min ?? 0m;
+        var priceMax = priceStats?.Max ?? 0m;
+
+        decimal? effectiveMinPrice = minPrice;
+        decimal? effectiveMaxPrice = maxPrice;
+        if (priceMax > 0m)
+        {
+            if (effectiveMinPrice.HasValue && effectiveMinPrice.Value > priceMax) effectiveMinPrice = null;
+            if (effectiveMaxPrice.HasValue && effectiveMaxPrice.Value < priceMin) effectiveMaxPrice = null;
+            if (effectiveMinPrice.HasValue && effectiveMinPrice.Value < 0m) effectiveMinPrice = null;
+            if (effectiveMaxPrice.HasValue && effectiveMaxPrice.Value > priceMax) effectiveMaxPrice = priceMax;
+            if (effectiveMinPrice.HasValue && effectiveMaxPrice.HasValue && effectiveMaxPrice.Value < effectiveMinPrice.Value)
+            {
+                (effectiveMinPrice, effectiveMaxPrice) = (effectiveMaxPrice, effectiveMinPrice);
+            }
+        }
+
+        var query = baseQuery;
+
+        int? selectedRating = null;
+        if (rating.HasValue)
+        {
+            selectedRating = Math.Clamp(rating.Value, 1, 5);
+            query = query.Where(p => p.AverageRating >= selectedRating.Value);
+        }
+
+        string? selectedColor = null;
+        if (!string.IsNullOrWhiteSpace(color))
+        {
+            selectedColor = color.Trim().ToLowerInvariant();
+            query = query.Where(p => p.Variants.Any(v =>
+                v.IsActive && v.Color != null && v.Color.Name.ToLower() == selectedColor));
+        }
+
+        string? selectedSize = null;
+        if (!string.IsNullOrWhiteSpace(size))
+        {
+            selectedSize = size.Trim().ToUpperInvariant();
+            query = query.Where(p => p.Variants.Any(v =>
+                v.IsActive && v.Size != null && v.Size.Name.ToUpper() == selectedSize));
+        }
+
+        if (effectiveMinPrice.HasValue)
+        {
+            query = query.Where(p =>
+                p.Variants
+                    .Where(v => v.IsActive)
+                    .Select(v => (decimal?)((v.SalePrice.HasValue
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
+                        ? v.SalePrice.Value
+                        : v.Price))
+                    .Min() >= effectiveMinPrice.Value);
+        }
+
+        if (effectiveMaxPrice.HasValue)
+        {
+            query = query.Where(p =>
+                p.Variants
+                    .Where(v => v.IsActive)
+                    .Select(v => (decimal?)((v.SalePrice.HasValue
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
+                        ? v.SalePrice.Value
+                        : v.Price))
+                    .Min() <= effectiveMaxPrice.Value);
+        }
+
+        query = (sort ?? string.Empty).ToLowerInvariant() switch
+        {
+            "name_desc" => query.OrderByDescending(p => p.Name),
+            "price_asc" => query.OrderBy(p => p.Variants
+                    .Where(v => v.IsActive)
+                    .Select(v => (decimal?)((v.SalePrice.HasValue
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
+                        ? v.SalePrice.Value
+                        : v.Price))
+                    .Min() ?? 0m)
+                .ThenBy(p => p.Name),
+            "price_desc" => query.OrderByDescending(p => p.Variants
+                    .Where(v => v.IsActive)
+                    .Select(v => (decimal?)((v.SalePrice.HasValue
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
+                        ? v.SalePrice.Value
+                        : v.Price))
+                    .Min() ?? 0m)
+                .ThenBy(p => p.Name),
+            "rating_desc" => query.OrderByDescending(p => p.AverageRating).ThenByDescending(p => p.ReviewCount).ThenBy(p => p.Name),
+            "rating_asc" => query.OrderBy(p => p.AverageRating).ThenBy(p => p.ReviewCount).ThenBy(p => p.Name),
+            "newest" => query.OrderByDescending(p => p.CreatedAt),
+            _ => query.OrderBy(p => p.Name)
+        };
+
+        const int pageSize = 12;
+        var effectivePage = page.GetValueOrDefault(1);
+        if (effectivePage < 1) effectivePage = 1;
+
+        var totalItems = await query.CountAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var productsRaw = await query
+            .Skip((effectivePage - 1) * pageSize)
+            .Take(pageSize)
+            .Select(p => new
+            {
+                ProductId = p.Id,
+                p.Name,
+                p.Slug,
+                DefaultVariantId = p.Variants
+                    .Where(v => v.IsActive && !v.IsDeleted)
+                    .OrderByDescending(v => v.IsDefault)
+                    .ThenBy(v => v.Price)
+                    .Select(v => (int?)v.Id)
+                    .FirstOrDefault() ?? 0,
+                RatingAverage = p.AverageRating,
+                RatingCount = p.ReviewCount,
+                PrimaryImageUrl = p.Images
+                    .OrderByDescending(i => i.IsPrimary)
+                    .Select(i => i.ImageUrl)
+                    .FirstOrDefault(),
+                Price = p.Variants
+                    .Where(v => v.IsActive)
+                    .Select(v => (decimal?)((v.SalePrice.HasValue
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
+                        ? v.SalePrice.Value
+                        : v.Price))
+                    .Min() ?? 0m,
+                OldPrice = p.Variants
+                    .Where(v => v.IsActive
+                        && v.SalePrice.HasValue
+                        && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                        && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal)
+                        && v.SalePrice.Value < v.Price)
+                    .Select(v => (decimal?)v.Price)
+                    .Min()
+            })
+            .ToListAsync(cancellationToken);
+
+        var products = productsRaw
+            .Select(p => new ProductCardVm
+            {
+                ProductId = p.ProductId,
+                Name = p.Name,
+                Slug = p.Slug,
+                Price = p.Price,
+                DefaultVariantId = p.DefaultVariantId,
+                OldPrice = p.OldPrice.HasValue && p.OldPrice.Value > p.Price ? p.OldPrice : null,
+                RatingAverage = p.RatingAverage,
+                RatingCount = p.RatingCount,
+                DiscountPercent = p.OldPrice.HasValue && p.OldPrice.Value > p.Price && p.OldPrice.Value > 0m
+                    ? (int)Math.Round((p.OldPrice.Value - p.Price) * 100m / p.OldPrice.Value)
+                    : 0,
+                PrimaryImageUrl = p.PrimaryImageUrl
+            })
+            .ToList();
+
+        var vm = new CategoryProductsVm
+        {
+            Page = effectivePage,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+            CategoryName = string.IsNullOrWhiteSpace(queryTerm) ? "Tất cả sản phẩm" : $"Kết quả tìm kiếm cho: \"{queryTerm}\"",
+            CategorySlug = null,
+            SearchTerm = queryTerm,
+            Sort = sort,
+            SelectedChildCategoryId = selectedCategoryId,
+            SelectedMinPrice = effectiveMinPrice,
+            SelectedMaxPrice = effectiveMaxPrice,
+            SelectedRating = selectedRating,
+            SelectedColor = selectedColor,
+            SelectedSize = selectedSize,
+            PriceMin = priceMin,
+            PriceMax = priceMax,
+            ChildCategories = rootCategories
+                .Select(c => new CategoryFilterVm
+                {
+                    CategoryId = c.Id,
+                    Name = c.Name,
+                    ProductCount = childCategoryCounts.TryGetValue(c.Id, out var cnt) ? cnt : 0,
+                    IsSelected = selectedCategoryId.HasValue && c.Id == selectedCategoryId.Value
+                })
+                .Where(c => c.ProductCount > 0)
+                .ToList(),
+            Products = products
+        };
+
+        return View("Index", vm);
+    }
+
+    [HttpGet("api/products/search-suggestions")]
+    public async Task<IActionResult> SearchSuggestions(string? q, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            return Json(new List<object>());
+        }
+
+        var searchTerm = q.Trim().ToLower();
+
+        var products = await _context.Products
+            .AsNoTracking()
+            .Where(p => p.Status == "Active" && (p.Name.ToLower().Contains(searchTerm) || p.Description.ToLower().Contains(searchTerm)))
+            .OrderByDescending(p => p.AverageRating)
+            .Take(5)
+            .Select(p => new
+            {
+                id = p.Id,
+                name = p.Name,
+                slug = p.Slug,
+                imageUrl = p.Images.OrderByDescending(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault(),
+                price = p.Variants
+                    .Where(v => v.IsActive)
+                    .Select(v => (decimal?)((v.SalePrice.HasValue
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= DateTime.Now)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= DateTime.Now))
+                        ? v.SalePrice.Value
+                        : v.Price))
+                    .Min() ?? 0m
+            })
+            .ToListAsync(cancellationToken);
+
+        return Json(products);
+    }
+
+
     [HttpGet]
     public async Task<IActionResult> Index(
         string slug,
@@ -155,7 +483,7 @@ public class ProductsController : Controller
             return NotFound();
         }
 
-        var nowUtc = DateTime.UtcNow;
+        var nowLocal = DateTime.Now;
 
         var category = await _context.Categories
             .AsNoTracking()
@@ -181,26 +509,41 @@ public class ProductsController : Controller
             effectiveChildCategoryId = childCategoryId.Value;
         }
 
-        var categoryScopeIds = new List<int> { category.Id };
-        if (childCategoryIds.Count != 0)
-        {
-            categoryScopeIds.AddRange(childCategoryIds);
-        }
+        var activeScopeRootId = effectiveChildCategoryId ?? category.Id;
+
+        var categoryScopeIds = await _context.Categories
+            .AsNoTracking()
+            .Where(c => c.IsActive && (
+                c.Id == activeScopeRootId ||
+                c.ParentId == activeScopeRootId ||
+                c.Parent!.ParentId == activeScopeRootId ||
+                c.Parent!.Parent!.ParentId == activeScopeRootId
+            ))
+            .Select(c => c.Id)
+            .ToListAsync(cancellationToken);
 
         var baseQuery = _context.Products
             .AsNoTracking()
             .Where(p => p.Status == "Active")
             .Where(p => categoryScopeIds.Contains(p.CategoryId));
 
-        var childCategoryCounts = childCategoryIds.Count == 0
-            ? new Dictionary<int, int>()
-            : await _context.Products
-                .AsNoTracking()
-                .Where(p => p.Status == "Active")
-                .Where(p => childCategoryIds.Contains(p.CategoryId))
-                .GroupBy(p => p.CategoryId)
-                .Select(g => new { CategoryId = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.CategoryId, x => x.Count, cancellationToken);
+        var childCategoryCounts = new Dictionary<int, int>();
+        if (childCategoryIds.Count > 0)
+        {
+            foreach (var cid in childCategoryIds)
+            {
+                var cnt = await _context.Products
+                    .AsNoTracking()
+                    .Where(p => p.Status == "Active" && (
+                        p.CategoryId == cid ||
+                        p.Category!.ParentId == cid ||
+                        p.Category!.Parent!.ParentId == cid ||
+                        p.Category!.Parent!.Parent!.ParentId == cid
+                    ))
+                    .CountAsync(cancellationToken);
+                childCategoryCounts[cid] = cnt;
+            }
+        }
 
         // SQL Server doesn't allow aggregating over an expression that contains an aggregate/subquery.
         // Compute the effective per-product price in a derived query (left-join variants, group by product),
@@ -215,8 +558,8 @@ public class ProductsController : Controller
                 EffectivePrice = g.Min(x => x == null
                     ? (decimal?)null
                     : ((x.SalePrice.HasValue
-                            && (!x.SaleStartDate.HasValue || x.SaleStartDate <= nowUtc)
-                            && (!x.SaleEndDate.HasValue || x.SaleEndDate >= nowUtc))
+                            && (!x.SaleStartDate.HasValue || x.SaleStartDate <= nowLocal)
+                            && (!x.SaleEndDate.HasValue || x.SaleEndDate >= nowLocal))
                         ? x.SalePrice.Value
                         : x.Price))
             };
@@ -262,11 +605,6 @@ public class ProductsController : Controller
 
         var query = baseQuery;
 
-        if (effectiveChildCategoryId.HasValue)
-        {
-            query = query.Where(p => p.CategoryId == effectiveChildCategoryId.Value);
-        }
-
         int? selectedRating = null;
         if (rating.HasValue)
         {
@@ -298,8 +636,8 @@ public class ProductsController : Controller
                 p.Variants
                     .Where(v => v.IsActive)
                     .Select(v => (decimal?)((v.SalePrice.HasValue
-                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc))
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
                         ? v.SalePrice.Value
                         : v.Price))
                     .Min() >= effectiveMinPrice.Value);
@@ -311,8 +649,8 @@ public class ProductsController : Controller
                 p.Variants
                     .Where(v => v.IsActive)
                     .Select(v => (decimal?)((v.SalePrice.HasValue
-                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc))
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
                         ? v.SalePrice.Value
                         : v.Price))
                     .Min() <= effectiveMaxPrice.Value);
@@ -341,8 +679,8 @@ public class ProductsController : Controller
             "price_asc" => query.OrderBy(p => p.Variants
                     .Where(v => v.IsActive)
                     .Select(v => (decimal?)((v.SalePrice.HasValue
-                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc))
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
                         ? v.SalePrice.Value
                         : v.Price))
                     .Min() ?? 0m)
@@ -350,8 +688,8 @@ public class ProductsController : Controller
             "price_desc" => query.OrderByDescending(p => p.Variants
                     .Where(v => v.IsActive)
                     .Select(v => (decimal?)((v.SalePrice.HasValue
-                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc))
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
                         ? v.SalePrice.Value
                         : v.Price))
                     .Min() ?? 0m)
@@ -408,16 +746,16 @@ public class ProductsController : Controller
                 Price = p.Variants
                     .Where(v => v.IsActive)
                     .Select(v => (decimal?)((v.SalePrice.HasValue
-                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc))
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
                         ? v.SalePrice.Value
                         : v.Price))
                     .Min() ?? 0m,
                 OldPrice = p.Variants
                     .Where(v => v.IsActive
                         && v.SalePrice.HasValue
-                        && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                        && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc)
+                        && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                        && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal)
                         && v.SalePrice.Value < v.Price)
                     .Select(v => (decimal?)v.Price)
                     .Min()
@@ -618,23 +956,28 @@ public class ProductsController : Controller
             await AppendAsync(relatedBaseQuery);
         }
 
-        var sizeGuides = await _context.SizeGuides
+        var sizeGuideEntities = await _context.SizeGuides
             .AsNoTracking()
+            .Include(g => g.Details)
             .Where(g => g.ProductId == product.Id)
             .OrderBy(g => g.SortOrder)
-            .ThenBy(g => g.SizeLabel)
-            .SelectMany(g => g.Details
-                .OrderBy(d => d.SortOrder)
-                .ThenBy(d => d.Name)
-                .ThenBy(d => d.Id)
-                .Select(d => new ProductSizeGuideVm
-                {
-                    SizeLabel = g.SizeLabel,
-                    MeasurementName = d.Name,
-                    MeasurementValue = string.IsNullOrWhiteSpace(d.Unit) ? d.Value : (d.Value + " " + d.Unit),
-                    Note = g.Note
-                }))
             .ToListAsync(cancellationToken);
+
+        var sizeGuides = sizeGuideEntities.Select(g => new ProductSizeGuideVm
+        {
+            SizeLabel = g.SizeLabel,
+            HeightRange = g.HeightRange,
+            WeightRange = g.WeightRange,
+            ShoulderWidthCm = g.Details.FirstOrDefault(d => d.Name == "ShoulderWidth") is { } dS && decimal.TryParse(dS.Value, out var vS) ? vS : null,
+            BustCm = g.Details.FirstOrDefault(d => d.Name == "Bust") is { } dB && decimal.TryParse(dB.Value, out var vB) ? vB : null,
+            WaistCm = g.Details.FirstOrDefault(d => d.Name == "Waist") is { } dW && decimal.TryParse(dW.Value, out var vW) ? vW : null,
+            HipCm = g.Details.FirstOrDefault(d => d.Name == "Hip") is { } dH && decimal.TryParse(dH.Value, out var vH) ? vH : null,
+            LengthCm = g.Details.FirstOrDefault(d => d.Name == "Length") is { } dL && decimal.TryParse(dL.Value, out var vL) ? vL : null,
+            WidthCm = g.Details.FirstOrDefault(d => d.Name == "Width") is { } dWd && decimal.TryParse(dWd.Value, out var vWd) ? vWd : null,
+            HeightCm = g.Details.FirstOrDefault(d => d.Name == "Height") is { } dHt && decimal.TryParse(dHt.Value, out var vHt) ? vHt : null,
+            ShoeLengthCm = g.Details.FirstOrDefault(d => d.Name == "ShoeLength") is { } dSl && decimal.TryParse(dSl.Value, out var vSl) ? vSl : null,
+            Note = g.Note
+        }).ToList();
 
         var reviewEntities = await _context.ProductReviews
             .AsNoTracking()
@@ -716,6 +1059,7 @@ public class ProductsController : Controller
         var vm = new ProductDetailsVm
         {
             ProductId = product.Id,
+            ShopId = product.ShopId,
             Name = product.Name,
             Slug = product.Slug,
             Price = defaultVariant != null
@@ -797,5 +1141,153 @@ public class ProductsController : Controller
         }
 
         return View("Product_details", vm);
+    }
+    [HttpGet("compare")]
+    public async Task<IActionResult> Compare(List<int> ids, CancellationToken cancellationToken)
+    {
+        var compareIds = HttpContext.Session.GetJson<List<int>>("compare_ids") ?? new List<int>();
+        
+        // If IDs are passed via query, update session
+        if (ids != null && ids.Count > 0)
+        {
+            compareIds = ids.Distinct().ToList();
+            HttpContext.Session.SetJson("compare_ids", compareIds);
+        }
+
+        if (compareIds.Count == 0)
+        {
+            return View(new ProductCompareVm());
+        }
+
+        var nowLocal = DateTime.Now;
+
+        var productsRaw = await _context.Products
+            .AsNoTracking()
+            .Where(p => compareIds.Contains(p.Id) && p.Status == "Active")
+            .Include(p => p.Category)
+            .Include(p => p.Images)
+            .Include(p => p.Variants).ThenInclude(v => v.Color)
+            .Include(p => p.Variants).ThenInclude(v => v.Size)
+            .Include(p => p.ShopAccount).ThenInclude(a => a!.Profile)
+            .ToListAsync(cancellationToken);
+
+        // Sort products in the same order as compareIds
+        var sortedProducts = compareIds
+            .Select(id => productsRaw.FirstOrDefault(p => p.Id == id))
+            .Where(p => p != null)
+            .ToList();
+
+        var vm = new ProductCompareVm
+        {
+            Products = sortedProducts.Select(p =>
+            {
+                var variants = p!.Variants.Where(v => v.IsActive && !v.IsDeleted).ToList();
+                var minPriceVariant = variants
+                    .OrderBy(v => (v.SalePrice.HasValue
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
+                        ? v.SalePrice.Value
+                        : v.Price)
+                    .FirstOrDefault();
+
+                return new ProductCompareItemVm
+                {
+                    ProductId = p.Id,
+                    Name = p.Name,
+                    Slug = p.Slug,
+                    ImageUrl = p.Images.OrderByDescending(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault(),
+                    Price = minPriceVariant != null 
+                        ? ((minPriceVariant.SalePrice.HasValue
+                            && (!minPriceVariant.SaleStartDate.HasValue || minPriceVariant.SaleStartDate <= nowLocal)
+                            && (!minPriceVariant.SaleEndDate.HasValue || minPriceVariant.SaleEndDate >= nowLocal))
+                            ? minPriceVariant.SalePrice.Value
+                            : minPriceVariant.Price)
+                        : 0m,
+                    OldPrice = minPriceVariant?.SalePrice.HasValue == true ? minPriceVariant.Price : null,
+                    Rating = p.AverageRating,
+                    ReviewCount = p.ReviewCount,
+                    Description = p.ShortDescription ?? (p.Description != null && p.Description.Length > 200 ? p.Description.Substring(0, 200) + "..." : p.Description),
+                    CategoryName = p.Category?.Name,
+                    ShopName = p.ShopAccount?.Profile?.ShopName ?? p.ShopAccount?.Email ?? "Shop",
+                    Colors = variants.Where(v => v.Color != null).Select(v => v.Color!.Name).Distinct().ToList(),
+                    Sizes = variants.Where(v => v.Size != null).Select(v => v.Size!.Name).Distinct().ToList(),
+                    InStock = variants.Any(v => (v.StockQuantity - v.ReservedStock) > 0)
+                };
+            }).ToList()
+        };
+
+        return View(vm);
+    }
+
+    [HttpPost("compare/add")]
+    public IActionResult AddToCompare(int productId)
+    {
+        var compareIds = HttpContext.Session.GetJson<List<int>>("compare_ids") ?? new List<int>();
+        if (!compareIds.Contains(productId))
+        {
+            // Limit comparison to 4 products for UI stability
+            if (compareIds.Count >= 4)
+            {
+                return Json(new { success = false, message = "Bạn chỉ có thể so sánh tối đa 4 sản phẩm.", count = compareIds.Count });
+            }
+            compareIds.Add(productId);
+            HttpContext.Session.SetJson("compare_ids", compareIds);
+            return Json(new { success = true, message = "Đã thêm sản phẩm vào danh sách so sánh.", count = compareIds.Count });
+        }
+        return Json(new { success = false, message = "Sản phẩm đã có trong danh sách so sánh.", count = compareIds.Count });
+    }
+
+    [HttpPost("compare/remove")]
+    public IActionResult RemoveFromCompare(int productId)
+    {
+        var compareIds = HttpContext.Session.GetJson<List<int>>("compare_ids") ?? new List<int>();
+        if (compareIds.Remove(productId))
+        {
+            HttpContext.Session.SetJson("compare_ids", compareIds);
+            return Json(new { success = true, message = "Đã xóa sản phẩm khỏi danh sách so sánh.", count = compareIds.Count });
+        }
+        return Json(new { success = false, message = "Sản phẩm không có trong danh sách so sánh.", count = compareIds.Count });
+    }
+
+    [HttpPost("compare/clear")]
+    public IActionResult ClearCompare()
+    {
+        HttpContext.Session.Remove("compare_ids");
+        return Json(new { success = true, message = "Đã xóa tất cả sản phẩm trong danh sách so sánh.", count = 0 });
+    }
+
+    [HttpGet("compare/count")]
+    public IActionResult GetCompareCount()
+    {
+        var compareIds = HttpContext.Session.GetJson<List<int>>("compare_ids") ?? new List<int>();
+        return Json(new { count = compareIds.Count });
+    }
+
+    [HttpGet("compare/list")]
+    public async Task<IActionResult> GetCompareList()
+    {
+        var compareIds = HttpContext.Session.GetJson<List<int>>("compare_ids") ?? new List<int>();
+        if (compareIds.Count == 0) return Json(new List<object>());
+
+        var products = await _context.Products
+            .AsNoTracking()
+            .Where(p => compareIds.Contains(p.Id))
+            .Include(p => p.Images)
+            .Select(p => new
+            {
+                id = p.Id,
+                name = p.Name,
+                slug = p.Slug,
+                imageUrl = p.Images.OrderByDescending(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault()
+            })
+            .ToListAsync();
+
+        // Maintain session order
+        var sortedProducts = compareIds
+            .Select(id => products.FirstOrDefault(p => p.id == id))
+            .Where(p => p != null)
+            .ToList();
+
+        return Json(sortedProducts);
     }
 }

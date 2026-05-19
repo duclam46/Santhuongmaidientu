@@ -4,6 +4,8 @@ public class ProductDetailsVm
 {
     public int ProductId { get; set; }
 
+    public int ShopId { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     public string Slug { get; set; } = string.Empty;
@@ -108,9 +110,22 @@ public class ProductSizeGuideVm
 {
     public string? SizeLabel { get; set; }
 
-    public string? MeasurementName { get; set; }
+    public string? HeightRange { get; set; }
 
-    public string? MeasurementValue { get; set; }
+    public string? WeightRange { get; set; }
+
+    public decimal? ShoulderWidthCm { get; set; }
+
+    public decimal? BustCm { get; set; }
+
+    public decimal? WaistCm { get; set; }
+
+    public decimal? HipCm { get; set; }
+
+    public decimal? LengthCm { get; set; }
+    public decimal? WidthCm { get; set; }
+    public decimal? HeightCm { get; set; }
+    public decimal? ShoeLengthCm { get; set; }
 
     public string? Note { get; set; }
 }

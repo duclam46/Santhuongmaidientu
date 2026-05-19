@@ -134,10 +134,20 @@
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
                                         <label class="form-label">Slug</label>
                                         <input asp-for="Slug" class="form-control" placeholder="(Tự tạo nếu bỏ trống)" />
                                         <span asp-validation-for="Slug" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Giá bán (₫)</label>
+                                        <input asp-for="Price" class="form-control vn-money-input" type="text" placeholder="Ví dụ: 250.000" />
+                                        <span asp-validation-for="Price" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Giá giảm (₫)</label>
+                                        <input asp-for="SalePrice" class="form-control vn-money-input" type="text" placeholder="Ví dụ: 199.000" />
+                                        <span asp-validation-for="SalePrice" class="text-danger"></span>
                                     </div>
                                 </div>
 
@@ -162,39 +172,14 @@
                                     </div>
                                 </div>
 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Danh mục lớn</label>
-                                            <select asp-for="ParentCategoryId" class="form-select" id="parentCategorySelect">
-                                                <option value="">-- Chọn danh mục lớn --</option>
-                                                @if (Model.ParentCategoryOptions != null)
-                                                {
-                                                    foreach (var c in Model.ParentCategoryOptions)
-                                                    {
-                                                        <option value="@c.Value">@c.Label</option>
-                                                    }
-                                                }
-                                            </select>
-                                            <span asp-validation-for="ParentCategoryId" class="text-danger"></span>
-                                        </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Phân loại danh mục</label>
+                                    <input type="hidden" asp-for="CategoryId" id="finalCategoryId" />
+                                    <div id="categoryCascader" class="d-flex flex-wrap gap-2">
+                                        <!-- Selects will be generated here -->
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Danh mục con</label>
-                                            <select asp-for="CategoryId" class="form-select" id="childCategorySelect">
-                                                <option value="">-- Chọn danh mục con --</option>
-                                                @if (Model.ChildCategoryOptions != null)
-                                                {
-                                                    foreach (var c in Model.ChildCategoryOptions)
-                                                    {
-                                                        <option value="@c.Value">@c.Label</option>
-                                                    }
-                                                }
-                                            </select>
-                                            <span asp-validation-for="CategoryId" class="text-danger"></span>
-                                        </div>
-                                    </div>
+                                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                                    <div class="mt-2 text-muted small" id="categoryBreadcrumb"></div>
                                 </div>
 
                                 <div class="mb-0">
@@ -298,7 +283,7 @@
                                                 var hex = string.IsNullOrWhiteSpace(opt.Hex) ? "#D0D5DD" : opt.Hex;
 
                                                 <input class="btn-check" type="checkbox" name="SelectedColorIds" value="@opt.Value" id="color_@opt.Value" checked="@(checkedColor ? "checked" : null)" autocomplete="off" />
-                                                <label class="admin-color-tile" for="color_@opt.Value" title="@opt.Label">
+                                                <label class="admin-color-tile" for="color_@opt.Value" title="@opt.Label" data-color-name="@opt.Label">
                                                     @if (hasIcon)
                                                     {
                                                         <img src="@iconUrl" alt="@opt.Label" class="admin-color-icon" />
@@ -357,10 +342,34 @@
 
                                 <div class="mb-4 d-none" id="volumeOptionsWrap">
                                     <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h5 class="mb-0">Tồn kho theo dung tích (ml)</h5>
+                                        <h5 class="mb-0" id="customOptionTitle">Tồn kho theo quy cách tùy chỉnh</h5>
                                         <button type="button" class="btn btn-sm btn-outline-primary" id="volumeAddRowBtn">Thêm dòng</button>
                                     </div>
-                                    <div class="text-muted mb-2">Nhập ví dụ: 50ml, 100ml... (SKU tự tạo theo dạng ProductId-Option)</div>
+                                    <div class="text-muted mb-2">Nhập ví dụ: 50ml, 100ml, 1kg... (SKU tự tạo theo dạng ProductId-Option)</div>
+
+                                    <div class="mb-4" id="volumeSamples">
+                                        <div class="fw-semibold small text-primary mb-2"><i class="bx bx-droplet me-1"></i>Gợi ý dung tích:</div>
+                                        <div class="admin-size-grid mb-3">
+                                            <button type="button" class="admin-size-tile" data-sample="30ml">30ml</button>
+                                            <button type="button" class="admin-size-tile" data-sample="50ml">50ml</button>
+                                            <button type="button" class="admin-size-tile" data-sample="100ml">100ml</button>
+                                            <button type="button" class="admin-size-tile" data-sample="200ml">200ml</button>
+                                            <button type="button" class="admin-size-tile" data-sample="500ml">500ml</button>
+                                            <button type="button" class="admin-size-tile" data-sample="1L">1L</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4 d-none" id="weightSamples">
+                                        <div class="fw-semibold small text-success mb-2"><i class="bx bx-package me-1"></i>Gợi ý khối lượng:</div>
+                                        <div class="admin-size-grid mb-3">
+                                            <button type="button" class="admin-size-tile" data-sample="100g">100g</button>
+                                            <button type="button" class="admin-size-tile" data-sample="250g">250g</button>
+                                            <button type="button" class="admin-size-tile" data-sample="500g">500g</button>
+                                            <button type="button" class="admin-size-tile" data-sample="1kg">1kg</button>
+                                            <button type="button" class="admin-size-tile" data-sample="2kg">2kg</button>
+                                            <button type="button" class="admin-size-tile" data-sample="5kg">5kg</button>
+                                        </div>
+                                    </div>
 
                                     <div class="table-responsive">
                                         <table class="table table-sm align-middle mb-0">
@@ -454,37 +463,13 @@
                                         <table class="table table-sm align-middle mb-0">
                                             <thead class="table-light">
                                                 <tr>
-                                                    <th style="width: 160px;">Quy cách</th>
+                                                    <th>Màu sắc</th>
+                                                    <th>Kích cỡ</th>
                                                     <th>SKU</th>
-                                                    <th style="width: 160px;">Số lượng</th>
+                                                    <th style="width: 140px;">Số lượng</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
-                                                @if (Model.InitialSizeStocks != null && Model.InitialSizeStocks.Count > 0)
-                                                {
-                                                    for (var i = 0; i < Model.InitialSizeStocks.Count; i++)
-                                                    {
-                                                        <tr data-size-row data-size-name="@Model.InitialSizeStocks[i].SizeName">
-                                                            <td>
-                                                                <input type="hidden" asp-for="InitialSizeStocks[i].SizeId" />
-                                                                <input type="hidden" asp-for="InitialSizeStocks[i].SizeName" />
-                                                                <span class="fw-semibold size-name">@Model.InitialSizeStocks[i].SizeName</span>
-                                                            </td>
-                                                            <td>
-                                                                <span class="text-muted">Tự tạo: <span class="fw-semibold">ID-OPTION</span></span>
-                                                            </td>
-                                                            <td>
-                                                                <input asp-for="InitialSizeStocks[i].StockQuantity" class="form-control form-control-sm" type="number" min="0" />
-                                                            </td>
-                                                        </tr>
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    <tr>
-                                                        <td colspan="3" class="text-muted">Chưa có danh sách size.</td>
-                                                    </tr>
-                                                }
+                                            <tbody id="initialSizeStocksBody">
                                             </tbody>
                                         </table>
                                     </div>
@@ -492,6 +477,28 @@
                                     <div class="form-text">SKU tự tạo sau khi bạn bấm tạo sản phẩm.</div>
                                     <span asp-validation-for="InitialSizeStocks" class="text-danger"></span>
                                 </div>
+
+                                <template id="initialSizeStockRowTemplate">
+                                    <tr data-size-row data-color-id="__colorId__" data-size-id="__sizeId__">
+                                        <td>
+                                            <input type="hidden" name="InitialSizeStocks[__index__].ColorId" value="__colorId__" />
+                                            <input type="hidden" name="InitialSizeStocks[__index__].ColorName" value="__colorName__" />
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle color-label">__colorName__</span>
+                                        </td>
+                                        <td>
+                                            <input type="hidden" name="InitialSizeStocks[__index__].SizeId" value="__sizeId__" />
+                                            <input type="hidden" name="InitialSizeStocks[__index__].SizeName" value="__sizeName__" />
+                                            <input type="hidden" name="InitialSizeStocks[__index__].IsSelected" value="__isSelected__" class="size-is-selected" />
+                                            <span class="fw-semibold size-name">__sizeName__</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted small">SKU: <span class="fw-semibold">PROD-OPTION</span></span>
+                                        </td>
+                                        <td>
+                                            <input name="InitialSizeStocks[__index__].StockQuantity" class="form-control form-control-sm" type="number" min="0" value="__qty__" />
+                                        </td>
+                                    </tr>
+                                </template>
 
                             </div>
 
@@ -510,10 +517,18 @@
                                     </div>
                                 </div>
 
-                                <div class="text-muted mb-2">Chọn/nhập size ở bước <span class="fw-semibold">Biến thể & tồn kho</span>, hệ thống sẽ tự hiện đúng các size ở đây để bạn nhập thông số theo từng size.</div>
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <div class="text-muted small">Thông số (cm) theo size đã chọn ở bước trước</div>
+                                    <select class="form-select form-select-sm" style="width: auto;" id="sizeGuideSchemeSelect">
+                                        <option value="ao">Áo (Shirt)</option>
+                                        <option value="quan">Quần (Pants)</option>
+                                        <option value="shoe">Giày / Dép</option>
+                                        <option value="all">Tất cả</option>
+                                    </select>
+                                </div>
 
                                 <div class="alert alert-info py-2 px-3 d-none" id="sizeGuideEmptyAlert">
-                                    Chưa có size nào được chọn. Hãy quay lại bước <span class="fw-semibold">Biến thể & tồn kho</span> và nhập số lượng (hoặc chọn size giày).
+                                    Chưa có size nào được chọn. Hãy quay lại bước <span class="fw-semibold">Biến thể & tồn kho</span> và nhập số lượng.
                                 </div>
 
                                 <div class="table-responsive" id="sizeGuideTableWrap">
@@ -521,38 +536,23 @@
                                         <thead class="table-light">
                                             <tr>
                                                 <th style="width: 110px;">Size</th>
-                                                <th style="width: 170px;">Chiều cao</th>
-                                                <th style="width: 170px;">Cân nặng</th>
+                                                <th class="sg-col-ao sg-col-quan sg-col-shared" style="width: 140px;">C.Cao người</th>
+                                                <th class="sg-col-ao sg-col-quan sg-col-shared" style="width: 140px;">C.Nặng người</th>
 
-                                                <th class="sg-col-clothing" style="width: 140px;">Dài (cm)</th>
-                                                <th class="sg-col-clothing" style="width: 140px;">Rộng (cm)</th>
-                                                <th class="sg-col-clothing" style="width: 140px;">Cao (cm)</th>
+                                                <th class="sg-col-ao" style="width: 100px;">Vai (cm)</th>
+                                                <th class="sg-col-ao" style="width: 110px;">Ngực (cm)</th>
+                                                <th class="sg-col-quan d-none" style="width: 110px;">Eo (cm)</th>
+                                                <th class="sg-col-quan d-none" style="width: 110px;">Mông (cm)</th>
+                                                <th class="sg-col-ao sg-col-quan sg-col-shared" style="width: 100px;">Dài (cm)</th>
+                                                <th class="sg-col-ao sg-col-quan sg-col-shared" style="width: 100px;">Rộng (cm)</th>
 
-                                                <th class="sg-col-shoe d-none" style="width: 160px;">Chiều dài (cm)</th>
+                                                <th class="sg-col-shoe d-none" style="width: 160px;">Chiều dài chân (cm)</th>
 
-                                                <th>Ghi chú</th>
+                                                <th>Ghi chú / Thông số</th>
                                             </tr>
                                         </thead>
                                         <tbody id="sizeGuideBody">
-                                            @for (var i = 0; i < (Model.SizeGuide?.Count ?? 0); i++)
-                                            {
-                                                <tr data-size-guide-row data-size-label="@Model.SizeGuide[i].SizeLabel">
-                                                    <td>
-                                                        <input type="hidden" name="SizeGuide[@i].SizeLabel" value="@Model.SizeGuide[i].SizeLabel" />
-                                                        <span class="fw-semibold">@Model.SizeGuide[i].SizeLabel</span>
-                                                    </td>
-                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].HeightRange" value="@Model.SizeGuide[i].HeightRange" placeholder="VD: 160-170cm" /></td>
-                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].WeightRange" value="@Model.SizeGuide[i].WeightRange" placeholder="VD: 55-65kg" /></td>
-
-                                                    <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[@i].ClothingLengthCm" value="@Model.SizeGuide[i].ClothingLengthCm" type="number" step="0.1" min="0" placeholder="VD: 70" /></td>
-                                                    <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[@i].ClothingWidthCm" value="@Model.SizeGuide[i].ClothingWidthCm" type="number" step="0.1" min="0" placeholder="VD: 52" /></td>
-                                                    <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[@i].ClothingHeightCm" value="@Model.SizeGuide[i].ClothingHeightCm" type="number" step="0.1" min="0" placeholder="VD: 3" /></td>
-
-                                                    <td class="sg-col-shoe d-none"><input class="form-control form-control-sm" name="SizeGuide[@i].ShoeLengthCm" value="@Model.SizeGuide[i].ShoeLengthCm" type="number" step="0.1" min="0" placeholder="VD: 26" /></td>
-
-                                                    <td><input class="form-control form-control-sm" name="SizeGuide[@i].Note" value="@Model.SizeGuide[i].Note" placeholder="VD: form rộng" /></td>
-                                                </tr>
-                                            }
+                                            <!-- Generated by JS -->
                                         </tbody>
                                     </table>
                                 </div>
@@ -563,16 +563,20 @@
                                             <input type="hidden" name="SizeGuide[__index__].SizeLabel" value="__sizeLabel__" />
                                             <span class="fw-semibold">__sizeLabel__</span>
                                         </td>
-                                        <td><input class="form-control form-control-sm" name="SizeGuide[__index__].HeightRange" value="" placeholder="VD: 160-170cm" /></td>
-                                        <td><input class="form-control form-control-sm" name="SizeGuide[__index__].WeightRange" value="" placeholder="VD: 55-65kg" /></td>
+                                        <td class="sg-col-ao sg-col-quan sg-col-shared"><input class="form-control form-control-sm" name="SizeGuide[__index__].HeightRange" value="" placeholder="160-170" /></td>
+                                        <td class="sg-col-ao sg-col-quan sg-col-shared"><input class="form-control form-control-sm" name="SizeGuide[__index__].WeightRange" value="" placeholder="55-65" /></td>
 
-                                        <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingLengthCm" value="" type="number" step="0.1" min="0" placeholder="VD: 70" /></td>
-                                        <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingWidthCm" value="" type="number" step="0.1" min="0" placeholder="VD: 52" /></td>
-                                        <td class="sg-col-clothing"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingHeightCm" value="" type="number" step="0.1" min="0" placeholder="VD: 3" /></td>
+                                        <td class="sg-col-ao"><input class="form-control form-control-sm" name="SizeGuide[__index__].ShoulderWidth" value="" placeholder="Vai" /></td>
+                                        <td class="sg-col-ao"><input class="form-control form-control-sm" name="SizeGuide[__index__].Bust" value="" placeholder="Ngực" /></td>
+                                        <td class="sg-col-quan d-none"><input class="form-control form-control-sm" name="SizeGuide[__index__].Waist" value="" placeholder="Eo" /></td>
+                                        <td class="sg-col-quan d-none"><input class="form-control form-control-sm" name="SizeGuide[__index__].Hip" value="" placeholder="Mông" /></td>
 
-                                        <td class="sg-col-shoe d-none"><input class="form-control form-control-sm" name="SizeGuide[__index__].ShoeLengthCm" value="" type="number" step="0.1" min="0" placeholder="VD: 26" /></td>
+                                        <td class="sg-col-ao sg-col-quan sg-col-shared"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingLength" value="" placeholder="Dài" /></td>
+                                        <td class="sg-col-ao sg-col-quan sg-col-shared"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingWidth" value="" placeholder="Rộng" /></td>
 
-                                        <td><input class="form-control form-control-sm" name="SizeGuide[__index__].Note" value="" placeholder="VD: form rộng" /></td>
+                                        <td class="sg-col-shoe d-none"><input class="form-control form-control-sm" name="SizeGuide[__index__].ShoeLength" value="" placeholder="Dài chân" /></td>
+
+                                        <td><input class="form-control form-control-sm" name="SizeGuide[__index__].Note" value="" placeholder="..." /></td>
                                     </tr>
                                 </template>
                             </div>
@@ -689,7 +693,18 @@
 
         .btn-check:checked + .admin-size-tile {
             border-color: rgba(var(--bs-primary-rgb), .85);
+            background: rgba(var(--bs-primary-rgb), .05);
             box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
+        }
+
+        button.admin-size-tile {
+            font-size: .85rem;
+            transition: all .2s ease;
+        }
+
+        button.admin-size-tile:active {
+            transform: scale(0.95);
+            background: rgba(var(--bs-primary-rgb), .1);
         }
 
         #shoePickerGrid .btn {
@@ -823,6 +838,10 @@
         }
     </style>
 
+    <script id="js-all-sizes-data" type="application/json">
+        @Html.Raw(global::System.Text.Json.JsonSerializer.Serialize(Model.InitialSizeStocks ?? new List<DOAN_BANHANG.ViewModels.ProductAdminInitialSizeStockVm>(), new global::System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = global::System.Text.Json.JsonNamingPolicy.CamelCase }))
+    </script>
+
     <script>
         (() => {
             const menu = document.getElementById('admin-product-create-menu');
@@ -867,40 +886,102 @@
             }
         })();
 
-        // Parent -> child categories
+        // ── Category Cascade ──
         (() => {
-            const parentSelect = document.getElementById('parentCategorySelect');
-            const childSelect = document.getElementById('childCategorySelect');
-            if (!parentSelect || !childSelect) return;
+            const categoryCascader = document.getElementById('categoryCascader');
+            const finalCategoryId = document.getElementById('finalCategoryId');
+            const categoryBreadcrumb = document.getElementById('categoryBreadcrumb');
+            let allCats = [];
 
-            async function loadChildren(parentId, keepValue) {
-                const current = keepValue ? childSelect.value : '';
-                childSelect.innerHTML = '<option value="">-- Chọn danh mục con --</option>';
-                if (!parentId) return;
+            async function initCategoryCascade() {
+                try {
+                    const res = await fetch(`@Url.Action("AllCategories", "Products", new { area = "Admin" })`);
+                    allCats = await res.json();
+                    
+                    const catMap = new Map();
+                    allCats.forEach(c => catMap.set(c.id, c));
+                    
+                    let currentId = parseInt(finalCategoryId.value) || 0;
+                    let path = [];
+                    while (currentId > 0 && catMap.has(currentId)) {
+                        path.unshift(currentId);
+                        currentId = catMap.get(currentId).parentId || 0;
+                    }
+                    
+                    renderCascader(path);
+                } catch (err) {
+                    console.error("Lỗi khi tải danh mục", err);
+                }
+            }
 
-                const url = '@Url.Action("ChildCategories", "Products", new { area = "Admin" })' + '?parentId=' + encodeURIComponent(parentId);
-                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-                if (!res.ok) return;
-                const data = await res.json();
-                if (!Array.isArray(data)) return;
+            function renderCascader(path) {
+                categoryCascader.innerHTML = '';
+                
+                let parentId = null;
+                let currentLevel = 0;
+                
+                for (let i = 0; i < path.length; i++) {
+                    const selectedId = path[i];
+                    renderSelect(parentId, selectedId, currentLevel);
+                    parentId = selectedId;
+                    currentLevel++;
+                }
+                
+                const hasChildren = allCats.some(c => c.parentId === parentId);
+                if (hasChildren || path.length === 0) {
+                    renderSelect(parentId, "", currentLevel);
+                }
+                
+                updateBreadcrumb(path);
+            }
 
-                for (const item of data) {
+            function renderSelect(parentId, selectedValue, level) {
+                const children = allCats.filter(c => c.parentId === parentId);
+                if (children.length === 0) return;
+                
+                const select = document.createElement('select');
+                select.className = 'form-select';
+                select.style.flex = "1";
+                select.style.minWidth = "180px";
+                select.dataset.level = level;
+                
+                select.innerHTML = `<option value="">-- Chọn danh mục cấp ${level + 1} --</option>`;
+                children.forEach(c => {
                     const opt = document.createElement('option');
-                    opt.value = item.value;
-                    opt.textContent = item.label;
-                    childSelect.appendChild(opt);
-                }
-
-                if (current) {
-                    childSelect.value = current;
-                }
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    if (c.id == selectedValue) opt.selected = true;
+                    select.appendChild(opt);
+                });
+                
+                select.addEventListener('change', (e) => {
+                    const newPath = [];
+                    const selects = Array.from(categoryCascader.querySelectorAll('select'));
+                    for (const s of selects) {
+                        if (s.value) newPath.push(parseInt(s.value));
+                        if (s === e.target) break;
+                    }
+                    
+                    finalCategoryId.value = newPath.length > 0 ? newPath[newPath.length - 1] : '';
+                    renderCascader(newPath);
+                    if (typeof window.autoDetectScheme === 'function') window.autoDetectScheme();
+                });
+                
+                categoryCascader.appendChild(select);
             }
 
-            parentSelect.addEventListener('change', () => loadChildren(parentSelect.value, false));
-
-            if (parentSelect.value) {
-                loadChildren(parentSelect.value, true);
+            function updateBreadcrumb(path) {
+                if (path.length === 0) {
+                    categoryBreadcrumb.textContent = "Chưa chọn danh mục";
+                    return;
+                }
+                const names = path.map(id => allCats.find(c => c.id === id)?.name || "");
+                categoryBreadcrumb.innerHTML = "Đường dẫn: <b>" + names.join(" &rsaquo; ") + "</b>";
             }
+
+            initCategoryCascade().then(() => {
+                if (typeof window.autoDetectScheme === 'function') window.autoDetectScheme();
+            });
         })();
 
         // Image pickers (primary + gallery slots)
@@ -1146,7 +1227,16 @@
 
             if (!multi || !single || !singleWrap || !schemeWrap || !schemeSelect || !sizeWrap) return;
 
+            let allSizes = [];
+            try {
+                const dataEl = document.getElementById('js-all-sizes-data');
+                allSizes = JSON.parse(dataEl?.textContent || '[]');
+            } catch(e) {
+                console.error("Failed to parse sizes", e);
+            }
+
             const selectedSizes = new Set();
+            const stockCache = new Map(); // key: "colorId-sizeId", value: qty
             let lastPickerMode = null;
 
             function classify(name) {
@@ -1196,29 +1286,33 @@
             }
 
             function getRowsForMode(mode) {
-                const rows = getAllSizeRows();
+                // For the picker, we need a unique list of size names for that mode.
+                // We'll use the 'allSizes' data instead of the DOM rows.
                 const result = [];
+                const seen = new Set();
 
-                for (const r of rows) {
-                    const name = getRowSizeName(r);
-                    if (!name) continue;
-                    const kind = classify(name);
+                for (const s of allSizes) {
+                    const sName = s.sizeName || s.SizeName;
+                    if (seen.has(sName)) continue;
+                    const kind = classify(sName);
                     if (mode === 'all' || kind === mode) {
-                        result.push({ row: r, name, kind });
+                        result.push({ name: sName, kind });
+                        seen.add(sName);
                     }
                 }
-
-                // Keep DOM order (already sorted server-side)
                 return result;
             }
 
             function seedSelectionFromQty(mode) {
+                // This is less relevant now as we regenerate the table, 
+                // but let's keep it to detect already selected sizes.
                 selectedSizes.clear();
-                const items = getRowsForMode(mode);
-                for (const it of items) {
-                    const qtyEl = getRowQtyInput(it.row);
+                const items = Array.from(sizeWrap.querySelectorAll('tbody tr[data-size-row]'));
+                for (const row of items) {
+                    const name = getRowSizeName(row);
+                    const qtyEl = getRowQtyInput(row);
                     const qty = qtyEl ? parseInt(qtyEl.value || '0', 10) : 0;
-                    if (qty > 0) selectedSizes.add(it.name);
+                    if (qty > 0 && name) selectedSizes.add(name);
                 }
             }
 
@@ -1269,13 +1363,86 @@
                 }
             }
 
-            function clearAndHideSizeRows() {
-                for (const r of getAllSizeRows()) {
-                    r.classList.add('d-none');
-                    const qty = getRowQtyInput(r);
-                    if (qty) qty.value = '0';
+            function updateStockCache() {
+                const rows = Array.from(sizeWrap.querySelectorAll('#initialSizeStocksBody tr[data-size-row]'));
+                rows.forEach(r => {
+                    const cId = r.getAttribute('data-color-id') || "0";
+                    const sId = r.getAttribute('data-size-id');
+                    const qtyInput = r.querySelector('input[name$=".StockQuantity"]');
+                    if (qtyInput) {
+                        stockCache.set(`${cId}-${sId}`, qtyInput.value);
+                    }
+                });
+            }
+
+            function getSelectedColors() {
+                const inputs = Array.from(document.querySelectorAll('input[name="SelectedColorIds"]:checked'));
+                return inputs.map(input => {
+                    const id = input.value;
+                    const label = document.querySelector(`label[for="${input.id}"]`);
+                    const name = label ? (label.getAttribute('data-color-name') || label.querySelector('.admin-color-name')?.textContent?.trim() || "N/A") : "N/A";
+                    return { id, name };
+                });
+            }
+
+            function applySizeFiltering() {
+                updateStockCache();
+                const mode = schemeSelect.value;
+                const colors = getSelectedColors();
+                
+                // If no colors are selected, we treat it as "Default" color (null)
+                const colorList = colors.length > 0 ? colors : [{ id: "0", name: "Mặc định" }];
+
+                const body = document.getElementById('initialSizeStocksBody');
+                const tpl = document.getElementById('initialSizeStockRowTemplate');
+                if (!body || !tpl) return;
+
+                body.innerHTML = '';
+                let index = 0;
+                let visible = 0;
+
+                for (const color of colorList) {
+                    for (const size of allSizes) {
+                        const sizeName = size.sizeName || size.SizeName;
+                        const sizeId = size.sizeId || size.SizeId;
+                        
+                        const kind = classify(sizeName);
+                        const inMode = (mode === 'all') || (kind === mode);
+                        if (!inMode) continue;
+                        
+                        const isSelectedInPicker = selectedSizes.has(sizeName);
+                        if (!isSelectedInPicker) continue;
+
+                        const qty = stockCache.get(`${color.id}-${sizeId}`) || "0";
+
+                        let html = tpl.innerHTML
+                            .replaceAll('__index__', index)
+                            .replaceAll('__colorId__', color.id)
+                            .replaceAll('__colorName__', color.name)
+                            .replaceAll('__sizeId__', sizeId)
+                            .replaceAll('__sizeName__', sizeName)
+                            .replaceAll('__isSelected__', "true")
+                            .replaceAll('__qty__', qty);
+
+                        const temp = document.createElement('tbody');
+                        temp.innerHTML = html.trim();
+                        const row = temp.firstElementChild;
+                        if (row) body.appendChild(row);
+
+                        index++;
+                        visible++;
+                    }
                 }
-                emptyAlert?.classList.add('d-none');
+
+                if (visible === 0) {
+                    body.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">Hãy chọn size ở bảng phía trên.</td></tr>';
+                }
+
+                if (emptyAlert) {
+                    const availableInMode = allSizes.filter(s => mode === 'all' || classify(s.SizeName) === mode).length;
+                    const shouldShowEmpty = (mode !== 'all') && (availableInMode === 0);
+                    emptyAlert.classList.toggle('d-none', !shouldShowEmpty);
+                }
             }
 
             function setVolumeInputsEnabled(enabled) {
@@ -1285,36 +1452,6 @@
                     if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
                         el.disabled = !enabled;
                     }
-                }
-            }
-
-            function applySizeFiltering() {
-                const mode = schemeSelect.value;
-                const rows = getAllSizeRows();
-                let visible = 0;
-                let availableInMode = 0;
-
-                for (const r of rows) {
-                    const name = getRowSizeName(r);
-                    if (!name) continue;
-                    const kind = classify(name);
-
-                    const inMode = (mode === 'all') || (kind === mode);
-                    if (mode !== 'all' && inMode) availableInMode++;
-
-                    const show = inMode && selectedSizes.has(name);
-
-                    r.classList.toggle('d-none', !show);
-                    if (show) visible++;
-                    if (!show) {
-                        const qty = getRowQtyInput(r);
-                        if (qty) qty.value = '0';
-                    }
-                }
-
-                if (emptyAlert) {
-                    const shouldShowEmpty = (mode !== 'all') && (availableInMode === 0);
-                    emptyAlert.classList.toggle('d-none', !shouldShowEmpty);
                 }
             }
 
@@ -1337,6 +1474,10 @@
                     map.set(label, {
                         HeightRange: read('HeightRange'),
                         WeightRange: read('WeightRange'),
+                        ShoulderWidthCm: read('ShoulderWidthCm'),
+                        BustCm: read('BustCm'),
+                        WaistCm: read('WaistCm'),
+                        HipCm: read('HipCm'),
                         ClothingLengthCm: read('ClothingLengthCm'),
                         ClothingWidthCm: read('ClothingWidthCm'),
                         ClothingHeightCm: read('ClothingHeightCm'),
@@ -1350,17 +1491,20 @@
             function collectSelectedSizeLabels() {
                 const labels = [];
                 const mode = schemeSelect.value;
-                const rows = getAllSizeRows();
-
-                for (const r of rows) {
-                    const name = getRowSizeName(r);
-                    if (!name) continue;
-
-                    const kind = classify(name);
-                    const inMode = (mode === 'all') || (kind === mode);
-                    if (!inMode) continue;
-
-                    if (selectedSizes.has(name)) labels.push(name);
+                if (mode === 'volume' || mode === 'weight') {
+                    if (volumeBody) {
+                        const rows = Array.from(volumeBody.querySelectorAll('tr[data-volume-row]:not(.d-none)'));
+                        for (const r of rows) {
+                            const input = r.querySelector('input[name$=".OptionName"]');
+                            const val = (input?.value || '').trim();
+                            if (val) labels.push(val);
+                        }
+                    }
+                } else {
+                    // For size guide, we only want unique sizes regardless of color.
+                    for (const s of selectedSizes) {
+                        labels.push(s);
+                    }
                 }
 
                 // Deduplicate while preserving order
@@ -1374,16 +1518,46 @@
                 return unique;
             }
 
+            const sgSel = document.getElementById('sizeGuideSchemeSelect');
+
+            window.autoDetectScheme = function() {
+                if (!sgSel) return;
+                const cascader = document.getElementById('categoryCascader');
+                if (!cascader) return;
+
+                const selects = Array.from(cascader.querySelectorAll('select'));
+                const fullText = selects.map(s => s.options[s.selectedIndex]?.text || "").join(" ").toLowerCase();
+
+                if (fullText.includes("áo") || fullText.includes("shirt") || fullText.includes("top") || fullText.includes("sơ mi") || fullText.includes("phông")) {
+                    sgSel.value = "ao";
+                } else if (fullText.includes("quần") || fullText.includes("pants") || fullText.includes("jean") || fullText.includes("khaki") || fullText.includes("short")) {
+                    sgSel.value = "quan";
+                } else if (fullText.includes("giày") || fullText.includes("dép") || fullText.includes("shoe") || fullText.includes("sneaker")) {
+                    sgSel.value = "shoe";
+                } else {
+                    sgSel.value = "all";
+                }
+                updateSgColumns();
+            };
+
+            function updateSgColumns() {
+                if (!sgSel) return;
+                const mode = sgSel.value;
+                const allCols = document.querySelectorAll('[class*="sg-col-"]');
+                allCols.forEach(el => {
+                    if (mode === 'all') {
+                        el.classList.remove('d-none');
+                    } else {
+                        const isMatch = el.classList.contains('sg-col-' + mode) || el.classList.contains('sg-col-shared');
+                        el.classList.toggle('d-none', !isMatch);
+                    }
+                });
+            }
+
+            if (sgSel) sgSel.addEventListener('change', updateSgColumns);
+
             function setSizeGuideSchemeColumns() {
-                const mode = schemeSelect.value;
-                const clothingCols = Array.from(document.querySelectorAll('.sg-col-clothing'));
-                const shoeCols = Array.from(document.querySelectorAll('.sg-col-shoe'));
-
-                const showClothing = mode === 'clothing';
-                const showShoe = mode === 'shoe';
-
-                for (const el of clothingCols) el.classList.toggle('d-none', !showClothing);
-                for (const el of shoeCols) el.classList.toggle('d-none', !showShoe);
+                updateSgColumns();
             }
 
             function syncSizeGuideRows() {
@@ -1393,14 +1567,13 @@
                 const mode = schemeSelect.value;
 
                 // Only meaningful for clothing/shoe size variants.
-                const applicable = bySize && (mode === 'clothing' || mode === 'shoe');
+                const applicable = bySize && (mode === 'clothing' || mode === 'shoe' || mode === 'volume' || mode === 'weight' || mode === 'all');
                 if (sizeGuideTableWrap) sizeGuideTableWrap.classList.toggle('d-none', !applicable);
                 if (!applicable) {
                     sizeGuideEmptyAlert?.classList.add('d-none');
                     return;
                 }
 
-                setSizeGuideSchemeColumns();
 
                 const selected = collectSelectedSizeLabels();
                 const existing = readGuideRowData();
@@ -1441,12 +1614,17 @@
 
                     set('HeightRange', data.HeightRange);
                     set('WeightRange', data.WeightRange);
-                    set('ClothingLengthCm', data.ClothingLengthCm);
-                    set('ClothingWidthCm', data.ClothingWidthCm);
-                    set('ClothingHeightCm', data.ClothingHeightCm);
-                    set('ShoeLengthCm', data.ShoeLengthCm);
+                    set('ShoulderWidth', data.ShoulderWidth);
+                    set('Bust', data.Bust);
+                    set('Waist', data.Waist);
+                    set('Hip', data.Hip);
+                    set('ClothingLength', data.ClothingLength);
+                    set('ClothingWidth', data.ClothingWidth);
+                    set('ShoeLength', data.ShoeLength);
                     set('Note', data.Note);
                 }
+
+                setSizeGuideSchemeColumns();
             }
 
             function wireVolumeRemoveButtons() {
@@ -1465,11 +1643,12 @@
                         if (nameInput instanceof HTMLInputElement) nameInput.value = '';
                         if (qtyInput instanceof HTMLInputElement) qtyInput.value = '0';
                         row.classList.add('d-none');
+                        syncSizeGuideRows();
                     });
                 }
             }
 
-            function addVolumeRow() {
+            function addVolumeRow(initialValue = '') {
                 if (!volumeBody || !volumeTpl) return;
                 const tpl = volumeTpl;
                 if (!(tpl instanceof HTMLTemplateElement)) return;
@@ -1489,8 +1668,14 @@
                 const row = temp.querySelector('tr[data-volume-row]');
                 if (!row) return;
 
+                if (initialValue) {
+                    const nameInput = row.querySelector('input[name$=".OptionName"]');
+                    if (nameInput instanceof HTMLInputElement) nameInput.value = initialValue;
+                }
+
                 volumeBody.appendChild(row);
                 wireVolumeRemoveButtons();
+                syncSizeGuideRows();
             }
 
             function syncVariantModeVisibility() {
@@ -1517,18 +1702,23 @@
                 }
 
                 const mode = schemeSelect.value;
-                const isVolume = mode === 'volume';
+                const isCustom = mode === 'volume' || mode === 'weight';
 
-                volumeWrap?.classList.toggle('d-none', !isVolume);
-                sizeWrap.classList.toggle('d-none', isVolume);
+                volumeWrap?.classList.toggle('d-none', !isCustom);
+                sizeWrap.classList.toggle('d-none', isCustom);
 
-                if (sizePickerWrap) sizePickerWrap.classList.toggle('d-none', isVolume);
+                if (sizePickerWrap) sizePickerWrap.classList.toggle('d-none', isCustom);
 
-                setVolumeInputsEnabled(isVolume);
+                setVolumeInputsEnabled(isCustom);
 
-                if (isVolume) {
-                    // Ensure size table stocks don't leak into volume mode.
-                    clearAndHideSizeRows();
+                if (isCustom) {
+                    // Ensure size table stocks don't leak into custom mode.
+                    applySizeFiltering();
+                    
+                    const volSamples = document.getElementById('volumeSamples');
+                    const weightSamples = document.getElementById('weightSamples');
+                    volSamples?.classList.toggle('d-none', mode !== 'volume');
+                    weightSamples?.classList.toggle('d-none', mode !== 'weight');
                 } else {
                     const mode = schemeSelect.value;
                     if (lastPickerMode !== mode) {
@@ -1570,7 +1760,70 @@
             });
 
             wireVolumeRemoveButtons();
+
+            volumeWrap?.addEventListener('input', (e) => {
+                const t = e.target;
+                if (!(t instanceof HTMLElement)) return;
+                if (t.matches('input[name$=".OptionName"]')) {
+                    syncSizeGuideRows();
+                }
+            });
+
+            // Sample buttons
+            document.querySelectorAll('[data-sample]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const val = btn.getAttribute('data-sample');
+                    if (val) addVolumeRow(val);
+                });
+            });
+
+            // Color selection changes
+            document.querySelectorAll('input[name="SelectedColorIds"]').forEach(input => {
+                input.addEventListener('change', () => {
+                    apply();
+                });
+            });
+
             apply();
+
+            // Currency formatting logic
+            (function () {
+                const inputs = document.querySelectorAll('.vn-money-input');
+
+                function formatValue(val) {
+                    let n = val.replace(/\D/g, "");
+                    return n === "" ? "" : Number(n).toLocaleString("vi-VN");
+                }
+
+                inputs.forEach(input => {
+                    if (input.value) {
+                        input.value = formatValue(input.value);
+                    }
+
+                    input.addEventListener('input', function () {
+                        let originalValue = this.value;
+                        let formatted = formatValue(originalValue);
+                        
+                        if (formatted !== originalValue) {
+                            // Try to maintain cursor position
+                            let cursor = this.selectionStart;
+                            this.value = formatted;
+                            // Simple cursor adjustment (moves to end for simplicity in this case)
+                        }
+                    });
+                });
+
+                // Strip dots before submit
+                const form = document.getElementById('admin-product-create-form');
+                if (form) {
+                    form.addEventListener('submit', () => {
+                        inputs.forEach(input => {
+                            input.value = input.value.replace(/\./g, "").replace(/,/g, ""); // vi-VN uses dot for thousands and comma for decimal, but usually we handle integers for VND
+                        });
+                    });
+                }
+            })();
         })();
     </script>
 }

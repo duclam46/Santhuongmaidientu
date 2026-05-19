@@ -1,0 +1,254 @@
+@model DOAN_BANHANG.ViewModels.ProductCompareVm
+@{
+    ViewData["Title"] = "So sánh sản phẩm";
+}
+
+<!-- ========== Breadcrumb Section Start ========== -->
+<div class="container py-12">
+    <div class="breadcrumb">
+        <ul>
+            <li>
+                <a asp-controller="Home" asp-action="Index">
+                    <span class="inline-flex items-center justify-center">
+                        <i class="hgi hgi-stroke hgi-home-01 text-2xl leading-6"></i>
+                    </span>Home
+                </a>
+            </li>
+            <li class="text-light-disabled-text">&#8226;</li>
+            <li><span class="text-sm leading-[22px]">Compare</span></li>
+        </ul>
+    </div>
+</div>
+<!-- ========== Breadcrumb Section End ========== -->
+
+<!-- ========== Compare Table Section Start ========== -->
+<div class="pb-[70px]">
+    <div class="container">
+        <div class="mb-6 flex justify-between items-center">
+            <h3>So sánh sản phẩm</h3>
+            @if (Model.Products.Any())
+            {
+                <button onclick="clearCompare()" class="btn btn-default outline btn-medium rounded-full">Xóa tất cả</button>
+            }
+        </div>
+        
+        <div class="grid grid-cols-12">
+            <div class="col-span-12">
+                <div class="wishlist-table-wrapper border-gray-300 rounded-2xl border overflow-x-auto">
+                    @if (Model.Products.Any())
+                    {
+                        <table class="w-full compare-table min-w-[800px]">
+                            <tbody>
+                                <!-- Product Images & Search -->
+                                <tr class="product">
+                                    <td class="w-[200px] px-6 py-4 bg-gray-50 border-r border-b border-gray-300">
+                                        <p class="font-semibold text-light-primary-text text-center">Sản phẩm</p>
+                                    </td>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <td class="px-4 py-6 border-b border-gray-300 text-center relative">
+                                            <button onclick="removeFromCompare(@product.ProductId)" class="absolute top-2 right-2 text-gray-400 hover:text-error">
+                                                <i class="hgi hgi-stroke hgi-cancel-01 text-xl"></i>
+                                            </button>
+                                            <div class="flex flex-col items-center gap-y-4">
+                                                <a href="/Products/Details/@product.Slug" class="block size-32 bg-gray-100 rounded-xl overflow-hidden">
+                                                    <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "/assets/images/placeholder.png" : product.ImageUrl)" 
+                                                         alt="@product.Name" class="w-full h-full object-cover">
+                                                </a>
+                                                <h6 class="text-base font-semibold line-clamp-2 min-h-[48px]">
+                                                    <a href="/Products/Details/@product.Slug">@product.Name</a>
+                                                </h6>
+                                            </div>
+                                        </td>
+                                    }
+                                    @for (int i = Model.Products.Count; i < 4; i++)
+                                    {
+                                        <td class="px-4 py-6 border-b border-gray-300 text-center bg-gray-50/30">
+                                            <div class="flex flex-col items-center justify-center gap-y-4 opacity-50">
+                                                <div class="size-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center">
+                                                    <i class="hgi hgi-stroke hgi-add-01 text-3xl"></i>
+                                                </div>
+                                                <p class="text-sm">Trống</p>
+                                            </div>
+                                        </td>
+                                    }
+                                </tr>
+
+                                <!-- Price Row -->
+                                <tr class="price">
+                                    <td class="px-6 py-4 bg-gray-50 border-r border-b border-gray-300">
+                                        <p class="font-semibold text-light-primary-text text-center">Giá</p>
+                                    </td>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <td class="px-4 py-4 border-b border-gray-300 text-center">
+                                            <div class="flex items-center justify-center gap-x-2">
+                                                <span class="text-lg font-bold text-primary">@product.Price.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))</span>
+                                                @if (product.OldPrice.HasValue)
+                                                {
+                                                    <span class="text-sm text-gray-400 line-through">@product.OldPrice.Value.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))</span>
+                                                }
+                                            </div>
+                                        </td>
+                                    }
+                                    @for (int i = Model.Products.Count; i < 4; i++) { <td class="border-b border-gray-300"></td> }
+                                </tr>
+
+                                <!-- Rating Row -->
+                                <tr class="rating">
+                                    <td class="px-6 py-4 bg-gray-50 border-r border-b border-gray-300">
+                                        <p class="font-semibold text-light-primary-text text-center">Đánh giá</p>
+                                    </td>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <td class="px-4 py-4 border-b border-gray-300 text-center">
+                                            <div class="flex items-center justify-center gap-x-1">
+                                                <div class="flex text-warning">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        if (i <= Math.Round(product.Rating))
+                                                        {
+                                                            <i class="hgi hgi-stroke hgi-star text-base fill-current"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="hgi hgi-stroke hgi-star text-base"></i>
+                                                        }
+                                                    }
+                                                </div>
+                                                <span class="text-sm text-gray-500">(@product.ReviewCount)</span>
+                                            </div>
+                                        </td>
+                                    }
+                                    @for (int i = Model.Products.Count; i < 4; i++) { <td class="border-b border-gray-300"></td> }
+                                </tr>
+
+                                <!-- Category Row -->
+                                <tr class="category">
+                                    <td class="px-6 py-4 bg-gray-50 border-r border-b border-gray-300">
+                                        <p class="font-semibold text-light-primary-text text-center">Danh mục</p>
+                                    </td>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <td class="px-4 py-4 border-b border-gray-300 text-center">
+                                            <span class="text-sm">@product.CategoryName</span>
+                                        </td>
+                                    }
+                                    @for (int i = Model.Products.Count; i < 4; i++) { <td class="border-b border-gray-300"></td> }
+                                </tr>
+
+                                <!-- Availability Row -->
+                                <tr class="availability">
+                                    <td class="px-6 py-4 bg-gray-50 border-r border-b border-gray-300">
+                                        <p class="font-semibold text-light-primary-text text-center">Trạng thái</p>
+                                    </td>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <td class="px-4 py-4 border-b border-gray-300 text-center">
+                                            @if (product.InStock)
+                                            {
+                                                <span class="text-sm font-medium text-success inline-flex items-center gap-x-1">
+                                                    <i class="hgi hgi-stroke hgi-checkmark-circle-02"></i> Còn hàng
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-sm font-medium text-error inline-flex items-center gap-x-1">
+                                                    <i class="hgi hgi-stroke hgi-unavailable"></i> Hết hàng
+                                                </span>
+                                            }
+                                        </td>
+                                    }
+                                    @for (int i = Model.Products.Count; i < 4; i++) { <td class="border-b border-gray-300"></td> }
+                                </tr>
+
+                                <!-- Colors Row -->
+                                <tr class="colors">
+                                    <td class="px-6 py-4 bg-gray-50 border-r border-b border-gray-300">
+                                        <p class="font-semibold text-light-primary-text text-center">Màu sắc</p>
+                                    </td>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <td class="px-4 py-4 border-b border-gray-300 text-center">
+                                            <p class="text-sm">@(product.Colors.Any() ? string.Join(", ", product.Colors) : "N/A")</p>
+                                        </td>
+                                    }
+                                    @for (int i = Model.Products.Count; i < 4; i++) { <td class="border-b border-gray-300"></td> }
+                                </tr>
+
+                                <!-- Sizes Row -->
+                                <tr class="sizes">
+                                    <td class="px-6 py-4 bg-gray-50 border-r border-b border-gray-300">
+                                        <p class="font-semibold text-light-primary-text text-center">Kích thước</p>
+                                    </td>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <td class="px-4 py-4 border-b border-gray-300 text-center">
+                                            <p class="text-sm">@(product.Sizes.Any() ? string.Join(", ", product.Sizes) : "N/A")</p>
+                                        </td>
+                                    }
+                                    @for (int i = Model.Products.Count; i < 4; i++) { <td class="border-b border-gray-300"></td> }
+                                </tr>
+
+                                <!-- Description Row -->
+                                <tr class="description">
+                                    <td class="px-6 py-4 bg-gray-50 border-r border-b border-gray-300">
+                                        <p class="font-semibold text-light-primary-text text-center">Mô tả</p>
+                                    </td>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <td class="px-4 py-6 border-b border-gray-300 align-top">
+                                            <p class="text-sm leading-relaxed text-gray-600 line-clamp-6">@Html.Raw(product.Description)</p>
+                                        </td>
+                                    }
+                                    @for (int i = Model.Products.Count; i < 4; i++) { <td class="border-b border-gray-300"></td> }
+                                </tr>
+
+                                <!-- Action Row -->
+                                <tr class="action">
+                                    <td class="px-6 py-4 bg-gray-50 border-r border-gray-300">
+                                        <p class="font-semibold text-light-primary-text text-center">Thao tác</p>
+                                    </td>
+                                    @foreach (var product in Model.Products)
+                                    {
+                                        <td class="px-4 py-6 text-center">
+                                            <a href="/Products/Details/@product.Slug" class="btn btn-primary btn-medium rounded-full w-full">
+                                                <span>Xem chi tiết</span>
+                                            </a>
+                                        </td>
+                                    }
+                                    @for (int i = Model.Products.Count; i < 4; i++) { <td></td> }
+                                </tr>
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div class="py-20 text-center">
+                            <div class="mb-6 inline-flex size-20 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                                <i class="hgi hgi-stroke hgi-repeat-01 text-4xl"></i>
+                            </div>
+                            <h4 class="mb-2">Chưa có sản phẩm để so sánh</h4>
+                            <p class="mb-8 text-gray-500">Hãy thêm sản phẩm vào danh sách so sánh để xem sự khác biệt.</p>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-primary btn-large rounded-full">Tiếp tục mua sắm</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ========== Compare Table Section End ========== -->
+
+@section Scripts {
+    <!-- Using global compare.js -->
+}
+
+<style>
+    .compare-table tr:hover td {
+        background-color: rgba(0, 171, 85, 0.02);
+    }
+    .compare-table td {
+        transition: background-color 0.2s;
+    }
+</style>

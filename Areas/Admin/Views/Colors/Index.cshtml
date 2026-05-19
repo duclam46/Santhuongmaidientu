@@ -1,0 +1,183 @@
+@model IEnumerable<DOAN_BANHANG.Models.Color>
+
+@{
+    ViewData["Title"] = "Bảng màu Sản phẩm";
+}
+
+<style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.95);
+        --shadow-lux: 0 10px 40px rgba(0, 0, 0, 0.05);
+        --accent-primary: #556ee6;
+    }
+
+    .header-section {
+        background: #fff;
+        border-radius: 24px;
+        padding: 2.5rem;
+        margin-bottom: 2.5rem;
+        box-shadow: var(--shadow-lux);
+        border: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .color-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .color-card-premium {
+        background: #fff;
+        border-radius: 20px;
+        padding: 1.5rem;
+        border: 1px solid #f1f5f9;
+        box-shadow: var(--shadow-lux);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .color-card-premium:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        border-color: var(--accent-primary);
+    }
+
+    .color-sphere {
+        width: 64px;
+        height: 64px;
+        border-radius: 22px;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.1), 0 8px 20px rgba(0,0,0,0.1);
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .color-sphere::after {
+        content: '';
+        position: absolute;
+        top: 15%;
+        left: 15%;
+        width: 30%;
+        height: 30%;
+        background: rgba(255,255,255,0.3);
+        border-radius: 50%;
+        filter: blur(2px);
+    }
+
+    .color-info {
+        flex-grow: 1;
+    }
+
+    .color-name {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.1rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .color-code {
+        font-family: 'JetBrains Mono', monospace;
+        color: #64748b;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        display: block;
+    }
+
+    .actions-overlay {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        transition: all 0.2s;
+        color: #fff;
+    }
+
+    .btn-edit-lux { background: #556ee6; }
+    .btn-edit-lux:hover { background: #3b4cb8; transform: rotate(15deg); }
+
+    .btn-delete-lux { background: #f46a6a; }
+    .btn-delete-lux:hover { background: #d9534f; transform: rotate(-15deg); }
+
+    .btn-add-lux {
+        background: linear-gradient(135deg, #556ee6 0%, #3b82f6 100%);
+        color: #fff;
+        padding: 0.8rem 1.8rem;
+        border-radius: 16px;
+        font-weight: 600;
+        box-shadow: 0 10px 20px rgba(85, 110, 230, 0.2);
+        transition: all 0.3s;
+    }
+
+    .btn-add-lux:hover {
+        transform: scale(1.05);
+        color: #fff;
+        box-shadow: 0 15px 30px rgba(85, 110, 230, 0.3);
+    }
+</style>
+
+<div class="header-section">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bx bxs-palette text-primary me-2"></i>Bảng màu Hệ thống</h3>
+        <p class="text-muted mb-0">Quản lý các biến thể màu sắc tinh tế cho bộ sưu tập sản phẩm</p>
+    </div>
+    <a asp-action="Create" class="btn btn-add-lux">
+        <i class="bx bx-plus-circle me-1"></i> Thêm màu mới
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5 bg-white rounded-4 border border-dashed">
+        <i class="bx bx-paint-roll display-1 text-light mb-3"></i>
+        <h4 class="text-muted">Chưa có màu sắc nào</h4>
+        <p class="text-muted">Nhấp vào "Thêm màu mới" để bắt đầu định nghĩa bảng màu của bạn.</p>
+    </div>
+}
+else
+{
+    <div class="color-grid">
+        @foreach (var item in Model)
+        {
+            <div class="color-card-premium">
+                <div class="color-sphere" style="background-color: @(string.IsNullOrEmpty(item.Code) ? "#e2e8f0" : item.Code);"></div>
+                <div class="color-info">
+                    <div class="color-name">@item.Name</div>
+                    <span class="color-code">@(string.IsNullOrEmpty(item.Code) ? "N/A" : item.Code.ToUpper())</span>
+                </div>
+                <div class="actions-overlay">
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn-circle btn-edit-lux" title="Chỉnh sửa">
+                        <i class="bx bx-edit-alt"></i>
+                    </a>
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Xác nhận xóa màu này?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-circle btn-delete-lux" title="Xóa">
+                            <i class="bx bx-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<div class="alert alert-info border-0 shadow-sm rounded-4 d-flex align-items-center gap-3">
+    <i class="bx bx-info-circle fs-3"></i>
+    <div>
+        <strong>Mẹo nhỏ:</strong> Các màu sắc này sẽ xuất hiện trong trình chọn biến thể khi thêm mới hoặc chỉnh sửa sản phẩm. Hãy sử dụng mã màu HEX chuẩn xác để hiển thị đúng nhất trên giao diện người dùng.
+    </div>
+</div>

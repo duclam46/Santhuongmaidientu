@@ -1,0 +1,315 @@
+@using DOAN_BANHANG.ViewModels
+@model BlogPostEditVm
+
+@{
+    ViewData["Title"] = "Viết bài mới";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0 font-size-18">Viết bài mới</h4>
+
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a asp-action="Index">Blog</a></li>
+                    <li class="breadcrumb-item active">Viết bài</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form asp-action="Create" method="post" enctype="multipart/form-data" id="blogForm">
+    @Html.AntiForgeryToken()
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label">Tiêu đề bài viết</label>
+                        <input asp-for="Title" class="form-control" placeholder="Nhập tiêu đề..." required />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Summary" class="form-label">Tóm tắt ngắn</label>
+                        <textarea asp-for="Summary" class="form-control" rows="3" placeholder="Mô tả ngắn gọn nội dung bài viết..."></textarea>
+                        <span asp-validation-for="Summary" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Content" class="form-label">Nội dung chi tiết</label>
+                        <textarea asp-for="Content" id="editor"></textarea>
+                        <span asp-validation-for="Content" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="card-title mb-0">Thiết lập bài viết</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Status" class="form-label">Trạng thái</label>
+                        <select asp-for="Status" class="form-select">
+                            <option value="Draft">Bản nháp</option>
+                            <option value="Published">Xuất bản ngay</option>
+                            <option value="Hidden">Ẩn bài viết</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Ảnh bìa (Cover Image)</label>
+                        <div class="mb-2">
+                            <img id="imgPreview" src="/assets/images/no-image.png" class="img-thumbnail w-100" style="max-height: 200px; object-fit: cover;" alt="Preview" />
+                        </div>
+                        <input type="file" name="coverImage" id="fileInput" class="form-control" accept="image/*" />
+                        <div class="text-muted small mt-1">Nên dùng ảnh tỷ lệ 16:9, tối đa 2MB.</div>
+                    </div>
+
+                    <hr />
+
+                    <div class="mb-0">
+                        <label class="form-label d-flex justify-content-between">
+                            Sản phẩm liên kết
+                            <button type="button" class="btn btn-sm btn-soft-primary" data-bs-toggle="modal" data-bs-target="#productPickerModal">
+                                <i class="bx bx-plus"></i> Chọn SP
+                            </button>
+                        </label>
+                        <div id="selectedProductsList" class="mt-2 d-flex flex-column gap-2">
+                            <p class="text-muted small text-center py-3 border rounded dashed mb-0" id="noProductMsg">Chưa có sản phẩm nào được chọn.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary waves-effect waves-light">
+                            <i class="bx bx-save me-1"></i> Lưu bài viết
+                        </button>
+                        <a asp-action="Index" class="btn btn-light waves-effect">Hủy bỏ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Product Picker Modal -->
+<div class="modal fade" id="productPickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chọn sản phẩm liên kết</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="productSearchInput" class="form-control" placeholder="Tìm tên sản phẩm...">
+                    <button class="btn btn-primary" type="button" id="btnSearchProduct"><i class="bx bx-search"></i></button>
+                </div>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px;"></th>
+                                <th>Sản phẩm</th>
+                                <th>Giá</th>
+                                <th style="width: 100px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="productListBody">
+                            @foreach (var p in Model.AvailableProducts)
+                            {
+                                <tr>
+                                    <td>
+                                        <img src="@(p.ImageUrl ?? "/assets/images/no-image.png")" class="avatar-xs rounded" />
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium">@p.Name</div>
+                                    </td>
+                                    <td>@p.Price.ToString("N0")đ</td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-primary btn-add-product" 
+                                                data-id="@p.Id" data-name="@p.Name" data-img="@p.ImageUrl" data-price="@p.Price.ToString("N0")">
+                                            Chọn
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .ck-editor__editable_inline {
+            min-height: 400px;
+        }
+        .border.dashed {
+            border-style: dashed !important;
+        }
+        .selected-product-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border: 1px solid #eff2f7;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <%-- CKEditor 5 with image upload support --%>
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Initialize Editor with image support
+            ClassicEditor
+                .create(document.querySelector('#editor'), {
+                    toolbar: [
+                        'heading', '|',
+                        'bold', 'italic', 'underline', '|',
+                        'link', 'blockQuote', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'insertImage', '|',
+                        'undo', 'redo'
+                    ],
+                    image: {
+                        toolbar: ['imageTextAlternative', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side'],
+                        upload: { types: ['jpeg', 'png', 'gif', 'webp'] }
+                    },
+                    plugins: ClassicEditor.builtinPlugins,
+                    language: 'vi'
+                })
+                .then(editor => {
+                    window.blogEditor = editor;
+                    console.log('Editor ready with image support');
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+
+            // Preview Image
+            const fileInput = document.getElementById('fileInput');
+            const imgPreview = document.getElementById('imgPreview');
+            if(fileInput) {
+                fileInput.addEventListener('change', function() {
+                    const file = this.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            imgPreview.src = e.target.result;
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            // Product Selection Logic
+            const selectedList = document.getElementById('selectedProductsList');
+            const noMsg = document.getElementById('noProductMsg');
+            const blogForm = document.getElementById('blogForm');
+
+            function addProductToSelected(id, name, img, price) {
+                // Check if exists
+                if (selectedList.querySelector(`[data-pid="${id}"]`)) return;
+
+                noMsg.classList.add('d-none');
+                
+                const item = document.createElement('div');
+                item.className = 'selected-product-item';
+                item.setAttribute('data-pid', id);
+                item.innerHTML = `
+                    <input type="hidden" name="SelectedProductIds" value="${id}" />
+                    <img src="${img || '/assets/images/no-image.png'}" class="avatar-xs rounded" />
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="text-truncate fw-medium font-size-13">${name}</div>
+                        <div class="text-muted small">${price}đ</div>
+                    </div>
+                    <button type="button" class="btn btn-sm text-danger btn-remove-product"><i class="bx bx-x"></i></button>
+                `;
+                
+                selectedList.appendChild(item);
+                
+                // Attach remove event
+                item.querySelector('.btn-remove-product').addEventListener('click', function() {
+                    item.remove();
+                    if (selectedList.querySelectorAll('.selected-product-item').length === 0) {
+                        noMsg.classList.remove('d-none');
+                    }
+                });
+            }
+
+            // Delegate add buttons
+            document.querySelectorAll('.btn-add-product').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const d = this.dataset;
+                    addProductToSelected(d.id, d.name, d.img, d.price);
+                    // Optional: bootstrap.Modal.getInstance(document.getElementById('productPickerModal')).hide();
+                });
+            });
+
+            // Product Search API
+            const searchInput = document.getElementById('productSearchInput');
+            const searchBtn = document.getElementById('btnSearchProduct');
+            const productListBody = document.getElementById('productListBody');
+
+            async function performSearch() {
+                const q = searchInput.value.trim();
+                searchBtn.disabled = true;
+                searchBtn.innerHTML = '<i class="bx bx-loader bx-spin"></i>';
+
+                try {
+                    const response = await fetch(`/Admin/Blog/SearchProducts?q=${encodeURIComponent(q)}`);
+                    const data = await response.json();
+
+                    productListBody.innerHTML = '';
+                    if (data.length === 0) {
+                        productListBody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Không tìm thấy sản phẩm.</td></tr>';
+                    } else {
+                        data.forEach(p => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td><img src="${p.imageUrl || '/assets/images/no-image.png'}" class="avatar-xs rounded" /></td>
+                                <td><div class="fw-medium">${p.name}</div></td>
+                                <td>${new Intl.NumberFormat('vi-VN').format(p.price)}đ</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-add-product-ajax" 
+                                            data-id="${p.id}" data-name="${p.name}" data-img="${p.imageUrl}" data-price="${new Intl.NumberFormat('vi-VN').format(p.price)}">
+                                        Chọn
+                                    </button>
+                                </td>
+                            `;
+                            productListBody.appendChild(tr);
+                            
+                            tr.querySelector('.btn-add-product-ajax').addEventListener('click', function() {
+                                const d = this.dataset;
+                                addProductToSelected(d.id, d.name, d.img, d.price);
+                            });
+                        });
+                    }
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    searchBtn.disabled = false;
+                    searchBtn.innerHTML = '<i class="bx bx-search"></i>';
+                }
+            }
+
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') { e.preventDefault(); performSearch(); } });
+        });
+    </script>
+}

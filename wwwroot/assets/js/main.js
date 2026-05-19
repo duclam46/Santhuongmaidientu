@@ -290,9 +290,10 @@
     try {
       const params = new URLSearchParams(window.location.search || "");
       const authError = params.get("authError");
-      if (!authError) return;
-
       const authPopup = params.get("authPopup");
+
+      if (!authError && !authPopup) return;
+
       if (authPopup === "login") {
         isAnythingOpen();
         showSidebar(".login-page-sidebar");
@@ -301,20 +302,22 @@
         showSidebar(".register-page-sidebar");
       }
 
-      let message = "Xác thực thất bại. Vui lòng thử lại.";
-      if (authError.startsWith("provider_not_configured:")) {
-        const provider = authError.split(":")[1] || "Google";
-        message = `Chưa cấu hình đăng nhập ${provider}. Vui lòng cấu hình ClientId/ClientSecret.`;
-      } else if (authError === "external_login_failed") {
-        message = "Đăng nhập Google thất bại. Vui lòng thử lại.";
-      }
+      if (authError) {
+        let message = "Xác thực thất bại. Vui lòng thử lại.";
+        if (authError.startsWith("provider_not_configured:")) {
+          const provider = authError.split(":")[1] || "Google";
+          message = `Chưa cấu hình đăng nhập ${provider}. Vui lòng cấu hình ClientId/ClientSecret.`;
+        } else if (authError === "external_login_failed") {
+          message = "Đăng nhập Google thất bại. Vui lòng thử lại.";
+        }
 
-      const $loginScope = $(".login-form form");
-      const $registerScope = $(".register-form form");
-      if ($loginScope.length) {
-        showAuthError($loginScope, message);
-      } else if ($registerScope.length) {
-        showAuthError($registerScope, message);
+        const $loginScope = $(".login-form form");
+        const $registerScope = $(".register-form form");
+        if ($loginScope.length) {
+          showAuthError($loginScope, message);
+        } else if ($registerScope.length) {
+          showAuthError($registerScope, message);
+        }
       }
 
       params.delete("authError");
@@ -360,7 +363,13 @@
 
       const result = await postJson("/auth/login", { email, password });
       if (result.ok) {
-        window.location.reload();
+        const params = new URLSearchParams(window.location.search || "");
+        const returnUrl = params.get("returnUrl");
+        if (returnUrl && returnUrl.startsWith("/")) {
+          window.location.href = returnUrl;
+        } else {
+          window.location.reload();
+        }
         return;
       }
       showAuthError($scope, (result.data && result.data.message) || "Đăng nhập thất bại.");
@@ -394,24 +403,20 @@
         confirmPassword,
       });
       if (result.ok) {
-        window.location.reload();
+        const params = new URLSearchParams(window.location.search || "");
+        const returnUrl = params.get("returnUrl");
+        if (returnUrl && returnUrl.startsWith("/")) {
+          window.location.href = returnUrl;
+        } else {
+          window.location.reload();
+        }
         return;
       }
       showAuthError($scope, (result.data && result.data.message) || "Đăng ký thất bại.");
     });
   }
 
-  // Logout
-  const $logoutBtn = $(".logout-btn");
-  if ($logoutBtn.length) {
-    $logoutBtn.on("click.sellzy", async function (e) {
-      e.preventDefault();
-      const result = await postJson("/auth/logout", {});
-      if (result.ok) {
-        window.location.reload();
-      }
-    });
-  }
+  // Logout handler removed to allow direct redirection via <a> tag in layout.
 
   // External login (Google)
   const $externalLoginBtn = $(".external-login-btn");
@@ -582,8 +587,17 @@
   async function cartFetchJson(url, options) {
     const res = await fetch(url, options);
     if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text || `Request failed: ${res.status}`);
+      let errMsg = `Request failed: ${res.status}`;
+      try {
+        const data = await res.json();
+        errMsg = data.message || errMsg;
+      } catch (e) {
+        try {
+          const text = await res.text();
+          if (text) errMsg = text;
+        } catch (ex) {}
+      }
+      throw new Error(errMsg);
     }
     return await res.json();
   }
@@ -869,6 +883,14 @@
     const qty = qtyInput ? parseInt(qtyInput.value || "1", 10) : 1;
     const quantity = Number.isFinite(qty) && qty > 0 ? qty : 1;
 
+    if (qtyInput) {
+      const maxVal = parseInt(qtyInput.getAttribute("max") || "", 10);
+      if (Number.isFinite(maxVal) && quantity > maxVal) {
+        alert("Số lượng yêu cầu vượt quá số lượng tồn kho (" + maxVal + " sản phẩm)!");
+        return;
+      }
+    }
+
     try {
       btn.setAttribute("disabled", "disabled");
       await cartFetchJson("/cart/add", {
@@ -881,8 +903,7 @@
       isAnythingOpen();
       showSidebar(".cart-sidebar");
     } catch (err) {
-      // Keep silent like the template; failure shouldn't break the page.
-      // console.warn(err);
+      alert(err.message || "Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng.");
     } finally {
       btn.removeAttribute("disabled");
     }
@@ -902,9 +923,36 @@
     const qty = qtyInput ? parseInt(qtyInput.value || "1", 10) : 1;
     const quantity = Number.isFinite(qty) && qty > 0 ? qty : 1;
 
+    if (qtyInput) {
+      const maxVal = parseInt(qtyInput.getAttribute("max") || "", 10);
+      if (Number.isFinite(maxVal) && quantity > maxVal) {
+        alert("Số lượng yêu cầu vượt quá số lượng tồn kho (" + maxVal + " sản phẩm)!");
+        return;
+      }
+    }
+
     btn.setAttribute("disabled", "disabled");
-    const q = Number.isFinite(quantity) && quantity > 0 ? Math.min(99, quantity) : 1;
-    window.location.href = `/checkout?variantId=${encodeURIComponent(String(variantId))}&quantity=${encodeURIComponent(String(q))}`;
+    try {
+      // Add to cart first to ensure it's in the cart and stock validated
+      await cartFetchJson("/cart/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variantId, quantity }),
+      });
+
+      // Select ONLY this variant for checkout to have a seamless Buy Now experience
+      await cartFetchJson("/cart/select-only", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variantId }),
+      });
+
+      window.location.href = "/checkout";
+    } catch (err) {
+      alert(err.message || "Có lỗi xảy ra khi thực hiện mua ngay.");
+    } finally {
+      btn.removeAttribute("disabled");
+    }
   });
 
   /*------ Wishlist: Toggle + UI ------*/
@@ -1043,6 +1091,20 @@
     if (params && params.addressId && params.addressId > 0) url.searchParams.set("addressId", String(params.addressId));
     if (params && params.variantId && params.variantId > 0) url.searchParams.set("variantId", String(params.variantId));
     if (params && params.quantity && params.quantity > 0) url.searchParams.set("quantity", String(params.quantity));
+
+    // Preserve currently selected vouchers when recalculating summary.
+    try {
+      const cur = new URL(window.location.href);
+      const voucherCode = cur.searchParams.get("voucherCode");
+      const shippingVoucherCode = cur.searchParams.get("shippingVoucherCode");
+      const discountVoucherCode = cur.searchParams.get("discountVoucherCode");
+      if (voucherCode) url.searchParams.set("voucherCode", voucherCode);
+      if (shippingVoucherCode) url.searchParams.set("shippingVoucherCode", shippingVoucherCode);
+      if (discountVoucherCode) url.searchParams.set("discountVoucherCode", discountVoucherCode);
+    } catch {
+      // ignore
+    }
+
     return await cartFetchJson(url.pathname + url.search, { method: "GET" });
   }
 
@@ -1065,9 +1127,35 @@
 
     const subtotalEl = page.querySelector("[data-checkout-subtotal]");
     const shippingEl = page.querySelector("[data-checkout-shipping]");
+    const shippingDiscountEl = page.querySelector("[data-checkout-shipping-discount]");
+    const shippingDiscountSignEl = page.querySelector("[data-checkout-shipping-discount-sign]");
+    const shippingDiscountValueEl = page.querySelector("[data-checkout-shipping-discount-value]");
+    const discountVoucherEl = page.querySelector("[data-checkout-discount-voucher]");
+    const discountVoucherSignEl = page.querySelector("[data-checkout-discount-voucher-sign]");
+    const discountVoucherValueEl = page.querySelector("[data-checkout-discount-voucher-value]");
+    const vatEl = page.querySelector("[data-checkout-vat]");
     const totalEl = page.querySelector("[data-checkout-total]");
     if (subtotalEl) subtotalEl.textContent = formatVndD(Number(data && data.selectedSubTotal) || 0);
     if (shippingEl) shippingEl.textContent = formatVndD(Number(data && data.shippingFee) || 0);
+    if (vatEl) vatEl.textContent = formatVndD(Number(data && data.vatAmount) || 0);
+
+    const shipDisc = Number(data && data.shippingVoucherDiscountAmount) || 0;
+    const discDisc = Number(data && data.discountVoucherDiscountAmount) || 0;
+
+    if (shippingDiscountEl) shippingDiscountEl.textContent = formatVndD(shipDisc);
+    if (shippingDiscountSignEl) shippingDiscountSignEl.textContent = shipDisc > 0 ? "-" : "";
+    if (shippingDiscountValueEl) {
+      shippingDiscountValueEl.classList.toggle("text-green-600", shipDisc > 0);
+      shippingDiscountValueEl.classList.toggle("text-light-primary-text", !(shipDisc > 0));
+    }
+
+    if (discountVoucherEl) discountVoucherEl.textContent = formatVndD(discDisc);
+    if (discountVoucherSignEl) discountVoucherSignEl.textContent = discDisc > 0 ? "-" : "";
+    if (discountVoucherValueEl) {
+      discountVoucherValueEl.classList.toggle("text-green-600", discDisc > 0);
+      discountVoucherValueEl.classList.toggle("text-light-primary-text", !(discDisc > 0));
+    }
+
     if (totalEl) totalEl.textContent = formatVndD(Number(data && data.finalAmount) || 0);
 
     const items = Array.isArray(data && data.items) ? data.items : [];
@@ -1165,7 +1253,8 @@
       const summary = await fetchCheckoutSummary({ addressId });
       applyCheckoutSummaryToDom(summary);
     } catch (err) {
-      // silent
+      input.value = String(safeCur);
+      alert(err.message || "Có lỗi xảy ra khi cập nhật số lượng.");
     } finally {
       rowButtons.forEach((b) => b.removeAttribute("disabled"));
     }
@@ -1686,13 +1775,38 @@
 
     const raw = $input.val();
     const current = Math.max(1, parseInt(String(raw || "1"), 10) || 1);
-    const next = action === "dec" ? Math.max(1, current - 1) : current + 1;
-    $input.val(String(next));
+    const maxVal = parseInt($input.attr("max") || "", 10);
+
+    if (action === "dec") {
+      const minVal = parseInt($input.attr("min"), 10);
+      const minLimit = Number.isFinite(minVal) ? minVal : 1;
+      const next = Math.max(minLimit, current - 1);
+      $input.val(String(next));
+    } else {
+      if (Number.isFinite(maxVal)) {
+        if (current >= maxVal) {
+          alert("Số lượng yêu cầu đạt giới hạn tồn kho tối đa (" + maxVal + " sản phẩm)!");
+          $input.val(String(maxVal));
+          return;
+        }
+        $input.val(String(current + 1));
+      } else {
+        $input.val(String(current + 1));
+      }
+    }
   });
 
   $doc.on("change.sellzy blur.sellzy", ".quantity-input", function () {
     const raw = $(this).val();
-    const current = Math.max(1, parseInt(String(raw || "1"), 10) || 1);
+    const maxVal = parseInt($(this).attr("max") || "", 10);
+    const minVal = parseInt($(this).attr("min"), 10);
+    const minLimit = Number.isFinite(minVal) ? minVal : 1;
+    let current = Math.max(minLimit, parseInt(String(raw || "1"), 10) || 1);
+
+    if (Number.isFinite(maxVal) && current > maxVal) {
+      alert("Số lượng yêu cầu vượt quá số lượng tồn kho (" + maxVal + " sản phẩm)!");
+      current = maxVal;
+    }
     $(this).val(String(current));
   });
 

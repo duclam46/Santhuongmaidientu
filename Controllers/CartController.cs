@@ -89,13 +89,12 @@ public class CartController : Controller
 
         var quantity = NormalizeQuantity(req.Quantity);
 
-        var variantExists = await _context.ProductVariants
-            .AsNoTracking()
-            .AnyAsync(v => v.Id == req.VariantId && v.IsActive && !v.IsDeleted, cancellationToken);
+        var variant = await _context.ProductVariants
+            .FirstOrDefaultAsync(v => v.Id == req.VariantId && v.IsActive && !v.IsDeleted, cancellationToken);
 
-        if (!variantExists)
+        if (variant is null)
         {
-            return NotFound(new { message = "Variant not found" });
+            return NotFound(new { message = "Sản phẩm không tìm thấy hoặc đã ngừng kinh doanh." });
         }
 
         var accountId = GetSignedInAccountId();
@@ -103,7 +102,12 @@ public class CartController : Controller
         {
             var sessionCart = GetSessionCart();
             sessionCart.TryGetValue(req.VariantId, out var existingQty);
-            sessionCart[req.VariantId] = existingQty + quantity;
+            var targetQty = existingQty + quantity;
+            if (targetQty > variant.StockQuantity)
+            {
+                return BadRequest(new { message = $"Số lượng yêu cầu vượt quá tồn kho (chỉ còn {variant.StockQuantity} sản phẩm trong kho)" });
+            }
+            sessionCart[req.VariantId] = targetQty;
             SaveSessionCart(sessionCart);
 
             var itemCount = sessionCart.Values.Sum();
@@ -115,6 +119,13 @@ public class CartController : Controller
 
         var item = await _context.CartItems
             .FirstOrDefaultAsync(i => i.CartId == cart.Id && i.VariantId == req.VariantId, cancellationToken);
+
+        var currentQty = item?.Quantity ?? 0;
+        var newQty = currentQty + quantity;
+        if (newQty > variant.StockQuantity)
+        {
+            return BadRequest(new { message = $"Số lượng yêu cầu vượt quá tồn kho (chỉ còn {variant.StockQuantity} sản phẩm trong kho)" });
+        }
 
         if (item is null)
         {
@@ -130,7 +141,7 @@ public class CartController : Controller
         }
         else
         {
-            item.Quantity += quantity;
+            item.Quantity = newQty;
             item.UpdatedAt = nowUtc;
         }
 
@@ -159,11 +170,24 @@ public class CartController : Controller
         var accountId = GetSignedInAccountId();
         if (!accountId.HasValue)
         {
-            // For guest carts, CartItemId is treated as VariantId.
             var sessionCart = GetSessionCart();
             if (!sessionCart.ContainsKey(req.CartItemId))
             {
-                return NotFound(new { message = "Cart item not found" });
+                return NotFound(new { message = "Không tìm thấy sản phẩm trong giỏ." });
+            }
+
+            var variant = await _context.ProductVariants
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.Id == req.CartItemId && v.IsActive && !v.IsDeleted, cancellationToken);
+
+            if (variant is null)
+            {
+                return NotFound(new { message = "Sản phẩm không tồn tại." });
+            }
+
+            if (quantity > variant.StockQuantity)
+            {
+                return BadRequest(new { message = $"Số lượng yêu cầu vượt quá tồn kho (chỉ còn {variant.StockQuantity} sản phẩm trong kho)" });
             }
 
             if (quantity <= 0)
@@ -182,11 +206,22 @@ public class CartController : Controller
         var cart = await GetOrCreateCartAsync(accountId.Value, cancellationToken);
 
         var item = await _context.CartItems
+            .Include(i => i.Variant)
             .FirstOrDefaultAsync(i => i.Id == req.CartItemId && i.CartId == cart.Id, cancellationToken);
 
         if (item is null)
         {
             return NotFound(new { message = "Cart item not found" });
+        }
+
+        if (item.Variant is null)
+        {
+            return NotFound(new { message = "Variant not found" });
+        }
+
+        if (quantity > item.Variant.StockQuantity)
+        {
+            return BadRequest(new { message = $"Số lượng yêu cầu vượt quá tồn kho (chỉ còn {item.Variant.StockQuantity} sản phẩm trong kho)" });
         }
 
         var nowUtc = DateTime.UtcNow;
@@ -347,7 +382,7 @@ public class CartController : Controller
     [HttpGet("items")]
     public async Task<IActionResult> Items(CancellationToken cancellationToken)
     {
-        var nowUtc = DateTime.UtcNow;
+        var nowLocal = DateTime.Now;
 
         var selection = GetCartSelectionState();
 
@@ -375,8 +410,8 @@ public class CartController : Controller
                 if (!sessionCart.TryGetValue(v.Id, out var qty)) continue;
 
                 var inSaleWindow = v.SalePrice.HasValue
-                    && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                    && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc);
+                    && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                    && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal);
                 var price = inSaleWindow ? v.SalePrice!.Value : v.Price;
 
                 var imageUrl = v.Images
@@ -459,8 +494,8 @@ public class CartController : Controller
             if (v is not null)
             {
                 var inSaleWindow = v.SalePrice.HasValue
-                    && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                    && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc);
+                    && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                    && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal);
 
                 price = inSaleWindow ? v.SalePrice!.Value : v.Price;
             }
@@ -517,7 +552,7 @@ public class CartController : Controller
     public async Task<IActionResult> Suggestions(int count = 6, CancellationToken cancellationToken = default)
     {
         var take = count <= 0 ? 6 : Math.Clamp(count, 1, 12);
-        var nowUtc = DateTime.UtcNow;
+        var nowLocal = DateTime.Now;
 
         var inCartProductIds = new HashSet<int>();
         var cartCategoryIds = new HashSet<int>();
@@ -594,8 +629,8 @@ public class CartController : Controller
                     Price = p.Variants
                         .Where(v => v.IsActive && !v.IsDeleted)
                         .Select(v => (decimal?)((v.SalePrice.HasValue
-                                && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                                && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc))
+                                && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                                && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
                             ? v.SalePrice.Value
                             : v.Price))
                         .Min() ?? 0m,
@@ -603,8 +638,8 @@ public class CartController : Controller
                         .Where(v => v.IsActive
                             && !v.IsDeleted
                             && v.SalePrice.HasValue
-                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowUtc)
-                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowUtc)
+                            && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
+                            && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal)
                             && v.SalePrice.Value < v.Price)
                         .Select(v => (decimal?)v.Price)
                         .Min()

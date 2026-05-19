@@ -7,11 +7,13 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DOAN_BANHANG.Areas.Admin.Controllers;
 
 [Area("Admin")]
 [Route("Admin/[controller]/[action]")]
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "Shop")]
 public class OrdersController : Controller
 {
     private readonly DataContext _db;
@@ -53,7 +55,7 @@ public class OrdersController : Controller
 
     private IQueryable<Order> ScopedOrders(int? accountId, string? role)
     {
-        var q = _db.Orders.AsQueryable();
+        var q = _db.Orders.Where(o => !(o.PaymentMethod == "BankTransfer" && o.PaymentStatus == "AwaitingPayment"));
 
         // Admin area should not leak data to anonymous users.
         if (!accountId.HasValue || accountId.Value <= 0)

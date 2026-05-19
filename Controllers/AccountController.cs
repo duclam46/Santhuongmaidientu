@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using DOAN_BANHANG.Helpers;
 
 namespace DOAN_BANHANG.Controllers;
 
@@ -23,15 +24,17 @@ public class AccountController : Controller
     private readonly IWebHostEnvironment _env;
     private readonly GhnClient _ghn;
     private readonly GhnOptions _ghnOptions;
+    private readonly WalletService _walletService;
 
     [ActivatorUtilitiesConstructor]
-    public AccountController(DataContext db, IPasswordHasher<Account> passwordHasher, IWebHostEnvironment env, GhnClient ghn, IOptions<GhnOptions> ghnOptions)
+    public AccountController(DataContext db, IPasswordHasher<Account> passwordHasher, IWebHostEnvironment env, GhnClient ghn, IOptions<GhnOptions> ghnOptions, WalletService walletService)
     {
         _db = db;
         _passwordHasher = passwordHasher;
         _env = env;
         _ghn = ghn;
         _ghnOptions = ghnOptions.Value;
+        _walletService = walletService;
     }
 
     private static UserAddress? PickBestSenderAddress(IEnumerable<UserAddress> addrs)
@@ -45,6 +48,30 @@ public class AccountController : Controller
     {
         if (string.IsNullOrWhiteSpace(note)) return note;
 
+        // Hide simulator metadata from customer UI.
+        // Format: SIM|i=3|e=arrive - <human note>
+        if (note.TrimStart().StartsWith("SIM|", StringComparison.OrdinalIgnoreCase))
+        {
+            var separators = new[] { " - ", " – ", " — " }; // hyphen, en dash, em dash
+            var splitIdx = -1;
+            var sepLen = 0;
+            foreach (var sep in separators)
+            {
+                var i = note.IndexOf(sep, StringComparison.Ordinal);
+                if (i >= 0)
+                {
+                    splitIdx = i;
+                    sepLen = sep.Length;
+                    break;
+                }
+            }
+
+            if (splitIdx >= 0 && splitIdx + sepLen < note.Length)
+            {
+                note = note[(splitIdx + sepLen)..].Trim();
+            }
+        }
+
         // Remove seller-internal pickup shift info from customer UI.
         const string marker = "Ca lấy:";
         var idx = note.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
@@ -54,6 +81,85 @@ public class AccountController : Controller
         var left = note[..idx].TrimEnd();
         if (left.EndsWith(".", StringComparison.Ordinal)) left = left[..^1].TrimEnd();
         return string.IsNullOrWhiteSpace(left) ? null : left;
+    }
+
+    private static string ResolveEffectiveOrderStatus(string? rawOrderStatus, bool hasSimPickupDepart)
+    {
+        var s = (rawOrderStatus ?? string.Empty).Trim();
+        var norm = s.Replace(" ", string.Empty).ToLowerInvariant();
+
+        // Never override terminal / final states.
+        var isTerminal = norm is (
+            "cancelled" or "canceled" or "cancel" or "đãhủy" or "dahuy" or
+            "returned" or "return" or "refund" or "returnrequest" or "returning" or "trahang" or "trảhàng" or
+            "completed" or "success" or "hoàntất" or "hoantat" or
+            "delivered" or "deliverysuccess" or "dagiao" or "đãgiao");
+
+        if (isTerminal) return rawOrderStatus ?? string.Empty;
+
+        // If simulator indicates pickup depart, treat as in-transit.
+        if (hasSimPickupDepart) return "Shipping";
+
+        return rawOrderStatus ?? string.Empty;
+    }
+
+    private static bool TryExtractSimShipper(string? note, out string? shipperName, out string? shipperPhone)
+    {
+        shipperName = null;
+        shipperPhone = null;
+
+        if (string.IsNullOrWhiteSpace(note)) return false;
+
+        // Head: SIM|i=...|e=...|shipper=...|phone=...
+        var separators = new[] { " - ", " – ", " — " }; // hyphen, en dash, em dash
+        var splitIdx = -1;
+        foreach (var sep in separators)
+        {
+            var i = note.IndexOf(sep, StringComparison.Ordinal);
+            if (i >= 0)
+            {
+                splitIdx = i;
+                break;
+            }
+        }
+
+        var head = (splitIdx >= 0 ? note[..splitIdx] : note).Trim();
+        if (!head.StartsWith("SIM|", StringComparison.OrdinalIgnoreCase)) return false;
+
+        var parts = head.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length < 2) return false;
+
+        foreach (var part in parts)
+        {
+            if (part.Equals("SIM", StringComparison.OrdinalIgnoreCase)) continue;
+            var eq = part.IndexOf('=');
+            if (eq <= 0) continue;
+
+            var key = part[..eq].Trim();
+            var valRaw = part[(eq + 1)..].Trim();
+            if (string.IsNullOrWhiteSpace(valRaw)) continue;
+
+            string val;
+            try
+            {
+                val = Uri.UnescapeDataString(valRaw);
+            }
+            catch
+            {
+                val = valRaw;
+            }
+
+            if (key.Equals("shipper", StringComparison.OrdinalIgnoreCase))
+            {
+                shipperName = val;
+            }
+            else if (key.Equals("phone", StringComparison.OrdinalIgnoreCase))
+            {
+                shipperPhone = val;
+            }
+        }
+
+        return !string.IsNullOrWhiteSpace(shipperName) || !string.IsNullOrWhiteSpace(shipperPhone);
     }
 
     [HttpGet]
@@ -70,6 +176,9 @@ public class AccountController : Controller
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return View(new MyAccountPageVm { IsSignedIn = false });
         }
+
+        // Auto-cancel any expired bank transfer orders for this customer first
+        await CancelExpiredOrdersForCustomerAsync(accountId, cancellationToken);
 
         var account = await _db.Accounts
             .Include(a => a.Profile)
@@ -97,14 +206,59 @@ public class AccountController : Controller
             {
                 Id = o.Id,
                 OrderCode = o.OrderCode,
-                OrderStatus = o.OrderStatus,
+                OrderStatus = ResolveEffectiveOrderStatus(
+                    o.OrderStatus,
+                    _db.OrderTrackingLogs.Any(l => l.OrderId == o.Id
+                        && l.Note != null
+                        && (EF.Functions.Like(l.Note, "SIM|i=1|e=depart%")
+                            || EF.Functions.Like(l.Note, "SIM|i=1|e=leave%")))),
                 PaymentStatus = o.PaymentStatus,
+                PaymentMethod = o.PaymentMethod,
+                PaymentDeadlineUtc = o.CreatedAt.AddMinutes(15),
                 FinalAmount = o.FinalAmount,
                 ShippingFee = o.ShippingFee,
                 ItemCount = o.Items.Count,
-                CreatedAt = o.CreatedAt
+                FirstProductSlug = o.Items.OrderBy(i => i.Id).Select(i => i.Variant!.Product!.Slug).FirstOrDefault() ?? string.Empty,
+                CreatedAt = o.CreatedAt,
+                UpdatedAt = o.UpdatedAt,
+                HasReviewed = _db.ProductReviews.Any(r => r.AccountId == o.CustomerId
+                    && o.Items.Any(i => i.Variant != null && i.Variant.ProductId == r.ProductId)),
+                FirstProductId = o.Items.OrderBy(i => i.Id).Select(i => i.Variant != null ? i.Variant.ProductId : 0).FirstOrDefault(),
+                FirstProductName = o.Items.OrderBy(i => i.Id).Select(i => i.ProductName).FirstOrDefault() ?? string.Empty,
+                FirstProductImageUrl = string.Empty,
+                FirstProductVariantName = o.Items.OrderBy(i => i.Id).Select(i => i.ColorName != null ? i.ColorName + (i.SizeName != null ? " - " + i.SizeName : "") : i.SizeName ?? string.Empty).FirstOrDefault(),
+                IsReceivedByCustomer = _db.OrderTrackingLogs.Any(l => l.OrderId == o.Id && l.Note == "Khách hàng xác nhận đã nhận hàng")
             })
             .ToListAsync(cancellationToken);
+
+        // Post-process FirstProductImageUrl in memory to avoid complex SQL translation on subquery collections
+        var firstProductIds = orders.Select(o => o.FirstProductId).Where(id => id > 0).Distinct().ToList();
+        if (firstProductIds.Count > 0)
+        {
+            var productImages = await _db.ProductImages
+                .AsNoTracking()
+                .Where(img => firstProductIds.Contains(img.ProductId))
+                .OrderByDescending(img => img.IsPrimary)
+                .ThenBy(img => img.Id)
+                .Select(img => new { img.ProductId, img.ImageUrl })
+                .ToListAsync(cancellationToken);
+
+            var productImageUrlMap = productImages
+                .GroupBy(img => img.ProductId)
+                .ToDictionary(g => g.Key, g => g.First().ImageUrl);
+
+            foreach (var order in orders)
+            {
+                if (productImageUrlMap.TryGetValue(order.FirstProductId, out var imageUrl))
+                {
+                    order.FirstProductImageUrl = imageUrl;
+                }
+                else
+                {
+                    order.FirstProductImageUrl = "/assets/images/placeholder.png";
+                }
+            }
+        }
 
         const int reviewsPageSize = 5;
         var effectiveReviewsPage = Math.Max(1, reviewsPage ?? 1);
@@ -201,6 +355,9 @@ public class AccountController : Controller
             return View("Orders", new MyAccountPageVm { IsSignedIn = false });
         }
 
+        // Auto-cancel any expired bank transfer orders for this customer first
+        await CancelExpiredOrdersForCustomerAsync(accountId, cancellationToken);
+
         var account = await _db.Accounts
             .Include(a => a.Profile)
             .AsNoTracking()
@@ -220,14 +377,59 @@ public class AccountController : Controller
             {
                 Id = o.Id,
                 OrderCode = o.OrderCode,
-                OrderStatus = o.OrderStatus,
+                OrderStatus = ResolveEffectiveOrderStatus(
+                    o.OrderStatus,
+                    _db.OrderTrackingLogs.Any(l => l.OrderId == o.Id
+                        && l.Note != null
+                        && (EF.Functions.Like(l.Note, "SIM|i=1|e=depart%")
+                            || EF.Functions.Like(l.Note, "SIM|i=1|e=leave%")))),
                 PaymentStatus = o.PaymentStatus,
+                PaymentMethod = o.PaymentMethod,
+                PaymentDeadlineUtc = o.CreatedAt.AddMinutes(15),
                 FinalAmount = o.FinalAmount,
                 ShippingFee = o.ShippingFee,
                 ItemCount = o.Items.Count,
-                CreatedAt = o.CreatedAt
+                FirstProductSlug = o.Items.OrderBy(i => i.Id).Select(i => i.Variant!.Product!.Slug).FirstOrDefault() ?? string.Empty,
+                CreatedAt = o.CreatedAt,
+                UpdatedAt = o.UpdatedAt,
+                HasReviewed = _db.ProductReviews.Any(r => r.AccountId == o.CustomerId
+                    && o.Items.Any(i => i.Variant != null && i.Variant.ProductId == r.ProductId)),
+                FirstProductId = o.Items.OrderBy(i => i.Id).Select(i => i.Variant != null ? i.Variant.ProductId : 0).FirstOrDefault(),
+                FirstProductName = o.Items.OrderBy(i => i.Id).Select(i => i.ProductName).FirstOrDefault() ?? string.Empty,
+                FirstProductImageUrl = string.Empty,
+                FirstProductVariantName = o.Items.OrderBy(i => i.Id).Select(i => i.ColorName != null ? i.ColorName + (i.SizeName != null ? " - " + i.SizeName : "") : i.SizeName ?? string.Empty).FirstOrDefault(),
+                IsReceivedByCustomer = _db.OrderTrackingLogs.Any(l => l.OrderId == o.Id && l.Note == "Khách hàng xác nhận đã nhận hàng")
             })
             .ToListAsync(cancellationToken);
+
+        // Post-process FirstProductImageUrl in memory to avoid complex SQL translation on subquery collections
+        var firstProductIds = orders.Select(o => o.FirstProductId).Where(id => id > 0).Distinct().ToList();
+        if (firstProductIds.Count > 0)
+        {
+            var productImages = await _db.ProductImages
+                .AsNoTracking()
+                .Where(img => firstProductIds.Contains(img.ProductId))
+                .OrderByDescending(img => img.IsPrimary)
+                .ThenBy(img => img.Id)
+                .Select(img => new { img.ProductId, img.ImageUrl })
+                .ToListAsync(cancellationToken);
+
+            var productImageUrlMap = productImages
+                .GroupBy(img => img.ProductId)
+                .ToDictionary(g => g.Key, g => g.First().ImageUrl);
+
+            foreach (var order in orders)
+            {
+                if (productImageUrlMap.TryGetValue(order.FirstProductId, out var imageUrl))
+                {
+                    order.FirstProductImageUrl = imageUrl;
+                }
+                else
+                {
+                    order.FirstProductImageUrl = "/assets/images/placeholder.png";
+                }
+            }
+        }
 
         var vm = new MyAccountVm
         {
@@ -334,19 +536,244 @@ public class AccountController : Controller
         }
 
         order.OrderStatus = "Cancelled";
+        if (order.PaymentStatus == "AwaitingPayment")
+        {
+            order.PaymentStatus = "Expired";
+        }
         order.UpdatedAt = DateTime.UtcNow;
 
         _db.OrderTrackingLogs.Add(new OrderTrackingLog
         {
             OrderId = order.Id,
             Status = order.OrderStatus,
-            Note = "Người mua hủy đơn hàng",
+            Note = "Ng\u01b0\u1eddi mua h\u1ee7y \u0111\u01a1n h\u00e0ng",
             CreatedAt = DateTime.UtcNow
         });
 
         await _db.SaveChangesAsync(cancellationToken);
-        TempData["AccountSuccess"] = "Đã hủy đơn hàng.";
+
+        // Hoàn tiền ví linh hoạt theo phương thức thanh toán bổ trợ
+        bool isWalletRefunded = false;
+        decimal refundAmount = 0m;
+
+        if (order.PaymentMethod == "Wallet" && order.PaymentStatus == "Paid" && order.FinalAmount > 0)
+        {
+            refundAmount = order.FinalAmount;
+            isWalletRefunded = true;
+        }
+        else if (order.PaymentMethod == "WalletVNPay" && order.PaymentStatus == "Paid" && order.FinalAmount > 0)
+        {
+            // Trả qua VNPay xong rồi + Ví => Hoàn tổng số tiền về ví
+            refundAmount = order.FinalAmount;
+            isWalletRefunded = true;
+        }
+        else if (order.PaymentMethod == "WalletCOD" || order.PaymentMethod == "WalletVNPay")
+        {
+            // Chỉ hoàn số tiền ví thực tế đã trừ
+            var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == accountId, cancellationToken);
+            if (wallet != null)
+            {
+                var totalDeducted = await _db.WalletTransactions
+                    .Where(t => t.WalletId == wallet.WalletId && t.ReferenceId == order.OrderCode && t.TransactionType == "PAYMENT")
+                    .Select(t => t.Amount)
+                    .SumAsync(cancellationToken);
+                
+                refundAmount = Math.Abs(totalDeducted);
+                if (refundAmount > 0)
+                {
+                    isWalletRefunded = true;
+                }
+            }
+        }
+
+        if (isWalletRefunded && refundAmount > 0)
+        {
+            await _walletService.RefundAsync(
+                accountId,
+                refundAmount,
+                order.OrderCode,
+                $"Ho\u00e0n ti\u1ec1n \u0111\u01a1n h\u00e0ng {order.OrderCode} b\u1ecb h\u1ee7y (Ph\u01b0\u01a1ng th\u1ee9c: {order.PaymentMethod})",
+                cancellationToken);
+            TempData["AccountSuccess"] = $"\u0110\u00e3 h\u1ee7y \u0111\u01a1n h\u00e0ng v\u00e0 ho\u00e0n {refundAmount:N0}\u0111 v\u00e0o s\u1ed1 d\u01b0 t\u00e0i kho\u1ea3n.";
+        }
+        else
+        {
+            TempData["AccountSuccess"] = "\u0110\u00e3 h\u1ee7y \u0111\u01a1n h\u00e0ng.";
+        }
+
         return Redirect(returnUrl);
+    }
+
+    [HttpPost("/my-orders/received")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfirmReceived([FromForm] int id, [FromForm] string? returnUrl, CancellationToken cancellationToken)
+    {
+        var fallbackReturnUrl = Url.RouteUrl("my_orders") ?? "/my-orders";
+        var rUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? returnUrl
+            : fallbackReturnUrl;
+
+        if (!(User?.Identity?.IsAuthenticated ?? false))
+        {
+            return Redirect(rUrl);
+        }
+
+        var idRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(idRaw, out var accountId) || accountId <= 0)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Redirect(rUrl);
+        }
+
+        if (id <= 0)
+        {
+            TempData["AccountError"] = "Đơn hàng không hợp lệ.";
+            return Redirect(rUrl);
+        }
+
+        var order = await _db.Orders
+            .FirstOrDefaultAsync(o => o.Id == id && o.CustomerId == accountId, cancellationToken);
+
+        if (order is null)
+        {
+            TempData["AccountError"] = "Không tìm thấy đơn hàng.";
+            return Redirect(rUrl);
+        }
+
+        var currentStatus = (order.OrderStatus ?? string.Empty).Trim().Replace(" ", string.Empty).ToLowerInvariant();
+        var isDelivering = currentStatus is "shipping" or "delivering" or "intransit" or "đanggiao" or "danggiao" or "delivered" or "deliverysuccess" or "dagiao" or "đãgiao";
+
+        if (!isDelivering)
+        {
+            TempData["AccountError"] = "Đơn hàng không ở trạng thái giao hàng để xác nhận.";
+            return Redirect(rUrl);
+        }
+
+        order.OrderStatus = "Completed";
+        order.UpdatedAt = DateTime.UtcNow;
+
+        _db.OrderTrackingLogs.Add(new OrderTrackingLog
+        {
+            OrderId = order.Id,
+            Status = order.OrderStatus,
+            Note = "Khách hàng xác nhận đã nhận hàng",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        TempData["AccountSuccess"] = "Đã xác nhận nhận hàng thành công!";
+        return Redirect(rUrl);
+    }
+
+    [HttpPost("/my-orders/repurchase")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RepurchaseOrder([FromForm] int id, string? returnUrl, CancellationToken cancellationToken)
+    {
+        var fallbackReturnUrl = Url.RouteUrl("my_orders") ?? "/my-orders";
+        var finalReturnUrl = !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? returnUrl
+            : fallbackReturnUrl;
+
+        if (!(User?.Identity?.IsAuthenticated ?? false))
+        {
+            return Redirect(finalReturnUrl);
+        }
+
+        var idRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(idRaw, out var accountId) || accountId <= 0)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Redirect(finalReturnUrl);
+        }
+
+        if (id <= 0)
+        {
+            TempData["AccountError"] = "Đơn hàng không hợp lệ.";
+            return Redirect(finalReturnUrl);
+        }
+
+        var order = await _db.Orders
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == id && o.CustomerId == accountId, cancellationToken);
+
+        if (order is null)
+        {
+            TempData["AccountError"] = "Không tìm thấy đơn hàng.";
+            return Redirect(finalReturnUrl);
+        }
+
+        var cart = await _db.Carts.FirstOrDefaultAsync(c => c.AccountId == accountId, cancellationToken);
+        if (cart is null)
+        {
+            cart = new Cart
+            {
+                AccountId = accountId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _db.Carts.Add(cart);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        var addedCount = 0;
+        var repurchasedVariantIds = new HashSet<int>();
+
+        foreach (var oi in order.Items)
+        {
+            var variantExists = await _db.ProductVariants.AnyAsync(v => v.Id == oi.VariantId && v.IsActive && !v.IsDeleted, cancellationToken);
+            if (!variantExists) continue;
+
+            repurchasedVariantIds.Add(oi.VariantId);
+
+            var item = await _db.CartItems
+                .FirstOrDefaultAsync(i => i.CartId == cart.Id && i.VariantId == oi.VariantId, cancellationToken);
+
+            if (item is null)
+            {
+                item = new CartItem
+                {
+                    CartId = cart.Id,
+                    VariantId = oi.VariantId,
+                    Quantity = oi.Quantity,
+                    CreatedAt = nowUtc,
+                    UpdatedAt = nowUtc
+                };
+                _db.CartItems.Add(item);
+            }
+            else
+            {
+                item.Quantity = oi.Quantity;
+                item.UpdatedAt = nowUtc;
+            }
+            addedCount++;
+        }
+        
+        if (addedCount > 0)
+        {
+            cart.UpdatedAt = nowUtc;
+            await _db.SaveChangesAsync(cancellationToken);
+
+            var allCartItems = await _db.CartItems.Where(i => i.CartId == cart.Id).ToListAsync(cancellationToken);
+            var deselectedIds = new HashSet<int>();
+            foreach (var ci in allCartItems)
+            {
+                if (!repurchasedVariantIds.Contains(ci.VariantId))
+                {
+                    deselectedIds.Add(ci.Id);
+                }
+            }
+
+            HttpContext.Session.SetJson("cart_selected", new { Initialized = true, DeselectedIds = deselectedIds });
+            
+            return Redirect("/checkout");
+        }
+        else
+        {
+            TempData["AccountError"] = "Các sản phẩm trong đơn hàng này đã ngừng bán hoặc không còn tồn tại.";
+            return Redirect(finalReturnUrl);
+        }
     }
 
     [HttpGet]
@@ -366,9 +793,13 @@ public class AccountController : Controller
             return View(new MyOrderDetailsPageVm { IsSignedIn = false });
         }
 
+        // Auto-cancel any expired bank transfer orders for this customer first
+        await CancelExpiredOrdersForCustomerAsync(accountId, cancellationToken);
+
         var order = await _db.Orders
             .AsNoTracking()
             .Include(o => o.Items)
+            .Include(o => o.Voucher)
             .FirstOrDefaultAsync(o => o.Id == id && o.CustomerId == accountId, cancellationToken);
 
         if (order is null) return NotFound();
@@ -384,6 +815,25 @@ public class AccountController : Controller
                 CreatedAt = x.CreatedAt
             })
             .ToListAsync(cancellationToken);
+
+        // Extract shipper info (last-mile simulator metadata) before sanitizing notes.
+        string? shipperName = null;
+        string? shipperPhone = null;
+        foreach (var l in logs)
+        {
+            if (TryExtractSimShipper(l.Note, out var n, out var p))
+            {
+                shipperName = n;
+                shipperPhone = p;
+                break;
+            }
+        }
+
+        var hasSimPickupDepart = await _db.OrderTrackingLogs
+            .AsNoTracking()
+            .Where(l => l.OrderId == order.Id && l.Note != null)
+            .AnyAsync(l => EF.Functions.Like(l.Note!, "SIM|i=1|e=depart%")
+                           || EF.Functions.Like(l.Note!, "SIM|i=1|e=leave%"), cancellationToken);
 
         foreach (var l in logs)
         {
@@ -436,21 +886,95 @@ public class AccountController : Controller
             // Best-effort only: do not block order detail page.
         }
 
+        decimal voucherDiscount = 0m;
+        decimal shippingDiscount = 0m;
+
+        if (order.DiscountAmount > 0)
+        {
+            if (order.Voucher is not null)
+            {
+                var v = order.Voucher;
+                decimal calculatedVoucherDiscount = 0m;
+
+                if (v.DiscountType == "Percent")
+                {
+                    calculatedVoucherDiscount = order.SubTotal * (v.DiscountValue / 100m);
+                }
+                else if (v.DiscountType == "FixedAmount")
+                {
+                    calculatedVoucherDiscount = v.DiscountValue;
+                }
+                else if (v.DiscountType == "FreeShipping")
+                {
+                    calculatedVoucherDiscount = v.DiscountValue;
+                    if (calculatedVoucherDiscount <= 0 || calculatedVoucherDiscount > order.ShippingFee)
+                    {
+                        calculatedVoucherDiscount = order.ShippingFee;
+                    }
+                }
+
+                if (calculatedVoucherDiscount > order.SubTotal && v.DiscountType != "FreeShipping")
+                {
+                    calculatedVoucherDiscount = order.SubTotal;
+                }
+
+                if (v.MaxDiscountValue.HasValue && calculatedVoucherDiscount > v.MaxDiscountValue.Value)
+                {
+                    calculatedVoucherDiscount = v.MaxDiscountValue.Value;
+                }
+
+                if (calculatedVoucherDiscount < 0) calculatedVoucherDiscount = 0m;
+
+                if (v.DiscountType == "FreeShipping")
+                {
+                    shippingDiscount = calculatedVoucherDiscount;
+                    voucherDiscount = order.DiscountAmount - shippingDiscount;
+                }
+                else
+                {
+                    voucherDiscount = calculatedVoucherDiscount;
+                    shippingDiscount = order.DiscountAmount - voucherDiscount;
+                }
+
+                if (voucherDiscount < 0) voucherDiscount = 0m;
+                if (shippingDiscount < 0) shippingDiscount = 0m;
+
+                if (voucherDiscount + shippingDiscount > order.DiscountAmount)
+                {
+                    var excess = (voucherDiscount + shippingDiscount) - order.DiscountAmount;
+                    if (shippingDiscount >= excess) shippingDiscount -= excess;
+                    else shippingDiscount = 0m;
+                }
+            }
+            else
+            {
+                voucherDiscount = order.DiscountAmount;
+            }
+        }
+
         var vm = new CustomerOrderDetailsVm
         {
             Id = order.Id,
             OrderCode = order.OrderCode,
-            OrderStatus = order.OrderStatus,
+            OrderStatus = ResolveEffectiveOrderStatus(order.OrderStatus, hasSimPickupDepart),
             PaymentMethod = order.PaymentMethod,
             PaymentStatus = order.PaymentStatus,
+            IsReceivedByCustomer = await _db.OrderTrackingLogs.AnyAsync(l => l.OrderId == order.Id && l.Note == "Khách hàng xác nhận đã nhận hàng", cancellationToken),
+            PaymentDeadlineUtc = order.CreatedAt.AddMinutes(15),
             SubTotal = order.SubTotal,
             ShippingFee = order.ShippingFee,
             DiscountAmount = order.DiscountAmount,
             FinalAmount = order.FinalAmount,
+            VoucherCode = order.Voucher?.Code,
+            VoucherDiscountType = order.Voucher?.DiscountType,
+            VoucherDiscount = voucherDiscount,
+            ShippingDiscount = shippingDiscount,
             RecipientName = order.RecipientName,
             RecipientPhone = order.RecipientPhone,
             ShippingAddress = order.ShippingAddress,
             TrackingCode = order.TrackingCode,
+            ShipperName = shipperName,
+            ShipperPhone = shipperPhone,
             EstimatedDeliveryAt = estimatedDeliveryAt,
             CreatedAt = order.CreatedAt,
             UpdatedAt = order.UpdatedAt,
@@ -1338,6 +1862,202 @@ public class AccountController : Controller
         return new NormalizedAddress(fullName, phoneNumber, provinceId, provinceName, districtId, districtName, wardCode, wardName, streetAddress);
     }
 
+    private async Task CancelExpiredOrdersForCustomerAsync(int accountId, CancellationToken cancellationToken)
+    {
+        var cutoff = DateTime.Now.AddMinutes(-15);
+        var expiredOrders = await _db.Orders
+            .Where(o => o.CustomerId == accountId
+                && o.PaymentMethod == "BankTransfer"
+                && o.PaymentStatus == "AwaitingPayment"
+                && o.OrderStatus != "Cancelled"
+                && o.CreatedAt <= cutoff)
+            .ToListAsync(cancellationToken);
+
+        if (expiredOrders.Count > 0)
+        {
+            foreach (var order in expiredOrders)
+            {
+                order.PaymentStatus = "Expired";
+                order.OrderStatus = "Cancelled";
+                order.UpdatedAt = DateTime.UtcNow;
+
+                _db.OrderTrackingLogs.Add(new OrderTrackingLog
+                {
+                    OrderId = order.Id,
+                    Status = "Cancelled",
+                    Note = "Hệ thống tự động hủy do hết thời gian thanh toán",
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    [HttpPost("/my-account/submit-review")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SubmitReview(int productId, int rating, string comment, List<IFormFile>? reviewImages, CancellationToken cancellationToken)
+    {
+        if (!(User?.Identity?.IsAuthenticated ?? false))
+        {
+            return Json(new { success = false, error = "Bạn chưa đăng nhập." });
+        }
+
+        var idRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(idRaw, out var accountId) || accountId <= 0)
+        {
+            return Json(new { success = false, error = "Tài khoản không hợp lệ." });
+        }
+
+        if (rating < 1 || rating > 5)
+        {
+            return Json(new { success = false, error = "Số sao đánh giá phải từ 1 đến 5." });
+        }
+
+        comment = comment?.Trim() ?? "";
+
+        var product = await _db.Products.FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+        if (product == null)
+        {
+            return Json(new { success = false, error = "Sản phẩm không tồn tại." });
+        }
+
+        // Verify if customer has bought this product
+        var hasBought = await _db.Orders
+            .AnyAsync(o => o.CustomerId == accountId 
+                && (o.OrderStatus == "Completed" || o.OrderStatus == "success" || o.OrderStatus == "delivered" || o.OrderStatus == "Đã giao" || o.OrderStatus == "Hoàn tất") 
+                && o.Items.Any(i => i.Variant != null && i.Variant.ProductId == productId), cancellationToken);
+
+        if (!hasBought)
+        {
+            return Json(new { success = false, error = "Bạn chỉ có thể đánh giá sản phẩm đã mua và giao hàng thành công." });
+        }
+
+        // Check if already reviewed
+        var existing = await _db.ProductReviews
+            .FirstOrDefaultAsync(r => r.AccountId == accountId && r.ProductId == productId, cancellationToken);
+
+        if (existing != null)
+        {
+            existing.Rating = rating;
+            existing.Comment = comment;
+            existing.UpdatedAt = DateTime.UtcNow;
+            _db.ProductReviews.Update(existing);
+        }
+        else
+        {
+            var review = new ProductReview
+            {
+                ProductId = productId,
+                AccountId = accountId,
+                Rating = rating,
+                Comment = comment,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _db.ProductReviews.AddAsync(review, cancellationToken);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // Recalculate average rating and review count for the product
+        var reviews = await _db.ProductReviews
+            .Where(r => r.ProductId == productId)
+            .Select(r => r.Rating)
+            .ToListAsync(cancellationToken);
+
+        if (reviews.Count > 0)
+        {
+            product.ReviewCount = reviews.Count;
+            product.AverageRating = Math.Round((decimal)reviews.Average(), 2);
+        }
+        else
+        {
+            product.ReviewCount = 0;
+            product.AverageRating = 0m;
+        }
+
+        _db.Products.Update(product);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        // --- Coin Reward Logic: 1+ image & >= 50 characters ---
+        bool hasImage = reviewImages != null && reviewImages.Any(img => img.Length > 0);
+        int commentLen = comment?.Trim().Length ?? 0;
+        bool rewarded = false;
+
+        if (hasImage && commentLen >= 50)
+        {
+            try
+            {
+                // Save uploaded review images to disk
+                var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "reviews");
+                if (!Directory.Exists(uploadsDir))
+                {
+                    Directory.CreateDirectory(uploadsDir);
+                }
+                foreach (var img in reviewImages!)
+                {
+                    if (img.Length > 0)
+                    {
+                        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(img.FileName)}";
+                        var filePath = Path.Combine(uploadsDir, fileName);
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await img.CopyToAsync(stream, cancellationToken);
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Non-blocking
+            }
+
+            // Reward coins via WalletService
+            var wallet = await _walletService.GetOrCreateWalletAsync(accountId, cancellationToken);
+            string refId = $"REVIEW-BONUS-{productId}-{accountId}";
+            bool alreadyRewarded = await _db.WalletTransactions.AnyAsync(
+                t => t.WalletId == wallet.WalletId && t.ReferenceId == refId, cancellationToken);
+
+            if (!alreadyRewarded)
+            {
+                await using var dbTx = await _db.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    wallet.Balance += 500m;
+                    wallet.UpdatedAt = DateTime.UtcNow;
+
+                    _db.WalletTransactions.Add(new WalletTransaction
+                    {
+                        WalletId        = wallet.WalletId,
+                        Amount          = 500m,
+                        TransactionType = WalletService.TypeCashback,
+                        ReferenceId     = refId,
+                        Description     = $"Thưởng đánh giá sản phẩm {product.Name} (+500 xu)",
+                        BalanceAfter    = wallet.Balance,
+                        CreatedAt       = DateTime.UtcNow
+                    });
+
+                    await _db.SaveChangesAsync(cancellationToken);
+                    await dbTx.CommitAsync(cancellationToken);
+                    rewarded = true;
+                }
+                catch (Exception)
+                {
+                    await dbTx.RollbackAsync(cancellationToken);
+                }
+            }
+        }
+
+        string successMsg = "Cảm ơn bạn đã gửi đánh giá thành công!";
+        if (rewarded)
+        {
+            successMsg += " Bạn đã được nhận thưởng 500 xu vào ví số dư!";
+        }
+
+        return Json(new { success = true, message = successMsg });
+    }
+
     private sealed record NormalizedAddress(
         string FullName,
         string PhoneNumber,
@@ -1348,4 +2068,269 @@ public class AccountController : Controller
         string WardCode,
         string WardName,
         string StreetAddress);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  RETURN REQUEST
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private static bool IsDeliveredStatus(string? rawStatus)
+    {
+        var s = (rawStatus ?? string.Empty).Trim().Replace(" ", string.Empty).ToLowerInvariant();
+        return s is "delivered" or "deliverysuccess" or "dagiao" or "đãgiao" or "completed" or "success";
+    }
+
+    [HttpGet("/my-orders/return/{orderId:int}")]
+    public async Task<IActionResult> ReturnRequest(int orderId, CancellationToken cancellationToken)
+    {
+        if (orderId <= 0) return NotFound();
+
+        if (!(User?.Identity?.IsAuthenticated ?? false))
+            return Redirect("/auth/login");
+
+        var idRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(idRaw, out var accountId) || accountId <= 0)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Redirect("/auth/login");
+        }
+
+        var order = await _db.Orders
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == orderId && o.CustomerId == accountId, cancellationToken);
+
+        if (order is null) return NotFound();
+
+        var normStatus = (order.OrderStatus ?? string.Empty).Trim().Replace(" ", string.Empty).ToLowerInvariant();
+        var isReturnState = normStatus is "returnrequest" or "returning" or "return" or "returned" or "refund" or "trahang" or "trảhàng";
+
+        if (!IsDeliveredStatus(order.OrderStatus) && !isReturnState)
+        {
+            TempData["AccountError"] = "Chỉ có thể trả hàng sau khi đơn đã được giao thành công.";
+            return RedirectToAction("OrderDetails", "Account", new { id = orderId });
+        }
+
+        // Find the delivered tracking log for timestamp
+        var deliveredLog = await _db.OrderTrackingLogs
+            .AsNoTracking()
+            .Where(l => l.OrderId == orderId)
+            .Where(l => l.Status != null && (
+                EF.Functions.Like(l.Status, "%delivered%") ||
+                EF.Functions.Like(l.Status, "%dagiao%") ||
+                EF.Functions.Like(l.Status, "%completed%") ||
+                EF.Functions.Like(l.Status, "%success%")))
+            .OrderByDescending(l => l.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var deliveredAt = deliveredLog?.CreatedAt ?? order.UpdatedAt;
+        var nowUtc = DateTime.UtcNow;
+        var daysSinceDelivery = (nowUtc - deliveredAt).TotalDays;
+        var daysRemaining = (int)Math.Max(0, Math.Ceiling(5 - daysSinceDelivery));
+        var canReturn = daysSinceDelivery <= 5;
+
+        // Check existing return request
+        var existingRr = await _db.ReturnRequests
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.OrderId == orderId && r.CustomerId == accountId, cancellationToken);
+
+        var vm = new ReturnRequestVm
+        {
+            OrderId = order.Id,
+            OrderCode = order.OrderCode,
+            ShippingAddress = order.ShippingAddress,
+            RecipientName = order.RecipientName,
+            RecipientPhone = order.RecipientPhone,
+            DeliveredAt = deliveredAt,
+            DaysRemaining = daysRemaining,
+            CanReturn = canReturn,
+            ExistingRequest = existingRr is null ? null : new ReturnRequestStatusVm
+            {
+                Id = existingRr.Id,
+                Status = existingRr.Status,
+                Reason = existingRr.Reason,
+                MediaUrls = ParseMediaUrls(existingRr.MediaUrlsJson),
+                RejectionNote = existingRr.RejectionNote,
+                ReturnTrackingCode = existingRr.ReturnTrackingCode,
+                EstimatedPickupTime = existingRr.EstimatedPickupTime,
+                CreatedAt = existingRr.CreatedAt,
+                UpdatedAt = existingRr.UpdatedAt
+            }
+        };
+
+        return View("ReturnRequest", vm);
+    }
+
+    private static List<string> ParseMediaUrls(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new List<string>();
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+        }
+        catch
+        {
+            return new List<string>();
+        }
+    }
+
+    [HttpPost("/my-orders/return/upload-media")]
+    public async Task<IActionResult> UploadReturnMedia(IFormFile file, CancellationToken cancellationToken)
+    {
+        if (!(User?.Identity?.IsAuthenticated ?? false))
+            return Unauthorized(new { message = "Unauthorized" });
+
+        if (file is null || file.Length <= 0)
+            return BadRequest(new { message = "Không có file được chọn." });
+
+        const long maxBytes = 20 * 1024 * 1024; // 20MB (support videos)
+        if (file.Length > maxBytes)
+            return BadRequest(new { message = "File quá lớn. Tối đa 20MB." });
+
+        var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant() ?? string.Empty;
+        var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".mov", ".avi", ".webm" };
+        if (!allowedExts.Contains(ext))
+            return BadRequest(new { message = "Định dạng file không được hỗ trợ." });
+
+        var webRoot = string.IsNullOrWhiteSpace(_env.WebRootPath)
+            ? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")
+            : _env.WebRootPath;
+
+        var returnMediaDir = Path.Combine(webRoot, "uploads", "returns");
+        Directory.CreateDirectory(returnMediaDir);
+
+        var fileName = $"{Guid.NewGuid():N}{ext}";
+        var fullPath = Path.Combine(returnMediaDir, fileName);
+
+        await using (var fs = System.IO.File.Create(fullPath))
+        {
+            await file.CopyToAsync(fs, cancellationToken);
+        }
+
+        var url = $"/uploads/returns/{fileName}";
+        return Ok(new { url });
+    }
+
+    [HttpPost("/my-orders/return/submit")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SubmitReturnRequest([FromForm] int orderId, [FromForm] string reason, [FromForm] string? mediaUrlsJson, CancellationToken cancellationToken)
+    {
+        var returnUrl = $"/my-orders/return/{orderId}";
+
+        if (!(User?.Identity?.IsAuthenticated ?? false))
+            return Redirect("/auth/login");
+
+        var idRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(idRaw, out var accountId) || accountId <= 0)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Redirect("/auth/login");
+        }
+
+        if (orderId <= 0)
+        {
+            TempData["AccountError"] = "Đơn hàng không hợp lệ.";
+            return Redirect(returnUrl);
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            TempData["AccountError"] = "Vui lòng nhập lý do trả hàng.";
+            return Redirect(returnUrl);
+        }
+
+        var order = await _db.Orders
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == orderId && o.CustomerId == accountId, cancellationToken);
+
+        if (order is null)
+        {
+            TempData["AccountError"] = "Không tìm thấy đơn hàng.";
+            return Redirect(returnUrl);
+        }
+
+        var normStatus = (order.OrderStatus ?? string.Empty).Trim().Replace(" ", string.Empty).ToLowerInvariant();
+        var isReturnState = normStatus is "returnrequest" or "returning" or "return" or "returned" or "refund" or "trahang" or "trảhàng";
+
+        if (!IsDeliveredStatus(order.OrderStatus) && !isReturnState)
+        {
+            TempData["AccountError"] = "Chỉ có thể trả hàng sau khi đơn đã được giao thành công.";
+            return Redirect(returnUrl);
+        }
+
+        // Check if within 5 days of delivery
+        var deliveredLog = await _db.OrderTrackingLogs
+            .AsNoTracking()
+            .Where(l => l.OrderId == orderId)
+            .Where(l => l.Status != null && (
+                EF.Functions.Like(l.Status, "%delivered%") ||
+                EF.Functions.Like(l.Status, "%dagiao%") ||
+                EF.Functions.Like(l.Status, "%completed%") ||
+                EF.Functions.Like(l.Status, "%success%")))
+            .OrderByDescending(l => l.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var deliveredAt = deliveredLog?.CreatedAt ?? order.UpdatedAt;
+        var daysSinceDelivery = (DateTime.UtcNow - deliveredAt).TotalDays;
+
+        if (daysSinceDelivery > 5)
+        {
+            TempData["AccountError"] = "Đã quá 5 ngày kể từ khi nhận hàng. Không thể gửi yêu cầu trả hàng.";
+            return Redirect(returnUrl);
+        }
+
+        // Check if already has a return request
+        var existing = await _db.ReturnRequests
+            .FirstOrDefaultAsync(r => r.OrderId == orderId && r.CustomerId == accountId, cancellationToken);
+
+        if (existing is not null)
+        {
+            if (existing.Status == "Pending" || existing.Status == "Approved")
+            {
+                TempData["AccountError"] = "Bạn đã gửi yêu cầu trả hàng cho đơn này rồi.";
+                return Redirect(returnUrl);
+            }
+
+            // If rejected, allow re-submit
+            existing.Reason = reason.Trim();
+            existing.MediaUrlsJson = mediaUrlsJson;
+            existing.Status = "Pending";
+            existing.RejectionNote = null;
+            existing.ReturnTrackingCode = null;
+            existing.EstimatedPickupTime = null;
+            existing.UpdatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            _db.ReturnRequests.Add(new ReturnRequest
+            {
+                OrderId = orderId,
+                CustomerId = accountId,
+                Reason = reason.Trim(),
+                MediaUrlsJson = mediaUrlsJson,
+                Status = "Pending",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            // Update order status to ReturnRequest
+            var orderToUpdate = await _db.Orders.FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
+            if (orderToUpdate is not null)
+            {
+                orderToUpdate.OrderStatus = "ReturnRequest";
+                orderToUpdate.UpdatedAt = DateTime.UtcNow;
+
+                _db.OrderTrackingLogs.Add(new OrderTrackingLog
+                {
+                    OrderId = orderId,
+                    Status = "ReturnRequest",
+                    Note = "Khách hàng gửi yêu cầu trả hàng. Đang chờ shop duyệt.",
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        TempData["AccountSuccess"] = "Yêu cầu trả hàng đã được gửi. Vui lòng chờ shop xem xét và duyệt.";
+        return Redirect(returnUrl);
+    }
 }

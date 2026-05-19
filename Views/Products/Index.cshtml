@@ -15,7 +15,23 @@
     decimal? maxPrice = null,
     int? page = null,
     string? sort = null)
-    => Url.RouteUrl("category", new
+  {
+    if (string.IsNullOrEmpty(Model.CategorySlug))
+    {
+      return Url.Action("Search", "Products", new
+      {
+        q = Model.SearchTerm,
+        childCategoryId,
+        rating,
+        color,
+        size,
+        minPrice,
+        maxPrice,
+        page,
+        sort
+      }) ?? "#";
+    }
+    return Url.RouteUrl("category", new
     {
       slug = Model.CategorySlug,
       childCategoryId,
@@ -27,6 +43,7 @@
       page,
       sort
     }) ?? "#";
+  }
 
   string PageUrl(int page) => CategoryUrl(
     childCategoryId: Model.SelectedChildCategoryId,
@@ -40,7 +57,11 @@
 }
 
 <!-- Hidden filter form used by template JS (price-range slider auto-submit) -->
-<form id="category-filter-form" method="get" action="@(Url.RouteUrl("category", new { slug = Model.CategorySlug }) ?? "#")" class="hidden">
+<form id="category-filter-form" method="get" action="@(string.IsNullOrEmpty(Model.CategorySlug) ? Url.Action("Search", "Products") : (Url.RouteUrl("category", new { slug = Model.CategorySlug }) ?? "#"))" class="hidden">
+  @if (string.IsNullOrEmpty(Model.CategorySlug))
+  {
+    <input type="hidden" name="q" value="@Model.SearchTerm" />
+  }
   @if (Model.SelectedChildCategoryId.HasValue)
   {
     <input type="hidden" name="childCategoryId" value="@Model.SelectedChildCategoryId" />
@@ -434,9 +455,15 @@
               <div class="xl:col-span-4 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
                 <div class="border border-gray-300 rounded-2xl product-card-1 p-4 group">
                   <div class="product-image-container relative">
+                    @if (p.DiscountPercent > 0)
+                    {
+                      <span class="product-discount-badge">GIẢM @p.DiscountPercent%</span><span style="display:none;">
+                        <i class="hgi hgi-stroke hgi-sale-02 text-sm"></i> -@p.DiscountPercent%
+                      </span>
+                    }
                     <div class="product-image rounded-xl bg-[#F4F3F5] mb-4 overflow-hidden">
                       <a href='@detailsUrl'>
-                        <img src="@imageUrl" alt="@p.Name" class="group-hover:scale-110 transition-all transform group-hover:-rotate-3 ease-in-out duration-300" />
+                        <img src="@imageUrl" alt="@p.Name" class="w-full h-full object-cover group-hover:scale-110 transition-all transform group-hover:-rotate-3 ease-in-out duration-300" />
                       </a>
                     </div>
                     <div class="product-btn-actions absolute bottom-0 right-0 left-0 flex justify-center z-9 transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 group-hover:bottom-3">
@@ -450,7 +477,8 @@
                           </button>
                         </li>
                         <li>
-                          <a aria-label='Compare' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5' href='#'>
+                          <a aria-label='Compare' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5' 
+                             href='javascript:void(0)' onclick='addToCompare(@p.ProductId)'>
                             <i class="hgi hgi-stroke hgi-reload text-2xl leading-6 text-light-primary-text"></i>
                           </a>
                         </li>
@@ -480,10 +508,7 @@
                       @if (p.OldPrice.HasValue)
                       {
                         <span class="old-price text-sm leading-[22px] font-normal text-light-disabled-text line-through">@p.OldPrice.Value.ToString("N0", viVn) VNĐ</span>
-                      }
-                      @if (p.DiscountPercent > 0)
-                      {
-                        <span class="discount-percentage text-sm leading-[22px] font-semibold text-error">@p.DiscountPercent% OFF</span>
+                        <span class="text-xs font-semibold text-error ml-1">@p.DiscountPercent% OFF</span>
                       }
                     </div>
 

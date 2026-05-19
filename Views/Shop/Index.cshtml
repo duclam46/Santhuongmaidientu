@@ -1,0 +1,425 @@
+@model DOAN_BANHANG.ViewModels.ShopListVm
+
+@{
+    ViewData["Title"] = "Cửa hàng";
+    string ShopUrl(int? categoryId = null, int? minRating = null, int? maxRating = null, int? page = null)
+        => Url.RouteUrl("shop_index", new { categoryId, minRating, maxRating, page }) ?? "#";
+}
+
+<!-- ========== Hero Banner ========== -->
+<section class="shop-hero relative overflow-hidden">
+    <div class="container py-10">
+        <div class="relative rounded-3xl overflow-hidden shadow-2xl">
+            <!-- Animated gradient background -->
+            <div class="absolute inset-0 shop-hero-bg"></div>
+            <!-- Dot pattern -->
+            <div class="absolute inset-0 opacity-15" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;40&quot; height=&quot;40&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Ccircle cx=&quot;20&quot; cy=&quot;20&quot; r=&quot;1.5&quot; fill=&quot;white&quot;/%3E%3C/svg%3E');"></div>
+            <!-- Floating decorative shapes -->
+            <div class="absolute top-6 right-[15%] size-16 rounded-full border-2 border-white/20 shop-float-1"></div>
+            <div class="absolute bottom-8 right-[30%] size-10 rounded-full bg-white/10 shop-float-2"></div>
+            <div class="absolute top-[40%] right-[8%] size-6 rounded-full bg-[#fbc2eb]/30 shop-float-3"></div>
+            <div class="absolute bottom-6 left-[20%] size-12 rounded-lg border-2 border-white/15 rotate-45 shop-float-1"></div>
+            <div class="absolute top-10 left-[45%] size-4 rounded-full bg-[#00f2fe]/30 shop-float-2"></div>
+            <!-- Sparkle SVGs -->
+            <svg class="absolute top-8 right-[25%] size-5 text-white/40 shop-sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg>
+            <svg class="absolute bottom-10 left-[35%] size-4 text-[#fbc2eb]/50 shop-sparkle-delay" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg>
+            <svg class="absolute top-[55%] right-[5%] size-3 text-white/30 shop-sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg>
+
+            <div class="relative z-10 px-8 py-14 md:py-16 md:px-12 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+                <div>
+                    <nav class="flex items-center gap-2 text-white/60 text-sm mb-5">
+                        <a href='@Url.Action("Index", "Home")' class="flex items-center gap-1.5 hover:text-white transition-colors">
+                            <i class="hgi hgi-stroke hgi-home-01 text-base"></i> Trang chủ
+                        </a>
+                        <span>/</span>
+                        <span class="text-white font-semibold">Cửa hàng</span>
+                    </nav>
+                    <h2 class="text-white text-3xl md:text-4xl font-bold mb-3 flex items-center gap-3">
+                        <span class="size-12 rounded-2xl bg-white/15 backdrop-blur-sm inline-flex items-center justify-center">
+                            <i class="hgi hgi-stroke hgi-store-04 text-2xl text-white"></i>
+                        </span>
+                        Khám phá Cửa hàng
+                    </h2>
+                    <p class="text-white/75 text-base max-w-lg mb-5">
+                        Nơi hội tụ những cửa hàng chất lượng, sản phẩm đa dạng và dịch vụ tận tâm.
+                    </p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-white text-xs font-semibold">
+                            <i class="hgi hgi-stroke hgi-checkmark-badge-02 text-sm"></i> Uy tín
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-white text-xs font-semibold">
+                            <i class="hgi hgi-stroke hgi-shield-check text-sm"></i> An toàn
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-white text-xs font-semibold">
+                            <i class="hgi hgi-stroke hgi-flash text-sm"></i> Giao nhanh
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-white text-xs font-semibold">
+                            <i class="hgi hgi-stroke hgi-star text-sm"></i> Đánh giá tốt
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-3">
+                    <div class="group/stat bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 text-center min-w-[110px] border border-white/10 hover:bg-white/25 hover:scale-105 transition-all duration-300 cursor-default relative overflow-hidden">
+                        <div class="absolute -top-2 -right-2 size-10 rounded-full bg-white/5 group-hover/stat:bg-white/10 transition-colors"></div>
+                        <div class="text-3xl font-bold text-white relative z-10">@Model.TotalItems</div>
+                        <div class="text-white/60 text-[11px] font-semibold uppercase tracking-widest mt-0.5 relative z-10">🏪 Cửa hàng</div>
+                    </div>
+                    <div class="group/stat bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 text-center min-w-[110px] border border-white/10 hover:bg-white/25 hover:scale-105 transition-all duration-300 cursor-default relative overflow-hidden">
+                        <div class="absolute -top-2 -right-2 size-10 rounded-full bg-white/5 group-hover/stat:bg-white/10 transition-colors"></div>
+                        <div class="text-3xl font-bold text-white relative z-10">4.9</div>
+                        <div class="text-white/60 text-[11px] font-semibold uppercase tracking-widest mt-0.5 relative z-10">⭐ Đánh giá</div>
+                    </div>
+                    <div class="group/stat bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 text-center min-w-[110px] border border-white/10 hover:bg-white/25 hover:scale-105 transition-all duration-300 cursor-default relative overflow-hidden">
+                        <div class="absolute -top-2 -right-2 size-10 rounded-full bg-white/5 group-hover/stat:bg-white/10 transition-colors"></div>
+                        <div class="text-3xl font-bold text-white relative z-10">24h</div>
+                        <div class="text-white/60 text-[11px] font-semibold uppercase tracking-widest mt-0.5 relative z-10">🚀 Giao hàng</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== Main Content ========== -->
+<section class="pb-20">
+    <div class="container">
+        <div class="grid grid-cols-12 lg:gap-x-6 gap-y-6">
+            <!-- LEFT SIDEBAR -->
+            <div class="xl:col-span-3 lg:col-span-4 col-span-12">
+                <div class="sidebar sticky top-20">
+                    <div class="border border-gray-300 rounded-2xl bg-gradient-to-b from-white via-primary/[0.03] to-warning/[0.05] overflow-hidden shadow-sm">
+                        <div class="px-6 py-4 bg-gradient-to-r from-primary/20 via-warning/15 to-info/20 sidebar-title">
+                            <div class="flex items-center justify-between">
+                                <h5 class="text-light-primary-text">Bộ lọc</h5>
+                                <a href="@ShopUrl()" class="text-primary text-base leading-[26px] font-semibold hover:underline">Xóa tất cả</a>
+                            </div>
+                        </div>
+
+                        <div class="px-6 py-6">
+                            <div class="widget-category">
+                                <div class="flex flex-col gap-y-4 pb-6 border-b border-gray-300">
+                                    <div class="flex items-center justify-between widget-category-title">
+                                        <h6>Danh mục</h6>
+                                        <a href="@ShopUrl(categoryId: null, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: 1)" class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out">Đặt lại</a>
+                                    </div>
+                                    <div class="widget-category-content">
+                                        <ul class="flex flex-col gap-y-2">
+                                            @if (Model.Categories.Count == 0)
+                                            {
+                                                <li><p class="text-sm leading-[22px] text-light-disabled-text">Chưa có danh mục để lọc.</p></li>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var c in Model.Categories)
+                                                {
+                                                    var catUrl = ShopUrl(categoryId: c.CategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: 1);
+                                                    <li class="widget-category-content-list-items">
+                                                        <label class="group flex items-center justify-between w-full cursor-pointer">
+                                                            <span class="flex items-center gap-x-2">
+                                                                <span class="group-has-[input:checked]:group-hover:bg-primary/10 flex items-center justify-center w-9 h-9 bg-transparent rounded-full group-hover:bg-gray-100 transition-colors duration-300 ease-in-out">
+                                                                    <span class="relative inline-flex w-5 h-5 items-center justify-center">
+                                                                        <input type="radio" name="categoryId" value="@c.CategoryId" checked="@(c.IsSelected ? "checked" : null)" onchange="window.location.href='@catUrl'" class="peer appearance-none w-full h-full border-2 focus:outline-none checked:border-none border-gray-300 rounded-sm bg-white checked:bg-primary transition-all duration-300 ease-in-out" />
+                                                                        <span class="absolute inset-0 inline-flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 transition-all">
+                                                                            <i class="hgi hgi-stroke hgi-tick-02 text-[18px] leading-[18px]"></i>
+                                                                        </span>
+                                                                    </span>
+                                                                </span>
+                                                                <span class="text-light-primary-text group-hover:text-primary transition-colors duration-300 ease-in-out">@c.Name</span>
+                                                            </span>
+                                                            <span class="group-hover:text-primary transition-colors duration-300 ease-in-out">(@c.ShopCount)</span>
+                                                        </label>
+                                                    </li>
+                                                }
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                @if (Model.SelectedCategoryId.HasValue && !string.IsNullOrWhiteSpace(Model.SelectedCategoryName))
+                                {
+                                    <div class="pt-6">
+                                        <div class="rounded-2xl border border-warning/30 bg-gradient-to-r from-warning/15 via-error/[0.08] to-info/[0.08] p-4">
+                                            <div class="flex items-start gap-3">
+                                                <span class="size-10 rounded-2xl bg-warning/15 text-warning inline-flex items-center justify-center flex-none">
+                                                    <i class="hgi hgi-stroke hgi-filter text-xl"></i>
+                                                </span>
+                                                <div class="min-w-0">
+                                                    <p class="text-sm leading-[22px] text-light-secondary-text">Đang lọc theo</p>
+                                                    <p class="font-semibold text-light-primary-text line-clamp-2">@Model.SelectedCategoryName</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="widget-rating">
+                                <div class="flex flex-col gap-y-4 py-8 border-b border-gray-300">
+                                    <div class="flex items-center justify-between widget-rating-title">
+                                        <h6 class="text-light-primary-text">Đánh giá</h6>
+                                        <a href="@ShopUrl(categoryId: Model.SelectedCategoryId, minRating: null, maxRating: null, page: 1)" class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out">Reset</a>
+                                    </div>
+                                    <div class="ratings">
+                                        <ul class="flex items-center flex-wrap gap-3">
+                                            @for (var r = 5; r >= 1; r--)
+                                            {
+                                                var ratingUrl = ShopUrl(categoryId: Model.SelectedCategoryId, minRating: r, maxRating: 5, page: 1);
+                                                var isActive = Model.SelectedMinRating == r && ((Model.SelectedMaxRating ?? 5) == 5);
+                                                <li>
+                                                    <a href="@ratingUrl" class="btn btn-default outline shadow-none gap-x-1.5 items-center text-base leading-6 px-2.5 py-1.5 rounded-[80px] transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-sm hover:border-warning hover:bg-gradient-to-r hover:from-warning/15 hover:to-error/10 @(isActive ? "active" : "")">@r
+                                                        <div class="bg-[url('../images/star-icon.png')] w-5 h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+                                                            <div style="width: 100%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+                                                        </div>
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                    <p class="text-xs leading-[18px] text-light-secondary-text">Bấm để lọc shop theo điểm trung bình (từ 1–5 sao).</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT CONTENT -->
+            <div class="xl:col-span-9 lg:col-span-8 col-span-12">
+                <!-- Toolbar -->
+                <div class="relative mb-6 p-4 rounded-2xl border border-gray-300 bg-white overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#667eea] via-[#f093fb] to-[#43e97b]"></div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="size-10 rounded-xl bg-gradient-to-br from-[#667eea]/15 to-[#f093fb]/15 inline-flex items-center justify-center">
+                                <i class="hgi hgi-stroke hgi-grid-view text-xl text-[#667eea]"></i>
+                            </span>
+                            <div>
+                                <span class="font-semibold text-light-primary-text text-sm">Hiển thị @Model.Shops.Count kết quả</span>
+                                @if (Model.SelectedCategoryId.HasValue)
+                                {
+                                    <span class="text-xs text-light-secondary-text block">Danh mục: @Model.SelectedCategoryName</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if (Model.SelectedCategoryId.HasValue)
+                            {
+                                <a href="@ShopUrl(categoryId: null, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: 1)" class="inline-flex items-center gap-1 text-xs font-semibold bg-[#667eea]/10 text-[#667eea] rounded-full px-3 py-1.5 hover:bg-[#667eea] hover:text-white transition-all duration-300">
+                                    <i class="hgi hgi-stroke hgi-filter text-sm"></i>
+                                    @Model.SelectedCategoryName
+                                    <i class="hgi hgi-stroke hgi-cancel-01 text-sm"></i>
+                                </a>
+                            }
+                            @if (Model.SelectedMinRating.HasValue)
+                            {
+                                <a href="@ShopUrl(categoryId: Model.SelectedCategoryId, minRating: null, maxRating: null, page: 1)" class="inline-flex items-center gap-1 text-xs font-semibold bg-[#f5a623]/15 text-[#f5a623] rounded-full px-3 py-1.5 hover:bg-[#f5a623] hover:text-white transition-all duration-300">
+                                    @Model.SelectedMinRating⭐+
+                                    <i class="hgi hgi-stroke hgi-cancel-01 text-sm"></i>
+                                </a>
+                            }
+                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-light-primary-text rounded-full px-3.5 py-1.5 hover:bg-gray-200 transition-colors cursor-pointer">
+                                <i class="hgi hgi-stroke hgi-sorting-03 text-sm"></i>
+                                Mới nhất
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.Shops.Count == 0)
+                {
+                    <div class="rounded-2xl border border-gray-300 p-16 text-center bg-white">
+                        <div class="text-6xl mb-4">🔍</div>
+                        <h5 class="text-light-primary-text mb-2">Không tìm thấy shop</h5>
+                        <p class="text-light-secondary-text mb-6">Hãy thử thay đổi bộ lọc.</p>
+                        <a href="@ShopUrl()" class="btn btn-primary rounded-[60px] py-2 px-6 text-white font-semibold">Xóa bộ lọc</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="grid grid-cols-12 gap-5">
+                        @{ var cardColors = new[] { "#667eea", "#f093fb", "#43e97b", "#fa709a", "#a18cd1", "#fbc2eb", "#4facfe", "#00f2fe", "#f5576c", "#fda085" }; }
+                        @foreach (var shop in Model.Shops)
+                        {
+                            var detailsUrl = Url.RouteUrl("shop_details", new { slug = shop.Slug }) ?? "#";
+                            var colorIdx = Math.Abs(shop.Name?.GetHashCode() ?? 0) % cardColors.Length;
+                            var cardColor = cardColors[colorIdx];
+                            var cardColor2 = cardColors[(colorIdx + 3) % cardColors.Length];
+
+                            <div class="xl:col-span-4 md:col-span-6 col-span-12">
+                                <div class="shop-card border border-gray-300 rounded-2xl bg-white overflow-hidden group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 h-full flex flex-col">
+                                    <!-- Colorful Top Banner -->
+                                    <div class="shop-card-banner relative h-32 overflow-hidden" style="background: linear-gradient(135deg, @cardColor 0%, @cardColor2 100%);">
+                                        <!-- Decorative shapes -->
+                                        <div class="absolute -top-6 -right-6 size-24 rounded-full border-[3px] border-white/20"></div>
+                                        <div class="absolute top-4 right-10 size-6 rounded-full bg-white/15"></div>
+                                        <div class="absolute -bottom-3 -left-3 size-14 rounded-full bg-white/10"></div>
+                                        <div class="absolute top-1/2 right-1/4 size-3 rounded-full bg-white/30"></div>
+
+                                        <!-- Badges -->
+                                        <div class="absolute top-3.5 left-3.5 flex items-center gap-1.5">
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-white/25 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm">
+                                                <i class="hgi hgi-stroke hgi-checkmark-badge-02 text-[11px]"></i> Uy tín
+                                            </span>
+                                            @if (shop.RatingAverage >= 4.5m)
+                                            {
+                                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-white/25 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm">
+                                                    <i class="hgi hgi-stroke hgi-fire text-[11px]"></i> Top
+                                                </span>
+                                            }
+                                        </div>
+
+                                        <!-- Rating pill -->
+                                        <div class="absolute top-3.5 right-3.5">
+                                            <span class="inline-flex items-center gap-1 text-sm font-bold text-white bg-black/20 backdrop-blur-sm rounded-full px-3 py-1">
+                                                ⭐ @shop.RatingAverage.ToString("0.0")
+                                            </span>
+                                        </div>
+
+                                        <!-- Floating Logo -->
+                                        <div class="absolute -bottom-8 left-5 z-10">
+                                            <div class="size-16 rounded-2xl bg-white p-1 shadow-xl ring-3 ring-white overflow-hidden group-hover:scale-110 transition-transform duration-500">
+                                                @if (!string.IsNullOrWhiteSpace(shop.LogoUrl))
+                                                {
+                                                    <img src="@shop.LogoUrl" alt="@shop.Name" class="w-full h-full object-cover rounded-xl" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="w-full h-full rounded-xl flex items-center justify-center text-white text-2xl font-bold" style="background: linear-gradient(135deg, @cardColor, @cardColor2);">
+                                                        @(string.IsNullOrWhiteSpace(shop.Name) ? "S" : shop.Name.Trim()[0].ToString().ToUpperInvariant())
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <!-- SVG wave divider -->
+                                        <svg class="absolute -bottom-px left-0 w-full" viewBox="0 0 400 30" preserveAspectRatio="none"><path d="M0,20 Q100,0 200,15 T400,10 L400,30 L0,30Z" fill="white"/></svg>
+                                    </div>
+
+                                    <!-- Card Body -->
+                                    <div class="p-5 pt-11 flex flex-col flex-1">
+                                        <!-- Shop Name -->
+                                        <div class="flex items-start justify-between mb-4">
+                                            <div class="min-w-0 flex-1">
+                                                <h6 class="font-bold text-light-primary-text text-[18px] leading-7 line-clamp-1 mb-1 group-hover:text-primary transition-colors">@shop.Name</h6>
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="size-2 rounded-full bg-[#43e97b] animate-pulse"></span>
+                                                    <span class="text-xs text-[#43e97b] font-semibold">Đang hoạt động</span>
+                                                </div>
+                                            </div>
+                                            <span class="size-9 rounded-xl inline-flex items-center justify-center text-light-secondary-text group-hover:text-white group-hover:shadow-lg transition-all duration-300" style="background: transparent;" onmouseover="this.style.background='linear-gradient(135deg, ' + '@cardColor' + ', ' + '@cardColor2' + ')'" onmouseout="this.style.background='transparent'">
+                                                <i class="hgi hgi-stroke hgi-arrow-right-02 text-lg"></i>
+                                            </span>
+                                        </div>
+
+                                        <!-- Stats Row -->
+                                        <div class="flex items-center gap-2 mb-4">
+                                            <div class="flex-1 rounded-xl p-3 text-center border border-gray-100 bg-gradient-to-b from-[#667eea]/8 to-[#667eea]/3 hover:from-[#667eea]/15 hover:to-[#667eea]/8 transition-colors">
+                                                <div class="text-lg font-bold text-light-primary-text">@shop.ProductCount</div>
+                                                <div class="text-[10px] font-bold uppercase tracking-wider" style="color: @cardColor;">📦 Sản phẩm</div>
+                                            </div>
+                                            <div class="flex-1 rounded-xl p-3 text-center border border-gray-100 bg-gradient-to-b from-[#f5a623]/8 to-[#f5a623]/3 hover:from-[#f5a623]/15 hover:to-[#f5a623]/8 transition-colors">
+                                                <div class="text-lg font-bold text-light-primary-text">@shop.RatingAverage.ToString("0.0")</div>
+                                                <div class="text-[10px] text-[#f5a623] font-bold uppercase tracking-wider">⭐ Đánh giá</div>
+                                            </div>
+                                            <div class="flex-1 rounded-xl p-3 text-center border border-gray-100 bg-gradient-to-b from-[#43e97b]/8 to-[#43e97b]/3 hover:from-[#43e97b]/15 hover:to-[#43e97b]/8 transition-colors">
+                                                <div class="text-lg font-bold text-light-primary-text">🚀</div>
+                                                <div class="text-[10px] text-[#43e97b] font-bold uppercase tracking-wider">Siêu tốc</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Location -->
+                                        @if (!string.IsNullOrWhiteSpace(shop.Location))
+                                        {
+                                            <div class="flex items-center gap-2.5 mb-5 p-2.5 rounded-xl border border-gray-100 bg-gray-50/50">
+                                                <span class="size-8 rounded-lg inline-flex items-center justify-center flex-none" style="background: linear-gradient(135deg, @(cardColor)20, @(cardColor2)20);">
+                                                    <span class="text-sm">📍</span>
+                                                </span>
+                                                <span class="text-sm text-light-secondary-text line-clamp-1">@shop.Location</span>
+                                            </div>
+                                        }
+
+                                        <!-- CTA Button -->
+                                        <a href="@detailsUrl" class="shop-cta-btn mt-auto relative flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white text-sm font-bold shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden" style="background: linear-gradient(135deg, @cardColor, @cardColor2);">
+                                            <i class="hgi hgi-stroke hgi-store-04 text-base relative z-10"></i>
+                                            <span class="relative z-10">Ghé thăm Shop</span>
+                                            <i class="hgi hgi-stroke hgi-arrow-right-02 text-base relative z-10"></i>
+                                            <span class="shop-cta-shimmer"></span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (Model.TotalPages > 1)
+                    {
+                        <div class="flex justify-center pt-12">
+                            <ul class="flex items-center gap-x-1.5 blog-pagination">
+                                <li class="group blog-pagination-item">
+                                    <a href="@(Model.Page > 1 ? ShopUrl(categoryId: Model.SelectedCategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: Model.Page - 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 transition-colors">
+                                        <i class="hgi hgi-stroke hgi-arrow-left-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
+                                    </a>
+                                </li>
+                                @for (var i = 1; i <= Model.TotalPages; i++)
+                                {
+                                    var isActive = i == Model.Page;
+                                    <li class="group blog-pagination-item">
+                                        <a href='@ShopUrl(categoryId: Model.SelectedCategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: i)' class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] @(isActive ? "active" : "text-base leading-6 text-light-primary-text bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 group-hover:text-primary transition-colors")">@i</a>
+                                    </li>
+                                }
+                                <li class="group blog-pagination-item">
+                                    <a href="@(Model.Page < Model.TotalPages ? ShopUrl(categoryId: Model.SelectedCategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: Model.Page + 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 transition-colors">
+                                        <i class="hgi hgi-stroke hgi-arrow-right-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .shop-hero-bg {
+        background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #4facfe, #43e97b);
+        background-size: 300% 300%;
+        animation: heroGradient 8s ease infinite;
+    }
+    @@keyframes heroGradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    .shop-float-1 { animation: shopFloat 6s ease-in-out infinite; }
+    .shop-float-2 { animation: shopFloat 4s ease-in-out infinite reverse; }
+    .shop-float-3 { animation: shopFloat 5s ease-in-out infinite 1s; }
+    @@keyframes shopFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .shop-sparkle { animation: sparkleRotate 4s linear infinite; }
+    .shop-sparkle-delay { animation: sparkleRotate 5s linear infinite 1.5s; }
+    @@keyframes sparkleRotate {
+        0% { transform: rotate(0deg) scale(1); opacity: 0.4; }
+        50% { transform: rotate(180deg) scale(1.3); opacity: 1; }
+        100% { transform: rotate(360deg) scale(1); opacity: 0.4; }
+    }
+    .shop-cta-shimmer {
+        position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+        transition: left 0.6s;
+    }
+    .shop-cta-btn:hover .shop-cta-shimmer { left: 100%; }
+    .shop-card { position: relative; }
+    .shop-card::after {
+        content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, #667eea, #f093fb, #43e97b);
+        opacity: 0; transition: opacity 0.4s;
+    }
+    .shop-card:hover::after { opacity: 1; }
+    .shop-card:hover .shop-card-banner { transform: scale(1.03); }
+    .shop-card-banner { transition: transform 0.7s ease; }
+</style>

@@ -1,0 +1,275 @@
+@model IEnumerable<DOAN_BANHANG.Models.SystemNotification>
+@{
+    ViewData["Title"] = "Quản lý Thông báo hệ thống";
+}
+
+<style>
+    :root {
+        --primary: #088178;
+        --secondary: #3366ff;
+        --accent: #ffc107;
+        --glass: rgba(255, 255, 255, 0.8);
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #088178 0%, #0c53b7 100%);
+        padding: 2.5rem 2rem;
+        border-radius: 0 0 2rem 2rem;
+        margin: -1.5rem -1.5rem 2rem -1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .page-title {
+        color: white;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .title-icon {
+        background: rgba(255,255,255,0.2);
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        backdrop-filter: blur(8px);
+        font-size: 24px;
+    }
+
+    .btn-create {
+        background: white;
+        color: var(--primary);
+        font-weight: 700;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .btn-create:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        color: var(--primary-dark);
+    }
+
+    .msg-card {
+        background: white;
+        border-radius: 1.5rem;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        overflow: hidden;
+        margin-top: -1rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .modern-table thead {
+        background: #f8fafc;
+    }
+
+    .modern-table th {
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        padding: 1.25rem 1.5rem;
+        border: none;
+    }
+
+    .modern-table td {
+        padding: 1.25rem 1.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .modern-table tr:hover {
+        background-color: #fcfdfe;
+    }
+
+    .time-badge {
+        background: #f1f5f9;
+        color: #475569;
+        padding: 0.4rem 0.75rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .msg-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+    }
+
+    .msg-preview {
+        color: #64748b;
+        font-size: 0.875rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .badge-pill {
+        padding: 0.4rem 1rem;
+        border-radius: 2rem;
+        font-weight: 700;
+        font-size: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .badge-all { background: #e0f2fe; color: #0369a1; }
+    .badge-role { background: #f3e8ff; color: #7e22ce; }
+    .badge-user { background: #ffedd5; color: #c2410c; }
+
+    .sender-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .sender-avatar {
+        width: 32px;
+        height: 32px;
+        background: var(--primary-lighter);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: 700;
+        font-size: 0.75rem;
+    }
+
+    .animate-in {
+        animation: slideUp 0.5s ease-out forwards;
+    }
+
+    @@keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="page-header">
+    <div class="header-content">
+        <div class="page-title">
+            <div class="title-icon">
+                <i class="hgi hgi-stroke hgi-notification-01"></i>
+            </div>
+            <div>
+                <h2 class="font-bold text-2xl">Thông báo hệ thống</h2>
+                <p class="text-white/70 text-sm font-medium">Quản lý và gửi thông báo tới người dùng</p>
+            </div>
+        </div>
+        <a href="@Url.Action("Create")" class="btn-create flex items-center gap-2 no-underline">
+            <i class="hgi hgi-stroke hgi-plus"></i> Soạn thông báo mới
+        </a>
+    </div>
+</div>
+
+<div class="container-fluid px-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-2xl p-4 mb-6 flex items-center gap-3 animate-in">
+            <i class="hgi hgi-solid hgi-checkmark-circle-02 text-xl"></i>
+            <span class="font-semibold">@TempData["SuccessMessage"]</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="msg-card animate-in">
+        <div class="table-responsive">
+            <table class="table modern-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Thông tin thông báo</th>
+                        <th>Đối tượng nhận</th>
+                        <th>Người gửi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="time-badge">
+                                    @item.CreatedAt.ToString("dd/MM/yyyy")
+                                    <span class="text-gray-400 font-normal mx-1">|</span>
+                                    @item.CreatedAt.ToString("HH:mm")
+                                </div>
+                            </td>
+                            <td>
+                                <div class="msg-title">@item.Title</div>
+                                <div class="msg-preview" title="@item.Content">@item.Content</div>
+                            </td>
+                            <td>
+                                @if (item.TargetType == "All")
+                                {
+                                    <span class="badge-pill badge-all">
+                                        <i class="hgi hgi-stroke hgi-user-group"></i> Tất cả
+                                    </span>
+                                }
+                                else if (item.TargetType == "Role")
+                                {
+                                    <span class="badge-pill badge-role">
+                                        <i class="hgi hgi-stroke hgi-user-settings-01"></i> @(item.TargetRole == "Shop" ? "Chủ Shop" : "Khách hàng")
+                                    </span>
+                                }
+                                else if (item.TargetType == "Account")
+                                {
+                                    <span class="badge-pill badge-user">
+                                        <i class="hgi hgi-stroke hgi-user"></i> ID: @item.TargetAccountId
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div class="sender-info">
+                                    <div class="sender-avatar">
+                                        @{
+                                            var senderName = item.SentByAdmin?.Profile?.FullName ?? item.SentByAdmin?.Email ?? "A";
+                                            var initial = senderName.Substring(0, 1).ToUpper();
+                                        }
+                                        @initial
+                                    </div>
+                                    <div class="text-sm font-semibold text-gray-700">@senderName</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="py-20 text-center">
+                                <div class="flex flex-col items-center gap-4">
+                                    <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                                        <i class="hgi hgi-stroke hgi-bubble-chat text-4xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-900 font-bold text-lg mb-1">Chưa có thông báo nào</p>
+                                        <p class="text-gray-500 text-sm">Bắt đầu gửi thông báo đầu tiên của bạn ngay hôm nay!</p>
+                                    </div>
+                                    <a href="@Url.Action("Create")" class="btn btn-primary rounded-xl px-6">Bắt đầu ngay</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
