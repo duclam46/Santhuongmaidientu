@@ -1,141 +1,488 @@
 @model DOAN_BANHANG.ViewModels.AdminPartnerApplicationDetailsVm
 @{
-    ViewData["Title"] = "Chi tiết phiếu đăng ký";
+    ViewData["Title"] = $"Thẩm định hồ sơ đối tác #{Model.Id}";
 
     var isAdmin = User?.IsInRole("Admin") ?? false;
+    var isMallReq = string.Equals(Model.RequestedShopTier, "Mall", StringComparison.OrdinalIgnoreCase);
+    var isUpgrade = string.Equals(Model.ApplicationType, "MallUpgrade", StringComparison.OrdinalIgnoreCase);
 
     (string label, string badgeClass, string icon) ResolveStatusUi(string? raw)
     {
-        var s = (raw ?? string.Empty).Trim();
-        var n = s.Replace(" ", string.Empty).ToLowerInvariant();
-        return n switch
+        var s = (raw ?? string.Empty).Trim().Replace(" ", string.Empty).ToLowerInvariant();
+        return s switch
         {
-            "pending" => ("Chờ duyệt", "badge bg-warning-subtle text-warning-emphasis border border-warning-subtle", "bx bx-time-five"),
-            "approved" => ("Đã duyệt", "badge bg-success-subtle text-success-emphasis border border-success-subtle", "bx bx-check-circle"),
-            "rejected" => ("Đã từ chối", "badge bg-danger-subtle text-danger-emphasis border border-danger-subtle", "bx bx-x-circle"),
-            _ => (string.IsNullOrWhiteSpace(s) ? "(không rõ)" : s, "badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle", "bx bx-info-circle")
+            "pending" => ("Chờ xét duyệt", "badge bg-warning text-dark rounded-pill px-3 py-2 fw-bold", "bx bx-time-five"),
+            "approved" => ("Đã phê duyệt", "badge bg-success text-white rounded-pill px-3 py-2 fw-bold", "bx bx-check-circle"),
+            "rejected" => ("Đã từ chối", "badge bg-danger text-white rounded-pill px-3 py-2 fw-bold", "bx bx-x-circle"),
+            _ => ("Không rõ", "badge bg-secondary text-white rounded-pill px-3 py-2 fw-bold", "bx bx-info-circle")
         };
     }
 
     var (statusLabel, statusBadge, statusIcon) = ResolveStatusUi(Model.Status);
     var isPending = string.Equals((Model.Status ?? string.Empty).Trim(), "Pending", StringComparison.OrdinalIgnoreCase);
+
+    var passOrders = Model.CompletedOrderCount >= 3;
+    var passRating = Model.AverageRating >= 4.5m;
+    var passCancel = Model.CancelRatePercent <= 10.0m;
+    var passProducts = Model.ActiveProductCount >= 3;
 }
 
-<div class="row">
-    <div class="col-12">
-        <div class="page-title-box">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 bg-light border rounded-3 p-3">
-                <div>
-                    <h4 class="mb-1"><i class="bx bx-detail me-1"></i>Chi tiết phiếu #@Model.Id</h4>
-                    <div class="text-muted small">@Model.Email</div>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="@statusBadge"><i class="@statusIcon me-1"></i>@statusLabel</span>
-                    <a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="PartnerApplications" asp-action="Index" asp-route-Status="Pending">
-                        <i class="bx bx-left-arrow-alt me-1"></i>Quay lại
-                    </a>
-                </div>
+@section Styles {
+    <style>
+        .pad-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 24px 28px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .pad-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+        @@media (max-width: 991px) {
+            .pad-meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .pad-meta-item {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 14px;
+            padding: 10px 14px;
+        }
+        .pad-info-box {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 12px 14px;
+            height: 100%;
+        }
+        .pad-metric-card {
+            border-radius: 14px;
+            padding: 16px 12px;
+            border: 1px solid #E2E8F0;
+            background: #F8FAFC;
+            height: 100%;
+        }
+        .pad-metric-card.is-pass {
+            background: #ECFDF5;
+            border-color: #A7F3D0;
+        }
+        .pad-doc-card {
+            background: #F8FAFC;
+            border: 1px dashed #CBD5E1;
+            border-radius: 14px;
+            padding: 16px;
+            height: 100%;
+        }
+    </style>
+}
+
+<!-- HERO HEADER -->
+<div class="pad-hero">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                <a class="btn btn-sm rounded-pill px-3" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);"
+                   asp-area="Admin" asp-controller="PartnerApplications" asp-action="Index">
+                    <i class="bx bx-left-arrow-alt me-1"></i>Danh sách hồ sơ
+                </a>
+                @if (isMallReq)
+                {
+                    <span class="badge rounded-pill px-3 py-1.5 fw-bold" style="background: #FFEB69; color: #00262A;">
+                        <i class="bx bxs-badge-check me-1"></i>Đăng ký Sellzy Mall
+                    </span>
+                }
+                else
+                {
+                    <span class="badge rounded-pill px-3 py-1.5" style="background: rgba(255,255,255,0.18); color: #ffffff;">
+                        <i class="bx bx-store me-1"></i>Đăng ký Shop Thường
+                    </span>
+                }
+                <span class="badge rounded-pill px-3 py-1.5" style="background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.92);">
+                    <i class="bx @(isUpgrade ? "bx-trending-up" : "bx-plus-circle") me-1"></i>
+                    @(isUpgrade ? "Xin nâng cấp từ Shop Thường lên Mall" : "Đăng ký mở gian hàng mới")
+                </span>
             </div>
+            <h4 class="text-white fw-bold mb-1">Thẩm định hồ sơ đối tác #@Model.Id — @(string.IsNullOrWhiteSpace(Model.ShopName) ? Model.Email : Model.ShopName)</h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Kiểm tra thông tin gian hàng, giấy tờ pháp lý doanh nghiệp và chỉ số vận hành trước khi ra quyết định phê duyệt.
+            </p>
+        </div>
+        <div>
+            <span class="@statusBadge"><i class="@statusIcon me-1"></i>@statusLabel</span>
+        </div>
+    </div>
+
+    <div class="pad-meta-grid">
+        <div class="pad-meta-item">
+            <div class="small" style="color: rgba(255,255,255,0.72);">Chủ gian hàng</div>
+            <div class="fw-bold text-white text-truncate">@(string.IsNullOrWhiteSpace(Model.FullName) ? "-" : Model.FullName)</div>
+        </div>
+        <div class="pad-meta-item">
+            <div class="small" style="color: rgba(255,255,255,0.72);">Email tài khoản</div>
+            <div class="fw-bold text-white text-truncate">@Model.Email</div>
+        </div>
+        <div class="pad-meta-item">
+            <div class="small" style="color: rgba(255,255,255,0.72);">Thời điểm nộp hồ sơ</div>
+            <div class="fw-bold text-white">@Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+        <div class="pad-meta-item">
+            <div class="small" style="color: rgba(255,255,255,0.72);">Thời điểm xử lý</div>
+            <div class="fw-bold" style="color: #FFEB69;">@(Model.DecidedAt.HasValue ? Model.DecidedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") : "Đang chờ xử lý")</div>
         </div>
     </div>
 </div>
 
 @if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
 {
-    <div class="alert alert-info d-flex align-items-start gap-2 rounded-3" role="alert">
-        <i class="bx bx-info-circle mt-1"></i>
+    <div class="alert alert-info alert-dismissible fade show d-flex align-items-start gap-2 rounded-3 shadow-sm" role="alert">
+        <i class="bx bx-info-circle mt-1 fs-5"></i>
         <div>@toast</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 
-<div class="row">
+<div class="row g-4">
+    <!-- CỘT TRÁI: THÔNG TIN CHI TIẾT HỒ SƠ -->
     <div class="col-lg-7">
-        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-            <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
-                <h5 class="mb-0"><i class="bx bx-user me-1"></i>Thông tin đăng ký</h5>
+        <!-- 1. THÔNG TIN GIAN HÀNG & KHO LẤY HÀNG -->
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark">
+                    <i class="bx bx-store-alt text-primary me-2"></i>1. Thông tin Gian hàng &amp; Kho lấy hàng
+                </h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="text-muted small">Họ tên</div>
-                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.FullName) ? "-" : Model.FullName)</div>
+                        <div class="pad-info-box">
+                            <div class="text-muted small mb-1">Tên gian hàng đăng ký</div>
+                            <div class="fw-bold fs-6 text-primary">@(string.IsNullOrWhiteSpace(Model.ShopName) ? "Chưa cung cấp" : Model.ShopName)</div>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="text-muted small">Số điện thoại</div>
-                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "-" : Model.PhoneNumber)</div>
-                    </div>
-                    <div class="col-md-12">
-                        <div class="text-muted small">Tên shop</div>
-                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.ShopName) ? "-" : Model.ShopName)</div>
-                    </div>
-                    <div class="col-md-12">
-                        <div class="text-muted small">Mô tả shop</div>
-                        <div>@(string.IsNullOrWhiteSpace(Model.ShopDescription) ? "-" : Model.ShopDescription)</div>
-                    </div>
-                    <div class="col-md-12">
-                        <div class="text-muted small">Địa chỉ (GHN)</div>
-                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.Address) ? "-" : Model.Address)</div>
-                        <div class="text-muted small mt-1">Số nhà, tên đường: @(string.IsNullOrWhiteSpace(Model.StreetAddress) ? "-" : Model.StreetAddress)</div>
-                        <div class="text-muted small">Phường/Xã: @(string.IsNullOrWhiteSpace(Model.WardName) ? "-" : Model.WardName) (@(string.IsNullOrWhiteSpace(Model.WardCode) ? "-" : Model.WardCode))</div>
-                        <div class="text-muted small">Quận/Huyện: @(string.IsNullOrWhiteSpace(Model.DistrictName) ? "-" : Model.DistrictName) (@Model.DistrictId)</div>
-                        <div class="text-muted small">Tỉnh/TP: @(string.IsNullOrWhiteSpace(Model.ProvinceName) ? "-" : Model.ProvinceName) (@Model.ProvinceId)</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="text-muted small">Ngày gửi</div>
-                        <div class="fw-semibold">@Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="text-muted small">Quyết định lúc</div>
-                        <div class="fw-semibold">@(Model.DecidedAt.HasValue ? Model.DecidedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") : "-")</div>
-                    </div>
-                    @if (!string.IsNullOrWhiteSpace(Model.RejectionReason))
-                    {
-                        <div class="col-12">
-                            <div class="alert alert-danger mb-0">
-                                <div class="fw-semibold">Lý do từ chối</div>
-                                <div>@Model.RejectionReason</div>
+                        <div class="pad-info-box">
+                            <div class="text-muted small mb-1">Phân hạng hiện tại của tài khoản</div>
+                            <div>
+                                @if (Model.CurrentIsMall)
+                                {
+                                    <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background: #00262A; color: #FFEB69;">
+                                        <i class="bx bxs-badge-check me-1"></i>Đang là Sellzy Mall
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-1">
+                                        <i class="bx bx-store me-1"></i>Shop Thường / Tài khoản khách hàng
+                                    </span>
+                                }
                             </div>
                         </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="pad-info-box">
+                            <div class="text-muted small mb-1">Người đại diện</div>
+                            <div class="fw-bold text-dark">@(string.IsNullOrWhiteSpace(Model.FullName) ? "-" : Model.FullName)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="pad-info-box">
+                            <div class="text-muted small mb-1">Số điện thoại &amp; Email liên hệ</div>
+                            <div class="fw-semibold text-dark">@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "-" : Model.PhoneNumber)</div>
+                            <div class="small text-muted">@Model.Email</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="pad-info-box">
+                            <div class="text-muted small mb-1">Mô tả lĩnh vực kinh doanh</div>
+                            <div class="small text-dark">@(string.IsNullOrWhiteSpace(Model.ShopDescription) ? "Chưa có mô tả chi tiết." : Model.ShopDescription)</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="pad-info-box">
+                            <div class="text-muted small mb-1"><i class="bx bx-map-pin text-primary me-1"></i>Địa chỉ kho lấy hàng (Giao Hàng Nhanh)</div>
+                            <div class="fw-semibold text-dark">@(string.IsNullOrWhiteSpace(Model.Address) ? "Chưa cập nhật địa chỉ kho." : Model.Address)</div>
+                            @if (Model.ProvinceId > 0)
+                            {
+                                <div class="text-muted small mt-1">
+                                    @(Model.WardName ?? "-") • @(Model.DistrictName ?? "-") • @(Model.ProvinceName ?? "-")
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. HỒ SƠ PHÁP LÝ & CHỨNG NHẬN THƯƠNG HIỆU -->
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+            <div class="card-header border-bottom py-3 px-4" style="background: #FFFBEB;">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <h5 class="mb-0 fw-bold" style="color: #92400E;">
+                        <i class="bx bxs-badge-check me-2"></i>2. Hồ sơ Pháp lý &amp; Chứng nhận Thương hiệu
+                    </h5>
+                    @if (isMallReq)
+                    {
+                        <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-semibold">Bắt buộc thẩm định Mall</span>
                     }
+                    else
+                    {
+                        <span class="badge bg-light text-secondary border rounded-pill px-3 py-1">Không bắt buộc với Shop Thường</span>
+                    }
+                </div>
+            </div>
+            <div class="card-body p-4">
+                @if (!isMallReq && string.IsNullOrWhiteSpace(Model.BusinessName) && string.IsNullOrWhiteSpace(Model.BusinessTaxCode))
+                {
+                    <div class="text-muted small mb-0">
+                        Hồ sơ này đăng ký theo mô hình <strong>Shop Thường (Cá nhân / Hộ kinh doanh)</strong> nên không yêu cầu cung cấp Giấy phép Đăng ký Kinh doanh doanh nghiệp và Giấy ủy quyền thương hiệu.
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="pad-info-box">
+                                <div class="text-muted small mb-1">Tên Doanh nghiệp / Pháp nhân</div>
+                                <div class="fw-bold text-dark">@(string.IsNullOrWhiteSpace(Model.BusinessName) ? "Chưa cung cấp" : Model.BusinessName)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="pad-info-box">
+                                <div class="text-muted small mb-1">Mã số thuế doanh nghiệp</div>
+                                <div class="fw-bold text-primary font-monospace">@(string.IsNullOrWhiteSpace(Model.BusinessTaxCode) ? "Chưa cung cấp" : Model.BusinessTaxCode)</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="pad-info-box">
+                                <div class="text-muted small mb-1">Thương hiệu sở hữu / Phân phối chính hãng</div>
+                                <div class="fw-bold text-dark">@(string.IsNullOrWhiteSpace(Model.BrandName) ? "Chưa cung cấp" : Model.BrandName)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="pad-doc-card">
+                                <div class="small fw-bold text-dark mb-2">
+                                    <i class="bx bx-file text-primary me-1"></i>Giấy phép Đăng ký Kinh doanh
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(Model.BusinessLicenseUrl))
+                                {
+                                    <a href="@Model.BusinessLicenseUrl" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3">
+                                        <i class="bx bx-link-external me-1"></i>Mở xem chứng từ
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger-emphasis rounded-pill px-2.5 py-1">Chưa đính kèm tệp</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="pad-doc-card">
+                                <div class="small fw-bold text-dark mb-2">
+                                    <i class="bx bx-award text-warning me-1"></i>Giấy chứng nhận / Ủy quyền Thương hiệu
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(Model.BrandAuthorizationUrl))
+                                {
+                                    <a href="@Model.BrandAuthorizationUrl" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3">
+                                        <i class="bx bx-link-external me-1"></i>Mở xem giấy ủy quyền
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger-emphasis rounded-pill px-2.5 py-1">Chưa đính kèm tệp</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- 3. CHỈ SỐ VẬN HÀNH THỰC TẾ -->
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark">
+                    <i class="bx bx-bar-chart-alt-2 text-primary me-2"></i>3. Chỉ số Vận hành Thực tế (Tiêu chuẩn Sellzy Mall)
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 text-center">
+                    <div class="col-6 col-md-3">
+                        <div class="pad-metric-card @(passOrders ? "is-pass" : "")">
+                            <div class="fs-4 fw-bold text-dark">@Model.CompletedOrderCount</div>
+                            <div class="small text-muted mb-2">Đơn hoàn thành</div>
+                            <span class="badge rounded-pill @(passOrders ? "bg-success" : "bg-secondary")">
+                                @(passOrders ? "Đạt (từ 3 đơn)" : "Cần từ 3 đơn")
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="pad-metric-card @(passRating ? "is-pass" : "")">
+                            <div class="fs-4 fw-bold text-dark">@Model.AverageRating.ToString("0.0") ★</div>
+                            <div class="small text-muted mb-2">Đánh giá TB</div>
+                            <span class="badge rounded-pill @(passRating ? "bg-success" : "bg-secondary")">
+                                @(passRating ? "Đạt (từ 4.5★)" : "Cần từ 4.5★")
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="pad-metric-card @(passCancel ? "is-pass" : "")">
+                            <div class="fs-4 fw-bold text-dark">@Model.CancelRatePercent.ToString("0.0")%</div>
+                            <div class="small text-muted mb-2">Tỷ lệ hủy đơn</div>
+                            <span class="badge rounded-pill @(passCancel ? "bg-success" : "bg-danger")">
+                                @(passCancel ? "Đạt (dưới 10%)" : "Vượt mức 10%")
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="pad-metric-card @(passProducts ? "is-pass" : "")">
+                            <div class="fs-4 fw-bold text-dark">@Model.ActiveProductCount</div>
+                            <div class="small text-muted mb-2">SP đang bán</div>
+                            <span class="badge rounded-pill @(passProducts ? "bg-success" : "bg-secondary")">
+                                @(passProducts ? "Đạt (từ 3 SP)" : "Cần từ 3 SP")
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- CỘT PHẢI: QUYẾT ĐỊNH XÉT DUYỆT & BIỂU PHÍ -->
     <div class="col-lg-5">
-        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-            <div class="card-header bg-light border-0 border-start border-4 border-secondary">
-                <h5 class="mb-0"><i class="bx bx-shield-quarter me-1"></i>Thao tác xét duyệt</h5>
+        <!-- QUYẾT ĐỊNH XÉT DUYỆT -->
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark">
+                    <i class="bx bx-shield-quarter text-primary me-2"></i>Quyết định Xét duyệt
+                </h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
+                @if (!string.IsNullOrWhiteSpace(Model.RejectionReason))
+                {
+                    <div class="alert alert-danger rounded-3 mb-3">
+                        <div class="fw-bold small mb-1"><i class="bx bx-error-circle me-1"></i>Lý do từ chối / Ghi chú trước đó:</div>
+                        <div class="small">@Model.RejectionReason</div>
+                    </div>
+                }
+
                 @if (!isAdmin)
                 {
-                    <div class="alert alert-danger mb-0">Bạn không có quyền xét duyệt.</div>
+                    <div class="alert alert-danger mb-0">Bạn không có quyền xét duyệt hồ sơ này.</div>
                 }
-                else if (!isPending)
+                else if (isPending)
                 {
-                    <div class="alert alert-info mb-0">Phiếu đã được xử lý, không thể duyệt lại.</div>
-                }
-                else
-                {
-                    <form asp-area="Admin" asp-controller="PartnerApplications" asp-action="Approve" method="post" class="mb-3">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="Id" value="@Model.Id" />
-                        <button class="btn btn-success w-100" type="submit">
-                            <i class="bx bx-check-circle me-1"></i>Duyệt & nâng cấp thành Shop
-                        </button>
-                    </form>
+                    @if (isMallReq)
+                    {
+                        <form asp-area="Admin" asp-controller="PartnerApplications" asp-action="Approve" method="post" class="mb-2.5">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Id" value="@Model.Id" />
+                            <input type="hidden" name="ApprovedTier" value="Mall" />
+                            <button class="btn w-100 fw-bold py-2.5 rounded-3 shadow-sm" type="submit" style="background: #00262A; color: #FFEB69;">
+                                <i class="bx bxs-badge-check me-1"></i>Phê duyệt &amp; Cấp danh hiệu Sellzy Mall
+                            </button>
+                        </form>
+
+                        @if (!isUpgrade)
+                        {
+                            <form asp-area="Admin" asp-controller="PartnerApplications" asp-action="Approve" method="post" class="mb-3">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="Id" value="@Model.Id" />
+                                <input type="hidden" name="ApprovedTier" value="Standard" />
+                                <button class="btn btn-outline-primary w-100 fw-semibold py-2 rounded-3" type="submit">
+                                    <i class="bx bx-store me-1"></i>Chỉ duyệt mở Shop Thường (Bổ sung hồ sơ Mall sau)
+                                </button>
+                            </form>
+                        }
+                    }
+                    else
+                    {
+                        <form asp-area="Admin" asp-controller="PartnerApplications" asp-action="Approve" method="post" class="mb-2.5">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Id" value="@Model.Id" />
+                            <input type="hidden" name="ApprovedTier" value="Standard" />
+                            <button class="btn btn-success w-100 fw-bold py-2.5 rounded-3" type="submit">
+                                <i class="bx bx-check-circle me-1"></i>Phê duyệt &amp; Kích hoạt Shop Thường
+                            </button>
+                        </form>
+
+                        <form asp-area="Admin" asp-controller="PartnerApplications" asp-action="Approve" method="post" class="mb-3">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Id" value="@Model.Id" />
+                            <input type="hidden" name="ApprovedTier" value="Mall" />
+                            <button class="btn btn-outline-dark w-100 fw-semibold py-2 rounded-3" type="submit">
+                                <i class="bx bxs-badge-check text-warning me-1"></i>Đặc cách duyệt thẳng lên Sellzy Mall
+                            </button>
+                        </form>
+                    }
+
+                    <hr class="my-3" />
 
                     <form asp-area="Admin" asp-controller="PartnerApplications" asp-action="Reject" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="Id" value="@Model.Id" />
-                        <label class="form-label">Lý do từ chối (tuỳ chọn)</label>
-                        <textarea class="form-control" name="Reason" rows="4" placeholder="VD: Thiếu thông tin giấy phép kinh doanh..."></textarea>
-                        <button class="btn btn-outline-danger w-100 mt-3" type="submit">
-                            <i class="bx bx-x-circle me-1"></i>Từ chối phiếu
+                        <label class="form-label fw-semibold small text-dark">Lý do từ chối hồ sơ (gửi phản hồi cho đối tác)</label>
+                        <textarea class="form-control" name="Reason" rows="3" placeholder="Ví dụ: Thiếu bản sao Giấy phép ĐKKD hoặc giấy ủy quyền thương hiệu chưa rõ nét..."></textarea>
+                        <button class="btn btn-outline-danger w-100 mt-2.5 rounded-3 fw-semibold" type="submit">
+                            <i class="bx bx-x-circle me-1"></i>Từ chối hồ sơ này
                         </button>
                     </form>
                 }
+                else
+                {
+                    <div class="alert alert-success rounded-3 mb-3">
+                        <i class="bx bx-check-circle me-1"></i>Hồ sơ này đã được xử lý với trạng thái: <strong>@statusLabel</strong>.
+                    </div>
+
+                    @if (Model.CurrentIsMall)
+                    {
+                        <form asp-area="Admin" asp-controller="PartnerApplications" asp-action="RevokeMall" method="post"
+                              onsubmit="return confirm('Xác nhận thu hồi danh hiệu Sellzy Mall và chuyển gian hàng này về Shop Thường?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Id" value="@Model.Id" />
+                            <label class="form-label fw-semibold small text-danger">Thu hồi danh hiệu Sellzy Mall (Hạ về Shop Thường)</label>
+                            <input type="text" class="form-control form-control-sm mb-2" name="Reason" placeholder="Nhập lý do thu hồi (ví dụ: Điểm đánh giá dưới 4.5 sao)..." />
+                            <button class="btn btn-sm btn-outline-danger w-100 rounded-3 fw-semibold" type="submit">
+                                <i class="bx bx-down-arrow-circle me-1"></i>Thu hồi huy hiệu Mall
+                            </button>
+                        </form>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- BIỂU PHÍ & QUY ĐỊNH THUẾ ÁP DỤNG -->
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+            <div class="card-header py-3 px-4" style="background: #00262A;">
+                <h5 class="mb-0 fw-bold text-white">
+                    <i class="bx bx-calculator text-warning me-2"></i>Biểu phí &amp; Thuế áp dụng sau duyệt
+                </h5>
+            </div>
+            <div class="card-body p-4 small">
+                <div class="p-3 rounded-3 border mb-3 bg-light">
+                    <div class="fw-bold text-primary mb-1.5">
+                        <i class="bx bx-store me-1"></i>Mô hình Shop Thường
+                    </div>
+                    <ul class="mb-0 ps-3 text-muted">
+                        <li class="mb-1"><strong>Phí chiết khấu sàn:</strong> Áp dụng đúng mức biểu phí gốc theo từng ngành hàng (từ 4% đến 10%).</li>
+                        <li class="mb-1"><strong>Thuế khấu trừ tại nguồn:</strong> Sàn khấu trừ hộ <strong>1,5%</strong> (gồm 1% thuế GTGT và 0,5% thuế TNCN cá nhân).</li>
+                        <li><strong>Hiển thị:</strong> Gian hàng đối tác tiêu chuẩn trên toàn sàn.</li>
+                    </ul>
+                </div>
+                <div class="p-3 rounded-3 border" style="background: #FFFDF5; border-color: #FDE68A !important;">
+                    <div class="fw-bold mb-1.5" style="color: #92400E;">
+                        <i class="bx bxs-badge-check me-1"></i>Mô hình Sellzy Mall (Chính hãng)
+                    </div>
+                    <ul class="mb-0 ps-3 text-muted">
+                        <li class="mb-1"><strong>Phí chiết khấu sàn:</strong> Mức phí ngành hàng gốc <strong>cộng thêm 2%</strong> phí dịch vụ cố định Mall.</li>
+                        <li class="mb-1"><strong>Thuế khấu trừ hộ cá nhân:</strong> <strong>0%</strong> (Doanh nghiệp tự kê khai và xuất hóa đơn thuế GTGT).</li>
+                        <li><strong>Quyền lợi:</strong> Cấp huy hiệu <strong>Sellzy Mall</strong>, ưu tiên hiển thị tìm kiếm và tham gia chương trình trợ giá của sàn.</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>

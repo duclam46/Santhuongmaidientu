@@ -1,883 +1,634 @@
 @{
-  ViewData["Title"] = "Giới thiệu";
+    ViewData["Title"] = "Giới thiệu";
 }
 
-    <!-- ========== Breadcrumb Section Start ========== -->
-    <div class="py-12">
-      <div class="container">
-        <div class="breadcrumb">
-          <ul>
-            <li>
-              <a href='@Url.Action("Index", "Home")'>
-                <span>
-                  <i class="hgi hgi-stroke hgi-home-01 text-[20px]"></i>
-                </span>
-                Home
-              </a>
-            </li>
-            <li class="text-light-disabled-text">&#8226;</li>
-            <li><span>About Us</span></li>
-          </ul>
+@section Styles {
+  <style>
+    /* ========== MULTI-INDUSTRY ABOUT PAGE ========== */
+    .ab-hero {
+      background: radial-gradient(circle at 85% 20%, rgba(8, 129, 120, 0.35) 0%, transparent 50%),
+                  linear-gradient(135deg, #00262A 0%, #033E44 55%, #065B5E 100%);
+      border-radius: 32px;
+      padding: 44px 48px;
+      color: #ffffff;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 24px 50px -16px rgba(0, 38, 42, 0.35);
+    }
+    @@media (max-width: 767px) {
+      .ab-hero {
+        padding: 28px 20px;
+        border-radius: 24px;
+      }
+    }
+    .ab-breadcrumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.72);
+      margin-bottom: 24px;
+    }
+    .ab-breadcrumb a {
+      color: rgba(255, 255, 255, 0.85);
+      transition: color 0.2s;
+    }
+    .ab-breadcrumb a:hover {
+      color: #FFEB69;
+    }
+    .ab-hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 235, 105, 0.14);
+      border: 1px solid rgba(255, 235, 105, 0.35);
+      color: #FFEB69;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 18px;
+    }
+    .ab-hero-title {
+      font-size: clamp(30px, 3.6vw, 46px);
+      line-height: 1.18;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin-bottom: 18px;
+    }
+    .ab-hero-title span {
+      color: #FFEB69;
+    }
+    .ab-hero-desc {
+      font-size: 16px;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.84);
+      max-width: 540px;
+      margin-bottom: 28px;
+    }
+    .ab-lookbook-stack {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 16px;
+      align-items: end;
+    }
+    @@media (max-width: 575px) {
+      .ab-lookbook-stack {
+        grid-template-columns: 1fr;
+      }
+    }
+    .ab-lookbook-main {
+      border-radius: 24px;
+      overflow: hidden;
+      height: 390px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background-color: #ffffff;
+    }
+    .ab-lookbook-side {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .ab-lookbook-sub {
+      border-radius: 22px;
+      overflow: hidden;
+      height: 235px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background-color: #ffffff;
+    }
+    .ab-lookbook-main img,
+    .ab-lookbook-sub img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .ab-glass-stat {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 20px;
+      padding: 18px 20px;
+    }
+
+    /* Section Headings */
+    .ab-eyebrow {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #088178;
+      margin-bottom: 8px;
+    }
+    .ab-heading {
+      font-size: clamp(26px, 2.8vw, 36px);
+      line-height: 1.25;
+      font-weight: 800;
+      color: #161C24;
+      letter-spacing: -0.02em;
+    }
+
+    /* Bento Grid */
+    .ab-bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 20px;
+    }
+    .ab-bento-card {
+      border-radius: 26px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.28s ease, box-shadow 0.28s ease;
+    }
+    .ab-bento-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 36px -12px rgba(22, 28, 36, 0.12);
+    }
+    .ab-bento-a {
+      grid-column: span 7;
+      background: linear-gradient(135deg, #EAF7F6 0%, #F4FBFB 100%);
+      border: 1px solid rgba(8, 129, 120, 0.14);
+    }
+    .ab-bento-b {
+      grid-column: span 5;
+      background-color: #FFEB69;
+      color: #161C24;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ab-bento-c {
+      grid-column: span 5;
+      background-color: #161C24;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ab-bento-d {
+      grid-column: span 7;
+      padding: 0;
+      min-height: 270px;
+      background-color: #F4F6F8;
+    }
+    @@media (max-width: 991px) {
+      .ab-bento-a, .ab-bento-b, .ab-bento-c, .ab-bento-d {
+        grid-column: span 12;
+      }
+    }
+    .ab-pillar-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      border: 1px solid rgba(8, 129, 120, 0.15);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #161C24;
+    }
+
+    /* Multi-Industry Ecosystem Grid */
+    .ab-industry-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+    @@media (max-width: 991px) {
+      .ab-industry-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @@media (max-width: 639px) {
+      .ab-industry-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .ab-industry-card {
+      background: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 22px;
+      padding: 26px 24px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .ab-industry-card:hover {
+      transform: translateY(-4px);
+      border-color: #088178;
+      box-shadow: 0 16px 32px -12px rgba(8, 129, 120, 0.14);
+    }
+    .ab-industry-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    /* Timeline */
+    .ab-timeline-wrap {
+      background-color: #F8FAFC;
+      border-radius: 32px;
+      padding: 56px 36px;
+      border: 1px solid rgba(22, 28, 36, 0.06);
+    }
+    @@media (max-width: 767px) {
+      .ab-timeline-wrap {
+        padding: 36px 20px;
+      }
+    }
+    .ab-timeline-card {
+      background-color: #ffffff;
+      border-radius: 22px;
+      padding: 26px 22px;
+      border: 1px solid rgba(22, 28, 36, 0.07);
+      height: 100%;
+      position: relative;
+      transition: border-color 0.25s ease, transform 0.25s ease;
+    }
+    .ab-timeline-card:hover {
+      transform: translateY(-4px);
+      border-color: #088178;
+    }
+    .ab-year-badge {
+      display: inline-block;
+      font-size: 14px;
+      font-weight: 800;
+      color: #ffffff;
+      background-color: #088178;
+      padding: 4px 14px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    /* 4 Steps */
+    .ab-step-card {
+      padding: 28px 24px;
+      border-radius: 22px;
+      background-color: #ffffff;
+      border: 1px solid rgba(22, 28, 36, 0.08);
+      height: 100%;
+      transition: all 0.25s ease;
+    }
+    .ab-step-card:hover {
+      border-color: rgba(8, 129, 120, 0.35);
+      box-shadow: 0 14px 28px -10px rgba(8, 129, 120, 0.12);
+    }
+    .ab-step-num {
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(8, 129, 120, 0.22);
+      margin-bottom: 16px;
+      font-family: "Plus Jakarta Sans", sans-serif;
+    }
+  </style>
+}
+
+<!-- ========== 1. Hero Đa Ngành Start ========== -->
+<section class="pt-6 pb-[70px]">
+  <div class="container">
+    <div class="ab-hero">
+      <div class="grid grid-cols-12 gap-8 items-center">
+        <div class="col-span-12 lg:col-span-6 wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+          <div class="ab-breadcrumb">
+            <a href='@Url.Action("Index", "Home")'>Trang chủ</a>
+            <span>/</span>
+            <span style="color: #FFEB69; font-weight: 600;">Giới thiệu</span>
+          </div>
+
+          <div class="ab-hero-pill">
+            <i class="hgi hgi-stroke hgi-sparkles"></i>
+            <span>Sellzy Multi-Category Marketplace • Est. 2021</span>
+          </div>
+
+          <h1 class="ab-hero-title">
+            Nền Tảng Mua Sắm Đa Ngành — Trọn Vẹn <span>Mọi Nhu Cầu</span>
+          </h1>
+
+          <p class="ab-hero-desc">
+            Sellzy kết nối hàng nghìn sản phẩm chính hãng từ Công nghệ, Thời trang, Mỹ phẩm đến Thực phẩm sạch, Nhà sách &amp; Sản phẩm số trên một nền tảng duy nhất — minh bạch nguồn gốc, giao hàng linh hoạt và hỗ trợ xuất hóa đơn VAT.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-4">
+            <a href='@(Url.RouteUrl("shop_index") ?? Url.Action("Index", "Products"))' class="btn rounded-full px-7 py-3 font-bold text-sm" style="background-color: #FFEB69; color: #161C24;">
+              Khám phá sản phẩm
+            </a>
+            <a href="javascript:void(0)" onclick="document.getElementById('hanh-trinh')?.scrollIntoView({behavior:'smooth'})" class="btn rounded-full px-6 py-3 font-semibold text-sm" style="background-color: rgba(255,255,255,0.12); color: #ffffff; border: 1px solid rgba(255,255,255,0.28);">
+              Hành trình phát triển
+            </a>
+          </div>
+        </div>
+
+        <div class="col-span-12 lg:col-span-6 wow animate__animated animate__fadeInUp" data-wow-delay=".25s">
+          <div class="ab-lookbook-stack">
+            <div class="ab-lookbook-main">
+              <img src="/assets/images/home-4/promo-tech.jpg" alt="Công nghệ và thiết bị số chính hãng tại Sellzy" />
+            </div>
+            <div class="ab-lookbook-side">
+              <div class="ab-lookbook-sub">
+                <img src="/assets/images/home-4/promo-lifestyle.jpg" alt="Gia dụng thông minh và làm đẹp Sellzy" />
+              </div>
+              <div class="ab-glass-stat">
+                <div class="text-2xl font-extrabold" style="color: #FFEB69;">10+ Ngành Hàng</div>
+                <div class="text-xs mt-1" style="color: rgba(255,255,255,0.85);">
+                  Công nghệ, Thời trang, Thực phẩm sạch, Sách &amp; E-Voucher chính hãng
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <!-- ========== Breadcrumb Section End ========== -->
+  </div>
+</section>
+<!-- ========== Hero Đa Ngành End ========== -->
 
-    <!-- ========== Hero Section Start ========== -->
-    <section class="pb-[70px]">
-      <div class="container">
-        <div class="grid grid-cols-12 gap-x-[30px]">
-          <div class="xl:col-span-8 col-span-12">
-            <div class="md:flex justify-between">
-              <div
-                class="lg:w-[644px] md:w-[400px] w-full md:pt-[56px] pb-10 order-2 md:order-1"
-              >
-                <h2
-                  class="pb-6 wow animate__animated animate__fadeInUp"
-                  data-wow-delay=".2s"
-                >
-                  Empowering Better Health at Home
-                </h2>
-                <div
-                  class="pb-4 wow animate__animated animate__fadeInUp"
-                  data-wow-delay=".3s"
-                >
-                  <h5 class="pb-3">Our Mission</h5>
-                  <p>
-                    To make quality healthcare products accessible, affordable,
-                    and reliable for every household. We are committed to
-                    helping individuals and families take control of their
-                    health with ease, confidence, and care—right from the
-                    comfort of home.
-                  </p>
-                </div>
-                <div
-                  class="wow animate__animated animate__fadeInUp"
-                  data-wow-delay=".4s"
-                >
-                  <h5 class="pb-3">Our Vision</h5>
-                  <p>
-                    To become a trusted name in home healthcare by simplifying
-                    the way people care for themselves and their loved
-                    ones—empowering healthier lives through innovation,
-                    compassion, and convenience.
-                  </p>
-                </div>
-              </div>
-              <div
-                class="md:w-[255px] lg:max-h-[340px] order-1 md:order-2 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              >
-                <img
-                  src="assets/images/about/man-woman.jpg"
-                  alt="Man & Woman"
-                  class="rounded-2xl h-full object-cover"
-                />
-              </div>
-            </div>
-            <div
-              class="md:flex justify-between lg:p-10 p-4 border border-gray-300 rounded-2xl lg:mt-0 mt-10 lg:mb-[53px] mb-10"
-            >
-              <div
-                class="md:pb-0 pb-2 md:border-none border-b border-gray-300 xl:pr-0 lg:pr-6 md:pr-4 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              >
-                <div class="flex items-center justify-center">
-                  <h3 class="about-us-counter">120</h3>
-                  <h3>+</h3>
-                </div>
-                <p class="text-center">Years of Experience</p>
-              </div>
-              <div
-                class="border-r border-gray-300 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".3s"
-              ></div>
-              <div
-                class="md:pb-0 pb-2 md:pt-0 pt-2 md:border-none border-b border-gray-300 xl:px-0 lg:px-6 md:px-4 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".4s"
-              >
-                <div class="flex items-center justify-center">
-                  <h3 class="about-us-counter">100</h3>
-                  <h3>M</h3>
-                </div>
-                <p class="text-center">Orders Delivered Safely</p>
-              </div>
-              <div
-                class="border-r border-gray-300 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".5s"
-              ></div>
-              <div
-                class="md:pb-0 pb-2 md:pt-0 pt-2 md:border-none border-b border-gray-300 xl:px-0 lg:px-6 md:px-4 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".6s"
-              >
-                <div class="flex items-center justify-center">
-                  <h3 class="about-us-counter">100</h3>
-                  <h3>K+</h3>
-                </div>
-                <p class="text-center">Verified 5-Star Reviews</p>
-              </div>
-              <div
-                class="border-r border-gray-300 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".7s"
-              ></div>
-              <div
-                class="md:pt-0 pt-2 xl:pl-0 lg:pl-6 md:pl-4 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".8s"
-              >
-                <div class="flex items-center justify-center">
-                  <h3 class="about-us-counter">99</h3>
-                  <h3>%</h3>
-                </div>
-                <p class="text-center">Customer Satisfaction Rate</p>
-              </div>
-            </div>
+<!-- ========== 2. Bento Grid: Giá Trị & Con Số Start ========== -->
+<section class="pb-[70px]">
+  <div class="container">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+      <div>
+        <span class="ab-eyebrow">Giá trị cốt lõi</span>
+        <h2 class="ab-heading m-0">Tại Sao Hàng Trăm Nghìn Khách Hàng Chọn Sellzy?</h2>
+      </div>
+      <p class="text-sm text-light-secondary-text max-w-md m-0">
+        Sự kết hợp giữa hệ sinh thái đa ngành hàng chuẩn hóa, thanh toán an toàn và dịch vụ hậu mãi minh bạch.
+      </p>
+    </div>
+
+    <div class="ab-bento-grid">
+      <!-- Block A -->
+      <div class="ab-bento-card ab-bento-a wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+        <span class="ab-eyebrow">Sứ mệnh nền tảng</span>
+        <h3 class="text-2xl font-extrabold text-light-primary-text mb-3">
+          Đa Dạng Ngành Hàng — Đồng Nhất Chất Lượng
+        </h3>
+        <p class="text-sm leading-relaxed text-light-secondary-text mb-6">
+          Từ thiết bị điện tử bảo hành chính hãng, thực phẩm kiểm soát hạn sử dụng nghiêm ngặt, đến key bản quyền giao tức thì — mọi sản phẩm trên Sellzy đều được chuẩn hóa thông tin và kiểm định trước khi đến tay khách hàng.
+        </p>
+        <div class="flex flex-wrap gap-2.5">
+          <span class="ab-pillar-chip"><i class="hgi hgi-stroke hgi-checkmark-badge-01 text-primary"></i> 100% Chính hãng &amp; Minh bạch</span>
+          <span class="ab-pillar-chip"><i class="hgi hgi-stroke hgi-clock-01 text-primary"></i> Kiểm soát HSD &amp; Bảo quản</span>
+          <span class="ab-pillar-chip"><i class="hgi hgi-stroke hgi-invoice-01 text-primary"></i> Hỗ trợ xuất Hóa đơn VAT</span>
+        </div>
+      </div>
+
+      <!-- Block B -->
+      <div class="ab-bento-card ab-bento-b wow animate__animated animate__fadeInUp" data-wow-delay=".25s">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white/70">Độ hài lòng</span>
+          <i class="hgi hgi-stroke hgi-star text-2xl"></i>
+        </div>
+        <div class="my-4">
+          <div class="flex items-baseline gap-1">
+            <span class="about-us-counter text-5xl font-black">99</span>
+            <span class="text-4xl font-black">%</span>
           </div>
-          <div
-            class="xl:col-span-4 col-span-12 wow animate__animated animate__fadeInUp"
-            data-wow-delay=".2s"
-          >
-            <img
-              src="assets/images/about/two-women.jpg"
-              alt="Two Women"
-              class="rounded-2xl xl:h-full object-cover"
-            />
+          <p class="text-sm font-semibold mt-2 m-0">Khách hàng đánh giá 5 sao và tiếp tục quay lại mua sắm</p>
+        </div>
+        <div class="text-xs font-medium opacity-80">Dựa trên hơn 50.000+ đánh giá đơn hàng xác thực</div>
+      </div>
+
+      <!-- Block C -->
+      <div class="ab-bento-card ab-bento-c wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full" style="background: rgba(255,255,255,0.12); color: #FFEB69;">Năng lực vận hành</span>
+          <i class="hgi hgi-stroke hgi-container-truck text-2xl" style="color: #FFEB69;"></i>
+        </div>
+        <div class="my-4">
+          <div class="flex items-baseline gap-1" style="color: #FFEB69;">
+            <span class="about-us-counter text-5xl font-black">120</span>
+            <span class="text-4xl font-black">K+</span>
+          </div>
+          <p class="text-sm font-semibold mt-2 m-0" style="color: rgba(255,255,255,0.9);">Đơn hàng đã giao an toàn đến 63 tỉnh thành</p>
+        </div>
+        <div class="text-xs" style="color: rgba(255,255,255,0.68);">Giao tiêu chuẩn, giao mát bảo quản &amp; giao mã số 24/7</div>
+      </div>
+
+      <!-- Block D -->
+      <div class="ab-bento-card ab-bento-d wow animate__animated animate__fadeInUp" data-wow-delay=".35s">
+        <img src="/assets/images/about/woman-on-phone.jpg" alt="Mua sắm thông minh trên Sellzy" class="w-full h-full object-cover" style="min-height: 270px; object-position: center 25%;" />
+        <div style="position: absolute; inset: 0; background: linear-gradient(180deg, transparent 32%, rgba(0, 38, 42, 0.9) 100%); display: flex; align-items: flex-end; padding: 28px;">
+          <div class="text-white">
+            <span class="inline-block text-xs font-bold px-3 py-1 rounded-full mb-2" style="background: #FFEB69; color: #161C24;">Trải nghiệm thông minh</span>
+            <h4 class="text-xl font-extrabold text-white m-0">Mua Sắm Dễ Dàng — Thanh Toán Tiện Lợi</h4>
+            <p class="text-xs mt-1 m-0" style="color: rgba(255,255,255,0.85);">Tích hợp tìm kiếm nhanh, trợ lý AI, VNPay, Ví Sellzy &amp; theo dõi đơn hàng theo thời gian thực.</p>
           </div>
         </div>
       </div>
-    </section>
-    <!-- ========== Hero Section End ========== -->
+    </div>
+  </div>
+</section>
+<!-- ========== Bento Grid End ========== -->
 
-    <!-- ========== Quality Section Start ========== -->
-    <section class="mb-[70px]">
-      <div
-        class="lg:bg-white bg-[#FFD6EF] py-12 lg:pt-0 lg:pb-[23px] text-center lg:max-w-[704px] mx-auto lg:rounded-[164px] lg:-mb-[103px] relative z-10 lg:before:bg-[#FFD6EF] lg:after:bg-[#FFD6EF] lg:before:absolute lg:before:bottom-0 lg:before:left-0 lg:before:h-full lg:before:w-[145px] lg:before:bg-[url('images/slider-left-shape.html')] lg:before:bg-no-repeat lg:before:z-11 lg:after:absolute lg:after:bottom-0 lg:after:right-0 lg:after:h-full lg:after:w-[145px] lg:after:bg-[url('images/slider-right-shape.png')] lg:after:bg-no-repeat lg:after:z-11"
-      >
-        <h3
-          class="mb-2 wow animate__animated animate__fadeInUp"
-          data-wow-delay=".2s"
-        >
-          Quality is our priority
-        </h3>
-        <p class="wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-          Because you deserve nothing less than the best.
+<!-- ========== 3. Hệ Sinh Thái Ngành Hàng Chủ Lực Start ========== -->
+<section class="pb-[70px]">
+  <div class="container">
+    <div class="text-center max-w-2xl mx-auto mb-10 wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+      <span class="ab-eyebrow">Hệ sinh thái đa ngành</span>
+      <h2 class="ab-heading mb-3">Trọn Vẹn Mọi Nhu Cầu Cuộc Sống Hiện Đại</h2>
+      <p class="text-sm text-light-secondary-text m-0">
+        Mỗi nhóm ngành hàng trên Sellzy đều được tối ưu quy trình kiểm định, bảo quản và giao nhận riêng biệt.
+      </p>
+    </div>
+
+    <div class="ab-industry-grid">
+      <div class="ab-industry-card wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+        <div class="ab-industry-icon" style="background-color: #E0F2FE; color: #0284C7;">
+          <i class="hgi hgi-stroke hgi-laptop"></i>
+        </div>
+        <h5 class="text-base font-bold text-light-primary-text mb-2">Công Nghệ &amp; Thiết Bị Số</h5>
+        <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+          Điện thoại, laptop, tai nghe &amp; thiết bị gia dụng thông minh chính hãng với bảo hành điện tử minh bạch.
         </p>
       </div>
-      <div
-        class="xl:max-w-[1728px] w-full mx-auto relative bg-[#FFD6EF] xl:rounded-5xl pb-12 lg:pt-[172px]"
-      >
-        <div class="container">
-          <div
-            class="flex flex-wrap lg:flex-nowrap items-center justify-center gap-x-6 gap-y-6"
-          >
-            <div
-              class="p-6 border-gray-300 border bg-white rounded-2xl text-center lg:w-[390px] w-full wow animate__animated animate__fadeInUp"
-              data-wow-delay=".2s"
-            >
-              <span
-                class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-container-truck text-3xl text-light-primary-text"
-                ></i>
-              </span>
-              <h5 class="pt-3 pb-0.5">Free Shipping</h5>
-              <p>Enjoy the Convenience of Free Shipping on Every Order</p>
-            </div>
-            <div
-              class="p-6 border-gray-300 border bg-white rounded-2xl text-center lg:w-[390px] w-full wow animate__animated animate__fadeInUp"
-              data-wow-delay=".3s"
-            >
-              <span
-                class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-customer-support text-3xl text-light-primary-text"
-                ></i>
-              </span>
-              <h5 class="pt-3 pb-0.5">24x7 Support</h5>
-              <p>Round-the-Clock Assistance, Anytime You Need It</p>
-            </div>
-            <div
-              class="p-6 border-gray-300 border bg-white rounded-2xl text-center lg:w-[390px] w-full wow animate__animated animate__fadeInUp"
-              data-wow-delay=".4s"
-            >
-              <span
-                class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-delivery-return-02 text-3xl text-light-primary-text"
-                ></i>
-              </span>
-              <h5 class="pt-3 pb-0.5">30 Days Return</h5>
-              <p>
-                Your Satisfaction is Our Priority: Return Any Product Within 30
-                Days
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- ========== Quality Section End ========== -->
 
-    <!-- ========== Faster Section Start ========== -->
-    <section class="pb-[70px]">
-      <div class="container">
-        <div class="grid grid-cols-12 items-center lg:gap-x-[70px]">
-          <div
-            class="col-span-12 lg:col-span-6 lg:max-w-[762px] row-start-1 lg:row-start-auto"
-          >
-            <div
-              class="wow animate__animated animate__fadeInUp"
-              data-wow-delay=".2s"
-            >
-              <p
-                class="text-primary bg-[#00AB5514] py-0.5 px-3 inline-flex gap-x-2.5 items-center rounded-full font-semibold"
-              >
-                <span class="w-[15px] h-[15px] rounded-full bg-primary"> </span>
-                Features
-              </p>
-            </div>
-            <h3
-              class="pt-4 pb-10 wow animate__animated animate__fadeInUp"
-              data-wow-delay=".3s"
-            >
-              Faster Free Delivery
-            </h3>
-            <p
-              class="pb-6 wow animate__animated animate__fadeInUp"
-              data-wow-delay=".4s"
-            >
-              Experience the ultimate convenience with our Faster Free Delivery
-              service—designed to bring your orders to your doorstep quickly and
-              without any extra cost. Whether you&apos;re ordering essentials or
-              gifts, we make sure you get them faster than ever. Why You'll Love
-              It:
-            </p>
-            <ul
-              class="pb-6 space-y-4 wow animate__animated animate__fadeInUp"
-              data-wow-delay=".5s"
-            >
-              <li class="flex gap-x-4">
-                <span
-                  class="inline-flex flex-none items-center justify-center size-6 bg-primary text-white rounded-full"
-                >
-                  <i class="hgi hgi-stroke hgi-tick-02"></i>
-                </span>
-                <p>
-                  Absolutely Free: No delivery fees, no hidden charges—just
-                  fast, reliable service.
-                </p>
-              </li>
-              <li class="flex gap-x-4">
-                <span
-                  class="inline-flex flex-none items-center justify-center size-6 bg-primary text-white rounded-full"
-                >
-                  <i class="hgi hgi-stroke hgi-tick-02"></i>
-                </span>
-                <p>
-                  Real-Time Tracking: Stay updated every step of the way with
-                  live order tracking.
-                </p>
-              </li>
-              <li class="flex gap-x-4">
-                <span
-                  class="inline-flex flex-none items-center justify-center size-6 bg-primary text-white rounded-full"
-                >
-                  <i class="hgi hgi-stroke hgi-tick-02"></i>
-                </span>
-                <p>
-                  Reliable Delivery Partners: We&apos;ve partnered with trusted
-                  couriers to ensure your packages
-                </p>
-              </li>
-              <li class="flex gap-x-4">
-                <span
-                  class="inline-flex flex-none items-center justify-center size-6 bg-primary text-white rounded-full"
-                >
-                  <i class="hgi hgi-stroke hgi-tick-02"></i>
-                </span>
-                <p>
-                  Weekend & Evening Delivery: Get your items when it's most
-                  convenient for you.
-                </p>
-              </li>
-            </ul>
-            <p
-              class="wow animate__animated animate__fadeInUp"
-              data-wow-delay=".6s"
-            >
-              Say goodbye to long waits and shipping fees. With Faster Free
-              Delivery, we&apos;re raising the standard—fast, seamless, and 100%
-              free.
-            </p>
-          </div>
-          <div class="col-span-12 lg:col-span-6 row-start-2 lg:row-start-auto">
-            <div class="xl:flex items-center gap-x-6">
-              <img
-                src="assets/images/about/woman-on-phone.jpg"
-                alt="Woman on Phone"
-                class="rounded-2xl lg:max-w-[450px] w-full min-h-[570px] object-cover xl:mb-0 mb-6 lg:mt-0 mt-6 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              />
-              <div>
-                <img
-                  src="assets/images/about/woman-bg.png"
-                  alt="Woman Standing"
-                  class="rounded-2xl w-full xl:max-w-[306px] min-h-[414px] object-cover xl:object-left wow animate__animated animate__fadeInUp"
-                  data-wow-delay=".3s"
-                />
-              </div>
-            </div>
-          </div>
+      <div class="ab-industry-card wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+        <div class="ab-industry-icon" style="background-color: #FCE7F3; color: #DB2777;">
+          <i class="hgi hgi-stroke hgi-t-shirt"></i>
         </div>
-      </div>
-    </section>
-    <!-- ========== Faster Section End ========== -->
-
-    <!-- ========== Testimonial Section Start ========== -->
-    <section class="pb-[70px]">
-      <div
-        class="lg:bg-white bg-[#A0E2E0] py-12 lg:pt-0 lg:pb-[23px] text-center lg:max-w-[704px] mx-auto lg:rounded-[164px] lg:-mb-[103px] relative z-10 lg:before:bg-[#A0E2E0] lg:after:bg-[#A0E2E0] lg:before:absolute lg:before:bottom-0 lg:before:left-0 lg:before:h-full lg:before:w-[145px] lg:before:bg-[url('images/slider-left-shape.html')] lg:before:bg-no-repeat lg:before:z-11 lg:after:absolute lg:after:bottom-0 lg:after:right-0 lg:after:h-full lg:after:w-[145px] lg:after:bg-[url('images/slider-right-shape.png')] lg:after:bg-no-repeat lg:after:z-11"
-      >
-        <h3
-          class="mb-2 wow animate__animated animate__fadeInUp"
-          data-wow-delay=".2s"
-        >
-          Trusted by Customers
-        </h3>
-        <p class="wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-          Join thousands of happy customers around the globe.
+        <h5 class="text-base font-bold text-light-primary-text mb-2">Thời Trang &amp; Phụ Kiện</h5>
+        <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+          Trang phục nam nữ, giày dép &amp; túi xách đa dạng phong cách, cập nhật xu hướng mới mỗi ngày.
         </p>
       </div>
-      <div
-        class="xl:max-w-[1728px] w-full mx-auto relative bg-[#A0E2E0] xl:rounded-5xl pb-[70px] lg:pt-[172px]"
-      >
-        <div class="container">
-          <div class="about-us-testimonial-wrapper grid grid-cols-12">
-            <div
-              class="about-us-testimonial-slider -mx-3 col-start-2 col-end-12 sellzy-slider"
-              data-slick='{"slidesToShow": 2, "slidesToScroll": 1, "loop": true, "arrows": true, "infinite": true, "appendArrows": ".about-us-testimonial-slider-nav", "responsive": [{"breakpoint": 1441, "settings": {"slidesToShow": 2}}, {"breakpoint": 1025, "settings": {"slidesToShow": 1}}]}'
-            >
-              <div
-                class="bg-white rounded-3xl p-10 mx-3 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              >
-                <div class="flex items-center gap-x-4 pb-6">
-                  <img
-                    src="assets/images/vendors-list/vendor-profile.png"
-                    alt="Vendor Profile"
-                    class="rounded-full size-12 flex-none"
-                  />
-                  <div class="flex-1">
-                    <p class="pb-1 font-semibold text-light-primary-text">
-                      Robert Fox
-                    </p>
-                    <p class="text-sm text-light-secondary-text leading-[22px]">
-                      12:40PM, 14 Nov, 2026
-                    </p>
-                  </div>
-                </div>
-                <div class="flex items-center pb-3">
-                  <div
-                    class="rating-section flex items-center border-r border-gray-300 pr-3"
-                  >
-                    <div
-                      class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]"
-                    >
-                      <div
-                        style="width: 80%"
-                        class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"
-                      ></div>
-                    </div>
-                    <span
-                      class="text-sm leading-[22px] font-normal inline-flex ml-2 text-light-primary-text mt-1"
-                      >4.5</span
-                    >
-                  </div>
-                  <div class="flex items-center gap-x-1 pl-3">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M11.5269 3.13379L13.9331 3.67969L13.7065 6.13965L15.3335 8L13.7065 9.86035L13.9331 12.3203L11.5269 12.8662L10.2661 14.9932L7.99951 14.0195L5.73291 15L4.47314 12.873L2.06689 12.3271L2.29346 9.86035L0.666504 8L2.29346 6.13379L2.06689 3.66699L4.47314 3.12695L5.73291 1L7.99951 1.97363L10.2661 1L11.5269 3.13379ZM6.72607 9.17285L5.18018 7.62012L4.19287 8.60645L6.72607 11.1465L11.6128 6.24707L10.6265 5.25977L6.72607 9.17285Z"
-                        fill="#088178"
-                      />
-                    </svg>
-                    <p class="text-primary text-sm leading-[22px]">
-                      Verified purchase
-                    </p>
-                  </div>
-                </div>
-                <p>
-                  I was honestly surprised at how fast the delivery was. The
-                  product came well-packaged and exactly as described. Great
-                  quality, and the free fast shipping made the experience even
-                  better!
-                </p>
-              </div>
-              <div
-                class="bg-white rounded-3xl p-10 mx-3 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".3s"
-              >
-                <div class="flex items-center gap-x-4 pb-6">
-                  <img
-                    src="assets/images/vendors-list/vendor-profile.png"
-                    alt="Vendor Profile"
-                    class="rounded-full size-12 flex-none"
-                  />
-                  <div class="flex-1">
-                    <p class="pb-1 font-semibold text-light-primary-text">
-                      James Smith
-                    </p>
-                    <p class="text-sm text-light-secondary-text leading-[22px]">
-                      12:40PM, 14 Nov, 2026
-                    </p>
-                  </div>
-                </div>
-                <div class="flex items-center pb-3">
-                  <div
-                    class="rating-section flex items-center border-r border-gray-300 pr-3"
-                  >
-                    <div
-                      class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]"
-                    >
-                      <div
-                        style="width: 80%"
-                        class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"
-                      ></div>
-                    </div>
-                    <span
-                      class="text-sm leading-[22px] font-normal inline-block ml-2 text-light-primary-text mt-1"
-                      >4.5</span
-                    >
-                  </div>
-                  <div class="flex items-center gap-x-1 pl-3">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M11.5269 3.13379L13.9331 3.67969L13.7065 6.13965L15.3335 8L13.7065 9.86035L13.9331 12.3203L11.5269 12.8662L10.2661 14.9932L7.99951 14.0195L5.73291 15L4.47314 12.873L2.06689 12.3271L2.29346 9.86035L0.666504 8L2.29346 6.13379L2.06689 3.66699L4.47314 3.12695L5.73291 1L7.99951 1.97363L10.2661 1L11.5269 3.13379ZM6.72607 9.17285L5.18018 7.62012L4.19287 8.60645L6.72607 11.1465L11.6128 6.24707L10.6265 5.25977L6.72607 9.17285Z"
-                        fill="#088178"
-                      />
-                    </svg>
-                    <p class="text-primary text-sm leading-[22px]">
-                      Verified purchase
-                    </p>
-                  </div>
-                </div>
-                <p>
-                  From browsing to checkout, everything was super easy. Loved
-                  how I didn&apos;t have to pay anything extra for shipping, and
-                  my item arrived the next day. Highly recommend!
-                </p>
-              </div>
-              <div
-                class="bg-white rounded-3xl p-10 mx-3 wow animate__animated animate__fadeInUp"
-                data-wow-delay=".4s"
-              >
-                <div class="flex items-center gap-x-4 pb-6">
-                  <img
-                    src="assets/images/vendors-list/vendor-profile.png"
-                    alt="Vendor Profile"
-                    class="rounded-full size-12 flex-none"
-                  />
-                  <div class="flex-1">
-                    <p class="pb-1 font-semibold text-light-primary-text">
-                      James Smith
-                    </p>
-                    <p class="text-sm text-light-secondary-text leading-[22px]">
-                      12:40PM, 14 Nov, 2026
-                    </p>
-                  </div>
-                </div>
-                <div class="flex items-center pb-3">
-                  <div
-                    class="rating-section flex items-center border-r border-gray-300 pr-3"
-                  >
-                    <div
-                      class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]"
-                    >
-                      <div
-                        style="width: 80%"
-                        class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"
-                      ></div>
-                    </div>
-                    <span
-                      class="text-sm leading-[22px] font-normal inline-block ml-2 text-light-primary-text mt-1"
-                      >4.5</span
-                    >
-                  </div>
-                  <div class="flex items-center gap-x-1 pl-3">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M11.5269 3.13379L13.9331 3.67969L13.7065 6.13965L15.3335 8L13.7065 9.86035L13.9331 12.3203L11.5269 12.8662L10.2661 14.9932L7.99951 14.0195L5.73291 15L4.47314 12.873L2.06689 12.3271L2.29346 9.86035L0.666504 8L2.29346 6.13379L2.06689 3.66699L4.47314 3.12695L5.73291 1L7.99951 1.97363L10.2661 1L11.5269 3.13379ZM6.72607 9.17285L5.18018 7.62012L4.19287 8.60645L6.72607 11.1465L11.6128 6.24707L10.6265 5.25977L6.72607 9.17285Z"
-                        fill="#088178"
-                      />
-                    </svg>
-                    <p class="text-primary text-sm leading-[22px]">
-                      Verified purchase
-                    </p>
-                  </div>
-                </div>
-                <p>
-                  From browsing to checkout, everything was super easy. Loved
-                  how I didn&apos;t have to pay anything extra for shipping, and
-                  my item arrived the next day. Highly recommend!
-                </p>
-              </div>
-            </div>
-            <div
-              class="about-us-testimonial-slider-nav mt-12 flex items-center justify-center gap-x-6 col-span-12 wow animate__animated animate__fadeInUp"
-              data-wow-delay=".2s"
-            ></div>
-          </div>
+
+      <div class="ab-industry-card wow animate__animated animate__fadeInUp" data-wow-delay=".25s">
+        <div class="ab-industry-icon" style="background-color: #F3E8FF; color: #7C3AED;">
+          <i class="hgi hgi-stroke hgi-sparkles"></i>
+        </div>
+        <h5 class="text-base font-bold text-light-primary-text mb-2">Mỹ Phẩm &amp; Chăm Sóc Cá Nhân</h5>
+        <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+          Dược mỹ phẩm, chăm sóc da &amp; nước hoa nhập khẩu chính ngạch với đầy đủ tem phụ kiểm định.
+        </p>
+      </div>
+
+      <div class="ab-industry-card wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
+        <div class="ab-industry-icon" style="background-color: #DCFCE7; color: #16A34A;">
+          <i class="hgi hgi-stroke hgi-apple"></i>
+        </div>
+        <h5 class="text-base font-bold text-light-primary-text mb-2">Thực Phẩm Sạch &amp; Đồ Uống</h5>
+        <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+          Kiểm soát hạn sử dụng (HSD) rõ ràng theo từng lô hàng, đóng gói chống sốc &amp; giao nhanh bảo quản mát.
+        </p>
+      </div>
+
+      <div class="ab-industry-card wow animate__animated animate__fadeInUp" data-wow-delay=".35s">
+        <div class="ab-industry-icon" style="background-color: #FFEDD5; color: #EA580C;">
+          <i class="hgi hgi-stroke hgi-book-open-01"></i>
+        </div>
+        <h5 class="text-base font-bold text-light-primary-text mb-2">Nhà Sách &amp; Văn Phòng Phẩm</h5>
+        <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+          Sách chọn lọc, dụng cụ học tập &amp; vật tư doanh nghiệp chính hãng, hỗ trợ xuất hóa đơn VAT nhanh chóng.
+        </p>
+      </div>
+
+      <div class="ab-industry-card wow animate__animated animate__fadeInUp" data-wow-delay=".4s">
+        <div class="ab-industry-icon" style="background-color: #E0E7FF; color: #4338CA;">
+          <i class="hgi hgi-stroke hgi-ticket-02"></i>
+        </div>
+        <h5 class="text-base font-bold text-light-primary-text mb-2">Sản Phẩm Số &amp; E-Voucher</h5>
+        <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+          Key bản quyền phần mềm, thẻ nạp &amp; khóa học trực tuyến giao mã tự động 0đ phí vận chuyển ngay sau thanh toán.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== Hệ Sinh Thái Ngành Hàng End ========== -->
+
+<!-- ========== 4. Hành Trình Phát Triển (Timeline) Start ========== -->
+<section id="hanh-trinh" class="pb-[70px]">
+  <div class="container">
+    <div class="ab-timeline-wrap">
+      <div class="text-center max-w-2xl mx-auto mb-10 wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+        <span class="ab-eyebrow">Cột mốc đáng nhớ</span>
+        <h2 class="ab-heading mb-3">Hành Trình Phát Triển Nền Tảng</h2>
+        <p class="text-sm text-light-secondary-text m-0">
+          Không ngừng mở rộng quy mô và nâng cấp công nghệ để mang lại trải nghiệm mua sắm trực tuyến tin cậy nhất.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="ab-timeline-card wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+          <span class="ab-year-badge">2021</span>
+          <h5 class="text-base font-bold text-light-primary-text mb-2">Khởi Nguồn Nền Tảng</h5>
+          <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+            Ra mắt cửa hàng trực tuyến Sellzy với định hướng minh bạch nguồn gốc và chuẩn hóa trải nghiệm đặt hàng.
+          </p>
+        </div>
+        <div class="ab-timeline-card wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
+          <span class="ab-year-badge">2023</span>
+          <h5 class="text-base font-bold text-light-primary-text mb-2">Mở Rộng Đa Ngành Hàng</h5>
+          <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+            Tích hợp thanh toán VNPay, Ví Sellzy và mở rộng danh mục sang Công nghệ, Gia dụng &amp; Chăm sóc sắc đẹp.
+          </p>
+        </div>
+        <div class="ab-timeline-card wow animate__animated animate__fadeInUp" data-wow-delay=".4s">
+          <span class="ab-year-badge">2024</span>
+          <h5 class="text-base font-bold text-light-primary-text mb-2">Số Hóa Vận Hành Thông Minh</h5>
+          <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+            Ứng dụng trợ lý AI tư vấn, quản lý hạn sử dụng (HSD) thực phẩm và giao mã sản phẩm số tự động 24/7.
+          </p>
+        </div>
+        <div class="ab-timeline-card wow animate__animated animate__fadeInUp" data-wow-delay=".5s">
+          <span class="ab-year-badge">2026</span>
+          <h5 class="text-base font-bold text-light-primary-text mb-2">Hệ Sinh Thái Toàn Diện</h5>
+          <p class="text-sm text-light-secondary-text leading-relaxed m-0">
+            Phục vụ hơn 120.000 đơn hàng toàn quốc trên 10 ngành hàng với hóa đơn VAT và đổi trả 30 ngày.
+          </p>
         </div>
       </div>
-    </section>
-    <!-- ========== Testimonial Section End ========== -->
+    </div>
+  </div>
+</section>
+<!-- ========== Timeline End ========== -->
 
-    <!-- ========== Focus Section Start ========== -->
-    <section class="pb-[70px]">
-      <div class="container">
-        <div class="grid grid-cols-12 items-center lg:gap-x-[70px]">
-          <div
-            class="col-span-12 lg:col-span-6 row-start-2 lg:row-start-auto relative wow animate__animated animate__fadeInUp"
-            data-wow-delay=".2s"
-          >
-            <img
-              src="assets/images/about/female-green-bg.jpg"
-              alt="Woman Standing"
-              class="rounded-3xl w-full min-h-[570px] object-cover xl:mb-0 mb-6 lg:mt-0 mt-6"
-            />
-            <span
-              class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer"
-            >
-              <a
-                class="about-us-popup-youtube"
-                href="https://www.youtube.com/watch?v=rkpzYNB6xks"
-                ><i
-                  class="hgi hgi-stroke hgi-play-circle text-white text-[86px]"
-                ></i
-              ></a>
-            </span>
-          </div>
-          <div
-            class="col-span-12 lg:col-span-6 lg:max-w-[762px] row-start-1 lg:row-start-auto"
-          >
-            <div
-              class="wow animate__animated animate__fadeInUp"
-              data-wow-delay=".2s"
-            >
-              <p
-                class="text-primary bg-[#00AB5514] py-0.5 px-3 inline-flex gap-x-2.5 items-center rounded-full font-semibold"
-              >
-                <span class="w-[15px] h-[15px] rounded-full bg-primary"> </span>
-                Features
-              </p>
-            </div>
-            <h3
-              class="pt-4 pb-10 wow animate__animated animate__fadeInUp"
-              data-wow-delay=".3s"
-            >
-              Focus on Customer Satisfaction
-            </h3>
-            <p
-              class="pb-6 wow animate__animated animate__fadeInUp"
-              data-wow-delay=".4s"
-            >
-              Experience the ultimate convenience with our Faster Free Delivery
-              service—designed to bring your orders to your doorstep quickly and
-              without any extra cost. Whether you&apos;re ordering essentials or
-              gifts, we make sure you get them faster than ever. Why You'll Love
-              It:
+<!-- ========== 5. Quy Trình 4 Bước Đảm Bảo Chất Lượng Start ========== -->
+<section class="pb-[70px]">
+  <div class="container">
+    <div class="grid grid-cols-12 gap-8 items-center">
+      <div class="col-span-12 lg:col-span-5 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+        <div class="rounded-3xl overflow-hidden shadow-lg" style="height: 440px;">
+          <img src="/assets/images/home-5/promo-grid-1.jpg" alt="Quy trình kiểm định chất lượng Sellzy" class="w-full h-full object-cover" />
+        </div>
+      </div>
+
+      <div class="col-span-12 lg:col-span-7">
+        <div class="mb-7 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+          <span class="ab-eyebrow">Quy trình chuẩn mực</span>
+          <h2 class="ab-heading mb-2">4 Bước Đảm Bảo Chất Lượng Trước Khi Giao Hàng</h2>
+          <p class="text-sm text-light-secondary-text m-0">
+            Mỗi đơn hàng dù là thiết bị công nghệ, thực phẩm hay sản phẩm số đều tuân thủ quy trình kiểm soát chặt chẽ.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="ab-step-card wow animate__animated animate__fadeInUp" data-wow-delay=".25s">
+            <div class="ab-step-num">01</div>
+            <h5 class="text-base font-bold text-light-primary-text mb-1.5">Tuyển Chọn Nhà Cung Cấp</h5>
+            <p class="text-sm text-light-secondary-text m-0 leading-relaxed">
+              Hợp tác trực tiếp với thương hiệu và nhà phân phối chính hãng có đầy đủ chứng từ nguồn gốc xuất xứ.
             </p>
-            <ul
-              class="pb-6 space-y-4 wow animate__animated animate__fadeInUp"
-              data-wow-delay=".5s"
-            >
-              <li class="flex gap-x-4">
-                <span
-                  class="inline-flex flex-none items-center justify-center size-6 bg-primary text-white rounded-full"
-                >
-                  <i class="hgi hgi-stroke hgi-tick-02"></i>
-                </span>
-                <p>
-                  Absolutely Free: No delivery fees, no hidden charges—just
-                  fast, reliable service.
-                </p>
-              </li>
-              <li class="flex gap-x-4">
-                <span
-                  class="inline-flex flex-none items-center justify-center size-6 bg-primary text-white rounded-full"
-                >
-                  <i class="hgi hgi-stroke hgi-tick-02"></i>
-                </span>
-                <p>
-                  Real-Time Tracking: Stay updated every step of the way with
-                  live order tracking.
-                </p>
-              </li>
-              <li class="flex gap-x-4">
-                <span
-                  class="inline-flex flex-none items-center justify-center size-6 bg-primary text-white rounded-full"
-                >
-                  <i class="hgi hgi-stroke hgi-tick-02"></i>
-                </span>
-                <p>
-                  Reliable Delivery Partners: We&apos;ve partnered with trusted
-                  couriers to ensure your packages
-                </p>
-              </li>
-            </ul>
-            <p
-              class="wow animate__animated animate__fadeInUp"
-              data-wow-delay=".6s"
-            >
-              Say goodbye to long waits and shipping fees. With Faster Free
-              Delivery, we&apos;re raising the standard—fast, seamless, and 100%
-              free.
+          </div>
+          <div class="ab-step-card wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
+            <div class="ab-step-num">02</div>
+            <h5 class="text-base font-bold text-light-primary-text mb-1.5">Kiểm Định &amp; Phân Loại</h5>
+            <p class="text-sm text-light-secondary-text m-0 leading-relaxed">
+              Kiểm tra tem bảo hành, hạn sử dụng (HSD) và thông số sản phẩm trước khi đưa vào lưu kho.
+            </p>
+          </div>
+          <div class="ab-step-card wow animate__animated animate__fadeInUp" data-wow-delay=".35s">
+            <div class="ab-step-num">03</div>
+            <h5 class="text-base font-bold text-light-primary-text mb-1.5">Đóng Gói &amp; Giao Chuyên Biệt</h5>
+            <p class="text-sm text-light-secondary-text m-0 leading-relaxed">
+              Áp dụng đóng gói chống sốc, giao bảo quản mát cho thực phẩm hoặc gửi mã kích hoạt tự động 0đ ship.
+            </p>
+          </div>
+          <div class="ab-step-card wow animate__animated animate__fadeInUp" data-wow-delay=".4s">
+            <div class="ab-step-num">04</div>
+            <h5 class="text-base font-bold text-light-primary-text mb-1.5">Hậu Mãi &amp; Hóa Đơn VAT</h5>
+            <p class="text-sm text-light-secondary-text m-0 leading-relaxed">
+              Hỗ trợ xuất hóa đơn VAT điện tử cho doanh nghiệp, bảo hành chính hãng và đổi trả dễ dàng trong 30 ngày.
             </p>
           </div>
         </div>
       </div>
-    </section>
-    <!-- ========== Focus Section End ========== -->
+    </div>
+  </div>
+</section>
+<!-- ========== Quy Trình 4 Bước End ========== -->
 
-    <!-- ========== Meet Section Start ========== -->
-    <section class="pb-[70px]">
-      <div class="container">
-        <div
-          class="pb-10 text-center wow animate__animated animate__fadeInUp"
-          data-wow-delay=".2s"
-        >
-          <h3 class="pb-3">Meet Our Team</h3>
-          <p>Join thousands of happy customers from around the globe.</p>
-        </div>
-        <div class="grid grid-cols-12 gap-x-[25px] gap-y-[25px]">
-          <div
-            class="xl:col-span-3 md:col-span-6 col-span-12 px-[21px] pt-[21px] pb-[27px] border border-gray-300 rounded-3xl wow animate__animated animate__fadeInUp"
-            data-wow-delay=".2s"
-          >
-            <img
-              src="assets/images/about/team-person-1.png"
-              alt="Team Person"
-              class="mb-6 rounded-3xl"
-            />
-            <div class="text-center pb-4">
-              <h4 class="pb-2 font-semibold text-black leading-8">
-                Jenny Wilson
-              </h4>
-              <p
-                class="font-medium text-[18px] leading-7 text-light-secondary-text font-urbanist"
-              >
-                Managing Director
-              </p>
-            </div>
-            <div class="flex gap-x-6 justify-center">
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-linkedin-01 text-2xl text-white"
-                ></i>
-              </a>
-
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-facebook-01 text-2xl text-white"
-                ></i>
-              </a>
-
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i class="hgi hgi-stroke hgi-instagram text-2xl text-white"></i>
-              </a>
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i class="hgi hgi-stroke hgi-twitter text-2xl text-white"></i>
-              </a>
-            </div>
-          </div>
-          <div
-            class="xl:col-span-3 md:col-span-6 col-span-12 px-[21px] pt-[21px] pb-[27px] border border-gray-300 rounded-3xl wow animate__animated animate__fadeInUp"
-            data-wow-delay=".3s"
-          >
-            <img
-              src="assets/images/about/team-person-2.png"
-              alt="Team Person"
-              class="mb-6 rounded-3xl"
-            />
-            <div class="text-center pb-4">
-              <h4 class="pb-2 font-semibold text-black leading-8">
-                Jenny Wilson
-              </h4>
-              <p
-                class="font-medium text-[18px] leading-7 text-light-secondary-text font-urbanist"
-              >
-                Managing Director
-              </p>
-            </div>
-            <div class="flex gap-x-6 justify-center">
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-linkedin-01 text-2xl text-white"
-                ></i>
-              </a>
-
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-facebook-01 text-2xl text-white"
-                ></i>
-              </a>
-
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i class="hgi hgi-stroke hgi-instagram text-2xl text-white"></i>
-              </a>
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i class="hgi hgi-stroke hgi-twitter text-2xl text-white"></i>
-              </a>
-            </div>
-          </div>
-          <div
-            class="xl:col-span-3 md:col-span-6 col-span-12 px-[21px] pt-[21px] pb-[27px] border border-gray-300 rounded-3xl wow animate__animated animate__fadeInUp"
-            data-wow-delay=".4s"
-          >
-            <img
-              src="assets/images/about/team-person-3.png"
-              alt="Team Person"
-              class="mb-6 rounded-3xl"
-            />
-            <div class="text-center pb-4">
-              <h4 class="pb-2 font-semibold text-black leading-8">
-                Jenny Wilson
-              </h4>
-              <p
-                class="font-medium text-[18px] leading-7 text-light-secondary-text font-urbanist"
-              >
-                Managing Director
-              </p>
-            </div>
-            <div class="flex gap-x-6 justify-center">
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-linkedin-01 text-2xl text-white"
-                ></i>
-              </a>
-
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-facebook-01 text-2xl text-white"
-                ></i>
-              </a>
-
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i class="hgi hgi-stroke hgi-instagram text-2xl text-white"></i>
-              </a>
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i class="hgi hgi-stroke hgi-twitter text-2xl text-white"></i>
-              </a>
-            </div>
-          </div>
-          <div
-            class="xl:col-span-3 md:col-span-6 col-span-12 px-[21px] pt-[21px] pb-[27px] border border-gray-300 rounded-3xl wow animate__animated animate__fadeInUp"
-            data-wow-delay=".5s"
-          >
-            <img
-              src="assets/images/about/team-person-4.png"
-              alt="Team Person"
-              class="mb-6 rounded-3xl"
-            />
-            <div class="text-center pb-4">
-              <h4 class="pb-2 font-semibold text-black leading-8">
-                Jenny Wilson
-              </h4>
-              <p
-                class="font-medium text-[18px] leading-7 text-light-secondary-text font-urbanist"
-              >
-                Managing Director
-              </p>
-            </div>
-            <div class="flex gap-x-6 justify-center">
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-linkedin-01 text-2xl text-white"
-                ></i>
-              </a>
-
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-facebook-01 text-2xl text-white"
-                ></i>
-              </a>
-
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i class="hgi hgi-stroke hgi-instagram text-2xl text-white"></i>
-              </a>
-              <a
-                href="#"
-                class="inline-flex items-center justify-center size-12 bg-primary hover:bg-primary-darker transition-all duration-300 rounded-full"
-              >
-                <i class="hgi hgi-stroke hgi-twitter text-2xl text-white"></i>
-              </a>
-            </div>
-          </div>
-        </div>
+<!-- ========== 6. Final Minimalist CTA Start ========== -->
+<section class="pb-[70px]">
+  <div class="container">
+    <div class="rounded-3xl p-10 md:p-14 text-center wow animate__animated animate__fadeInUp" data-wow-delay=".2s" style="background: linear-gradient(135deg, #F0FAF9 0%, #FFF9D6 100%); border: 1px solid rgba(8, 129, 120, 0.14);">
+      <span class="ab-eyebrow">Trải nghiệm cùng Sellzy</span>
+      <h2 class="ab-heading mb-3 max-w-2xl mx-auto">
+        Sẵn Sàng Khám Phá Thế Giới Mua Sắm Đa Ngành Tại Sellzy?
+      </h2>
+      <p class="text-sm text-light-secondary-text max-w-xl mx-auto mb-7">
+        Hàng nghìn sản phẩm chính hãng thuộc 10 ngành hàng cùng nhiều ưu đãi thành viên đang chờ bạn khám phá.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <a href='@(Url.RouteUrl("shop_index") ?? Url.Action("Index", "Products"))' class="btn btn-primary rounded-full px-8 py-3 font-bold text-sm text-white">
+          Mua sắm ngay
+        </a>
+        <a href='@Url.Action("Contact", "Home")' class="btn rounded-full px-7 py-3 font-bold text-sm bg-white text-light-primary-text border border-gray-300">
+          Liên hệ với chúng tôi
+        </a>
       </div>
-    </section>
-    <!-- ========== Meet Section End ========== -->
+    </div>
+  </div>
+</section>
+<!-- ========== Final Minimalist CTA End ========== -->

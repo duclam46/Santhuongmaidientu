@@ -179,7 +179,7 @@
           </div>
           <div class="xl:col-span-5 lg:col-span-6 mt-6 lg:mt-0">
             <div class="rounded-3xl border border-gray-300 p-6">
-              @if (isSaleDisplay || isNewArrival)
+              @if (isSaleDisplay || isNewArrival || Model.IsDigital || Model.ExpiryDate.HasValue || (!string.IsNullOrWhiteSpace(Model.ShippingCondition) && Model.ShippingCondition != "Tiêu chuẩn"))
               {
                 <div class="flex items-center flex-wrap gap-2 mb-6">
                   @if (isSaleDisplay)
@@ -189,6 +189,18 @@
                   @if (isNewArrival)
                   {
                     <span class="product-details-tag-new">Hàng mới</span>
+                  }
+                  @if (Model.IsDigital)
+                  {
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">⚡ Sản phẩm số / E-Voucher (Giao mã tự động - Freeship)</span>
+                  }
+                  @if (!string.IsNullOrWhiteSpace(Model.ShippingCondition) && Model.ShippingCondition != "Tiêu chuẩn")
+                  {
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">📦 @Model.ShippingCondition</span>
+                  }
+                  @if (Model.ExpiryDate.HasValue)
+                  {
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">⏳ HSD: @Model.ExpiryDate.Value.ToString("dd/MM/yyyy")</span>
                   }
                 </div>
               }
@@ -216,7 +228,7 @@
                 </div>
                 <span class="font-normal inline-block ml-1">(@Model.ReviewCount.ToString("N0", viVn) đánh giá)</span>
               </div>
-              <div class="price-section flex items-center gap-x-3 mb-6">
+              <div class="price-section flex items-center gap-x-3 mb-2 flex-wrap">
                 <span
                   class="current-price text-2xl leading-9 font-bold text-light-primary-text inline-block @(isSaleDisplay ? "relative after:absolute after:h-6 after:w-px after:bg-gray-300 after:right-0 after:top-1/2 after:-translate-y-1/2 pr-3" : "")"
                   id="js-current-price">@displayPrice.ToString("N0", viVn) VNĐ</span>
@@ -229,7 +241,7 @@
                   <span
                     id="js-discount-percent"
                     class="product-details-discount-badge"
-                  >@displayDiscountPercent% OFF</span>
+                  >-@displayDiscountPercent%</span>
                 }
                 else
                 {
@@ -244,6 +256,17 @@
                     style="display: none;"
                   ></span>
                 }
+              </div>
+              <div class="flex flex-wrap items-center gap-2 mb-5">
+                @if (Model.HasPriceRange)
+                {
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-light-secondary-text border border-gray-200">
+                    📊 Phổ giá theo phân loại: <strong class="text-primary">@Model.MinVariantPrice.ToString("N0", viVn)₫ – @Model.MaxVariantPrice.ToString("N0", viVn)₫</strong>
+                  </span>
+                }
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  🏷️ SKU: <strong id="js-variant-sku">@(!string.IsNullOrWhiteSpace(selectedVariant?.Sku) ? selectedVariant!.Sku : $"SP-{Model.ProductId}")</strong>
+                </span>
               </div>
               <div id="js-sale-countdown" class="sale-section flex flex-col xl:flex-row xl:items-center xl:justify-between mb-6 @(isOnSale && saleSecondsLeft.HasValue && saleSecondsLeft.Value > 0 ? "" : "hidden")" data-seconds-left="@(saleSecondsLeft ?? 0)">
                 <p class="xl:w-[120px] w-full text-left mb-4 xl:mb-0">Nhanh tay! Kết thúc sau:</p>
@@ -270,7 +293,7 @@
                 </div>
               </div>
 
-              <div class="progressbar-section mb-6">
+              <div class="progressbar-section mb-5">
                 <div class="progress w-full h-1.5 bg-warning-lighter rounded-[50px] overflow-hidden mb-2.5">
                   <div id="js-stock-progress" style="width: @displayStockPct%" class="progress-bar h-full bg-warning rounded-[50px]"></div>
                 </div>
@@ -278,6 +301,44 @@
                   Nhanh tay! Chỉ còn <span id="js-stock-left" class="font-semibold">@displayStockLeft.ToString("N0", viVn)</span> sản phẩm trong kho
                 </p>
               </div>
+
+              @if (Model.AvailableVouchers != null && Model.AvailableVouchers.Count > 0)
+              {
+                <div class="mb-5 p-3.5 rounded-2xl border border-amber-200" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);">
+                  <div class="flex items-center justify-between gap-2 mb-2.5">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                      <span>🎟️</span> Mã giảm giá áp dụng cho sản phẩm này
+                    </span>
+                    <span class="text-[11px] font-semibold text-amber-700">Bấm Lưu để tự áp dụng khi Thanh toán</span>
+                  </div>
+                  <div class="flex items-stretch gap-2.5 overflow-x-auto pb-1">
+                    @foreach (var v in Model.AvailableVouchers)
+                    {
+                      var discText = v.DiscountType == "FreeShipping"
+                        ? $"Freeship {v.DiscountValue.ToString("N0", viVn)}₫"
+                        : (v.DiscountType == "Percent" ? $"Giảm {v.DiscountValue:0.##}%" : $"Giảm {v.DiscountValue.ToString("N0", viVn)}₫");
+                      <div class="flex items-center justify-between gap-2.5 bg-white border border-amber-300 rounded-xl px-3 py-2 shadow-xs shrink-0" style="min-width: 215px;">
+                        <div class="min-w-0">
+                          <div class="flex items-center gap-1">
+                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded @(v.IsShopVoucher ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800")">@v.SponsorBadge</span>
+                            <span class="text-[10px] text-gray-500">@v.ScopeBadge</span>
+                          </div>
+                          <div class="font-extrabold text-sm text-red-600 mt-0.5">@discText</div>
+                          <div class="text-[11px] text-gray-500">Đơn từ @v.MinOrderValue.ToString("N0", viVn)₫</div>
+                        </div>
+                        <button type="button"
+                                class="js-claim-voucher-btn px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shrink-0 cursor-pointer transition-all"
+                                style="background: @(v.IsSaved ? "#059669" : "linear-gradient(135deg, #f97316, #ea580c)");"
+                                data-voucher-id="@v.Id"
+                                data-voucher-code="@v.Code"
+                                onclick="claimSellzyVoucher(@v.Id, '@v.Code', this)">
+                          @(v.IsSaved ? "✓ Đã lưu" : "Lưu mã")
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
 
               <script type="application/json" id="js-product-variants">
                 @Html.Raw(global::System.Text.Json.JsonSerializer.Serialize(
@@ -290,7 +351,65 @@
               <div
                 class="product-add-to-cart-section py-6 border-b border-dashed border-gray-300 border-t"
               >
-                @if (colorOptions.Count > 0)
+                @{
+                  var tier1Group = Model.OptionGroups?.FirstOrDefault(g => g.Tier == 1);
+                  var tier2Group = Model.OptionGroups?.FirstOrDefault(g => g.Tier == 2);
+                }
+
+                @if (tier1Group != null && tier1Group.Values.Count > 0)
+                {
+                  <div class="color-variation-section mb-6">
+                    <div class="color-variation-section-title mb-4">
+                      <p class="font-semibold text-light-primary-text flex items-center gap-x-2.5">
+                        @tier1Group.Name:
+                        <span class="text-light-primary-text font-normal capitalize color-variation-selected-color">@(selectedVariant?.Option1Value ?? selectedColor)</span>
+                      </p>
+                    </div>
+
+                    <div class="color-variation-items flex items-center gap-2 flex-wrap">
+                      @for (var i = 0; i < tier1Group.Values.Count; i++)
+                      {
+                        var val = tier1Group.Values[i];
+                        var isSelected = (selectedVariant?.ColorId ?? selectedColorId) == val.Id;
+                        if (!string.IsNullOrWhiteSpace(val.ColorHex))
+                        {
+                          <div class="variation-color-item p-1 border rounded-full @(isSelected ? "border-primary" : "border-gray-300")">
+                            <button
+                              type="button"
+                              data-color-id="@val.Id"
+                              data-color-text="@val.Value"
+                              data-opt-img="@val.ImageUrl"
+                              class="size-6 rounded-full flex items-center justify-center cursor-pointer"
+                              style="background-color: @val.ColorHex"
+                              title="@val.Value"
+                            >
+                              <i class="hgi hgi-stroke hgi-tick-02 text-white @(isSelected ? "" : "hidden")" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        }
+                        else
+                        {
+                          <div class="variation-color-item">
+                            <button
+                              type="button"
+                              data-color-id="@val.Id"
+                              data-color-text="@val.Value"
+                              data-opt-img="@val.ImageUrl"
+                              class="cursor-pointer inline-flex items-center gap-2 text-sm leading-6 px-4 py-1.5 font-semibold rounded-[100px] border transition-all @(isSelected ? "border-primary bg-primary text-white" : "text-light-primary-text border-gray-300 hover:bg-[rgba(145,158,171,0.08)]")"
+                            >
+                              @if (!string.IsNullOrWhiteSpace(val.ImageUrl))
+                              {
+                                <img src="@val.ImageUrl" alt="@val.Value" class="size-5 rounded-full object-cover" />
+                              }
+                              <span>@val.Value</span>
+                            </button>
+                          </div>
+                        }
+                      }
+                    </div>
+                  </div>
+                }
+                else if (colorOptions.Count > 0)
                 {
                   <div class="color-variation-section mb-6">
                     <div class="color-variation-section-title mb-4">
@@ -326,45 +445,84 @@
                   </div>
                 }
 
-                <div class="size-variation-section mb-6">
-                  <div
-                    class="size-variation-section-title mb-4 flex items-center justify-between"
-                  >
-                    <p
-                      class="font-semibold text-light-primary-text flex items-center gap-x-2.5"
-                    >
-                      Kích cỡ:
-                      <span
-                        class="text-light-primary-text font-normal capitalize size-variation-selected-size"
-                        >@selectedSize</span>
-                    </p>
-                    <a
-                      href="#"
-                      class="text-sm leading-[22px] hover:underline variation-size-guide-btn"
-                      >Bảng size</a
-                    >
-                  </div>
-                  <div
-                    class="size-variation-items flex items-center gap-2 2xl:flex-nowrap flex-wrap"
-                  >
-                    @for (var i = 0; i < sizeOptions.Count; i++)
-                    {
-                      var s = sizeOptions[i];
-                      var isSelected = s.SizeId == selectedSizeId;
+                @if (tier2Group != null && tier2Group.Values.Count > 0)
+                {
+                  <div class="size-variation-section mb-6">
+                    <div class="size-variation-section-title mb-4 flex items-center justify-between">
+                      <p class="font-semibold text-light-primary-text flex items-center gap-x-2.5">
+                        @tier2Group.Name:
+                        <span class="text-light-primary-text font-normal capitalize size-variation-selected-size">@(selectedVariant?.Option2Value ?? selectedSize)</span>
+                      </p>
+                      @if (Model.HasSizeGuide)
+                      {
+                        <a href="#" class="text-sm leading-[22px] hover:underline variation-size-guide-btn">Bảng size</a>
+                      }
+                    </div>
+                    <div class="size-variation-items flex items-center gap-2 flex-wrap">
+                      @for (var i = 0; i < tier2Group.Values.Count; i++)
+                      {
+                        var val = tier2Group.Values[i];
+                        var isSelected = (selectedVariant?.SizeId ?? selectedSizeId) == val.Id;
 
-                      <div class="size-variation-item">
-                        <button
-                          type="button"
-                          data-size-id="@s.SizeId"
-                          data-size-text="@s.Name"
-                          class="cursor-pointer flex items-center justify-center text-sm leading-6 px-[38px] py-1.5 font-semibold rounded-[100px] hover:bg-[rgba(145,158,171,0.08)] @(isSelected ? "border border-primary bg-primary text-white hover:bg-primary" : "text-light-primary-text border border-gray-300")"
-                        >
-                          @s.Name
-                        </button>
-                      </div>
-                    }
+                        <div class="size-variation-item">
+                          <button
+                            type="button"
+                            data-size-id="@val.Id"
+                            data-size-text="@val.Value"
+                            data-opt-img="@val.ImageUrl"
+                            class="cursor-pointer flex items-center justify-center text-sm leading-6 px-[26px] py-1.5 font-semibold rounded-[100px] hover:bg-[rgba(145,158,171,0.08)] @(isSelected ? "border border-primary bg-primary text-white hover:bg-primary" : "text-light-primary-text border border-gray-300")"
+                          >
+                            @val.Value
+                          </button>
+                        </div>
+                      }
+                    </div>
                   </div>
-                </div>
+                }
+                else if (sizeOptions.Count > 0)
+                {
+                  <div class="size-variation-section mb-6">
+                    <div
+                      class="size-variation-section-title mb-4 flex items-center justify-between"
+                    >
+                      <p
+                        class="font-semibold text-light-primary-text flex items-center gap-x-2.5"
+                      >
+                        Kích cỡ:
+                        <span
+                          class="text-light-primary-text font-normal capitalize size-variation-selected-size"
+                          >@selectedSize</span>
+                      </p>
+                      @if (Model.HasSizeGuide)
+                      {
+                        <a
+                          href="#"
+                          class="text-sm leading-[22px] hover:underline variation-size-guide-btn"
+                          >Bảng size</a>
+                      }
+                    </div>
+                    <div
+                      class="size-variation-items flex items-center gap-2 2xl:flex-nowrap flex-wrap"
+                    >
+                      @for (var i = 0; i < sizeOptions.Count; i++)
+                      {
+                        var s = sizeOptions[i];
+                        var isSelected = s.SizeId == selectedSizeId;
+
+                        <div class="size-variation-item">
+                          <button
+                            type="button"
+                            data-size-id="@s.SizeId"
+                            data-size-text="@s.Name"
+                            class="cursor-pointer flex items-center justify-center text-sm leading-6 px-[38px] py-1.5 font-semibold rounded-[100px] hover:bg-[rgba(145,158,171,0.08)] @(isSelected ? "border border-primary bg-primary text-white hover:bg-primary" : "text-light-primary-text border border-gray-300")"
+                          >
+                            @s.Name
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
                 <div class="product-add-to-cart-btn-section">
                   <p class="font-semibold text-light-primary-text mb-4">Số lượng:</p>
                   <div
@@ -479,6 +637,39 @@
                     }
                   </p>
                 </div>
+                @if (!string.IsNullOrWhiteSpace(Model.BrandName))
+                {
+                  <div class="product-extra-info-item flex items-center gap-x-4 gap-y-4 flex-wrap md:flex-nowrap md:gap-y-0">
+                    <p class="font-semibold text-light-primary-text">Thương hiệu:</p>
+                    <p class="font-semibold text-primary">@Model.BrandName</p>
+                  </div>
+                }
+                <div class="product-extra-info-item flex items-center gap-x-4 gap-y-4 flex-wrap md:flex-nowrap md:gap-y-0">
+                  <p class="font-semibold text-light-primary-text">Bảo hành:</p>
+                  <p>
+                    @if (Model.WarrantyMonths > 0)
+                    {
+                      <span class="text-success font-medium">@Model.WarrantyMonths tháng @(string.IsNullOrWhiteSpace(Model.WarrantyType) ? "" : $"({Model.WarrantyType})")</span>
+                    }
+                    else
+                    {
+                      <span class="text-light-secondary-text">Không áp dụng bảo hành</span>
+                    }
+                  </p>
+                </div>
+                <div class="product-extra-info-item flex items-center gap-x-4 gap-y-4 flex-wrap md:flex-nowrap md:gap-y-0">
+                  <p class="font-semibold text-light-primary-text">Đổi trả:</p>
+                  <p>
+                    @if (Model.IsReturnable)
+                    {
+                      <span class="text-success font-medium">Hỗ trợ đổi trả nếu lỗi / không đúng mô tả</span>
+                    }
+                    else
+                    {
+                      <span class="text-error font-semibold">Sản phẩm không hỗ trợ đổi trả</span>
+                    }
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -490,14 +681,20 @@
           var shopLogoUrl = global::DOAN_BANHANG.Helpers.ImageUrlHelper.NormalizeStaticFileUrl(Model.Shop.LogoUrl)
             ?? Url.Content("~/assets/images/vendors-list/vendor-profile.png");
 
-          <div class="mt-5 lg:mt-6 border border-gray-300 rounded-2xl p-5">
+          <div class="mt-5 lg:mt-6 border border-gray-300 rounded-2xl p-5 bg-white">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
               <a href="@shopUrl" class="flex items-center gap-3 min-w-0 md:flex-1">
                 <div class="size-12 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center flex-none">
                   <img src="@shopLogoUrl" alt="@Model.Shop.Name" class="w-full h-full object-cover" />
                 </div>
                 <div class="min-w-0">
-                  <p class="font-semibold text-light-primary-text truncate">@Model.Shop.Name</p>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <p class="font-semibold text-light-primary-text truncate">@Model.Shop.Name</p>
+                    @if (Model.Shop.IsMall)
+                    {
+                      <span style="background: #dc2626; color: #ffffff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; letter-spacing: 0.04em;">MALL</span>
+                    }
+                  </div>
                   <div class="text-sm text-light-secondary-text">
                     @if (!string.IsNullOrWhiteSpace(Model.Shop.Location))
                     {
@@ -508,30 +705,100 @@
                     }
                     else
                     {
-                      <span class="text-light-secondary-text">&nbsp;</span>
+                      <span class="text-light-secondary-text">Đối tác chính thức</span>
                     }
                   </div>
                 </div>
               </a>
 
               <div class="flex items-center justify-start md:justify-center gap-6 flex-wrap md:flex-nowrap md:flex-1">
-                <div class="text-center min-w-[92px]">
+                <div class="text-center min-w-[82px]">
                   <p class="text-sm text-light-secondary-text whitespace-nowrap">Đánh giá</p>
                   <p class="font-semibold text-light-primary-text whitespace-nowrap">@Model.Shop.RatingAverage.ToString("0.0", viVn)</p>
                 </div>
-                <div class="text-center min-w-[92px]">
+                <div class="text-center min-w-[82px]">
                   <p class="text-sm text-light-secondary-text whitespace-nowrap">Sản phẩm</p>
                   <p class="font-semibold text-light-primary-text whitespace-nowrap">@Model.Shop.ProductCount.ToString("N0", viVn)</p>
                 </div>
-                <div class="text-center min-w-[120px]">
-                  <p class="text-sm text-light-secondary-text whitespace-nowrap">Phản hồi chat</p>
-                  <p class="font-semibold text-light-primary-text whitespace-nowrap">@(Model.Shop.ChatResponseRate.HasValue ? (Model.Shop.ChatResponseRate.Value + "%") : "-")</p>
+                <div class="text-center min-w-[96px]">
+                  <p class="text-sm text-light-secondary-text whitespace-nowrap">Người theo dõi</p>
+                  <p class="font-semibold text-light-primary-text whitespace-nowrap" id="js-pd-follower-count">@Model.Shop.FollowerCount.ToString("N0", viVn)</p>
                 </div>
               </div>
 
-              <a href="@shopUrl" class="btn btn-outline rounded-full font-semibold text-sm leading-6 px-5 py-2 w-full md:w-auto flex-none whitespace-nowrap">
-                Xem shop
-              </a>
+              <div class="flex items-center gap-2.5 w-full md:w-auto flex-none">
+                <button type="button"
+                        id="js-pd-follow-btn"
+                        onclick="toggleFollowShopOnProduct(@Model.Shop.ShopId, this)"
+                        class="rounded-full font-semibold text-sm leading-6 px-4 py-2 flex-1 md:flex-none whitespace-nowrap cursor-pointer transition-all"
+                        style="@(Model.Shop.IsFollowing ? "background:#e6f4f3; color:#008374; border:1px solid #008374;" : "background:#008374; color:#ffffff; border:1px solid #008374;")">
+                  @(Model.Shop.IsFollowing ? "✓ Đang theo dõi" : "+ Theo dõi")
+                </button>
+                <a href="@shopUrl" class="btn btn-outline rounded-full font-semibold text-sm leading-6 px-5 py-2 flex-1 md:flex-none whitespace-nowrap">
+                  Xem shop
+                </a>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (Model.BundleProducts != null && Model.BundleProducts.Count > 0)
+        {
+          var topShopVoucher = Model.AvailableVouchers?.OrderByDescending(x => x.IsShopVoucher).ThenBy(x => x.MinOrderValue).FirstOrDefault();
+          <div class="mt-6 border-2 border-emerald-200 rounded-2xl p-5 bg-gradient-to-r from-emerald-50/60 via-white to-teal-50/40"
+               id="js-bundle-deal-card"
+               data-voucher-min="@(topShopVoucher?.MinOrderValue.ToString("0", global::System.Globalization.CultureInfo.InvariantCulture) ?? "0")"
+               data-voucher-code="@(topShopVoucher?.Code ?? "")">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div>
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-red-100 text-red-700 mb-1">
+                  🔥 MUA KÈM DEAL SỐC • GỢI Ý COMBO TỪ GIAN HÀNG
+                </div>
+                <h5 class="font-bold text-light-primary-text text-base">Thường được mua cùng để tối ưu phí vận chuyển &amp; mở khóa Voucher Shop</h5>
+              </div>
+              @if (topShopVoucher != null && topShopVoucher.MinOrderValue > 0)
+              {
+                <div class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900" id="js-bundle-voucher-hint">
+                  🎟️ Gom đơn đạt <strong>@topShopVoucher.MinOrderValue.ToString("N0", viVn)₫</strong> để dùng mã <strong>@topShopVoucher.Code</strong>
+                </div>
+              }
+            </div>
+
+            <div class="grid grid-cols-12 gap-4 items-center">
+              <div class="col-span-12 lg:col-span-9">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  @foreach (var bp in Model.BundleProducts)
+                  {
+                    var bpImg = !string.IsNullOrWhiteSpace(bp.PrimaryImageUrl) ? bp.PrimaryImageUrl : "assets/images/vitamin-c.png";
+                    var bpUrl = Url.RouteUrl("product_details", new { slug = bp.Slug }) ?? "#";
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:border-primary transition-all cursor-pointer">
+                      <input type="checkbox"
+                             class="js-bundle-item-chk size-4 accent-emerald-600 rounded cursor-pointer"
+                             checked
+                             data-variant-id="@bp.DefaultVariantId"
+                             data-price="@bp.Price.ToString("0", global::System.Globalization.CultureInfo.InvariantCulture)" />
+                      <img src="@bpImg" alt="@bp.Name" class="size-14 rounded-lg object-cover border border-gray-100 shrink-0" />
+                      <div class="min-w-0 flex-1">
+                        <a href="@bpUrl" class="text-xs font-bold text-light-primary-text hover:text-primary line-clamp-2">@bp.Name</a>
+                        <div class="text-sm font-extrabold text-primary mt-1">@bp.Price.ToString("N0", viVn)₫</div>
+                      </div>
+                    </label>
+                  }
+                </div>
+              </div>
+
+              <div class="col-span-12 lg:col-span-3">
+                <div class="p-4 rounded-2xl bg-white border border-emerald-200 text-center shadow-xs">
+                  <div class="text-xs text-light-secondary-text">Tổng giá trị Combo (<span id="js-bundle-count">@(Model.BundleProducts.Count + 1)</span> SP)</div>
+                  <div class="text-xl font-extrabold text-primary my-1" id="js-bundle-total-price">0 VNĐ</div>
+                  <button type="button"
+                          id="js-add-bundle-btn"
+                          onclick="addBundleToCart()"
+                          class="btn btn-primary rounded-full w-full py-2.5 text-xs font-bold text-white mt-2 cursor-pointer">
+                    🛒 Thêm cả Combo vào giỏ
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         }
@@ -999,8 +1266,21 @@
             wrap.classList.toggle("border-gray-300", !isSelected);
           }
 
+          if (!btn.style.backgroundColor) {
+            btn.classList.toggle("bg-primary", isSelected);
+            btn.classList.toggle("text-white", isSelected);
+            btn.classList.toggle("border-primary", isSelected);
+            btn.classList.toggle("text-light-primary-text", !isSelected);
+            btn.classList.toggle("border-gray-300", !isSelected);
+          }
+
           const tick = btn.querySelector("i.hgi-tick-02");
           if (tick) tick.classList.toggle("hidden", !isSelected);
+
+          if (isSelected && btn.dataset.optImg) {
+            const firstMainImg = document.querySelector(".product-details-big-slider .slick-current img") || document.querySelector(".product-details-big-slider img");
+            if (firstMainImg) firstMainImg.src = btn.dataset.optImg;
+          }
         }
 
         if (selectedColorTextEl) {
@@ -1155,7 +1435,7 @@
           if (showDiscount) {
             discountPercentEl.classList.remove("hidden");
             discountPercentEl.style.display = "inline-block";
-            discountPercentEl.textContent = `${pct}% OFF`;
+            discountPercentEl.textContent = `-${pct}%`;
           } else {
             discountPercentEl.classList.add("hidden");
             discountPercentEl.style.display = "none";
@@ -1164,6 +1444,17 @@
         }
 
         const stockQty = asInt(v.stockQuantity);
+        const skuEl = document.getElementById("js-variant-sku");
+        if (skuEl) {
+          skuEl.textContent = v.sku ? String(v.sku) : `SP-${v.variantId || ''}`;
+        }
+        if (v.imageUrl) {
+          const firstMainImg = document.querySelector(".product-details-big-slider .slick-current img") || document.querySelector(".product-details-big-slider img");
+          if (firstMainImg) firstMainImg.src = v.imageUrl;
+        }
+        if (typeof window.recalcSellzyBundleTotal === "function") {
+          window.recalcSellzyBundleTotal(price);
+        }
         if (stockEl) stockEl.textContent = fmt.format(stockQty);
         if (stockLeftEl) stockLeftEl.textContent = fmt.format(stockQty);
         if (stockProgressEl) {
@@ -1411,6 +1702,214 @@
         }, 500);
     })();
 
+    async function claimSellzyVoucher(voucherId, code, btnEl) {
+        if (!code) return;
+        document.cookie = "sellzy_claimed_voucher=" + encodeURIComponent(code) + "; path=/; max-age=604800; SameSite=Lax";
+        try { localStorage.setItem("sellzy_claimed_voucher", code); } catch (e) {}
+
+        if (voucherId > 0) {
+            try {
+                await fetch("/vouchers/save", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify({ voucherId: voucherId, code: code })
+                });
+            } catch (e) {}
+        }
+
+        document.querySelectorAll('.js-claim-voucher-btn').forEach(b => {
+            if (b.dataset.voucherCode === code) {
+                b.textContent = "✓ Đã lưu";
+                b.style.background = "#059669";
+            }
+        });
+    }
+
+    async function toggleFollowShopOnProduct(shopId, btnEl) {
+        if (!shopId) return;
+        try {
+            const res = await fetch("/shop/toggle-follow", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({ shopId: shopId })
+            });
+            if (res.status === 401) {
+                if (typeof window.showSellzyAuthPrompt === "function") {
+                    window.showSellzyAuthPrompt({ context: "follow_shop", returnUrl: window.location.pathname });
+                } else {
+                    window.location.href = "/auth/login?returnUrl=" + encodeURIComponent(window.location.pathname);
+                }
+                return;
+            }
+            const data = await res.json();
+            if (data && data.ok) {
+                const countEl = document.getElementById("js-pd-follower-count");
+                if (countEl && typeof data.followerCount === "number") {
+                    countEl.textContent = data.followerCount.toLocaleString("vi-VN");
+                }
+                if (btnEl) {
+                    if (data.isFollowing) {
+                        btnEl.textContent = "✓ Đang theo dõi";
+                        btnEl.style.background = "#e6f4f3";
+                        btnEl.style.color = "#008374";
+                        btnEl.style.border = "1px solid #008374";
+                    } else {
+                        btnEl.textContent = "+ Theo dõi";
+                        btnEl.style.background = "#008374";
+                        btnEl.style.color = "#ffffff";
+                        btnEl.style.border = "1px solid #008374";
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function filterSellzyReviews(filterType, pillEl) {
+        document.querySelectorAll(".js-review-filter-pill").forEach(p => {
+            const active = p === pillEl;
+            p.style.background = active ? "#008374" : "#ffffff";
+            p.style.color = active ? "#ffffff" : "#334155";
+            p.style.borderColor = active ? "#008374" : "#cbd5e1";
+        });
+
+        let visibleCount = 0;
+        document.querySelectorAll(".js-review-item").forEach(item => {
+            const r = Number(item.dataset.rating || 0);
+            const hasPhoto = item.dataset.hasPhotos === "1";
+            let show = true;
+            if (filterType === "photo") show = hasPhoto;
+            else if (filterType !== "all") show = (r === Number(filterType));
+            item.style.display = show ? "" : "none";
+            if (show) visibleCount++;
+        });
+
+        const emptyFilterEl = document.getElementById("js-review-filter-empty");
+        if (emptyFilterEl) {
+            emptyFilterEl.style.display = visibleCount === 0 ? "block" : "none";
+        }
+    }
+
+    function openReviewPhotoLightbox(url) {
+        const modal = document.getElementById("js-review-photo-lightbox");
+        const img = document.getElementById("js-review-photo-lightbox-img");
+        if (modal && img && url) {
+            img.src = url;
+            modal.style.display = "flex";
+        }
+    }
+
+    function closeReviewPhotoLightbox() {
+        const modal = document.getElementById("js-review-photo-lightbox");
+        if (modal) modal.style.display = "none";
+    }
+
+    (function initClaimedVouchersAndBundle() {
+        let savedCode = "";
+        try {
+            const m = document.cookie.match(/(?:^|;\s*)sellzy_claimed_voucher=([^;]*)/);
+            savedCode = m ? decodeURIComponent(m[1]) : (localStorage.getItem("sellzy_claimed_voucher") || "");
+        } catch (e) {}
+        if (savedCode) {
+            document.querySelectorAll('.js-claim-voucher-btn').forEach(b => {
+                if (b.dataset.voucherCode === savedCode) {
+                    b.textContent = "✓ Đã lưu";
+                    b.style.background = "#059669";
+                }
+            });
+        }
+
+        const bundleCard = document.getElementById("js-bundle-deal-card");
+        if (!bundleCard) return;
+
+        window.recalcSellzyBundleTotal = function(mainPriceOverride) {
+            let mainPrice = typeof mainPriceOverride === "number" ? mainPriceOverride : 0;
+            if (!mainPrice) {
+                const rawText = (document.getElementById("js-current-price")?.textContent || "0").replace(/[^\d]/g, "");
+                mainPrice = Number(rawText) || 0;
+            }
+            const chks = Array.from(bundleCard.querySelectorAll(".js-bundle-item-chk"));
+            let addonSum = 0;
+            let count = 1;
+            chks.forEach(c => {
+                if (c.checked) {
+                    addonSum += Number(c.dataset.price || 0);
+                    count++;
+                }
+            });
+            const total = mainPrice + addonSum;
+            const countEl = document.getElementById("js-bundle-count");
+            const totalEl = document.getElementById("js-bundle-total-price");
+            const hintEl = document.getElementById("js-bundle-voucher-hint");
+            if (countEl) countEl.textContent = String(count);
+            if (totalEl) totalEl.textContent = total.toLocaleString("vi-VN") + " VNĐ";
+
+            const minOrder = Number(bundleCard.dataset.voucherMin || 0);
+            const vCode = bundleCard.dataset.voucherCode || "";
+            if (hintEl && minOrder > 0 && vCode) {
+                if (total >= minOrder) {
+                    hintEl.innerHTML = `✅ Combo đã đạt chuẩn áp mã <strong>${vCode}</strong> khi Thanh toán!`;
+                    hintEl.className = "text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900";
+                } else {
+                    const diff = minOrder - total;
+                    hintEl.innerHTML = `🎟️ Mua thêm <strong>${diff.toLocaleString("vi-VN")}₫</strong> để mở khóa mã <strong>${vCode}</strong>`;
+                    hintEl.className = "text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900";
+                }
+            }
+        };
+
+        bundleCard.querySelectorAll(".js-bundle-item-chk").forEach(c => {
+            c.addEventListener("change", () => window.recalcSellzyBundleTotal());
+        });
+        window.recalcSellzyBundleTotal();
+    })();
+
+    async function addBundleToCart() {
+        const mainBtn = document.querySelector("[data-add-to-cart]");
+        const mainVariantId = Number(mainBtn?.dataset.variantId || 0);
+        const qtyInput = document.querySelector(".quantity-input");
+        const mainQty = Math.max(1, Number(qtyInput?.value || 1));
+
+        const itemsToAdd = [];
+        if (mainVariantId > 0) itemsToAdd.push({ variantId: mainVariantId, quantity: mainQty });
+
+        document.querySelectorAll(".js-bundle-item-chk:checked").forEach(c => {
+            const vid = Number(c.dataset.variantId || 0);
+            if (vid > 0) itemsToAdd.push({ variantId: vid, quantity: 1 });
+        });
+
+        if (itemsToAdd.length === 0) return;
+
+        const btn = document.getElementById("js-add-bundle-btn");
+        const origText = btn ? btn.innerHTML : "";
+        if (btn) { btn.disabled = true; btn.innerHTML = "⏳ Đang thêm Combo..."; }
+
+        try {
+            for (const item of itemsToAdd) {
+                const res = await fetch("/cart/items", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify(item)
+                });
+                if (res.status === 401) {
+                    if (typeof window.showSellzyAuthPrompt === "function") {
+                        window.showSellzyAuthPrompt({ context: "cart" });
+                    } else {
+                        window.location.href = "/Auth/Login";
+                    }
+                    return;
+                }
+            }
+            if (btn) {
+                btn.innerHTML = "✓ Đã thêm Combo vào giỏ!";
+                setTimeout(() => { window.location.href = "/cart"; }, 550);
+            }
+        } catch (err) {
+            if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+        }
+    }
+
     function openChatWithShop(productId, shopId) {
         fetch('/Chat/StartOrOpen', {
             method: 'POST',
@@ -1424,7 +1923,18 @@
         })
         .then(async res => {
             if (res.status === 401) {
-                window.location.href = '/Auth/Login';
+                const targetUrl = '/Chat?startShopId=' + encodeURIComponent(shopId)
+                    + (productId ? '&attachProductId=' + encodeURIComponent(productId) : '');
+                if (typeof window.showSellzyAuthPrompt === 'function') {
+                    window.showSellzyAuthPrompt({ context: 'shop_chat', returnUrl: targetUrl });
+                } else {
+                    const loginTrigger = document.querySelector('.login-page-btn');
+                    if (loginTrigger) {
+                        loginTrigger.click();
+                    } else {
+                        window.location.href = '/Auth/Login';
+                    }
+                }
                 throw new Error('Chưa đăng nhập');
             }
             const data = await res.json();
@@ -1463,6 +1973,32 @@
           <div id="description" class="product-details-tab active fade">
             <h5 class="product-details-tab-title">Mô tả</h5>
             <div class="product-details-tab-content">
+              @if (Model.Attributes != null && Model.Attributes.Count > 0)
+              {
+                <div class="mb-8">
+                  <h6 class="font-bold text-base mb-3 text-light-primary-text">Thông số kỹ thuật chi tiết</h6>
+                  <div class="border border-gray-200 rounded-2xl overflow-hidden max-w-2xl">
+                    <table class="w-full border-collapse text-sm">
+                      <tbody class="divide-y divide-gray-200">
+                        @if (!string.IsNullOrWhiteSpace(Model.BrandName))
+                        {
+                          <tr>
+                            <th class="text-left font-semibold py-2.5 px-4 bg-[#F4F6F8] w-48 text-light-secondary-text">Thương hiệu</th>
+                            <td class="py-2.5 px-4 font-semibold text-light-primary-text">@Model.BrandName</td>
+                          </tr>
+                        }
+                        @foreach (var attr in Model.Attributes)
+                        {
+                          <tr>
+                            <th class="text-left font-semibold py-2.5 px-4 bg-[#F4F6F8] w-48 text-light-secondary-text">@attr.Name</th>
+                            <td class="py-2.5 px-4 font-medium text-light-primary-text">@attr.Value @(string.IsNullOrWhiteSpace(attr.Unit) ? "" : attr.Unit)</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
               @if (!string.IsNullOrWhiteSpace(Model.Description))
               {
                 <p class="mb-6 whitespace-pre-line">@Model.Description</p>
@@ -1603,7 +2139,7 @@
                   <div class="list-rating space-y-6 w-full">
                     <div class="flex gap-x-4 items-center">
                       <span class="font-semibold text-light-primary-text"
-                        >5 Star</span
+                        >5 Sao</span
                       >
                       <div
                         class="progress w-full flex-1 h-1.5 bg-[rgba(145,158,171,0.24)] rounded-[50px] overflow-hidden"
@@ -1617,7 +2153,7 @@
                     </div>
                     <div class="flex gap-x-4 items-center">
                       <span class="font-semibold text-light-primary-text"
-                        >4 Star</span
+                        >4 Sao</span
                       >
                       <div
                         class="progress w-full flex-1 h-1.5 bg-[rgba(145,158,171,0.24)] rounded-[50px] overflow-hidden"
@@ -1631,7 +2167,7 @@
                     </div>
                     <div class="flex gap-x-4 items-center">
                       <span class="font-semibold text-light-primary-text"
-                        >3 Star</span
+                        >3 Sao</span
                       >
                       <div
                         class="progress w-full flex-1 h-1.5 bg-[rgba(145,158,171,0.24)] rounded-[50px] overflow-hidden"
@@ -1645,7 +2181,7 @@
                     </div>
                     <div class="flex gap-x-4 items-center">
                       <span class="font-semibold text-light-primary-text"
-                        >2 Star</span
+                        >2 Sao</span
                       >
                       <div
                         class="progress w-full flex-1 h-1.5 bg-[rgba(145,158,171,0.24)] rounded-[50px] overflow-hidden"
@@ -1659,7 +2195,7 @@
                     </div>
                     <div class="flex gap-x-4 items-center">
                       <span class="font-semibold text-light-primary-text"
-                        >1 Star</span
+                        >1 Sao</span
                       >
                       <div
                         class="progress w-full flex-1 h-1.5 bg-[rgba(145,158,171,0.24)] rounded-[50px] overflow-hidden"
@@ -1675,26 +2211,44 @@
                 </div>
               </div>
               <div class="comment-list-wrapper p-6">
-                <div
-                  class="comment-list-title flex items-center justify-between pb-6 border-b border-gray-300 mb-6"
-                >
-                  <h5>Đánh giá của khách hàng</h5>
-                  <div class="relative min-w-[100px]">
-                    <select
-                      id="sorting"
-                      class="rounded-[100px]! filter-select label"
-                    >
-                      <option value="newest" selected>Mới nhất</option>
-                      <option value="oldest">Cũ nhất</option>
-                      <option value="popular">Phổ biến</option>
-                      <option value="rating">Điểm cao</option>
-                      <option value="relevance">Liên quan</option>
-                      <option value="comment-count">Nhiều bình luận</option>
-                    </select>
-                    <label for="sorting" class="nice-select-label"
-                      >Sắp xếp</label
-                    >
+                @{
+                  var reviewsWithPhotoCount = reviews.Count(r => r.MediaUrls != null && r.MediaUrls.Count > 0);
+                }
+                <div class="comment-list-title flex flex-col gap-4 pb-6 border-b border-gray-300 mb-6">
+                  <div class="flex items-center justify-between flex-wrap gap-3">
+                    <h5>Đánh giá của khách hàng</h5>
+                    <div class="relative min-w-[100px]">
+                      <select id="sorting" class="rounded-[100px]! filter-select label">
+                        <option value="newest" selected>Mới nhất</option>
+                        <option value="oldest">Cũ nhất</option>
+                        <option value="rating">Điểm cao</option>
+                      </select>
+                      <label for="sorting" class="nice-select-label">Sắp xếp</label>
+                    </div>
                   </div>
+                  @if (reviews.Count > 0)
+                  {
+                    <div class="flex flex-wrap items-center gap-2">
+                      <button type="button" class="js-review-filter-pill text-xs font-bold px-3.5 py-1.5 rounded-full cursor-pointer transition-all"
+                              style="background:#008374; color:#ffffff; border:1px solid #008374;"
+                              onclick="filterSellzyReviews('all', this)">
+                        Tất cả (@reviewsTotal)
+                      </button>
+                      <button type="button" class="js-review-filter-pill text-xs font-bold px-3.5 py-1.5 rounded-full cursor-pointer transition-all"
+                              style="background:#ffffff; color:#334155; border:1px solid #cbd5e1;"
+                              onclick="filterSellzyReviews('photo', this)">
+                        📷 Có hình ảnh (@reviewsWithPhotoCount)
+                      </button>
+                      @for (int star = 5; star >= 1; star--)
+                      {
+                        <button type="button" class="js-review-filter-pill text-xs font-bold px-3.5 py-1.5 rounded-full cursor-pointer transition-all"
+                                style="background:#ffffff; color:#334155; border:1px solid #cbd5e1;"
+                                onclick="filterSellzyReviews('@star', this)">
+                          @star Sao (@ratingCounts[star])
+                        </button>
+                      }
+                    </div>
+                  }
                 </div>
                 <ol class="comment-list">
                   @if (reviews.Count == 0)
@@ -1707,19 +2261,31 @@
                   }
                   else
                   {
+                    <li id="js-review-filter-empty" style="display:none; padding: 24px 0; text-align:center; color:#64748b; font-size:14px;">
+                      Không có đánh giá nào khớp với bộ lọc đã chọn.
+                    </li>
                     foreach (var review in reviews)
                     {
                       var reviewPct = (int)System.Math.Round(System.Math.Clamp((double)(review.Rating / 5m * 100m), 0d, 100d));
-                      var avatar = !string.IsNullOrWhiteSpace(review.AvatarUrl) ? review.AvatarUrl : "assets/images/blog/user-avatar-1.png";
-                      <li class="comment">
+                      var avatar = !string.IsNullOrWhiteSpace(review.AvatarUrl) ? review.AvatarUrl : Url.Content("~/assets/images/blog/user-avatar-1.png");
+                      var hasPhotos = review.MediaUrls != null && review.MediaUrls.Count > 0;
+                      <li class="comment js-review-item" data-rating="@review.Rating" data-has-photos="@(hasPhotos ? "1" : "0")">
                         <div class="comment-body">
                           <div class="comment-avatar-card flex items-center gap-x-4 mb-3">
-                            <div class="comment-author-avatar size-12 rounded-full">
-                              <img src="@avatar" alt="Comment Author Avatar" class="rounded-full" />
+                            <div class="comment-author-avatar size-12 rounded-full overflow-hidden">
+                              <img src="@avatar" alt="Comment Author Avatar" class="rounded-full w-full h-full object-cover" />
                             </div>
                             <div class="comment-author-info flex-1">
                               <p class="comment-author font-semibold text-light-primary-text">@review.AuthorName</p>
-                              <p class="text-xs leading-[18px] text-light-secondary-text">@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", viVn)</p>
+                              <div class="flex flex-wrap items-center gap-2 mt-0.5">
+                                <span class="text-xs leading-[18px] text-light-secondary-text">@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm", viVn)</span>
+                                @if (!string.IsNullOrWhiteSpace(review.VariantName))
+                                {
+                                  <span style="font-size: 11px; font-weight: 600; color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; padding: 1px 8px; border-radius: 999px;">
+                                    Phân loại: @review.VariantName
+                                  </span>
+                                }
+                              </div>
                             </div>
                           </div>
 
@@ -1730,12 +2296,44 @@
                               </div>
                               <span class="text-sm leading-[22px] font-normal inline-flex ml-2 text-light-primary-text">@review.Rating.ToString(viVn)</span>
                             </div>
+                            <span style="font-size: 11.5px; color: #059669; font-weight: 600; margin-left: 10px;">✓ Đã mua hàng tại Sellzy</span>
                           </div>
 
                           @if (!string.IsNullOrWhiteSpace(review.Comment))
                           {
                             <div class="comment-content pl-0! pr-0! mb-3">
                               <p class="text-light-primary-text whitespace-pre-line">@review.Comment</p>
+                            </div>
+                          }
+
+                          @if (hasPhotos)
+                          {
+                            <div class="flex flex-wrap items-center gap-2.5 mb-3">
+                              @foreach (var photoUrl in review.MediaUrls!)
+                              {
+                                var resolvedPhoto = global::DOAN_BANHANG.Helpers.ImageUrlHelper.NormalizeStaticFileUrl(photoUrl) ?? photoUrl;
+                                <button type="button"
+                                        onclick="openReviewPhotoLightbox('@resolvedPhoto')"
+                                        style="width: 78px; height: 78px; border-radius: 12px; overflow: hidden; border: 1px solid #cbd5e1; padding: 0; background: #f8fafc; cursor: zoom-in;">
+                                  <img src="@resolvedPhoto" alt="Ảnh đánh giá thực tế" style="width: 100%; height: 100%; object-fit: cover;" />
+                                </button>
+                              }
+                            </div>
+                          }
+
+                          @if (!string.IsNullOrWhiteSpace(review.SellerReply))
+                          {
+                            <div class="mt-3 p-3.5 rounded-2xl border" style="background: #f4fbfa; border-color: #cce3df;">
+                              <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-xs font-bold" style="color: #088178;">
+                                  <i class="hgi hgi-stroke hgi-store-01 mr-1"></i>Phản hồi từ @(string.IsNullOrWhiteSpace(review.ShopName) ? "Gian hàng" : review.ShopName)
+                                </span>
+                                @if (review.RepliedAt.HasValue)
+                                {
+                                  <span class="text-xs text-light-secondary-text">@review.RepliedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm", viVn)</span>
+                                }
+                              </div>
+                              <p class="text-sm text-light-primary-text whitespace-pre-line mb-0">@review.SellerReply</p>
                             </div>
                           }
                         </div>
@@ -1907,6 +2505,55 @@
       </div>
     </section>
     <!-- ========== Related Products Section End ========== -->
+
+    @if (Model.RecentlyViewedProducts != null && Model.RecentlyViewedProducts.Count > 0)
+    {
+      <section class="pb-[70px]">
+        <div class="container">
+          <div class="flex items-center justify-between mb-8">
+            <div>
+              <span style="display:inline-block; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:#008374; background:#e6f4f3; padding:4px 10px; border-radius:999px; margin-bottom:6px;">Lịch sử duyệt xem</span>
+              <h3>Sản phẩm bạn vừa xem</h3>
+            </div>
+          </div>
+          <div class="grid grid-cols-12 gap-5">
+            @foreach (var rv in Model.RecentlyViewedProducts.Take(6))
+            {
+              var rvImg = global::DOAN_BANHANG.Helpers.ImageUrlHelper.NormalizeStaticFileUrl(rv.PrimaryImageUrl) ?? Url.Content("~/assets/images/vitamin-c.png");
+              var rvUrl = Url.RouteUrl("product_details", new { slug = rv.Slug }) ?? "#";
+              <div class="xl:col-span-2 lg:col-span-3 md:col-span-4 col-span-6">
+                <a href="@rvUrl" style="display:flex; flex-direction:column; justify-content:space-between; height:100%; background:#ffffff; border:1px solid #e2e8f0; border-radius:18px; padding:12px; transition:all 0.2s ease; text-decoration:none;">
+                  <div>
+                    <div style="aspect-ratio:1/1; border-radius:12px; background:#f8fafc; overflow:hidden; margin-bottom:10px;">
+                      <img src="@rvImg" alt="@rv.Name" style="width:100%; height:100%; object-fit:cover;" />
+                    </div>
+                    <div style="font-size:13.5px; font-weight:700; color:#0f172a; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:6px;">
+                      @rv.Name
+                    </div>
+                  </div>
+                  <div style="font-size:15px; font-weight:800; color:#008374;">
+                    @rv.Price.ToString("N0", viVn)₫
+                  </div>
+                </a>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- Review Photo Lightbox -->
+    <div id="js-review-photo-lightbox"
+         onclick="closeReviewPhotoLightbox()"
+         style="display:none; position:fixed; inset:0; z-index:10080; background:rgba(15,23,42,0.85); align-items:center; justify-content:center; padding:24px;">
+      <div style="position:relative; max-width:90vw; max-height:88vh;" onclick="event.stopPropagation()">
+        <button type="button" onclick="closeReviewPhotoLightbox()"
+                style="position:absolute; top:-16px; right:-16px; width:36px; height:36px; border-radius:50%; background:#ffffff; color:#0f172a; border:none; font-weight:800; font-size:18px; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.25);">
+          ✕
+        </button>
+        <img id="js-review-photo-lightbox-img" src="" alt="Ảnh đánh giá phóng to" style="max-width:90vw; max-height:85vh; border-radius:16px; object-fit:contain; background:#000;" />
+      </div>
+    </div>
 
 
 

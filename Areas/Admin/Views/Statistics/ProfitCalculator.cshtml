@@ -1,253 +1,762 @@
-@inject DOAN_BANHANG.Models.DataContext _context
-@using Microsoft.EntityFrameworkCore
+@model DOAN_BANHANG.ViewModels.PricingMarginGuardVm
+@using System.Globalization
+@using System.Text.Json
 @{
-    ViewData["Title"] = "Máy tính lợi nhuận";
+    ViewData["Title"] = "Định giá & Kiểm soát Lãi lỗ SKU";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
-
-    var settings = await _context.SystemSettings.ToDictionaryAsync(s => s.Id, s => s.Value);
-    decimal GetSettingPercent(string id, decimal defaultValue)
-    {
-        if (settings.TryGetValue(id, out var valStr) && decimal.TryParse(valStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var val))
-        {
-            return val;
-        }
-        return defaultValue;
-    }
-
-    var vatRateVal = GetSettingPercent("Tax_VAT_Default", 8m);
-    var sellerTaxRateVal = GetSettingPercent("Tax_Seller_Rate", 1.5m);
-    var sellerThresholdVal = GetSettingPercent("Tax_Seller_Threshold", 500000000m);
-    var commFashionRateVal = GetSettingPercent("Fee_Commission_Fashion", 12m);
-    var commCosmeticsRateVal = GetSettingPercent("Fee_Commission_Cosmetics", 10m);
-    var marketingRateVal = GetSettingPercent("Fee_Marketing", 6m);
+    var inv = CultureInfo.InvariantCulture;
 }
 
-<div class="row">
-    <div class="col-12">
-        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18">Máy tính Lợi nhuận & Thuế (2026)</h4>
+<style>
+    .mg-hero {
+        background: linear-gradient(135deg, #022c22 0%, #065f5b 60%, #008374 100%);
+        border-radius: 18px;
+        padding: 24px 28px;
+        color: #fff;
+        box-shadow: 0 10px 28px rgba(2, 44, 34, 0.16);
+    }
+    .mg-kpi-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: #fff;
+        padding: 18px 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: 100%;
+    }
+    .mg-kpi-card:hover, .mg-kpi-card.active-filter {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        border-color: #008374;
+    }
+    .mg-toolbar {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 18px 20px;
+    }
+    .mg-table th {
+        background: #f8fafc;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #475569;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+    }
+    .mg-table td {
+        vertical-align: middle;
+        padding: 13px 12px;
+    }
+    .mg-row-dirty {
+        background-color: #fffbeb !important;
+    }
+    .mg-row-loss {
+        background-color: rgba(254, 242, 242, 0.55);
+    }
+    .mg-money-in {
+        width: 122px;
+        font-weight: 700;
+        text-align: right;
+        border-radius: 8px;
+    }
+    .mg-badge-safe { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .mg-badge-thin { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+    .mg-badge-loss { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .mg-badge-nocost { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .mg-suggest-btn {
+        background: #f0fdfa;
+        color: #0f766e;
+        border: 1px dashed #14b8a6;
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .mg-suggest-btn:hover {
+        background: #008374;
+        color: #fff;
+        border-style: solid;
+    }
+    .mg-toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 9999;
+        background: #0f172a;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.22);
+        display: none;
+    }
+</style>
 
-            <div class="page-title-right">
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a href="javascript: void(0);">Công cụ</a></li>
-                    <li class="breadcrumb-item active">Máy tính Lợi nhuận</li>
-                </ol>
+@Html.AntiForgeryToken()
+
+<!-- 1. HERO HEADER -->
+<div class="mg-hero mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                @if (Model.IsMall)
+                {
+                    <span class="badge rounded-pill" style="background: #fde047; color: #0f172a; font-weight: 800;">
+                        <i class="bx bxs-badge-check me-1"></i>Sellzy Mall • Miễn khấu trừ thuế cá nhân (0%) • Phí dịch vụ Mall +@Model.MallSurchargePercent.ToString("0.#", inv)%
+                    </span>
+                }
+                else
+                {
+                    <span class="badge rounded-pill" style="background: rgba(255,255,255,0.18); color: #fff; font-weight: 600;">
+                        <i class="bx bx-store me-1"></i>Gian hàng Tiêu chuẩn • Thuế khấu trừ tại nguồn @Model.SellerTaxRatePercent.ToString("0.##", inv)%
+                    </span>
+                }
+                <span class="badge rounded-pill" style="background: rgba(255,255,255,0.14); color: #ccfbf1;">
+                    <i class="bx bxs-coupon me-1"></i>@Model.ActiveShopVoucherCount Voucher Shop đang chạy
+                </span>
             </div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-shield-quarter me-1" style="color: #fde047;"></i>Định giá &amp; Kiểm soát Lãi lỗ SKU — @Model.ShopName
+            </h4>
+            <p class="mb-0 text-white-50 font-size-13">
+                Tự động kiểm toán biên lợi nhuận thực tế trên toàn bộ SKU của Shop, phát hiện rủi ro <strong>bán lỗ khi chồng Flash Sale + Voucher Shop</strong>, định giá ngược theo % lãi mục tiêu và lưu trực tiếp vào kho.
+            </p>
         </div>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-xl-4">
-        <div class="card border border-primary">
-            <div class="card-header bg-transparent border-primary">
-                <h5 class="my-0 text-primary"><i class="bx bx-calculator me-2"></i>Nhập thông số sản phẩm</h5>
-            </div>
-            <div class="card-body">
-                <form id="calculator-form">
-                    <div class="mb-3">
-                        <label for="cogs" class="form-label">Giá nhập kho (VNĐ)</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" id="cogs" value="200000" min="0" required>
-                            <span class="input-group-text">₫</span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="sellingPrice" class="form-label">Giá bán mong muốn (VNĐ)</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" id="sellingPrice" value="500000" min="0" required>
-                            <span class="input-group-text">₫</span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="category" class="form-label">Ngành hàng</label>
-                        <select class="form-select" id="category">
-                            <option value="fashion" selected>Thời trang (Commission @(commFashionRateVal)%)</option>
-                            <option value="cosmetics">Mỹ phẩm (Commission @(commCosmeticsRateVal)%)</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="sellerType" class="form-label">Loại hình kinh doanh</label>
-                        <select class="form-select" id="sellerType">
-                            <option value="individual_under">Cá nhân (Doanh thu ≤ @(string.Format("{0:N0}", sellerThresholdVal / 1000000))tr) - Thuế 0%</option>
-                            <option value="individual_over" selected>Cá nhân (Doanh thu > @(string.Format("{0:N0}", sellerThresholdVal / 1000000))tr) - Thuế @(sellerTaxRateVal)%</option>
-                            <option value="enterprise">Doanh nghiệp (Mall) - Thuế 20% trên lợi nhuận</option>
-                        </select>
-                    </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="hasVoucher" checked>
-                        <label class="form-check-label" for="hasVoucher">Áp dụng FreeShip/Voucher Xtra (Phí @(marketingRateVal)%)</label>
-                    </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            @if (Model.IsAdminViewer && Model.AvailableShops.Count > 0)
+            {
+                <form method="get" asp-area="Admin" asp-controller="SystemStatistics" asp-action="ProfitCalculator" class="d-flex align-items-center gap-2">
+                    <select name="shopId" class="form-select form-select-sm" style="min-width: 210px;" onchange="this.form.submit()">
+                        @foreach (var s in Model.AvailableShops)
+                        {
+                            <option value="@s.ShopId" selected="@(s.ShopId == Model.ShopId)">
+                                @(s.IsMall ? "[Mall] " : "")@s.ShopName (#@s.ShopId)
+                            </option>
+                        }
+                    </select>
                 </form>
-            </div>
+            }
+            <button type="button" class="btn btn-warning btn-sm fw-bold rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#sandboxSimModal">
+                <i class="bx bx-test-tube me-1"></i>Tính thử SP mới chưa đăng
+            </button>
+            <a asp-area="Admin" asp-controller="Products" asp-action="Create" class="btn btn-light btn-sm fw-bold rounded-pill px-3">
+                <i class="bx bx-plus-circle me-1"></i>Thêm sản phẩm
+            </a>
         </div>
     </div>
+</div>
 
-    <div class="col-xl-8">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title mb-4">Báo cáo Phân tích Lợi nhuận</h4>
+<!-- 2. KPI SUMMARY CARDS -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="mg-kpi-card active-filter" data-kpi-filter="all" onclick="setStatusFilter('all', this)">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted small fw-semibold">Tổng phân loại SKU</span>
+                <span class="avatar-xs"><span class="avatar-title rounded-circle bg-primary-subtle text-primary"><i class="bx bx-layer"></i></span></span>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark" id="kpiTotalCount">@Model.Items.Count</h3>
+            <div class="small text-muted mt-1">Bấm để xem toàn bộ SKU</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="mg-kpi-card" data-kpi-filter="safe" onclick="setStatusFilter('safe', this)">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted small fw-semibold">Đạt mục tiêu lãi ròng</span>
+                <span class="avatar-xs"><span class="avatar-title rounded-circle bg-success-subtle text-success"><i class="bx bx-check-shield"></i></span></span>
+            </div>
+            <h3 class="fw-bold mb-0 text-success" id="kpiSafeCount">0</h3>
+            <div class="small text-muted mt-1">Biên ròng &ge; <span class="lbl-target-pct">20</span>%</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="mg-kpi-card" data-kpi-filter="thin" onclick="setStatusFilter('thin', this)">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted small fw-semibold">Biên mỏng cần tối ưu</span>
+                <span class="avatar-xs"><span class="avatar-title rounded-circle bg-warning-subtle text-warning"><i class="bx bx-trending-down"></i></span></span>
+            </div>
+            <h3 class="fw-bold mb-0 text-warning" id="kpiThinCount">0</h3>
+            <div class="small text-muted mt-1">Lãi dương nhưng &lt; <span class="lbl-target-pct">20</span>%</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="mg-kpi-card" data-kpi-filter="risk" onclick="setStatusFilter('risk', this)">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-muted small fw-semibold">Nguy cơ Bán lỗ / Thiếu giá vốn</span>
+                <span class="avatar-xs"><span class="avatar-title rounded-circle bg-danger-subtle text-danger"><i class="bx bx-error-alt"></i></span></span>
+            </div>
+            <h3 class="fw-bold mb-0 text-danger" id="kpiRiskCount">0</h3>
+            <div class="small text-danger mt-1">Cần điều chỉnh giá hoặc mã ngay</div>
+        </div>
+    </div>
+</div>
 
-                <div class="table-responsive">
-                    <table class="table table-nowrap align-middle mb-0">
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-money text-success me-2"></i> Doanh thu (Giá bán)</h5>
-                                </td>
-                                <td class="text-end">
-                                    <span class="fw-bold fs-5 text-success" id="lbl-revenue">500,000 ₫</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-receipt text-info me-2"></i> Thuế VAT (@(vatRateVal)% Khách trả thêm)</h5>
-                                </td>
-                                <td class="text-end">
-                                    <span class="text-info" id="lbl-vat">+ 40,000 ₫</span>
-                                </td>
-                            </tr>
-                            <tr class="border-bottom">
-                                <td>
-                                    <h5 class="text-truncate font-size-14 m-0 fw-bold">Tổng tiền khách thanh toán</h5>
-                                </td>
-                                <td class="text-end">
-                                    <span class="fw-bold" id="lbl-total-customer">540,000 ₫</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="pt-4">
-                                    <h5 class="text-truncate font-size-14 m-0 text-muted">CHI PHÍ & CHIẾT KHẤU:</h5>
-                                </td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-package text-warning me-2"></i> Giá vốn hàng bán</h5>
-                                </td>
-                                <td class="text-end">
-                                    <span class="text-muted" id="lbl-cogs">- 200,000 ₫</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-store text-danger me-2"></i> Chiết khấu Sàn (Commission)</h5>
-                                </td>
-                                <td class="text-end">
-                                    <span class="text-danger" id="lbl-commission">- 60,000 ₫</span>
-                                </td>
-                            </tr>
-                            <tr id="row-marketing" class="bg-light">
-                                <td>
-                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-gift text-danger me-2"></i> Phí Marketing (@(marketingRateVal)%)</h5>
-                                </td>
-                                <td class="text-end">
-                                    <span class="text-danger" id="lbl-marketing">- 30,000 ₫</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <h5 class="text-truncate font-size-14 m-0"><i class="bx bx-building-house text-danger me-2"></i> Thuế Thu nhập / Doanh nghiệp</h5>
-                                    <small class="text-muted" id="lbl-tax-desc">Cá nhân > @(string.Format("{0:N0}", sellerThresholdVal / 1000000))tr (@(sellerTaxRateVal)% doanh thu)</small>
-                                </td>
-                                <td class="text-end">
-                                    <span class="text-danger" id="lbl-seller-tax">- 7,500 ₫</span>
-                                </td>
-                            </tr>
-                            <tr class="bg-primary bg-soft">
-                                <td>
-                                    <h5 class="font-size-16 m-0 text-primary">Lợi nhuận ròng (Net Profit)</h5>
-                                </td>
-                                <td class="text-end">
-                                    <span class="fw-bold fs-4 text-primary" id="lbl-profit">202,500 ₫</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+<!-- 3. CONTROL BAR (TARGET MARGIN + STACKING TOGGLE + FILTERS + BULK SAVE) -->
+<div class="mg-toolbar mb-4 shadow-sm">
+    <div class="row g-3 align-items-center">
+        <div class="col-xl-4 col-lg-6">
+            <label class="form-label small fw-bold text-dark mb-1">
+                <i class="bx bx-target-lock text-primary me-1"></i>Định giá ngược: Biên lãi ròng mục tiêu (<span id="targetMarginBadge" class="text-primary fw-bold">20%</span>)
+            </label>
+            <div class="d-flex align-items-center gap-2">
+                <input type="range" class="form-range flex-grow-1" id="targetMarginRange" min="5" max="55" step="1" value="20" />
+                <div class="input-group input-group-sm" style="width: 92px;">
+                    <input type="number" class="form-control fw-bold text-center" id="targetMarginInput" min="1" max="75" value="20" />
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6">
+            <div class="p-2.5 rounded-3 border bg-light">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="chkWorstCasePromo" checked />
+                    <label class="form-check-label small fw-bold text-dark" for="chkWorstCasePromo">
+                        Kiểm tra chồng Flash Sale + Voucher
+                    </label>
+                </div>
+                <div class="text-muted" style="font-size: 11px;">Tắt nếu chỉ muốn tính theo giá niêm yết gốc</div>
+            </div>
+        </div>
+
+        <div class="col-xl-5 col-lg-12">
+            <div class="d-flex flex-wrap align-items-center justify-content-xl-end gap-2">
+                <div class="input-group input-group-sm" style="max-width: 210px;">
+                    <span class="input-group-text bg-white"><i class="bx bx-search"></i></span>
+                    <input type="text" id="skuSearchInput" class="form-control" placeholder="Tìm tên SP, SKU..." />
                 </div>
 
-                <div class="row mt-4">
-                    <div class="col-sm-6">
-                        <div class="alert alert-info">
-                            <strong>Biên lợi nhuận: </strong> <span id="lbl-margin">27.5%</span>
-                        </div>
-                    </div>
-                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" id="btnAutoFillAtRisk" title="Tự động điền Giá bán đề xuất cho toàn bộ dòng đang lỗ hoặc biên mỏng">
+                    <i class="bx bx-magic-wand me-1"></i>Áp giá đề xuất cho dòng lỗ/mỏng
+                </button>
 
+                <button type="button" class="btn btn-sm btn-success fw-bold px-3" id="btnSaveAllDirty" disabled>
+                    <i class="bx bx-save me-1"></i>Lưu thay đổi (<span id="dirtyCountLabel">0</span>)
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- 4. MAIN SKU PRICING & MARGIN GUARD TABLE -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table mg-table align-middle mb-0" id="mgSkuTable">
+            <thead>
+                <tr>
+                    <th class="ps-3" style="min-width: 250px;">Sản phẩm / Phân loại SKU</th>
+                    <th>Ngành &amp; Phí Sàn</th>
+                    <th class="text-end">Giá vốn (₫)</th>
+                    <th class="text-end">Giá niêm yết (₫)</th>
+                    <th>Khuyến mãi áp chồng</th>
+                    <th class="text-end">Thực nhận về Ví</th>
+                    <th class="text-end">Lãi ròng &amp; Biên</th>
+                    <th class="text-end">Giá đề xuất (<span class="lbl-target-pct">20</span>%)</th>
+                    <th class="text-center pe-3">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <i class="bx bx-package font-size-48 text-muted d-block mb-2"></i>
+                            <h6 class="fw-bold">Gian hàng chưa có sản phẩm nào</h6>
+                            <p class="text-muted small mb-3">Hãy đăng sản phẩm đầu tiên để hệ thống tự động kiểm toán biên lợi nhuận và gợi ý giá bán tối ưu.</p>
+                            <a asp-area="Admin" asp-controller="Products" asp-action="Create" class="btn btn-primary btn-sm rounded-pill px-4">Đăng sản phẩm ngay</a>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model.Items)
+                    {
+                        <tr class="mg-sku-row"
+                            data-variant-id="@item.VariantId"
+                            data-search="@($"{item.ProductName} {item.Sku} {item.VariantLabel} {item.CategoryName}".ToLowerInvariant())"
+                            data-comm-pct="@item.EffectiveCommissionPercent.ToString(inv)"
+                            data-comm-cap="@((item.MaxCommissionCap ?? 0m).ToString(inv))"
+                            data-has-flash="@(item.HasActiveFlashSale ? "1" : "0")"
+                            data-flash-price="@((item.FlashSalePrice ?? 0m).ToString(inv))"
+                            data-norm-voucher-disc="@item.NormalVoucherDiscount.ToString(inv)"
+                            data-norm-voucher-code="@(item.NormalVoucherCode ?? "")"
+                            data-flash-voucher-disc="@item.FlashVoucherDiscount.ToString(inv)"
+                            data-flash-voucher-code="@(item.FlashVoucherCode ?? "")"
+                            data-orig-cost="@item.CostPrice.ToString("0", inv)"
+                            data-orig-price="@item.SellingPrice.ToString("0", inv)">
+                            <td class="ps-3">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <img src="@item.ImageUrl" alt="@item.ProductName"
+                                         style="width: 44px; height: 44px; border-radius: 10px; object-fit: cover; border: 1px solid #e2e8f0;"
+                                         onerror="this.onerror=null;this.src='/assets/images/placeholder.png';" />
+                                    <div style="max-width: 220px;">
+                                        <a asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@item.ProductId"
+                                           class="fw-bold text-dark text-decoration-none d-block text-truncate" title="@item.ProductName">
+                                            @item.ProductName
+                                        </a>
+                                        <div class="d-flex flex-wrap align-items-center gap-1 mt-0.5">
+                                            <span class="badge bg-light text-dark border" style="font-size: 11px;">@item.VariantLabel</span>
+                                            <span class="text-muted" style="font-size: 11px;">SKU: @item.Sku • Kho: @item.AvailableStock</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="small fw-semibold text-dark">@item.CategoryName</div>
+                                <div class="text-muted" style="font-size: 11.5px;">
+                                    Phí: <strong class="text-danger">@item.EffectiveCommissionPercent.ToString("0.##", inv)%</strong>
+                                    @if (item.MaxCommissionCap.HasValue && item.MaxCommissionCap.Value > 0)
+                                    {
+                                        <span>(Trần @item.MaxCommissionCap.Value.ToString("N0")₫)</span>
+                                    }
+                                </div>
+                            </td>
+
+                            <td class="text-end">
+                                <input type="number" min="0" step="1000"
+                                       class="form-control form-control-sm mg-money-in d-inline-block inp-cost text-primary"
+                                       value="@item.CostPrice.ToString("0", inv)" />
+                            </td>
+
+                            <td class="text-end">
+                                <input type="number" min="1000" step="1000"
+                                       class="form-control form-control-sm mg-money-in d-inline-block inp-price text-dark"
+                                       value="@item.SellingPrice.ToString("0", inv)" />
+                            </td>
+
+                            <td>
+                                <div class="cell-promo-stack small"></div>
+                            </td>
+
+                            <td class="text-end">
+                                <div class="fw-bold text-dark cell-payout">—</div>
+                                <div class="text-muted" style="font-size: 11px;">Khách trả: <span class="cell-eff-price">—</span></div>
+                            </td>
+
+                            <td class="text-end">
+                                <div class="fw-bold fs-6 cell-profit">—</div>
+                                <span class="badge rounded-pill cell-margin-badge" style="font-size: 11px;">—</span>
+                            </td>
+
+                            <td class="text-end">
+                                <button type="button" class="mg-suggest-btn btn-apply-suggested" title="Bấm để điền mức giá đề xuất này vào ô Giá niêm yết">
+                                    <i class="bx bx-up-arrow-alt"></i> <span class="cell-suggested-price">—</span>
+                                </button>
+                                <div class="text-muted mt-1" style="font-size: 10.5px;">
+                                    Giảm tối đa hòa vốn: <strong class="cell-max-discount">—</strong>
+                                </div>
+                            </td>
+
+                            <td class="text-center pe-3">
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <button type="button" class="btn btn-sm btn-success px-2.5 btn-save-row d-none" title="Lưu giá mới cho SKU này">
+                                        <i class="bx bx-check"></i> Lưu
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-light border px-2 btn-breakdown" title="Xem bóc tách từng khoản phí">
+                                        <i class="bx bx-detail"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL 1: CHI TIẾT BÓC TÁCH CẤU THÀNH LỢI NHUẬN 1 SKU -->
+<div class="modal fade" id="skuBreakdownModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-light border-bottom">
+                <h5 class="modal-title fw-bold font-size-16">
+                    <i class="bx bx-receipt text-primary me-1"></i>Bóc tách Cấu thành Lợi nhuận Đơn vị
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="skuBreakdownBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 2: MÔ PHỎNG NHANH CHO SẢN PHẨM MỚI CHƯA ĐĂNG -->
+<div class="modal fade" id="sandboxSimModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header" style="background: linear-gradient(135deg, #022c22, #008374); color: #fff;">
+                <h5 class="modal-title fw-bold text-white font-size-16">
+                    <i class="bx bx-test-tube me-1" style="color: #fde047;"></i>Ước tính nhanh Sản phẩm dự kiến nhập hàng
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Giá vốn dự kiến (₫)</label>
+                        <input type="number" id="simCost" class="form-control fw-bold" value="150000" min="0" step="1000" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Giá bán dự kiến (₫)</label>
+                        <input type="number" id="simPrice" class="form-control fw-bold" value="250000" min="1000" step="1000" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Phí chiết khấu ngành (%)</label>
+                        <input type="number" id="simCommPct" class="form-control" value="@((Model.DefaultCommissionPercent + (Model.IsMall ? Model.MallSurchargePercent : 0m)).ToString("0.##", inv))" step="0.5" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Dự kiến giảm KM / Voucher (₫)</label>
+                        <input type="number" id="simDiscount" class="form-control" value="15000" min="0" step="1000" />
+                    </div>
+                </div>
+                <div class="p-3 rounded-3 bg-light border" id="simResultBox"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mg-toast" id="mgToast"></div>
 
 @section Scripts {
-    <script>
-        $(document).ready(function () {
-            const formatter = new Intl.NumberFormat('vi-VN');
+<script>
+(() => {
+    const sellerTaxRatePct = @Model.SellerTaxRatePercent.ToString(inv);
+    const fmt = new Intl.NumberFormat('vi-VN');
+    let currentFilter = 'all';
 
-            function calculate() {
-                const cogs = parseFloat($('#cogs').val()) || 0;
-                const sellingPrice = parseFloat($('#sellingPrice').val()) || 0;
-                const category = $('#category').val();
-                const sellerType = $('#sellerType').val();
-                const hasVoucher = $('#hasVoucher').is(':checked');
+    const rangeEl = document.getElementById('targetMarginRange');
+    const numEl = document.getElementById('targetMarginInput');
+    const chkWorst = document.getElementById('chkWorstCasePromo');
+    const searchEl = document.getElementById('skuSearchInput');
+    const saveAllBtn = document.getElementById('btnSaveAllDirty');
+    const dirtyCountLabel = document.getElementById('dirtyCountLabel');
 
-                const vatRate = @(vatRateVal / 100m);
-                const commFashionRate = @(commFashionRateVal / 100m);
-                const commCosmeticsRate = @(commCosmeticsRateVal / 100m);
-                const marketingRateVal = @(marketingRateVal / 100m);
-                const sellerTaxRate = @(sellerTaxRateVal / 100m);
+    function showToast(msg, isError = false) {
+        const t = document.getElementById('mgToast');
+        if (!t) return;
+        t.style.background = isError ? '#dc2626' : '#065f5b';
+        t.textContent = msg;
+        t.style.display = 'block';
+        clearTimeout(window.__mgToastTimer);
+        window.__mgToastTimer = setTimeout(() => { t.style.display = 'none'; }, 3200);
+    }
 
-                const commRate = category === 'fashion' ? commFashionRate : commCosmeticsRate;
-                const marketingRate = hasVoucher ? marketingRateVal : 0;
+    function roundUpToThousand(val) {
+        if (!isFinite(val) || val <= 0) return 1000;
+        return Math.ceil(val / 1000) * 1000;
+    }
 
-                const vatAmount = sellingPrice * vatRate;
-                const totalCustomer = sellingPrice + vatAmount;
-                const commission = sellingPrice * commRate;
-                const marketingFee = sellingPrice * marketingRate;
+    function computeMetrics(row, targetMarginPct, useWorstCase) {
+        const cost = Math.max(0, parseFloat(row.querySelector('.inp-cost').value) || 0);
+        const listPrice = Math.max(0, parseFloat(row.querySelector('.inp-price').value) || 0);
+        const commPct = parseFloat(row.dataset.commPct) || 0;
+        const commCap = parseFloat(row.dataset.commCap) || 0;
 
-                let sellerTax = 0;
-                let profitBeforeEnterpriseTax = sellingPrice - cogs - commission - marketingFee;
+        const hasFlash = row.dataset.hasFlash === '1';
+        const origPrice = parseFloat(row.dataset.origPrice) || listPrice;
+        const flashPriceRaw = parseFloat(row.dataset.flashPrice) || 0;
+        // If user edited listPrice below flashPriceRaw or flash was active
+        const activeFlashPrice = (hasFlash && flashPriceRaw > 0 && flashPriceRaw < listPrice) ? flashPriceRaw : listPrice;
 
-                $('#lbl-tax-desc').text('');
-                
-                if (sellerType === 'individual_under') {
-                    sellerTax = 0;
-                    $('#lbl-tax-desc').text('Miễn thuế (Doanh thu ≤ ' + '@(string.Format("{0:N0}", sellerThresholdVal / 1000000))' + 'tr)');
-                } else if (sellerType === 'individual_over') {
-                    sellerTax = sellingPrice * sellerTaxRate; // dynamic tax rate
-                    $('#lbl-tax-desc').text('Cá nhân > ' + '@(string.Format("{0:N0}", sellerThresholdVal / 1000000))' + 'tr (' + '@(sellerTaxRateVal)' + '% doanh thu)');
-                } else if (sellerType === 'enterprise') {
-                    // Enterprise tax is 20% on profit
-                    if (profitBeforeEnterpriseTax > 0) {
-                        sellerTax = profitBeforeEnterpriseTax * 0.20;
-                    }
-                    $('#lbl-tax-desc').text('Thuế TNDN (20% Lợi nhuận)');
+        const normVoucherDisc = parseFloat(row.dataset.normVoucherDisc) || 0;
+        const normVoucherCode = row.dataset.normVoucherCode || '';
+        const flashVoucherDisc = parseFloat(row.dataset.flashVoucherDisc) || 0;
+        const flashVoucherCode = row.dataset.flashVoucherCode || '';
+
+        let buyerPay = listPrice;
+        let promoNoteHtml = '<span class="text-muted">Giá gốc tiêu chuẩn</span>';
+        let promoFixedDeduction = 0;
+
+        if (useWorstCase) {
+            const normalNetBuyer = Math.max(0, listPrice - normVoucherDisc);
+            const flashNetBuyer = hasFlash ? Math.max(0, activeFlashPrice - flashVoucherDisc) : normalNetBuyer;
+
+            if (hasFlash && flashNetBuyer <= normalNetBuyer) {
+                buyerPay = flashNetBuyer;
+                promoFixedDeduction = (listPrice - activeFlashPrice) + flashVoucherDisc;
+                const tags = [`<span class="badge bg-danger-subtle text-danger border border-danger-subtle">⚡ Flash ${fmt.format(activeFlashPrice)}₫</span>`];
+                if (flashVoucherDisc > 0 && flashVoucherCode) {
+                    tags.push(`<span class="badge bg-warning-subtle text-dark border border-warning-subtle">+ Mã ${flashVoucherCode} (-${fmt.format(flashVoucherDisc)}₫)</span>`);
                 }
+                promoNoteHtml = tags.join('<div class="mt-1"></div>');
+            } else if (normVoucherDisc > 0) {
+                buyerPay = normalNetBuyer;
+                promoFixedDeduction = normVoucherDisc;
+                promoNoteHtml = `<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">🎟️ Mã ${normVoucherCode} (-${fmt.format(normVoucherDisc)}₫)</span>`;
+            }
+        }
 
-                const netProfit = profitBeforeEnterpriseTax - sellerTax;
-                const margin = sellingPrice > 0 ? (netProfit / sellingPrice) * 100 : 0;
+        let commission = Math.round(buyerPay * (commPct / 100));
+        let capped = false;
+        if (commCap > 0 && commission > commCap) {
+            commission = commCap;
+            capped = true;
+        }
 
-                // Update UI
-                $('#lbl-revenue').text(formatter.format(sellingPrice) + ' ₫');
-                $('#lbl-vat').text('+ ' + formatter.format(vatAmount) + ' ₫');
-                $('#lbl-total-customer').text(formatter.format(totalCustomer) + ' ₫');
-                $('#lbl-cogs').text('- ' + formatter.format(cogs) + ' ₫');
-                $('#lbl-commission').text('- ' + formatter.format(commission) + ' ₫');
-                
-                if (marketingFee > 0) {
-                    $('#row-marketing').show();
-                    $('#lbl-marketing').text('- ' + formatter.format(marketingFee) + ' ₫');
-                } else {
-                    $('#row-marketing').hide();
-                }
+        const tax = Math.round(buyerPay * (sellerTaxRatePct / 100));
+        const payout = buyerPay - commission - tax;
+        const netProfit = payout - cost;
+        const marginPct = buyerPay > 0 ? (netProfit / buyerPay) * 100 : -100;
 
-                $('#lbl-seller-tax').text('- ' + formatter.format(sellerTax) + ' ₫');
-                $('#lbl-profit').text(formatter.format(netProfit) + ' ₫');
-                $('#lbl-margin').text(margin.toFixed(2) + '%');
+        // Target Selling Price calculation:
+        // We want (P_eff - fee(P_eff) - tax(P_eff) - cost) / P_eff >= targetMargin
+        // => P_eff * (1 - feeRate - taxRate - targetMargin) >= cost
+        const feeRateDec = commPct / 100;
+        const taxRateDec = sellerTaxRatePct / 100;
+        const targetDec = targetMarginPct / 100;
+        const denom = 1 - feeRateDec - taxRateDec - targetDec;
+
+        let reqBuyerPay = cost > 0
+            ? (denom > 0.03 ? (cost / denom) : (cost * 2.2))
+            : listPrice;
+
+        // If commission hits cap at reqBuyerPay, recalculate with fixed cap!
+        if (commCap > 0 && (reqBuyerPay * feeRateDec) > commCap) {
+            const denomCapped = 1 - taxRateDec - targetDec;
+            if (denomCapped > 0.03) {
+                reqBuyerPay = (cost + commCap) / denomCapped;
+            }
+        }
+
+        // Add back voucher discount if simulating worst case on list price
+        const voucherBuffer = useWorstCase ? normVoucherDisc : 0;
+        const suggestedListPrice = cost > 0 ? roundUpToThousand(reqBuyerPay + voucherBuffer) : listPrice;
+
+        // Break-even min buyer pay (0% profit => buyerPay * (1 - feeRate - taxRate) = cost)
+        const breakEvenDenom = Math.max(0.05, 1 - feeRateDec - taxRateDec);
+        let breakEvenBuyerPay = cost / breakEvenDenom;
+        if (commCap > 0 && (breakEvenBuyerPay * feeRateDec) > commCap) {
+            breakEvenBuyerPay = (cost + commCap) / Math.max(0.05, 1 - taxRateDec);
+        }
+        const maxSafeDiscountAmt = Math.max(0, Math.floor((listPrice - breakEvenBuyerPay) / 1000) * 1000);
+
+        return {
+            cost, listPrice, buyerPay, commission, capped, tax, payout, netProfit, marginPct,
+            suggestedListPrice, maxSafeDiscountAmt, promoNoteHtml, commPct
+        };
+    }
+
+    function refreshAll() {
+        const targetPct = Math.min(75, Math.max(1, parseFloat(numEl.value) || 20));
+        const useWorst = chkWorst.checked;
+        const q = (searchEl?.value || '').trim().toLowerCase();
+
+        document.getElementById('targetMarginBadge').textContent = targetPct + '%';
+        document.querySelectorAll('.lbl-target-pct').forEach(el => el.textContent = targetPct);
+
+        let safeCnt = 0, thinCnt = 0, riskCnt = 0, dirtyCnt = 0;
+
+        document.querySelectorAll('.mg-sku-row').forEach(row => {
+            const m = computeMetrics(row, targetPct, useWorst);
+            row.__lastMetrics = m;
+
+            const origCost = parseFloat(row.dataset.origCost) || 0;
+            const origPrice = parseFloat(row.dataset.origPrice) || 0;
+            const isDirty = Math.round(m.cost) !== Math.round(origCost) || Math.round(m.listPrice) !== Math.round(origPrice);
+            row.classList.toggle('mg-row-dirty', isDirty);
+            row.querySelector('.btn-save-row')?.classList.toggle('d-none', !isDirty);
+            if (isDirty) dirtyCnt++;
+
+            let statusKey = 'safe';
+            const badgeEl = row.querySelector('.cell-margin-badge');
+            const profitEl = row.querySelector('.cell-profit');
+            row.classList.remove('mg-row-loss');
+
+            if (m.cost <= 0) {
+                statusKey = 'risk';
+                riskCnt++;
+                badgeEl.className = 'badge rounded-pill cell-margin-badge mg-badge-nocost';
+                badgeEl.textContent = 'Chưa nhập giá vốn';
+                profitEl.className = 'fw-bold fs-6 cell-profit text-muted';
+            } else if (m.netProfit < 0) {
+                statusKey = 'risk';
+                riskCnt++;
+                row.classList.add('mg-row-loss');
+                badgeEl.className = 'badge rounded-pill cell-margin-badge mg-badge-loss';
+                badgeEl.textContent = `🚨 Lỗ ${m.marginPct.toFixed(1)}%`;
+                profitEl.className = 'fw-bold fs-6 cell-profit text-danger';
+            } else if (m.marginPct < targetPct) {
+                statusKey = 'thin';
+                thinCnt++;
+                badgeEl.className = 'badge rounded-pill cell-margin-badge mg-badge-thin';
+                badgeEl.textContent = `Biên mỏng ${m.marginPct.toFixed(1)}%`;
+                profitEl.className = 'fw-bold fs-6 cell-profit text-warning';
+            } else {
+                statusKey = 'safe';
+                safeCnt++;
+                badgeEl.className = 'badge rounded-pill cell-margin-badge mg-badge-safe';
+                badgeEl.textContent = `Tốt +${m.marginPct.toFixed(1)}%`;
+                profitEl.className = 'fw-bold fs-6 cell-profit text-success';
             }
 
-            $('#calculator-form input, #calculator-form select').on('input change', calculate);
-            calculate(); // init
+            row.dataset.statusKey = statusKey;
+            row.querySelector('.cell-promo-stack').innerHTML = m.promoNoteHtml;
+            row.querySelector('.cell-payout').textContent = fmt.format(m.payout) + ' ₫';
+            row.querySelector('.cell-eff-price').textContent = fmt.format(m.buyerPay) + ' ₫';
+            profitEl.textContent = (m.netProfit >= 0 ? '+' : '') + fmt.format(m.netProfit) + ' ₫';
+            row.querySelector('.cell-suggested-price').textContent = fmt.format(m.suggestedListPrice) + ' ₫';
+            row.querySelector('.cell-max-discount').textContent = m.cost > 0 ? (fmt.format(m.maxSafeDiscountAmt) + ' ₫') : '—';
+
+            const matchSearch = !q || (row.dataset.search || '').includes(q);
+            const matchFilter = currentFilter === 'all' || row.dataset.statusKey === currentFilter;
+            row.style.display = (matchSearch && matchFilter) ? '' : 'none';
         });
-    </script>
+
+        document.getElementById('kpiSafeCount').textContent = safeCnt;
+        document.getElementById('kpiThinCount').textContent = thinCnt;
+        document.getElementById('kpiRiskCount').textContent = riskCnt;
+        dirtyCountLabel.textContent = dirtyCnt;
+        saveAllBtn.disabled = dirtyCnt === 0;
+    }
+
+    window.setStatusFilter = function (filterKey, cardEl) {
+        currentFilter = filterKey;
+        document.querySelectorAll('.mg-kpi-card').forEach(c => c.classList.remove('active-filter'));
+        if (cardEl) cardEl.classList.add('active-filter');
+        refreshAll();
+    };
+
+    rangeEl?.addEventListener('input', () => { numEl.value = rangeEl.value; refreshAll(); });
+    numEl?.addEventListener('input', () => { rangeEl.value = numEl.value; refreshAll(); });
+    chkWorst?.addEventListener('change', refreshAll);
+    searchEl?.addEventListener('input', refreshAll);
+
+    document.querySelectorAll('.mg-sku-row').forEach(row => {
+        row.querySelectorAll('.inp-cost, .inp-price').forEach(inp => {
+            inp.addEventListener('input', refreshAll);
+        });
+
+        row.querySelector('.btn-apply-suggested')?.addEventListener('click', () => {
+            const m = row.__lastMetrics;
+            if (!m || m.cost <= 0) {
+                showToast('Vui lòng nhập Giá vốn trước khi tính Giá bán đề xuất!', true);
+                row.querySelector('.inp-cost')?.focus();
+                return;
+            }
+            row.querySelector('.inp-price').value = m.suggestedListPrice;
+            refreshAll();
+        });
+
+        row.querySelector('.btn-save-row')?.addEventListener('click', async () => {
+            const cost = parseFloat(row.querySelector('.inp-cost').value) || 0;
+            const price = parseFloat(row.querySelector('.inp-price').value) || 0;
+            await submitPricingUpdates([{ variantId: parseInt(row.dataset.variantId), costPrice: cost, price: price }], [row]);
+        });
+
+        row.querySelector('.btn-breakdown')?.addEventListener('click', () => {
+            const m = row.__lastMetrics;
+            if (!m) return;
+            const title = row.querySelector('a')?.textContent?.trim() || 'SKU';
+            const body = document.getElementById('skuBreakdownBody');
+            body.innerHTML = `
+                <div class="fw-bold text-dark mb-3">${title}</div>
+                <div class="d-flex justify-content-between py-1.5 border-bottom"><span>Giá niêm yết gốc:</span><strong>${fmt.format(m.listPrice)} ₫</strong></div>
+                <div class="d-flex justify-content-between py-1.5 border-bottom"><span>Giá khách thực trả (sau KM):</span><strong class="text-primary">${fmt.format(m.buyerPay)} ₫</strong></div>
+                <div class="d-flex justify-content-between py-1.5 border-bottom text-danger"><span>Chiết khấu Sàn (${m.commPct}%${m.capped ? ' - Đã áp trần' : ''}):</span><span>- ${fmt.format(m.commission)} ₫</span></div>
+                <div class="d-flex justify-content-between py-1.5 border-bottom text-danger"><span>Thuế khấu trừ tại nguồn (${sellerTaxRatePct}%):</span><span>- ${fmt.format(m.tax)} ₫</span></div>
+                <div class="d-flex justify-content-between py-2 border-bottom bg-light px-2 rounded mt-1"><span><strong>Tiền quyết toán về Ví Gian hàng:</strong></span><strong class="text-success">${fmt.format(m.payout)} ₫</strong></div>
+                <div class="d-flex justify-content-between py-1.5 border-bottom mt-1"><span>Trừ Giá vốn nhập kho (COGS):</span><span>- ${fmt.format(m.cost)} ₫</span></div>
+                <div class="d-flex justify-content-between py-2 mt-2 px-2 rounded ${m.netProfit >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}">
+                    <strong>Lợi nhuận ròng thực thu / 1 đơn:</strong>
+                    <strong class="fs-5">${m.netProfit >= 0 ? '+' : ''}${fmt.format(m.netProfit)} ₫ (${m.marginPct.toFixed(1)}%)</strong>
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('skuBreakdownModal')).show();
+        });
+    });
+
+    document.getElementById('btnAutoFillAtRisk')?.addEventListener('click', () => {
+        let count = 0;
+        document.querySelectorAll('.mg-sku-row').forEach(row => {
+            if (row.style.display === 'none') return;
+            const m = row.__lastMetrics;
+            if (m && m.cost > 0 && (row.dataset.statusKey === 'risk' || row.dataset.statusKey === 'thin')) {
+                row.querySelector('.inp-price').value = m.suggestedListPrice;
+                count++;
+            }
+        });
+        refreshAll();
+        if (count > 0) showToast(`Đã điền giá đề xuất cho ${count} SKU! Bấm "Lưu thay đổi" để cập nhật vào kho.`);
+        else showToast('Không có SKU nào đang lỗ/mỏng (đã có giá vốn) cần chỉnh giá.');
+    });
+
+    async function submitPricingUpdates(items, rowEls) {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        try {
+            const res = await fetch('/Admin/SystemStatistics/UpdateVariantPricing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ items })
+            });
+            const data = await res.json();
+            if (data.success) {
+                rowEls.forEach(r => {
+                    r.dataset.origCost = Math.round(parseFloat(r.querySelector('.inp-cost').value) || 0).toString();
+                    r.dataset.origPrice = Math.round(parseFloat(r.querySelector('.inp-price').value) || 0).toString();
+                });
+                refreshAll();
+                showToast(data.message || 'Đã lưu thành công!');
+            } else {
+                showToast(data.message || 'Lưu thất bại!', true);
+            }
+        } catch {
+            showToast('Lỗi kết nối khi lưu giá SKU!', true);
+        }
+    }
+
+    saveAllBtn?.addEventListener('click', async () => {
+        const dirtyRows = [];
+        const payload = [];
+        document.querySelectorAll('.mg-sku-row.mg-row-dirty').forEach(r => {
+            dirtyRows.push(r);
+            payload.push({
+                variantId: parseInt(r.dataset.variantId),
+                costPrice: parseFloat(r.querySelector('.inp-cost').value) || 0,
+                price: parseFloat(r.querySelector('.inp-price').value) || 0
+            });
+        });
+        if (payload.length > 0) await submitPricingUpdates(payload, dirtyRows);
+    });
+
+    // Quick Sandbox Simulator Modal
+    function updateSandboxSim() {
+        const cost = parseFloat(document.getElementById('simCost')?.value) || 0;
+        const price = parseFloat(document.getElementById('simPrice')?.value) || 0;
+        const commPct = parseFloat(document.getElementById('simCommPct')?.value) || 0;
+        const disc = parseFloat(document.getElementById('simDiscount')?.value) || 0;
+        const eff = Math.max(0, price - disc);
+        const comm = Math.round(eff * (commPct / 100));
+        const tax = Math.round(eff * (sellerTaxRatePct / 100));
+        const payout = eff - comm - tax;
+        const net = payout - cost;
+        const pct = eff > 0 ? (net / eff) * 100 : 0;
+        const box = document.getElementById('simResultBox');
+        if (box) {
+            box.innerHTML = `
+                <div class="d-flex justify-content-between small mb-1"><span>Khách thực trả:</span><strong>${fmt.format(eff)} ₫</strong></div>
+                <div class="d-flex justify-content-between small mb-1 text-danger"><span>Phí sàn (${commPct}%) + Thuế (${sellerTaxRatePct}%):</span><span>- ${fmt.format(comm + tax)} ₫</span></div>
+                <div class="d-flex justify-content-between small mb-1"><span>Thực nhận về Ví Shop:</span><strong class="text-primary">${fmt.format(payout)} ₫</strong></div>
+                <hr class="my-2"/>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">Lãi ròng dự kiến:</span>
+                    <span class="fw-bold fs-5 ${net >= 0 ? 'text-success' : 'text-danger'}">${net >= 0 ? '+' : ''}${fmt.format(net)} ₫ (${pct.toFixed(1)}%)</span>
+                </div>
+            `;
+        }
+    }
+    ['simCost', 'simPrice', 'simCommPct', 'simDiscount'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', updateSandboxSim);
+    });
+    updateSandboxSim();
+    refreshAll();
+})();
+</script>
 }

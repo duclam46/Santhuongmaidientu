@@ -17,71 +17,84 @@ public class NotificationController : Controller
         _db = db;
     }
 
+    private int? GetCurrentAccountId()
+    {
+        var raw = User.FindFirst("AccountId")?.Value ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(raw, out var id) && id > 0 ? id : null;
+    }
+
     [HttpPost("mark-read")]
     public async Task<IActionResult> MarkRead(int id)
     {
-        var idRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(idRaw, out var accountId)) return Unauthorized();
+        var accountId = GetCurrentAccountId();
+        if (!accountId.HasValue) return Unauthorized();
 
         var notification = await _db.SystemNotifications
+            .AsNoTracking()
             .FirstOrDefaultAsync(n => n.Id == id);
 
         if (notification == null) return NotFound();
 
         var alreadyRead = await _db.SystemNotificationReads
-            .AnyAsync(r => r.SystemNotificationId == id && r.AccountId == accountId);
+            .AnyAsync(r => r.SystemNotificationId == id && r.AccountId == accountId.Value);
 
         if (!alreadyRead)
         {
             _db.SystemNotificationReads.Add(new SystemNotificationRead
             {
                 SystemNotificationId = id,
-                AccountId = accountId,
+                AccountId = accountId.Value,
                 ReadAt = DateTime.UtcNow
             });
             await _db.SaveChangesAsync();
         }
 
-        return Ok();
+        return Ok(new { ok = true });
     }
 
     [HttpPost("mark-all-read")]
     public async Task<IActionResult> MarkAllRead()
     {
-        var idRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(idRaw, out var accountId)) return Unauthorized();
+        var accountId = GetCurrentAccountId();
+        if (!accountId.HasValue) return Unauthorized();
 
-        var userRole = User.FindFirstValue(ClaimTypes.Role);
+        var account = await _db.Accounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == accountId.Value);
 
-        // Find all notifications targeting this user
-        var notifications = await _db.SystemNotifications
-            .Where(n => n.TargetType == "All" || 
-                        (n.TargetType == "Role" && n.TargetRole == userRole) || 
-                        (n.TargetType == "Account" && n.TargetAccountId == accountId))
+        var userRole = account?.Role ?? User.FindFirstValue(ClaimTypes.Role) ?? "Customer";
+
+        var notificationIds = await _db.SystemNotifications
+            .AsNoTracking()
+            .Where(n => n.TargetType == "All" ||
+                        (n.TargetType == "Role" && n.TargetRole == userRole) ||
+                        (n.TargetType == "Account" && n.TargetAccountId == accountId.Value))
+            .Select(n => n.Id)
             .ToListAsync();
 
         var readIds = await _db.SystemNotificationReads
-            .Where(r => r.AccountId == accountId)
+            .AsNoTracking()
+            .Where(r => r.AccountId == accountId.Value)
             .Select(r => r.SystemNotificationId)
             .ToListAsync();
 
-        var unreadNotifications = notifications.Where(n => !readIds.Contains(n.Id)).ToList();
+        var unreadIds = notificationIds.Except(readIds).ToList();
 
-        foreach (var n in unreadNotifications)
+        foreach (var nId in unreadIds)
         {
             _db.SystemNotificationReads.Add(new SystemNotificationRead
             {
-                SystemNotificationId = n.Id,
-                AccountId = accountId,
+                SystemNotificationId = nId,
+                AccountId = accountId.Value,
                 ReadAt = DateTime.UtcNow
             });
         }
 
-        if (unreadNotifications.Any())
+        if (unreadIds.Count > 0)
         {
             await _db.SaveChangesAsync();
         }
 
-        return Ok();
+        return Ok(new { ok = true, markedCount = unreadIds.Count });
     }
 }

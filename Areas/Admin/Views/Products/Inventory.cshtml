@@ -250,11 +250,43 @@
                     <div class="text-muted small">Quản lý số lượng tồn kho theo từng biến thể sản phẩm. Mọi thay đổi đều được ghi log tự động.</div>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a class="btn btn-outline-success shadow-sm" style="border-radius: 10px; font-weight: 600;" asp-area="Admin" asp-controller="Products" asp-action="ExportInventoryCsv">
+                    <i class="bx bx-download me-1"></i>Xuất file Excel (CSV)
+                </a>
+                <button type="button" class="btn btn-primary shadow-sm" style="border-radius: 10px; font-weight: 600;" onclick="document.getElementById('js-import-csv-box').classList.toggle('d-none')">
+                    <i class="bx bx-upload me-1"></i>Nhập tồn kho (CSV)
+                </button>
                 <a class="btn btn-light shadow-sm" style="border-radius: 10px; font-weight: 600;" asp-area="Admin" asp-controller="Products" asp-action="Index">
                     <i class="bx bx-arrow-back me-1"></i>Trở lại Danh sách
                 </a>
             </div>
+        </div>
+
+        @if (TempData["AdminToast"] is string invToast && !string.IsNullOrWhiteSpace(invToast))
+        {
+            <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-3" role="alert">
+                <i class="bx bx-check-circle me-1"></i> <strong>@invToast</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <div id="js-import-csv-box" class="d-none mb-4 p-3 rounded-4 border bg-white shadow-sm">
+            <form method="post" enctype="multipart/form-data" asp-area="Admin" asp-controller="Products" asp-action="ImportInventoryCsv" class="row g-2 align-items-center">
+                @Html.AntiForgeryToken()
+                <div class="col-md-7">
+                    <div class="fw-bold text-dark small mb-1"><i class="bx bx-spreadsheet text-success me-1"></i>Cập nhật tồn kho &amp; Giá vốn hàng loạt qua CSV (Tương thích Excel)</div>
+                    <div class="text-muted" style="font-size: 0.78rem;">Mẹo: Bấm <strong>Xuất file Excel (CSV)</strong> để lấy file mẫu đúng cấu trúc của Shop, chỉnh sửa cột <code>CostPrice</code> và <code>StockQuantity</code> rồi tải lên tại đây.</div>
+                </div>
+                <div class="col-md-3">
+                    <input type="file" name="csvFile" accept=".csv,text/csv" class="form-control form-control-sm" required />
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-sm btn-success fw-bold" style="border-radius: 8px; height: 34px;">
+                        <i class="bx bx-check me-1"></i>Tải lên &amp; Lưu
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -301,6 +333,17 @@
                                         <span class="text-muted">@p.VariantCount biến thể</span>
                                         <span class="text-muted">•</span>
                                         <span class="text-muted">Kho: <span class="fw-bold">@p.TotalStockQuantity</span></span>
+                                        @if (p.IsDigital)
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary">E-Voucher</span>
+                                        }
+                                        @if (p.ExpiryDate.HasValue)
+                                        {
+                                            var dLeft = (int)Math.Ceiling((p.ExpiryDate.Value.Date - DateTime.UtcNow.Date).TotalDays);
+                                            <span class="badge @(dLeft <= 30 ? "bg-danger text-white" : "bg-warning-subtle text-dark")">
+                                                HSD: @p.ExpiryDate.Value.ToString("dd/MM/yy")
+                                            </span>
+                                        }
                                     </div>
                                 </div>
                             </a>
@@ -335,6 +378,27 @@
                                 <div class="text-muted small d-flex flex-wrap align-items-center gap-2">
                                     <span class="badge bg-white text-dark border shadow-sm">Mã: #@selected.ProductId</span>
                                     <span><i class="bx bx-layer me-1"></i>@variants.Count biến thể</span>
+                                    @if (selected.IsDigital)
+                                    {
+                                        <span class="badge bg-primary text-white"><i class="bx bx-cloud-download me-1"></i>Sản phẩm số / E-Voucher</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(selected.ShippingCondition))
+                                    {
+                                        <span class="badge bg-warning-subtle text-dark border"><i class="bx bx-package me-1"></i>@selected.ShippingCondition</span>
+                                    }
+                                    @if (selected.ExpiryDate.HasValue)
+                                    {
+                                        var expDays = (int)Math.Ceiling((selected.ExpiryDate.Value.Date - DateTime.UtcNow.Date).TotalDays);
+                                        <span class="badge @(expDays <= 30 ? "bg-danger text-white" : "bg-info-subtle text-info")">
+                                            <i class="bx bx-time-five me-1"></i>HSD: @selected.ExpiryDate.Value.ToString("dd/MM/yyyy") @(expDays <= 30 ? $"(Sắp hết hạn: còn {expDays} ngày)" : "")
+                                        </span>
+                                        if (expDays <= 30)
+                                        {
+                                            <a class="btn btn-xs btn-danger fw-bold py-0 px-2" asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" asp-route-id="@selected.ProductId">
+                                                <i class="bx bxs-zap"></i> Tạo Flash Sale xả kho
+                                            </a>
+                                        }
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -374,6 +438,7 @@
                                         <tr>
                                             <th>Mã Sku</th>
                                             <th>Phân loại</th>
+                                            <th class="text-end" style="width: 150px;">Giá vốn (₫)</th>
                                             <th class="text-end" title="Số lượng khách hàng đã đặt nhưng chưa giao">Đã giữ (Reserved)</th>
                                             <th class="text-end" style="width: 160px;">Thực tế (In Stock)</th>
                                             <th class="text-end" title="Số lượng sẵn sàng bán">Khả dụng</th>
@@ -385,11 +450,15 @@
                                         {
                                             var v = variants[i];
                                             var isBad = v.AvailableStock < 0;
-                                            var typeText = $"{(v.ColorName ?? "-")} / {(v.SizeName ?? "-")}";
+                                            var typeText = !string.IsNullOrWhiteSpace(v.VariantLabel) ? v.VariantLabel : $"{(v.ColorName ?? "-")} / {(v.SizeName ?? "-")}";
                                             <tr>
                                                 <td class="fw-bold text-dark">@v.Sku</td>
                                                 <td>
                                                     <span class="badge bg-light text-dark border px-2 py-1">@typeText</span>
+                                                    <div class="text-muted small mt-1"><i class="bx bx-package me-1"></i>@v.WeightGram g</div>
+                                                </td>
+                                                <td class="text-end">
+                                                    <input class="inv-input text-primary fw-bold" style="width: 120px;" type="number" min="0" step="1000" name="Variants[@i].CostPrice" value="@v.CostPrice.ToString("0")" />
                                                 </td>
                                                 <td class="text-end text-muted fw-semibold">@v.ReservedStock</td>
                                                 <td class="text-end">

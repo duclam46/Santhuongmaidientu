@@ -7,6 +7,12 @@ public class AdminBlogListVm
     public List<AdminBlogPostItemVm> Posts { get; set; } = new();
     public int CurrentPage { get; set; }
     public int TotalPages { get; set; }
+    public int TotalItems { get; set; }
+    public int TotalAllCount { get; set; }
+    public int PublishedCount { get; set; }
+    public int DraftCount { get; set; }
+    public int HiddenCount { get; set; }
+    public int TotalViewsCount { get; set; }
     public string? SearchQuery { get; set; }
     public string? StatusFilter { get; set; }
 }

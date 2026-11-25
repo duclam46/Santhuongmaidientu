@@ -1,0 +1,259 @@
+@model IEnumerable<DOAN_BANHANG.Models.Brand>
+
+@{
+    ViewData["Title"] = "Quản lý Thương hiệu";
+    var brandList = Model.ToList();
+    var totalBrands = brandList.Count;
+    var activeBrands = brandList.Count(b => b.IsActive);
+    var hiddenBrands = totalBrands - activeBrands;
+    var linkedProducts = brandList.Sum(b => b.Products?.Count(p => !p.IsDeleted) ?? 0);
+    var searchTerm = ViewBag.Search as string;
+}
+
+@section Styles {
+    <style>
+        .br-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .br-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+        @@media (max-width: 991px) {
+            .br-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .br-kpi-card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .br-kpi-ic {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 235, 105, 0.18);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .br-logo-box {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+            background: #F8FAFC;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .br-logo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 4px;
+        }
+        .br-logo-initial {
+            background: linear-gradient(135deg, #088178 0%, #04464C 100%);
+            color: #FFEB69;
+            font-weight: 800;
+            font-size: 17px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+}
+
+<!-- HERO HEADER -->
+<div class="br-hero">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-award text-warning me-1"></i>Quản lý Thương hiệu
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Danh mục các thương hiệu chính hãng để nhà bán hàng gắn vào sản phẩm và khách hàng lọc tìm kiếm trên toàn sàn Sellzy.
+            </p>
+        </div>
+        <a asp-action="Create" class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-sm" style="background: #FFEB69; color: #161C24;">
+            <i class="bx bx-plus-circle me-1"></i>Thêm thương hiệu mới
+        </a>
+    </div>
+
+    <div class="br-kpi-grid">
+        <div class="br-kpi-card">
+            <span class="br-kpi-ic"><i class="bx bx-award"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@totalBrands</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Tổng thương hiệu</div>
+            </div>
+        </div>
+        <div class="br-kpi-card">
+            <span class="br-kpi-ic" style="background: rgba(52,211,153,0.22); color: #6EE7B7;"><i class="bx bx-check-circle"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@activeBrands</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Đang hiển thị</div>
+            </div>
+        </div>
+        <div class="br-kpi-card">
+            <span class="br-kpi-ic"><i class="bx bx-package"></i></span>
+            <div>
+                <div class="fs-5 fw-bold lh-1" style="color: #FFEB69;">@linkedProducts.ToString("N0")</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Sản phẩm đang gắn hãng</div>
+            </div>
+        </div>
+        <div class="br-kpi-card">
+            <span class="br-kpi-ic" style="background: rgba(248,113,113,0.22); color: #FCA5A5;"><i class="bx bx-hide"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@hiddenBrands</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Đang tạm ẩn</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-4">
+        @if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+        {
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 rounded-3" role="alert">
+                <i class="bx bx-check-circle fs-5"></i>
+                <div>@toast</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <!-- THANH TÌM KIẾM GỌN -->
+        <div class="border rounded-3 px-3 py-2.5 bg-light mb-4">
+            <form method="get" class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="small text-secondary fw-semibold">
+                    <i class="bx bx-list-ul me-1"></i>Hiển thị <strong>@totalBrands</strong> thương hiệu
+                    @if (!string.IsNullOrWhiteSpace(searchTerm))
+                    {
+                        <span>cho từ khóa "<strong>@searchTerm</strong>"</span>
+                    }
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 440px;">
+                    <div class="input-group input-group-sm flex-grow-1">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bx bx-search"></i></span>
+                        <input type="text" name="search" value="@searchTerm" class="form-control border-start-0 ps-0" placeholder="Tìm theo tên thương hiệu hoặc đường dẫn..." />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold text-nowrap">Tìm kiếm</button>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary" title="Đặt lại tìm kiếm"><i class="bx bx-reset"></i></a>
+                </div>
+            </form>
+        </div>
+
+        <!-- BẢNG THƯƠNG HIỆU -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 70px;">#</th>
+                        <th>Thương hiệu &amp; Đường dẫn</th>
+                        <th>Quy mô sản phẩm</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th class="text-end" style="width: 165px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!brandList.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <i class="bx bx-award display-5 text-muted d-block mb-2"></i>
+                                <div class="fw-bold text-dark">Chưa có thương hiệu nào phù hợp</div>
+                                <div class="text-muted small mt-1">Bấm <strong>Thêm thương hiệu mới</strong> ở góc trên để bổ sung vào danh mục.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var b in brandList)
+                        {
+                            var activeProductCount = b.Products?.Count(p => !p.IsDeleted) ?? 0;
+                            var initial = !string.IsNullOrWhiteSpace(b.Name) ? b.Name.Trim()[0].ToString().ToUpperInvariant() : "B";
+                            <tr>
+                                <td class="text-muted fw-semibold">#@b.Id</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="br-logo-box">
+                                            @if (!string.IsNullOrWhiteSpace(b.LogoUrl))
+                                            {
+                                                <img src="@b.LogoUrl" alt="@b.Name" />
+                                            }
+                                            else
+                                            {
+                                                <span class="br-logo-initial">@initial</span>
+                                            }
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@b.Name</div>
+                                            <div class="small text-muted font-monospace">/@b.Slug</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-1">
+                                        <i class="bx bx-package me-1"></i>@activeProductCount sản phẩm
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (b.IsActive)
+                                    {
+                                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bx bx-check-circle me-1"></i>Đang hiển thị
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bx bx-hide me-1"></i>Đang tạm ẩn
+                                        </span>
+                                    }
+                                </td>
+                                <td class="small text-muted">
+                                    @b.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex align-items-center gap-1.5">
+                                        <a asp-action="Edit" asp-route-id="@b.Id" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 fw-semibold">
+                                            <i class="bx bx-edit-alt me-1"></i>Sửa
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@b.Id" method="post" class="d-inline"
+                                              onsubmit="return confirm('Xác nhận xóa thương hiệu @b.Name? Các sản phẩm đang gắn hãng này sẽ được gỡ liên kết hãng.');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" title="Xóa thương hiệu">
+                                                <i class="bx bx-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

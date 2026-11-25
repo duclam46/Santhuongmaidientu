@@ -1,0 +1,82 @@
+@model List<DOAN_BANHANG.Models.AuditLog>
+@{
+    ViewData["Title"] = "Nhật ký Kiểm toán Hệ thống (Audit Logs)";
+    string q = ViewBag.Query as string ?? "";
+    string actionFilter = ViewBag.ActionFilter as string ?? "";
+    var actions = ViewBag.DistinctActions as List<string> ?? new();
+}
+
+<div class="p-4 rounded-4 text-white mb-4 shadow-sm" style="background: linear-gradient(135deg, #063532 0%, #0b5c56 58%, #0f766e 100%);">
+    <span class="badge rounded-pill mb-1" style="background: rgba(253,224,71,0.2); color: #fde047; font-weight: 700;">
+        <i class="bx bx-history me-1"></i>AN TOÀN &amp; TRUY VẾT QUẢN TRỊ
+    </span>
+    <h4 class="fw-bold text-white mb-1">Nhật ký Kiểm toán Hệ thống (System Audit Logs)</h4>
+    <div class="small" style="color: rgba(255,255,255,0.84);">Lưu vết minh bạch toàn bộ thao tác nhạy cảm: cấu hình biểu phí, phê duyệt giải ngân, khóa tài khoản/sản phẩm và chiến dịch Sàn.</div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-bottom py-3 px-4">
+        <form method="get" asp-area="Admin" asp-controller="AuditLogs" asp-action="Index" class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <input type="text" name="q" value="@q" class="form-control form-control-sm" placeholder="Tìm theo Email người thực hiện, mã đối tượng, nội dung chi tiết..." />
+            </div>
+            <div class="col-md-3">
+                <select name="actionFilter" class="form-select form-select-sm">
+                    <option value="">Tất cả loại hành động</option>
+                    @foreach (var act in actions)
+                    {
+                        <option value="@act" selected="@(actionFilter == act)">@act</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary fw-bold flex-grow-1"><i class="bx bx-filter-alt me-1"></i>Lọc nhật ký</button>
+                <a asp-area="Admin" asp-controller="AuditLogs" asp-action="Index" class="btn btn-sm btn-light border">Đặt lại</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Thời gian</th>
+                    <th>Người thực hiện</th>
+                    <th>Hành động</th>
+                    <th>Đối tượng</th>
+                    <th>Chi tiết thay đổi</th>
+                    <th class="pe-4">Địa chỉ IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">Chưa có bản ghi Audit Log nào. Các thao tác quản trị mới sẽ tự động được ghi nhận tại đây.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var log in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 small text-muted text-nowrap">@log.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td>
+                                <div class="fw-bold text-dark small">@(log.ActorEmail ?? "Hệ thống")</div>
+                                <span class="badge bg-light text-secondary border" style="font-size:10px;">@(log.ActorRole ?? "System")</span>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis px-2.5 py-1">@log.Action</span>
+                            </td>
+                            <td class="small fw-semibold">
+                                @log.EntityType @(string.IsNullOrWhiteSpace(log.EntityId) ? "" : $"#{log.EntityId}")
+                            </td>
+                            <td class="small text-dark" style="max-width: 360px;">@log.Detail</td>
+                            <td class="pe-4 font-monospace small text-muted">@(log.IpAddress ?? "-")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

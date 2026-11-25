@@ -1,0 +1,314 @@
+@model DOAN_BANHANG.ViewModels.AdminDisputeListVm
+@{
+    ViewData["Title"] = Model.IsAdmin ? "Trung tâm Khiếu nại & Tranh chấp" : "Khiếu nại của Gian hàng";
+
+    var activeStatus = (Model.StatusFilter ?? string.Empty).Trim();
+    var activeCategory = (Model.CategoryFilter ?? string.Empty).Trim();
+
+    var statusTabs = new (string? code, string label, string icon, int count)[]
+    {
+        (null, "Tất cả khiếu nại", "bx bx-layer", Model.TotalAll),
+        ("WaitingAdmin", "Chờ Sàn phân xử", "bx bx-shield-quarter", Model.WaitingAdminCount),
+        ("InProgress", "Shop đang xử lý", "bx bx-time-five", Model.OpenOrShopCount),
+        ("Resolved", "Đã giải quyết", "bx bx-check-circle", Model.ResolvedCount)
+    };
+
+    (string label, string cls, string icon) ResolveStatus(string? s) => (s ?? "").Trim() switch
+    {
+        "Open" => ("Chờ Shop phản hồi", "badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1", "bx bx-time-five"),
+        "ShopResponded" => ("Shop đã giải trình", "badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-1", "bx bx-message-dots"),
+        "EscalatedToAdmin" => ("Chờ Sàn phân xử", "badge bg-danger text-white rounded-pill px-2.5 py-1 fw-bold", "bx bx-shield-quarter"),
+        "ResolvedBuyerWinShopFault" => ("Hoàn tiền (Lỗi Shop)", "badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-2.5 py-1", "bx bx-check-circle"),
+        "ResolvedBuyerWinShippingFault" => ("Hoàn tiền (Lỗi GHN)", "badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-2.5 py-1", "bx bx-package"),
+        "ResolvedShopWin" => ("Bác bỏ khiếu nại", "badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill px-2.5 py-1", "bx bx-x-circle"),
+        "Closed" => ("Khách đã rút đơn", "badge bg-light text-muted border rounded-pill px-2.5 py-1", "bx bx-minus-circle"),
+        _ => ("Không rõ", "badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-2.5 py-1", "bx bx-info-circle")
+    };
+}
+
+@section Styles {
+    <style>
+        .dp-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .dp-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+        @@media (max-width: 991px) {
+            .dp-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .dp-kpi-card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .dp-kpi-ic {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 235, 105, 0.18);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .dp-tab-bar {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            background: #F1F5F9;
+            padding: 6px;
+            border-radius: 16px;
+            margin-bottom: 18px;
+        }
+        @@media (max-width: 767px) {
+            .dp-tab-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .dp-tab-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #475569;
+            transition: all 0.2s ease;
+            text-decoration: none !important;
+        }
+        .dp-tab-btn:hover { color: #088178; background: rgba(255,255,255,0.65); }
+        .dp-tab-btn.is-active {
+            background: #088178;
+            color: #ffffff !important;
+            box-shadow: 0 6px 14px -6px rgba(8, 129, 120, 0.45);
+        }
+        .dp-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid #CBD5E1;
+            background: #ffffff;
+            color: #334155;
+            text-decoration: none !important;
+        }
+        .dp-pill.is-active {
+            background: #00262A;
+            border-color: #00262A;
+            color: #FFEB69 !important;
+        }
+    </style>
+}
+
+<!-- HERO HEADER -->
+<div class="dp-hero">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 rounded-pill px-3 py-1 mb-2" style="background: rgba(255,255,255,0.14); font-size: 12.5px;">
+                <i class="bx bx-brain text-warning"></i>
+                <span>Trọng tài 3 bên (Khách hàng ⇄ Gian hàng ⇄ Sàn) • Tích hợp AI Phân tích Rủi ro</span>
+            </div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-shield-alt-2 text-warning me-1"></i>@(Model.IsAdmin ? "Trung tâm Khiếu nại & Tranh chấp Sàn" : "Quản lý Khiếu nại Gian hàng")
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Tiếp nhận, thẩm định bằng chứng khiếu nại sản phẩm và sự cố vận chuyển GHN, hỗ trợ hoàn tiền tự động vào Ví Sellzy.
+            </p>
+        </div>
+    </div>
+
+    <div class="dp-kpi-grid">
+        <div class="dp-kpi-card">
+            <span class="dp-kpi-ic"><i class="bx bx-folder-open"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.TotalAll</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Tổng hồ sơ khiếu nại</div>
+            </div>
+        </div>
+        <div class="dp-kpi-card">
+            <span class="dp-kpi-ic" style="background: rgba(248,113,113,0.22); color: #FCA5A5;"><i class="bx bx-shield-quarter"></i></span>
+            <div>
+                <div class="fs-5 fw-bold lh-1" style="color: #FFEB69;">@Model.WaitingAdminCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Chờ Sàn phân xử ngay</div>
+            </div>
+        </div>
+        <div class="dp-kpi-card">
+            <span class="dp-kpi-ic"><i class="bx bx-package"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.ProductDisputeCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Khiếu nại Sản phẩm</div>
+            </div>
+        </div>
+        <div class="dp-kpi-card">
+            <span class="dp-kpi-ic" style="background: rgba(56,189,248,0.22); color: #7DD3FC;"><i class="bx bxs-truck"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.ShippingDisputeCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Khiếu nại Vận chuyển GHN</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-4">
+        @if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+        {
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 rounded-3" role="alert">
+                <i class="bx bx-check-circle fs-5"></i>
+                <div>@toast</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <!-- 4 TAB TRẠNG THÁI -->
+        <div class="dp-tab-bar">
+            @foreach (var t in statusTabs)
+            {
+                var isActive = string.IsNullOrWhiteSpace(t.code)
+                    ? string.IsNullOrWhiteSpace(activeStatus)
+                    : string.Equals(activeStatus, t.code, StringComparison.OrdinalIgnoreCase);
+
+                <a class="dp-tab-btn @(isActive ? "is-active" : "")"
+                   asp-action="Index" asp-route-status="@t.code" asp-route-category="@activeCategory" asp-route-search="@Model.Search">
+                    <i class="@t.icon fs-6"></i>
+                    <span>@t.label</span>
+                    <span class="badge rounded-pill @(isActive ? "bg-white text-primary" : "bg-secondary-subtle text-dark")">@t.count</span>
+                </a>
+            }
+        </div>
+
+        <!-- THANH LỌC 1 HÀNG GỌN -->
+        <div class="border rounded-3 px-3 py-2.5 bg-light mb-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="small fw-bold text-secondary"><i class="bx bx-category me-1"></i>Phân loại:</span>
+                    <a class="dp-pill @(string.IsNullOrWhiteSpace(activeCategory) ? "is-active" : "")"
+                       asp-action="Index" asp-route-status="@activeStatus" asp-route-category="" asp-route-search="@Model.Search">Tất cả</a>
+                    <a class="dp-pill @(activeCategory == "Product" ? "is-active" : "")"
+                       asp-action="Index" asp-route-status="@activeStatus" asp-route-category="Product" asp-route-search="@Model.Search"><i class="bx bx-package"></i>Sản phẩm</a>
+                    <a class="dp-pill @(activeCategory == "Shipping" ? "is-active" : "")"
+                       asp-action="Index" asp-route-status="@activeStatus" asp-route-category="Shipping" asp-route-search="@Model.Search"><i class="bx bxs-truck"></i>Vận chuyển GHN</a>
+                    <a class="dp-pill @(activeCategory == "Service" ? "is-active" : "")"
+                       asp-action="Index" asp-route-status="@activeStatus" asp-route-category="Service" asp-route-search="@Model.Search"><i class="bx bx-store"></i>Dịch vụ Shop</a>
+                </div>
+
+                <form method="get" class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 420px;">
+                    <input type="hidden" name="status" value="@activeStatus" />
+                    <input type="hidden" name="category" value="@activeCategory" />
+                    <div class="input-group input-group-sm flex-grow-1">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bx bx-search"></i></span>
+                        <input type="text" name="search" value="@Model.Search" class="form-control border-start-0 ps-0" placeholder="Tìm mã KN, mã đơn, email, tên shop..." />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold text-nowrap">Tìm kiếm</button>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary" title="Đặt lại"><i class="bx bx-reset"></i></a>
+                </form>
+            </div>
+        </div>
+
+        <!-- BẢNG KHIẾU NẠI -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã Khiếu nại &amp; Đơn hàng</th>
+                        <th>Loại &amp; Lý do</th>
+                        <th>Khách hàng &amp; Gian hàng</th>
+                        <th class="text-end">Số tiền yêu cầu</th>
+                        <th>Trạng thái</th>
+                        <th>Cập nhật</th>
+                        <th class="text-end" style="width: 145px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <i class="bx bx-check-shield display-5 text-success opacity-50 d-block mb-2"></i>
+                                <div class="fw-bold text-dark">Chưa có hồ sơ khiếu nại nào phù hợp</div>
+                                <div class="text-muted small mt-1">Khi khách hàng gửi khiếu nại sản phẩm hoặc sự cố vận chuyển từ chi tiết đơn hàng, hồ sơ sẽ xuất hiện tại đây.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            var st = ResolveStatus(item.Status);
+                            var isShipping = item.Category == "Shipping";
+                            var shopName = item.Shop?.Profile?.ShopName ?? item.Shop?.Email ?? $"Shop #{item.ShopId}";
+                            var isMall = item.Shop?.Profile?.IsMall ?? false;
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark font-monospace">@item.DisputeCode</div>
+                                    <div class="small text-muted">Đơn: <strong>#@(item.Order?.OrderCode ?? item.OrderId.ToString())</strong></div>
+                                </td>
+                                <td style="max-width: 280px;">
+                                    @if (isShipping)
+                                    {
+                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill mb-1"><i class="bx bxs-truck me-1"></i>Vận chuyển GHN</span>
+                                    }
+                                    else if (item.Category == "Service")
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary-emphasis border rounded-pill mb-1"><i class="bx bx-store me-1"></i>Dịch vụ gian hàng</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill mb-1"><i class="bx bx-package me-1"></i>Sản phẩm</span>
+                                    }
+                                    <div class="fw-semibold text-dark small text-truncate" title="@item.ReasonTitle">@item.ReasonTitle</div>
+                                </td>
+                                <td>
+                                    <div class="small text-dark"><strong>Khách:</strong> @(item.Customer?.Profile?.FullName ?? item.Customer?.Email)</div>
+                                    <div class="small text-muted">
+                                        <strong>Shop:</strong> @shopName
+                                        @if (isMall)
+                                        {
+                                            <span class="badge rounded-pill ms-1" style="background:#00262A; color:#FFEB69; font-size:10px;">Mall</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="fw-bold text-danger">@item.RequestedAmount.ToString("N0")₫</div>
+                                    @if (item.IsRefundedToWallet)
+                                    {
+                                        <div class="small text-success fw-semibold">Đã hoàn Ví</div>
+                                    }
+                                </td>
+                                <td><span class="@st.cls"><i class="@st.icon me-1"></i>@st.label</span></td>
+                                <td class="small text-muted">
+                                    <div class="text-dark fw-semibold">@item.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                    <div>@item.UpdatedAt.ToLocalTime().ToString("HH:mm")</div>
+                                </td>
+                                <td class="text-end">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm rounded-pill px-3 fw-semibold @(item.Status == "EscalatedToAdmin" ? "btn-danger" : "btn-primary")">
+                                        <i class="bx bx-gavel me-1"></i>@(item.Status.StartsWith("Resolved") || item.Status == "Closed" ? "Xem hồ sơ" : "Xử lý")
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

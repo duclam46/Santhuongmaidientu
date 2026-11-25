@@ -399,8 +399,8 @@ public class CartController : Controller
                 .Where(v => variantIds.Contains(v.Id) && v.IsActive && !v.IsDeleted)
                 .Include(v => v.Product)!.ThenInclude(p => p!.Images)
                 .Include(v => v.Images)
-                .Include(v => v.Color)
-                .Include(v => v.Size)
+                .Include(v => v.OptionValue1)
+                .Include(v => v.OptionValue2)
                 .ToListAsync(cancellationToken);
 
             var guestDtoItems = new List<CartItemDto>(variants.Count);
@@ -438,8 +438,8 @@ public class CartController : Controller
                     ProductName = p?.Name ?? "(N/A)",
                     ProductSlug = p?.Slug ?? string.Empty,
                     ImageUrl = imageUrl,
-                    Color = v.Color?.Name,
-                    Size = v.Size?.Name,
+                    Color = v.OptionValue1?.Value,
+                    Size = v.OptionValue2?.Value,
                     UnitPrice = price,
                     Quantity = qty,
                     IsSelected = isSelected
@@ -479,8 +479,8 @@ public class CartController : Controller
             .Where(i => i.CartId == cartId.Value)
             .Include(i => i.Variant)!.ThenInclude(v => v!.Product)!.ThenInclude(p => p!.Images)
             .Include(i => i.Variant)!.ThenInclude(v => v!.Images)
-            .Include(i => i.Variant)!.ThenInclude(v => v!.Color)
-            .Include(i => i.Variant)!.ThenInclude(v => v!.Size)
+            .Include(i => i.Variant)!.ThenInclude(v => v!.OptionValue1)
+            .Include(i => i.Variant)!.ThenInclude(v => v!.OptionValue2)
             .OrderByDescending(i => i.Id)
             .ToListAsync(cancellationToken);
 
@@ -523,8 +523,8 @@ public class CartController : Controller
                 ProductName = p?.Name ?? "(N/A)",
                 ProductSlug = p?.Slug ?? string.Empty,
                 ImageUrl = imageUrl,
-                Color = v?.Color?.Name,
-                Size = v?.Size?.Name,
+                Color = v?.OptionValue1?.Value,
+                Size = v?.OptionValue2?.Value,
                 UnitPrice = price,
                 Quantity = item.Quantity,
                 IsSelected = isSelected

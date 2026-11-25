@@ -117,6 +117,69 @@
     </div>
 </div>
 
+<!-- Cụm điều khiển nhanh cho Người bán -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(120deg, #EFF8F7 0%, #FFFFFF 60%, #FFFBEB 100%);">
+            <div class="card-body py-3 px-4">
+                <div class="row g-3 align-items-center">
+                    <div class="col-lg-4">
+                        <div class="text-muted text-uppercase fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.06em;">Sản phẩm &amp; Kho hàng</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a asp-area="Admin" asp-controller="Products" asp-action="Create" class="btn btn-sm btn-primary rounded-pill px-3">
+                                <i class="bx bx-plus-circle me-1"></i> Thêm sản phẩm
+                            </a>
+                            <a asp-area="Admin" asp-controller="Products" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-store me-1"></i> Sản phẩm
+                            </a>
+                            <a asp-area="Admin" asp-controller="Products" asp-action="Inventory" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-box me-1"></i> Kho hàng
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="text-muted text-uppercase fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.06em;">Đơn hàng &amp; Khách hàng</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a asp-area="Admin" asp-controller="Orders" asp-action="Index" asp-route-Status="Pending" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-time-five me-1"></i> Chờ xác nhận
+                            </a>
+                            <a asp-area="Admin" asp-controller="ReturnRequests" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-revision me-1"></i> Trả hàng
+                            </a>
+                            <a asp-area="Admin" asp-controller="Chat" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-chat me-1"></i> Chat
+                            </a>
+                            <a asp-area="Admin" asp-controller="Reviews" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-star me-1"></i> Đánh giá AI
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="text-muted text-uppercase fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.06em;">Khuyến mãi &amp; Tài chính AI</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a asp-area="Admin" asp-controller="Vouchers" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bxs-coupon me-1"></i> Voucher Shop
+                            </a>
+                            <a asp-area="Admin" asp-controller="FlashSales" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-purchase-tag-alt me-1"></i> FlashSale
+                            </a>
+                            <a asp-area="Admin" asp-controller="SystemStatistics" asp-action="Seller" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bxs-bar-chart-alt-2 me-1"></i> Phân tích AI
+                            </a>
+                            <a asp-area="Admin" asp-controller="SellerWallet" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-wallet me-1"></i> Ví Doanh thu
+                            </a>
+                            <a asp-area="Admin" asp-controller="SystemStatistics" asp-action="ProfitCalculator" class="btn btn-sm btn-outline-primary rounded-pill px-3 bg-white">
+                                <i class="bx bx-shield-quarter me-1"></i> Kiểm soát Lãi lỗ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- TOP Performance Bar -->
 <div class="row g-4 mb-4">
     <!-- Welcome Panel -->
@@ -301,6 +364,27 @@
                             <h6 class="font-size-12 fw-bold text-danger mb-1">CẢNH BÁO KHO HÀNG</h6>
                             <p class="font-size-11 text-muted mb-0">Có @Model.LowStockItemsCount sản phẩm của bạn sắp hết hàng (dưới 10 sp). Hãy bổ sung tồn kho ngay.</p>
                         </div>
+                    </div>
+                }
+
+                @if (Model.ExpiringSoonCount > 0)
+                {
+                    <div class="d-flex flex-column gap-2 p-3 rounded-3" style="background: rgba(241, 180, 76, 0.12); border-left: 3px solid var(--skote-warning);">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h6 class="font-size-12 fw-bold text-danger mb-0"><i class="bx bx-time-five me-1"></i>CẢNH BÁO HẠN SỬ DỤNG (@Model.ExpiringSoonCount SP ≤ 30 NGÀY)</h6>
+                        </div>
+                        @foreach (var exp in Model.ExpiringSoonProducts.Take(4))
+                        {
+                            <div class="d-flex align-items-center justify-content-between bg-white rounded-2 p-2 border">
+                                <div class="text-truncate me-2">
+                                    <div class="fw-bold font-size-12 text-dark text-truncate">@exp.ProductName</div>
+                                    <div class="font-size-11 text-danger">HSD: @exp.ExpiryDate.ToString("dd/MM/yyyy") (Còn @exp.DaysRemaining ngày • Kho: @exp.TotalStock)</div>
+                                </div>
+                                <a asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" asp-route-id="@exp.ProductId" class="btn btn-xs btn-danger fw-bold text-nowrap px-2 py-1">
+                                    <i class="bx bxs-zap"></i> Xả kho Flash Sale
+                                </a>
+                            </div>
+                        }
                     </div>
                 }
                 

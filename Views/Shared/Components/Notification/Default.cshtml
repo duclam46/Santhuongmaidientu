@@ -1,69 +1,83 @@
 @model DOAN_BANHANG.Components.NotificationViewModel
+@{
+    var isShopOrAdmin = string.Equals(Model.UserRole, "Shop", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(Model.UserRole, "Admin", StringComparison.OrdinalIgnoreCase);
+}
 
-<li class="relative">
-    <div id="notification-sidebar-btn" 
-         class="notification-trigger cursor-pointer flex items-center text-sm leading-[22px] text-white pr-[19px] mr-[19px] py-3.5 relative after:absolute after:h-7.5 after:w-px after:bg-primary-light after:right-0 after:top-1/2 after:-translate-y-1/2 hover:opacity-80 transition-all group">
-        <div class="relative flex items-center justify-center h-7 w-7" style="margin-right: 12px; position: relative !important;">
-            <i class="hgi hgi-stroke hgi-notification-03 text-[22px] text-white"></i>
-            @if (Model.IsSignedIn && Model.UnreadCount > 0)
-            {
-                <div class="bg-error text-white font-bold flex items-center justify-center" 
-                     style="position: absolute !important; top: -4px !important; right: -8px !important; width: 17px !important; height: 17px !important; border-radius: 50% !important; font-size: 9px !important; border: 1.5px solid #1E4D48 !important; z-index: 20 !important;">
-                    @(Model.UnreadCount > 9 ? "9+" : Model.UnreadCount.ToString())
-                </div>
-            }
+<li class="sellzy-top-link-item">
+    <div id="notification-sidebar-btn"
+         class="notification-trigger sellzy-top-link cursor-pointer"
+         data-signed-in="@(Model.IsSignedIn ? "true" : "false")"
+         data-user-role="@Model.UserRole"
+         data-auth-prompt="@(!Model.IsSignedIn ? "notifications" : null)"
+         data-auth-return-url="@(!Model.IsSignedIn ? "/Chat/SystemNotifications" : null)">
+        <div class="relative inline-flex items-center justify-center" style="width: 18px; height: 18px;">
+            <i class="hgi hgi-stroke hgi-notification-03 text-[16px] text-white"></i>
+            <div id="header-notif-unread-badge"
+                 class="bg-error text-white font-bold flex items-center justify-center @(Model.IsSignedIn && Model.UnreadCount > 0 ? "" : "hidden")"
+                 style="position: absolute !important; top: -6px !important; right: -8px !important; min-width: 16px !important; height: 16px !important; padding: 0 3px !important; border-radius: 9999px !important; font-size: 9px !important; border: 1.5px solid #065f5b !important; z-index: 20 !important;">
+                @(Model.UnreadCount > 9 ? "9+" : Model.UnreadCount.ToString())
+            </div>
         </div>
-        <span class="font-normal">Thông báo</span>
+        <span>Thông báo</span>
     </div>
-</li>
 
-    @* Notification Sidebar (Ultra-Sophisticated & Colorful Edition) *@
-    <div id="notification-sidebar" 
+    <div id="notification-sidebar"
          data-state="close"
-         class="notif-sidebar-container"
-         style="width: 100%; max-width: 440px;">
-        
-        @* Gorgeous Header *@
+         data-is-seller="@(isShopOrAdmin ? "true" : "false")"
+         class="notif-sidebar-container">
+
+        <!-- Header -->
         <div class="notif-header-wrapper">
             <div class="notif-header">
                 <div class="notif-header-top">
                     <div class="notif-title-wrap">
-                        <div class="notif-title-icon"><i class="hgi hgi-stroke hgi-notification-03"></i></div>
-                        <h5>Thông báo</h5>
-                        @if(Model.UnreadCount > 0) {
-                            <span class="notif-count-badge pulse-anim">@Model.UnreadCount</span>
-                        }
+                        <div class="notif-title-icon">
+                            <i class="hgi hgi-stroke hgi-notification-03"></i>
+                        </div>
+                        <div class="notif-title-text">
+                            <div class="notif-title-line">
+                                <h5>Thông báo</h5>
+                                <span id="drawer-notif-unread-badge" class="notif-count-badge @(Model.IsSignedIn && Model.UnreadCount > 0 ? "" : "hidden")">
+                                    @Model.UnreadCount mới
+                                </span>
+                            </div>
+                            <span id="notif-role-subtitle" class="notif-role-pill">
+                                @(Model.IsSignedIn ? (isShopOrAdmin ? "Gian hàng & Tài khoản mua sắm" : "Tài khoản thành viên Sellzy") : "Trung tâm cập nhật Sellzy")
+                            </span>
+                        </div>
                     </div>
-                    <button type="button" class="notification-sidebar-close notif-close-btn">
+                    <button type="button" class="notification-sidebar-close notif-close-btn" title="Đóng">
                         <i class="hgi hgi-stroke hgi-multiplication-sign"></i>
                     </button>
                 </div>
             </div>
-            
-            @if (Model.IsSignedIn && Model.Notifications.Any())
-            {
-                <div class="notif-header-actions">
-                    <button type="button" class="notif-action-btn btn-read-all mark-all-read">
-                        <div class="btn-icon-wrap"><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i></div>
-                        Đọc tất cả
-                    </button>
-                    <div class="notif-action-divider"></div>
-                    <button type="button" class="notif-action-btn btn-clear-all clear-all-notifications">
-                        <div class="btn-icon-wrap"><i class="hgi hgi-stroke hgi-delete-02"></i></div>
-                        Xóa tất cả
-                    </button>
+
+            <!-- Filter & Action Bar -->
+            <div id="notif-header-actions" class="notif-header-actions @(Model.IsSignedIn && Model.Notifications.Any() ? "" : "hidden")">
+                <div class="notif-filter-pills">
+                    <button type="button" class="notif-pill active" data-drawer-filter="all">Tất cả</button>
+                    <button type="button" class="notif-pill" data-drawer-filter="unread">Chưa đọc</button>
                 </div>
-            }
+                <button type="button" class="notif-readall-link mark-all-read">
+                    <i class="hgi hgi-stroke hgi-checkmark-circle-02"></i>
+                    <span>Đọc hết</span>
+                </button>
+            </div>
         </div>
 
-        @* Content *@
-        <div class="notif-body custom-scrollbar">
+        <!-- Body -->
+        <div id="notif-drawer-body" class="notif-body custom-scrollbar">
             @if (!Model.IsSignedIn)
             {
-                <div class="notif-empty-state">
-                    <div class="notif-empty-icon lock-icon-glow"><i class="hgi hgi-stroke hgi-lock-sync-01"></i></div>
-                    <h6 class="gradient-text">Đăng nhập ngay</h6>
-                    <p>Khám phá thế giới ưu đãi và theo dõi hành trình đơn hàng của riêng bạn.</p>
+                <div class="notif-empty-state" id="notif-guest-state">
+                    <div class="notif-empty-ring">
+                        <div class="notif-empty-icon lock-icon-glow">
+                            <i class="hgi hgi-stroke hgi-lock-sync-01"></i>
+                        </div>
+                    </div>
+                    <h6 class="notif-empty-title">Đăng nhập để xem thông báo</h6>
+                    <p class="notif-empty-desc">Cập nhật hành trình đơn hàng, ưu đãi Flash Sale và biến động Ví Sellzy theo thời gian thực.</p>
                     <button type="button" class="login-page-btn notif-primary-btn">
                         Đăng nhập tài khoản
                     </button>
@@ -71,45 +85,58 @@
             }
             else if (Model.Notifications.Any())
             {
-                <div class="notif-list">
+                <div class="notif-list" id="notif-drawer-list">
                     @foreach (var item in Model.Notifications)
                     {
-                        var themeClass = "theme-system";
-                        var iconClass = "hgi-notification-02";
-                        var labelText = "Hệ thống";
+                        var themeClass = item.CategoryKey switch
+                        {
+                            "order" => "theme-order",
+                            "return" => "theme-return",
+                            "dispute" => "theme-dispute",
+                            "wallet" => "theme-wallet",
+                            "promo" => "theme-promo",
+                            _ => "theme-system"
+                        };
 
-                        if (item.Title.Contains("Đơn hàng") || item.Content.Contains("vận chuyển")) { 
-                            themeClass = "theme-order"; iconClass = "hgi-package-box"; labelText = "Đơn hàng";
-                        }
-                        else if (item.Title.Contains("Khuyến mãi") || item.Title.Contains("FlashSale") || item.Content.Contains("Voucher")) { 
-                            themeClass = "theme-promo"; iconClass = "hgi-ticket-01"; labelText = "Ưu đãi";
-                        }
-
-                        <div class="notif-item @(!item.IsRead ? "unread" : "") @themeClass" data-id="@item.Id">
-                            @if (!item.IsRead) {
+                        <div class="notif-item @(!item.IsRead ? "unread" : "") @themeClass"
+                             data-id="@item.Id"
+                             data-unread="@(!item.IsRead ? "true" : "false")"
+                             data-action-url="@(item.ActionUrl ?? "")">
+                            @if (!item.IsRead)
+                            {
                                 <div class="notif-unread-indicator"></div>
                             }
-                            
+
                             <div class="notif-item-icon-container">
                                 <div class="notif-item-icon">
-                                    <i class="hgi hgi-stroke @iconClass"></i>
+                                    <i class="hgi hgi-stroke @item.IconClass"></i>
                                 </div>
                             </div>
-                            
+
                             <div class="notif-item-content">
                                 <div class="notif-item-header">
-                                    <span class="notif-category-label">@labelText</span>
+                                    <span class="notif-category-label">@item.CategoryLabel</span>
                                     <span class="notif-time">
-                                        <i class="hgi hgi-stroke hgi-clock-01"></i> @item.CreatedAt.ToString("HH:mm")
+                                        <i class="hgi hgi-stroke hgi-clock-01"></i> @item.CreatedAt.AddHours(7).ToString("dd/MM HH:mm")
                                     </span>
                                 </div>
                                 <h6>@item.Title</h6>
                                 <p>@item.Content</p>
+                                @if (!string.IsNullOrWhiteSpace(item.ActionUrl))
+                                {
+                                    <div class="notif-item-link-row">
+                                        <span class="notif-smart-link">
+                                            @(item.ActionText ?? "Xem chi tiết")
+                                            <i class="hgi hgi-stroke hgi-arrow-right-01"></i>
+                                        </span>
+                                    </div>
+                                }
                             </div>
-                            
-                            @if(!item.IsRead) {
+
+                            @if (!item.IsRead)
+                            {
                                 <button type="button" class="notif-quick-read-btn mark-as-read-btn" title="Đánh dấu đã đọc">
-                                    <i class="hgi hgi-stroke hgi-check text-white"></i>
+                                    <i class="hgi hgi-stroke hgi-tick-02 text-white"></i>
                                 </button>
                             }
                         </div>
@@ -119,33 +146,103 @@
             else
             {
                 <div class="notif-empty-state">
-                    <div class="notif-empty-icon empty-icon-glow"><i class="hgi hgi-stroke hgi-notification-off-01"></i></div>
-                    <h6 class="gradient-text">Tuyệt vời!</h6>
-                    <p>Hộp thư của bạn đã được dọn sạch. Bạn không bỏ lỡ điều gì.</p>
+                    <div class="notif-empty-ring">
+                        <div class="notif-empty-icon empty-icon-glow">
+                            <i class="hgi hgi-stroke hgi-notification-03"></i>
+                        </div>
+                    </div>
+                    <h6 class="notif-empty-title">Bạn đã cập nhật hết rồi!</h6>
+                    <p class="notif-empty-desc">
+                        Mọi cập nhật về đơn hàng, ví tiền, khuyến mãi và hoạt động gian hàng sẽ hiển thị ngay tại đây.
+                    </p>
+                    <div class="notif-shortcuts-grid">
+                        @if (isShopOrAdmin)
+                        {
+                            <a href="/Admin/Orders/Index" class="notif-shortcut-card">
+                                <span class="notif-shortcut-ic ic-teal"><i class="hgi hgi-stroke hgi-store-01"></i></span>
+                                <span class="notif-shortcut-lbl">Đơn bán hàng</span>
+                            </a>
+                            <a href="/my-orders" class="notif-shortcut-card">
+                                <span class="notif-shortcut-ic ic-amber"><i class="hgi hgi-stroke hgi-package-box"></i></span>
+                                <span class="notif-shortcut-lbl">Đơn mua của tôi</span>
+                            </a>
+                            <a href="/Admin/SellerWallet/Index" class="notif-shortcut-card">
+                                <span class="notif-shortcut-ic ic-emerald"><i class="hgi hgi-stroke hgi-wallet-02"></i></span>
+                                <span class="notif-shortcut-lbl">Ví Doanh thu</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="/my-orders" class="notif-shortcut-card">
+                                <span class="notif-shortcut-ic ic-teal"><i class="hgi hgi-stroke hgi-package-box"></i></span>
+                                <span class="notif-shortcut-lbl">Đơn mua của tôi</span>
+                            </a>
+                            <a href="/my-wallet" class="notif-shortcut-card">
+                                <span class="notif-shortcut-ic ic-emerald"><i class="hgi hgi-stroke hgi-wallet-02"></i></span>
+                                <span class="notif-shortcut-lbl">Ví Sellzy</span>
+                            </a>
+                            <a href="/vouchers" class="notif-shortcut-card">
+                                <span class="notif-shortcut-ic ic-rose"><i class="hgi hgi-stroke hgi-ticket-01"></i></span>
+                                <span class="notif-shortcut-lbl">Kho Voucher</span>
+                            </a>
+                        }
+                    </div>
                 </div>
             }
         </div>
 
-        @* Removed Footer based on user feedback *@
+        <!-- Footer -->
+        <div id="notif-drawer-footer" class="notif-footer @(Model.IsSignedIn ? "" : "hidden")">
+            <div class="notif-footer-grid">
+                <a href="/Chat/SystemNotifications" class="notif-footer-link">
+                    <span>Trung tâm thông báo</span>
+                    <i class="hgi hgi-stroke hgi-arrow-right-01"></i>
+                </a>
+                @if (isShopOrAdmin)
+                {
+                    <a href="/Admin/Orders/Index" class="notif-footer-seller-btn" title="Quản lý đơn bán hàng">
+                        <i class="hgi hgi-stroke hgi-store-01"></i>
+                        <span>Đơn bán</span>
+                    </a>
+                }
+                else
+                {
+                    <a href="/my-orders" class="notif-footer-seller-btn" title="Theo dõi đơn mua">
+                        <i class="hgi hgi-stroke hgi-package-box"></i>
+                        <span>Đơn mua</span>
+                    </a>
+                }
+            </div>
+        </div>
     </div>
 
-    @* Ultra-Sophisticated Custom CSS *@
     <style>
         .notif-sidebar-container {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             position: fixed;
-            right: 20px;
-            top: 20px;
-            height: calc(100vh - 40px);
-            border-radius: 32px;
-            overflow: hidden;
-            background-color: #fcfcfd;
-            z-index: 9999;
+            right: 16px;
+            top: 16px;
+            width: calc(100vw - 32px);
+            max-width: 420px;
+            height: calc(100vh - 32px);
+            border-radius: 24px;
+            overflow: hidden !important;
+            background-color: #f8fafc;
+            z-index: 10050 !important;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 40px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.8);
-            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+            box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.32), 0 0 0 1px rgba(15, 23, 42, 0.06);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            white-space: normal !important;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        .notif-sidebar-container *,
+        .notif-sidebar-container *::before,
+        .notif-sidebar-container *::after {
+            box-sizing: border-box;
+            white-space: normal;
         }
 
         .notif-sidebar-container[data-state="open"] {
@@ -158,43 +255,30 @@
             transform: translateX(120%);
             opacity: 0;
             visibility: hidden;
+            pointer-events: none;
         }
 
-        /* Header Styles: Vibrant Multi-stop Gradient */
         .notif-header-wrapper {
             flex-shrink: 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             z-index: 10;
         }
 
         .notif-header {
-            background: linear-gradient(135deg, #0f3443 0%, #1d4d4f 50%, #3d7a72 100%);
+            background: linear-gradient(135deg, #043e37 0%, #006d60 55%, #008374 100%);
             color: #ffffff;
             position: relative;
             overflow: hidden;
-            padding: 32px 28px 24px 28px;
+            padding: 20px 20px 18px 20px;
         }
 
-        /* Decorative Header Orbs */
         .notif-header::before {
             content: '';
             position: absolute;
-            top: -50px;
-            right: -30px;
-            width: 150px;
-            height: 150px;
-            background: radial-gradient(circle, rgba(77, 182, 172, 0.4) 0%, rgba(255,255,255,0) 70%);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-        .notif-header::after {
-            content: '';
-            position: absolute;
-            bottom: -30px;
-            left: -20px;
-            width: 120px;
-            height: 120px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255,255,255,0) 70%);
+            top: -55px;
+            right: -35px;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, rgba(94, 234, 212, 0.28) 0%, rgba(255, 255, 255, 0) 70%);
             border-radius: 50%;
             pointer-events: none;
         }
@@ -203,6 +287,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
             position: relative;
             z-index: 2;
         }
@@ -210,214 +295,236 @@
         .notif-title-wrap {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
+            min-width: 0;
         }
 
         .notif-title-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.05));
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-        }
-
-        .notif-title-wrap h5 {
-            font-size: 26px;
-            font-weight: 900;
-            margin: 0;
-            letter-spacing: -0.5px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .notif-count-badge {
-            background: linear-gradient(135deg, #ff416c, #ff4b2b);
-            color: white;
-            font-size: 12px;
-            font-weight: 900;
-            padding: 3px 10px;
-            border-radius: 20px;
-            box-shadow: 0 4px 10px rgba(255, 65, 108, 0.4);
-            border: 2px solid rgba(255,255,255,0.2);
-        }
-
-        @@keyframes pulse-glow {
-            0% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 65, 108, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0); }
-        }
-        .pulse-anim { animation: pulse-glow 2s infinite; }
-
-        .notif-close-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.1);
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 13px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            color: #ffffff;
+            flex-shrink: 0;
         }
 
-        .notif-close-btn:hover {
-            background-color: rgba(255, 255, 255, 0.25);
-            transform: rotate(90deg);
+        .notif-title-text {
+            min-width: 0;
         }
 
-        /* Sophisticated Action Bar */
-        .notif-header-actions {
-            display: flex;
-            align-items: center;
-            background-color: #ffffff;
-            padding: 12px 24px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .notif-action-btn {
-            background: none;
-            border: none;
-            font-size: 12px;
-            font-weight: 800;
+        .notif-title-line {
             display: flex;
             align-items: center;
             gap: 8px;
-            cursor: pointer;
-            padding: 10px 16px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            flex: 1;
-            justify-content: center;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #64748b;
         }
 
-        .btn-icon-wrap {
+        .notif-title-wrap h5 {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.3px;
+            line-height: 1.2;
+            color: #ffffff;
+        }
+
+        .notif-role-pill {
+            display: block;
+            font-size: 11.5px;
+            font-weight: 500;
+            color: rgba(204, 251, 241, 0.92);
+            margin-top: 3px;
+            line-height: 1.3;
+        }
+
+        .notif-count-badge {
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 10.5px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 999px;
+            white-space: nowrap !important;
+            box-shadow: 0 3px 8px rgba(239, 68, 68, 0.35);
+        }
+
+        .notif-count-badge.hidden {
+            display: none !important;
+        }
+
+        .notif-close-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.14);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 16px;
-            transition: transform 0.3s ease;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
         }
 
-        .btn-read-all:hover {
-            background-color: #f0fdf4;
-            color: #16a34a;
-        }
-        .btn-read-all:hover .btn-icon-wrap { transform: scale(1.2); color: #16a34a; }
-
-        .btn-clear-all:hover {
-            background-color: #fff1f2;
-            color: #e11d48;
-        }
-        .btn-clear-all:hover .btn-icon-wrap { transform: scale(1.2); color: #e11d48; }
-
-        .notif-action-divider {
-            width: 2px;
-            height: 24px;
-            background-color: #f1f5f9;
-            margin: 0 8px;
-            border-radius: 2px;
+        .notif-close-btn:hover {
+            background-color: rgba(255, 255, 255, 0.28);
+            transform: rotate(90deg);
         }
 
-        /* Body & Cards Styles */
+        .notif-header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #ffffff;
+            padding: 10px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            gap: 10px;
+        }
+
+        .notif-header-actions.hidden {
+            display: none !important;
+        }
+
+        .notif-filter-pills {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .notif-pill {
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            background: #f1f5f9;
+            border: 1px solid transparent;
+            cursor: pointer;
+            white-space: nowrap !important;
+            transition: all 0.18s ease;
+        }
+
+        .notif-pill:hover {
+            color: #0f172a;
+            background: #e2e8f0;
+        }
+
+        .notif-pill.active {
+            background: #f0fdfa;
+            color: #008374;
+            border-color: #99f6e4;
+        }
+
+        .notif-readall-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: transparent;
+            border: none;
+            font-size: 12px;
+            font-weight: 700;
+            color: #008374;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 8px;
+            white-space: nowrap !important;
+            transition: background 0.18s ease;
+        }
+
+        .notif-readall-link:hover {
+            background: #f0fdfa;
+        }
+
         .notif-body {
             flex: 1;
-            overflow-y: auto;
-            padding: 20px 16px;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            padding: 14px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
+        }
+
+        .notif-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
         }
 
         .notif-item {
             display: flex;
-            gap: 16px;
-            padding: 20px;
+            gap: 12px;
+            padding: 14px;
             background-color: #ffffff;
-            border-radius: 20px;
-            border: 1px solid #f1f5f9;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.2s ease;
             position: relative;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
+            width: 100%;
         }
 
         .notif-item:hover {
-            transform: translateY(-3px);
-            border-color: transparent;
+            transform: translateY(-1px);
+            border-color: #99f6e4;
+            box-shadow: 0 8px 18px -6px rgba(0, 131, 116, 0.14);
         }
 
-        /* Thematic Colorful Styles */
-        /* 1. Theme: Order (Orange/Yellow) */
-        .theme-order .notif-item-icon {
-            background: linear-gradient(135deg, #f59e0b, #ea580c);
-            box-shadow: 0 8px 16px rgba(234, 88, 12, 0.25);
-        }
-        .theme-order .notif-category-label { color: #ea580c; background: #fff7ed; border: 1px solid #ffedd5; }
-        .theme-order:hover { box-shadow: 0 20px 25px -5px rgba(234, 88, 12, 0.1), 0 10px 10px -5px rgba(234, 88, 12, 0.04); }
-
-        /* 2. Theme: Promo (Pink/Rose) */
-        .theme-promo .notif-item-icon {
-            background: linear-gradient(135deg, #ec4899, #e11d48);
-            box-shadow: 0 8px 16px rgba(225, 29, 72, 0.25);
-        }
-        .theme-promo .notif-category-label { color: #e11d48; background: #fff1f2; border: 1px solid #ffe4e6; }
-        .theme-promo:hover { box-shadow: 0 20px 25px -5px rgba(225, 29, 72, 0.1), 0 10px 10px -5px rgba(225, 29, 72, 0.04); }
-
-        /* 3. Theme: System (Blue/Cyan) */
-        .theme-system .notif-item-icon {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
-        }
-        .theme-system .notif-category-label { color: #2563eb; background: #eff6ff; border: 1px solid #dbeafe; }
-        .theme-system:hover { box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.1), 0 10px 10px -5px rgba(37, 99, 235, 0.04); }
-
-        /* Unread State Highlight */
         .notif-item.unread {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
+            background: linear-gradient(to right, #f0fdfa 0%, #ffffff 38%);
+            border-color: #99f6e4;
         }
 
         .notif-unread-indicator {
             position: absolute;
             left: 0;
-            top: 20px;
-            bottom: 20px;
-            width: 4px;
-            background: linear-gradient(to bottom, #14b8a6, #0f766e);
+            top: 12px;
+            bottom: 12px;
+            width: 3.5px;
+            background: linear-gradient(to bottom, #14b8a6, #008374);
             border-radius: 0 4px 4px 0;
         }
 
         .notif-item-icon-container {
-            position: relative;
             flex-shrink: 0;
         }
 
         .notif-item-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            color: white;
-            transition: transform 0.4s ease;
+            font-size: 19px;
+            color: #ffffff;
         }
 
-        .notif-item:hover .notif-item-icon {
-            transform: scale(1.05) rotate(5deg);
-        }
+        .theme-order .notif-item-icon { background: linear-gradient(135deg, #008374, #0d9488); }
+        .theme-order .notif-category-label { color: #008374; background: #f0fdfa; border: 1px solid #ccfbf1; }
+
+        .theme-return .notif-item-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .theme-return .notif-category-label { color: #d97706; background: #fffbeb; border: 1px solid #fde68a; }
+
+        .theme-dispute .notif-item-icon { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .theme-dispute .notif-category-label { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
+
+        .theme-wallet .notif-item-icon { background: linear-gradient(135deg, #10b981, #059669); }
+        .theme-wallet .notif-category-label { color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; }
+
+        .theme-promo .notif-item-icon { background: linear-gradient(135deg, #ec4899, #e11d48); }
+        .theme-promo .notif-category-label { color: #e11d48; background: #fff1f2; border: 1px solid #ffe4e6; }
+
+        .theme-system .notif-item-icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .theme-system .notif-category-label { color: #2563eb; background: #eff6ff; border: 1px solid #dbeafe; }
 
         .notif-item-content {
             flex: 1;
@@ -428,141 +535,88 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
+            gap: 6px;
         }
 
         .notif-category-label {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: 800;
-            padding: 3px 8px;
+            padding: 2px 7px;
             border-radius: 6px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.35px;
+            white-space: nowrap !important;
         }
 
         .notif-item-content h6 {
-            font-size: 16px;
-            font-weight: 800;
+            font-size: 13.5px;
+            font-weight: 700;
             color: #0f172a;
-            margin: 0 0 6px 0;
-            line-height: 1.4;
-            transition: color 0.3s;
-        }
-
-        .notif-item:hover .notif-item-content h6 {
-            color: #0f766e; /* Brand hover color */
+            margin: 0 0 4px 0;
+            line-height: 1.38;
+            word-break: break-word;
         }
 
         .notif-item-content p {
-            font-size: 14px;
-            color: #64748b;
-            margin: 0 0 0 0;
-            line-height: 1.6;
+            font-size: 12.5px;
+            color: #475569;
+            margin: 0;
+            line-height: 1.5;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            font-weight: 500;
+            word-break: break-word;
+        }
+
+        .notif-item-link-row {
+            margin-top: 8px;
+        }
+
+        .notif-smart-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #008374;
+            background: #f0fdfa;
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid #ccfbf1;
         }
 
         .notif-time {
-            font-size: 12px;
+            font-size: 11px;
             color: #94a3b8;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             font-weight: 600;
+            white-space: nowrap !important;
         }
 
-        /* Quick Read Button */
         .notif-quick-read-btn {
             position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%) scale(0.8);
-            width: 36px;
-            height: 36px;
+            right: 10px;
+            top: 10px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #14b8a6, #0f766e);
+            background: linear-gradient(135deg, #14b8a6, #008374);
             border: none;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             opacity: 0;
-            box-shadow: 0 4px 10px rgba(15, 118, 110, 0.3);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 10px rgba(0, 131, 116, 0.3);
+            transition: opacity 0.2s ease;
         }
 
         .notif-item:hover .notif-quick-read-btn {
             opacity: 1;
-            transform: translateY(-50%) scale(1);
-        }
-        
-        .notif-quick-read-btn:hover {
-            transform: translateY(-50%) scale(1.1) !important;
-            box-shadow: 0 6px 14px rgba(15, 118, 110, 0.4);
-        }
-
-        /* Footer Styles */
-        .notif-footer {
-            padding: 20px 24px;
-            background-color: #ffffff;
-            border-top: 1px solid #f1f5f9;
-            flex-shrink: 0;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
-            z-index: 10;
-        }
-
-        .notif-footer-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            color: #ffffff;
-            font-weight: 800;
-            border-radius: 16px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 15px;
-            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .notif-footer-link::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-            transform: skewX(-20deg);
-            transition: left 0.5s ease;
-        }
-
-        .notif-footer-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 25px rgba(15, 23, 42, 0.3);
-            color: #ffffff;
-        }
-        
-        .notif-footer-link:hover::after {
-            left: 150%;
-        }
-
-        .footer-link-icon {
-            width: 28px; height: 28px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            transition: transform 0.3s ease;
-        }
-
-        .notif-footer-link:hover .footer-link-icon {
-            transform: translateX(4px);
-            background: rgba(255,255,255,0.2);
         }
 
         /* Empty State */
@@ -571,262 +625,522 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            padding: 40px;
+            margin: auto 0;
+            padding: 28px 18px;
             text-align: center;
+            width: 100%;
         }
 
-        .notif-empty-icon {
-            width: 90px;
-            height: 90px;
-            border-radius: 24px;
+        .notif-empty-ring {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 131, 116, 0.12) 0%, rgba(0, 131, 116, 0.02) 70%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 44px;
-            margin-bottom: 24px;
-            position: relative;
+            margin-bottom: 16px;
         }
-        
+
+        .notif-empty-icon {
+            width: 66px;
+            height: 66px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+
         .lock-icon-glow {
-            background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
-            color: #0d9488;
-            box-shadow: 0 10px 25px rgba(13, 148, 136, 0.2);
+            background: linear-gradient(135deg, #ccfbf1, #99f6e4);
+            color: #008374;
         }
-        
+
         .empty-icon-glow {
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            color: #94a3b8;
-            box-shadow: 0 10px 25px rgba(148, 163, 184, 0.15);
+            background: linear-gradient(135deg, #ffffff, #f0fdfa);
+            color: #008374;
+            border: 1px solid #ccfbf1;
+            box-shadow: 0 10px 24px -6px rgba(0, 131, 116, 0.18);
         }
 
-        .gradient-text {
-            font-size: 24px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #0f172a, #334155);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 12px;
+        .notif-empty-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 8px 0;
+            line-height: 1.3;
         }
 
-        .notif-empty-state p {
-            font-size: 15px;
+        .notif-empty-desc {
+            font-size: 13px;
             color: #64748b;
-            margin-bottom: 32px;
-            line-height: 1.6;
-            font-weight: 500;
+            margin: 0 auto 22px auto;
+            line-height: 1.55;
+            max-width: 300px;
+            word-break: break-word;
+        }
+
+        .notif-shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
+        }
+
+        .notif-shortcut-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 8px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .notif-shortcut-card:hover {
+            border-color: #5eead4;
+            background: #f0fdfa;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px -6px rgba(0, 131, 116, 0.16);
+        }
+
+        .notif-shortcut-ic {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .notif-shortcut-ic.ic-teal { background: #f0fdfa; color: #008374; }
+        .notif-shortcut-ic.ic-amber { background: #fffbeb; color: #d97706; }
+        .notif-shortcut-ic.ic-emerald { background: #ecfdf5; color: #059669; }
+        .notif-shortcut-ic.ic-rose { background: #fff1f2; color: #e11d48; }
+
+        .notif-shortcut-lbl {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #334155;
+            text-align: center;
+            line-height: 1.25;
         }
 
         .notif-primary-btn {
-            background: linear-gradient(135deg, #14b8a6, #0f766e);
-            color: white;
+            background: linear-gradient(135deg, #008374, #065f5b);
+            color: #ffffff;
             border: none;
-            padding: 16px 28px;
-            border-radius: 16px;
-            font-weight: 800;
-            font-size: 16px;
+            padding: 12px 22px;
+            border-radius: 13px;
+            font-weight: 700;
+            font-size: 14px;
             cursor: pointer;
             width: 100%;
-            box-shadow: 0 10px 20px rgba(15, 118, 110, 0.25);
-            transition: all 0.3s ease;
+            max-width: 260px;
         }
 
-        .notif-primary-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 25px rgba(15, 118, 110, 0.35);
+        /* Footer */
+        .notif-footer {
+            padding: 12px 16px;
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+
+        .notif-footer.hidden {
+            display: none !important;
+        }
+
+        .notif-footer-grid {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .notif-footer-link {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 11px 14px;
+            background: linear-gradient(135deg, #008374, #065f5b);
+            color: #ffffff !important;
+            font-weight: 700;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 13px;
+            white-space: nowrap !important;
+            transition: all 0.2s ease;
+        }
+
+        .notif-footer-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(0, 131, 116, 0.26);
+        }
+
+        .notif-footer-seller-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 11px 14px;
+            border-radius: 12px;
+            background: #f0fdfa;
+            border: 1px solid #99f6e4;
+            color: #008374 !important;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap !important;
+            transition: all 0.2s ease;
+        }
+
+        .notif-footer-seller-btn:hover {
+            background: #ccfbf1;
         }
     </style>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('notification-sidebar-btn');
+            const sidebar = document.getElementById('notification-sidebar');
+            const closeBtn = sidebar ? sidebar.querySelector('.notification-sidebar-close') : null;
+            const overlay = document.querySelector('.modal-overlay');
+            const body = document.body;
 
-    <style>
-        .custom-scrollbar-hidden::-webkit-scrollbar { display: none; }
-        @@keyframes shine { 100% { transform: translateX(100%); } }
-        .animate-shine { animation: shine 0.8s ease-in-out infinite; }
-        @@keyframes shine-slow { 100% { transform: translateX(100%); } }
-        .group:hover .animate-shine-slow { animation: shine-slow 1.5s ease-in-out; }
-        @@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
-        @@keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-        .animate-bounce-slow { animation: bounce-slow 4s ease-in-out infinite; }
-    </style>
-</li>
-
-<style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #e5e7eb;
-        border-radius: 10px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #d1d5db;
-    }
-</style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const btn = document.getElementById('notification-sidebar-btn');
-        const sidebar = document.getElementById('notification-sidebar');
-        const closeBtn = document.querySelector('.notification-sidebar-close');
-        const overlay = document.querySelector('.modal-overlay');
-        const body = document.body;
-        
-        function openSidebar() {
-            if(!sidebar) return;
-            sidebar.setAttribute('data-state', 'open');
-            if(overlay) {
-                overlay.style.display = 'block';
-                overlay.setAttribute('data-overlay-for', '#notification-sidebar');
+            // Move drawer directly to document.body so it never inherits navbar white-space: nowrap or low z-index
+            if (sidebar && sidebar.parentElement !== document.body) {
+                document.body.appendChild(sidebar);
             }
-            body.classList.add('overflow-hidden', 'scrollbar-offset');
-        }
 
-        function closeSidebar() {
-            if(!sidebar) return;
-            sidebar.setAttribute('data-state', 'close');
-            if(overlay) {
-                overlay.style.display = 'none';
-                overlay.removeAttribute('data-overlay-for');
-            }
-            body.classList.remove('overflow-hidden', 'scrollbar-offset');
-        }
+            const drawerBody = document.getElementById('notif-drawer-body');
+            const headerActions = document.getElementById('notif-header-actions');
+            const drawerFooter = document.getElementById('notif-drawer-footer');
+            const headerBadge = document.getElementById('header-notif-unread-badge');
+            const drawerBadge = document.getElementById('drawer-notif-unread-badge');
+            const isSeller = sidebar && sidebar.getAttribute('data-is-seller') === 'true';
+            let currentFilter = 'all';
 
-        if (btn && sidebar) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                openSidebar();
-            });
-        }
-
-        if (closeBtn) {
-            closeBtn.addEventListener('click', closeSidebar);
-        }
-
-        if (overlay) {
-            overlay.addEventListener('click', function() {
-                if(this.getAttribute('data-overlay-for') === '#notification-sidebar') {
-                    closeSidebar();
+            function updateBadgeCounts(count) {
+                const safeCount = Math.max(0, parseInt(count || 0, 10));
+                if (headerBadge) {
+                    if (safeCount > 0) {
+                        headerBadge.textContent = safeCount > 9 ? '9+' : safeCount.toString();
+                        headerBadge.classList.remove('hidden');
+                    } else {
+                        headerBadge.classList.add('hidden');
+                    }
                 }
-            });
-        }
+                if (drawerBadge) {
+                    if (safeCount > 0) {
+                        drawerBadge.textContent = safeCount + ' mới';
+                        drawerBadge.classList.remove('hidden');
+                    } else {
+                        drawerBadge.classList.add('hidden');
+                    }
+                }
+            }
 
-        const notificationItems = document.querySelectorAll('.notif-item');
-        
-        notificationItems.forEach(item => {
-            const markReadBtn = item.querySelector('.mark-as-read-btn');
-            
-            const handleRead = async function(e) {
-                if(e) e.stopPropagation(); // prevent clicking card if button clicked
-                
-                const id = item.dataset.id;
-                
-                if (item.classList.contains('unread')) {
-                    try {
-                        const response = await fetch(`/notifications/mark-read?id=${id}`, {
-                            method: 'POST'
+            function resolveThemeClass(catKey) {
+                switch (catKey) {
+                    case 'order': return 'theme-order';
+                    case 'return': return 'theme-return';
+                    case 'dispute': return 'theme-dispute';
+                    case 'wallet': return 'theme-wallet';
+                    case 'promo': return 'theme-promo';
+                    default: return 'theme-system';
+                }
+            }
+
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str || '';
+                return div.innerHTML;
+            }
+
+            function formatVnTime(isoStr) {
+                try {
+                    const d = new Date(isoStr);
+                    return d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+                } catch (e) {
+                    return '';
+                }
+            }
+
+            function buildEmptyShortcutsHtml() {
+                if (isSeller) {
+                    return `
+                        <a href="/Admin/Orders/Index" class="notif-shortcut-card">
+                            <span class="notif-shortcut-ic ic-teal"><i class="hgi hgi-stroke hgi-store-01"></i></span>
+                            <span class="notif-shortcut-lbl">Đơn bán hàng</span>
+                        </a>
+                        <a href="/my-orders" class="notif-shortcut-card">
+                            <span class="notif-shortcut-ic ic-amber"><i class="hgi hgi-stroke hgi-package-box"></i></span>
+                            <span class="notif-shortcut-lbl">Đơn mua của tôi</span>
+                        </a>
+                        <a href="/Admin/SellerWallet/Index" class="notif-shortcut-card">
+                            <span class="notif-shortcut-ic ic-emerald"><i class="hgi hgi-stroke hgi-wallet-02"></i></span>
+                            <span class="notif-shortcut-lbl">Ví Doanh thu</span>
+                        </a>`;
+                }
+                return `
+                    <a href="/my-orders" class="notif-shortcut-card">
+                        <span class="notif-shortcut-ic ic-teal"><i class="hgi hgi-stroke hgi-package-box"></i></span>
+                        <span class="notif-shortcut-lbl">Đơn mua của tôi</span>
+                    </a>
+                    <a href="/my-wallet" class="notif-shortcut-card">
+                        <span class="notif-shortcut-ic ic-emerald"><i class="hgi hgi-stroke hgi-wallet-02"></i></span>
+                        <span class="notif-shortcut-lbl">Ví Sellzy</span>
+                    </a>
+                    <a href="/vouchers" class="notif-shortcut-card">
+                        <span class="notif-shortcut-ic ic-rose"><i class="hgi hgi-stroke hgi-ticket-01"></i></span>
+                        <span class="notif-shortcut-lbl">Kho Voucher</span>
+                    </a>`;
+            }
+
+            function applyDrawerFilter() {
+                if (!drawerBody) return;
+                drawerBody.querySelectorAll('.notif-item').forEach(item => {
+                    if (currentFilter === 'unread') {
+                        item.style.display = item.classList.contains('unread') ? 'flex' : 'none';
+                    } else {
+                        item.style.display = 'flex';
+                    }
+                });
+            }
+
+            function renderDrawerNotifications(items) {
+                if (!drawerBody) return;
+                if (!Array.isArray(items) || items.length === 0) {
+                    drawerBody.innerHTML = `
+                        <div class="notif-empty-state">
+                            <div class="notif-empty-ring">
+                                <div class="notif-empty-icon empty-icon-glow">
+                                    <i class="hgi hgi-stroke hgi-notification-03"></i>
+                                </div>
+                            </div>
+                            <h6 class="notif-empty-title">Bạn đã cập nhật hết rồi!</h6>
+                            <p class="notif-empty-desc">Mọi cập nhật về đơn hàng, ví tiền, khuyến mãi và hoạt động gian hàng sẽ hiển thị ngay tại đây.</p>
+                            <div class="notif-shortcuts-grid">${buildEmptyShortcutsHtml()}</div>
+                        </div>`;
+                    if (headerActions) headerActions.classList.add('hidden');
+                    if (drawerFooter) drawerFooter.classList.remove('hidden');
+                    updateBadgeCounts(0);
+                    return;
+                }
+
+                if (headerActions) headerActions.classList.remove('hidden');
+                if (drawerFooter) drawerFooter.classList.remove('hidden');
+
+                let unreadCount = 0;
+                let html = '<div class="notif-list" id="notif-drawer-list">';
+
+                items.forEach(item => {
+                    if (!item.isRead) unreadCount++;
+                    const themeClass = resolveThemeClass(item.categoryKey);
+                    const iconClass = escapeHtml(item.iconClass || 'hgi-notification-02');
+                    const categoryLabel = escapeHtml(item.categoryLabel || 'Hệ thống');
+                    const title = escapeHtml(item.title);
+                    const content = escapeHtml(item.content);
+                    const actionUrl = item.actionUrl ? escapeHtml(item.actionUrl) : '';
+                    const actionText = escapeHtml(item.actionText || 'Xem chi tiết');
+                    const timeStr = formatVnTime(item.createdAt);
+
+                    html += `
+                        <div class="notif-item ${!item.isRead ? 'unread' : ''} ${themeClass}"
+                             data-id="${item.id}"
+                             data-unread="${!item.isRead ? 'true' : 'false'}"
+                             data-action-url="${actionUrl}">
+                            ${!item.isRead ? '<div class="notif-unread-indicator"></div>' : ''}
+                            <div class="notif-item-icon-container">
+                                <div class="notif-item-icon">
+                                    <i class="hgi hgi-stroke ${iconClass}"></i>
+                                </div>
+                            </div>
+                            <div class="notif-item-content">
+                                <div class="notif-item-header">
+                                    <span class="notif-category-label">${categoryLabel}</span>
+                                    <span class="notif-time"><i class="hgi hgi-stroke hgi-clock-01"></i> ${timeStr}</span>
+                                </div>
+                                <h6>${title}</h6>
+                                <p>${content}</p>
+                                ${actionUrl ? `<div class="notif-item-link-row"><span class="notif-smart-link">${actionText} <i class="hgi hgi-stroke hgi-arrow-right-01"></i></span></div>` : ''}
+                            </div>
+                            ${!item.isRead ? `<button type="button" class="notif-quick-read-btn mark-as-read-btn" title="Đánh dấu đã đọc"><i class="hgi hgi-stroke hgi-tick-02 text-white"></i></button>` : ''}
+                        </div>`;
+                });
+
+                html += '</div>';
+                drawerBody.innerHTML = html;
+                updateBadgeCounts(unreadCount);
+                applyDrawerFilter();
+            }
+
+            async function refreshLatestNotifications() {
+                try {
+                    const res = await fetch('/Chat/GetLatestNotifications?take=15', {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin'
+                    });
+                    if (res.ok) {
+                        if (typeof window.markSellzySessionAuthenticated === 'function') {
+                            window.markSellzySessionAuthenticated();
+                        }
+                        if (btn) {
+                            btn.setAttribute('data-signed-in', 'true');
+                            btn.removeAttribute('data-auth-prompt');
+                            btn.removeAttribute('data-auth-return-url');
+                        }
+                        const items = await res.json();
+                        renderDrawerNotifications(items);
+                        return true;
+                    }
+                    return false;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function openSidebar() {
+                if (!sidebar) return;
+                sidebar.setAttribute('data-state', 'open');
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    overlay.style.zIndex = '10040';
+                    overlay.setAttribute('data-overlay-for', '#notification-sidebar');
+                }
+                body.classList.add('overflow-hidden', 'scrollbar-offset');
+                refreshLatestNotifications();
+            }
+
+            function closeSidebar() {
+                if (!sidebar) return;
+                sidebar.setAttribute('data-state', 'close');
+                if (overlay) {
+                    overlay.style.display = 'none';
+                    overlay.style.zIndex = '';
+                    overlay.removeAttribute('data-overlay-for');
+                }
+                body.classList.remove('overflow-hidden', 'scrollbar-offset');
+            }
+
+            if (btn && sidebar) {
+                btn.addEventListener('click', async function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const modal = document.getElementById('sellzy-auth-prompt-modal');
+                    const domAuthenticated = (modal && modal.getAttribute('data-authenticated') === 'true')
+                                             || btn.getAttribute('data-signed-in') === 'true';
+
+                    if (domAuthenticated) {
+                        btn.removeAttribute('data-auth-prompt');
+                        openSidebar();
+                        return;
+                    }
+
+                    const verifiedOnline = await refreshLatestNotifications();
+                    if (verifiedOnline) {
+                        openSidebar();
+                        return;
+                    }
+
+                    if (typeof window.showSellzyAuthPrompt === 'function') {
+                        window.showSellzyAuthPrompt({
+                            context: 'notifications',
+                            returnUrl: '/Chat/SystemNotifications'
                         });
-                        
-                        if (response.ok) {
-                            // Update UI instantly
-                            item.classList.remove('unread');
-                            
-                            const unreadIndicator = item.querySelector('.notif-unread-indicator');
-                            if(unreadIndicator) unreadIndicator.remove();
-                            
-                            const newTag = item.querySelector('.notif-new-tag');
-                            if(newTag) newTag.remove();
+                    } else {
+                        openSidebar();
+                    }
+                });
+            }
 
-                            if(markReadBtn) markReadBtn.remove();
-                            
-                            // Update counters
-                            const badge = document.querySelector('.notification-trigger .bg-error');
-                            const headerBadge = document.querySelector('.notif-count-badge');
-                            
-                            [badge, headerBadge].forEach(b => {
-                                if (b) {
-                                    let count = parseInt(b.textContent);
-                                    if (!isNaN(count) && count > 0) {
-                                        count--;
-                                        if (count === 0) b.remove();
-                                        else b.textContent = count > 99 ? "99+" : count.toString();
-                                    }
-                                }
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+
+            if (overlay) {
+                overlay.addEventListener('click', function () {
+                    if (this.getAttribute('data-overlay-for') === '#notification-sidebar') {
+                        closeSidebar();
+                    }
+                });
+            }
+
+            if (sidebar) {
+                sidebar.querySelectorAll('[data-drawer-filter]').forEach(pill => {
+                    pill.addEventListener('click', function () {
+                        sidebar.querySelectorAll('[data-drawer-filter]').forEach(p => p.classList.remove('active'));
+                        this.classList.add('active');
+                        currentFilter = this.getAttribute('data-drawer-filter') || 'all';
+                        applyDrawerFilter();
+                    });
+                });
+            }
+
+            if (drawerBody) {
+                drawerBody.addEventListener('click', async function (e) {
+                    const item = e.target.closest('.notif-item');
+                    if (!item) return;
+
+                    const clickedQuickBtn = e.target.closest('.mark-as-read-btn');
+                    const id = item.dataset.id;
+                    const actionUrl = item.dataset.actionUrl;
+
+                    if (item.classList.contains('unread') && id) {
+                        try {
+                            await fetch(`/notifications/mark-read?id=${id}`, { method: 'POST', credentials: 'same-origin' });
+                            item.classList.remove('unread');
+                            item.setAttribute('data-unread', 'false');
+                            const ind = item.querySelector('.notif-unread-indicator');
+                            if (ind) ind.remove();
+                            const qBtn = item.querySelector('.mark-as-read-btn');
+                            if (qBtn) qBtn.remove();
+
+                            const remainingUnread = drawerBody.querySelectorAll('.notif-item.unread').length;
+                            updateBadgeCounts(remainingUnread);
+                            applyDrawerFilter();
+                        } catch (err) {
+                            console.error('Failed to mark notification as read:', err);
+                        }
+                    }
+
+                    if (!clickedQuickBtn && actionUrl) {
+                        window.location.href = actionUrl;
+                    }
+                });
+            }
+
+            const markAllBtn = sidebar ? sidebar.querySelector('.mark-all-read') : null;
+            if (markAllBtn) {
+                markAllBtn.addEventListener('click', async function () {
+                    try {
+                        const response = await fetch('/notifications/mark-all-read', {
+                            method: 'POST',
+                            credentials: 'same-origin'
+                        });
+                        if (response.ok) {
+                            drawerBody.querySelectorAll('.notif-item.unread').forEach(item => {
+                                item.classList.remove('unread');
+                                item.setAttribute('data-unread', 'false');
+                                const ind = item.querySelector('.notif-unread-indicator');
+                                if (ind) ind.remove();
+                                const qBtn = item.querySelector('.mark-as-read-btn');
+                                if (qBtn) qBtn.remove();
                             });
+                            updateBadgeCounts(0);
+                            applyDrawerFilter();
                         }
                     } catch (err) {
-                        console.error('Failed to mark notification as read:', err);
+                        console.error('Failed to mark all notifications as read:', err);
                     }
-                }
-            };
-
-            // Bind click events
-            item.addEventListener('click', handleRead);
-            if(markReadBtn) {
-                markReadBtn.addEventListener('click', handleRead);
+                });
             }
         });
-
-        // Mark All As Read Logic
-        const markAllBtn = document.querySelector('.mark-all-read');
-        if(markAllBtn) {
-            markAllBtn.addEventListener('click', async function() {
-                try {
-                    const response = await fetch('/notifications/mark-all-read', {
-                        method: 'POST'
-                    });
-                    
-                    if (response.ok) {
-                        // Smoothly update UI without reloading
-                        document.querySelectorAll('.notif-item.unread').forEach(item => {
-                            item.classList.remove('unread');
-                            const ind = item.querySelector('.notif-unread-indicator');
-                            if(ind) ind.remove();
-                            const tag = item.querySelector('.notif-new-tag');
-                            if(tag) tag.remove();
-                            const btn = item.querySelector('.mark-as-read-btn');
-                            if(btn) btn.remove();
-                        });
-                        
-                        document.querySelectorAll('.notification-trigger .bg-error, .notif-count-badge').forEach(b => b.remove());
-                    }
-                } catch (err) {
-                    console.error('Failed to mark all notifications as read:', err);
-                }
-            });
-        }
-
-        // Clear All Logic (Hide for this account)
-        const clearAllBtn = document.querySelector('.clear-all-notifications');
-        if(clearAllBtn) {
-            clearAllBtn.addEventListener('click', function() {
-                const notifList = document.querySelector('.notif-list');
-                const notifBody = document.querySelector('.notif-body');
-                
-                if(notifList && notifBody) {
-                    // Replace list with Empty State
-                    notifBody.innerHTML = `
-                        <div class="notif-empty-state">
-                            <div class="notif-empty-icon empty-icon-glow"><i class="hgi hgi-stroke hgi-notification-off-01"></i></div>
-                            <h6 class="gradient-text">Tuyệt vời!</h6>
-                            <p>Hộp thư của bạn đã được dọn sạch. Bạn không bỏ lỡ điều gì.</p>
-                        </div>
-                    `;
-                    
-                    // Remove badges
-                    document.querySelectorAll('.notification-trigger .bg-error, .notif-count-badge').forEach(b => b.remove());
-                    
-                    // Hide action bar
-                    const actionBar = document.querySelector('.notif-header-actions');
-                    if(actionBar) actionBar.style.display = 'none';
-                    
-                    // Fire-and-forget: mark all as read on backend so they don't show up as unread next time
-                    fetch('/notifications/mark-all-read', { method: 'POST' }).catch(e => {});
-                }
-            });
-        }
-    });
-</script>
+    </script>
+</li>

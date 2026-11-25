@@ -1,93 +1,432 @@
 @model DOAN_BANHANG.ViewModels.AdminDashboardViewModel
 @{
-    ViewData["Title"] = "Phân tích Chuyên sâu Hệ thống";
+    ViewData["Title"] = "Trung tâm Giám sát & Phân tích Hệ thống";
+
+    string TranslateOrderStatus(string status) => (status ?? string.Empty).Trim().ToLowerInvariant() switch
+    {
+        "pending" => "Chờ xác nhận",
+        "confirmed" => "Đã xác nhận",
+        "processing" => "Đang chuẩn bị",
+        "shipping" or "shipped" => "Đang giao hàng",
+        "delivered" => "Đã giao hàng",
+        "completed" => "Hoàn tất",
+        "cancelled" => "Đã hủy",
+        "returned" => "Hoàn trả",
+        _ => string.IsNullOrWhiteSpace(status) ? "Khác" : status
+    };
+
+    var localizedStatusData = Model.OrderStatusLabels
+        .Select((lbl, idx) => new { name = TranslateOrderStatus(lbl), value = idx < Model.OrderStatusValues.Count ? Model.OrderStatusValues[idx] : 0 })
+        .ToList();
+
+    var latencyBadge = Model.DbLatencyMs <= 80
+        ? ("Rất nhanh", "bg-success-subtle text-success-emphasis border-success-subtle")
+        : (Model.DbLatencyMs <= 200
+            ? ("Ổn định", "bg-info-subtle text-info-emphasis border-info-subtle")
+            : ("Chậm", "bg-warning-subtle text-warning-emphasis border-warning-subtle"));
 }
 
-<div class="row">
-    <div class="col-12">
-        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18">Báo cáo Phân tích Chiến lược Hệ thống</h4>
-            <div class="page-title-right">
-                <a href="/Admin/SystemStatistics/FinancialReport" class="btn btn-primary btn-sm me-2"><i class="bx bx-file"></i> Báo cáo Tài chính</a>
-                <button class="btn btn-success btn-sm"><i class="mdi mdi-file-export"></i> Xuất Báo cáo PDF</button>
+@section Styles {
+    <style>
+        .sys-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .sys-live-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #4ADE80;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+            animation: sysPulse 1.8s infinite;
+        }
+        @@keyframes sysPulse {
+            0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+        }
+        .sys-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+        @@media (max-width: 991px) {
+            .sys-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .sys-kpi-card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sys-kpi-ic {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(255, 235, 105, 0.18);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            flex-shrink: 0;
+        }
+        .sys-metric-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 0;
+            border-bottom: 1px dashed #E2E8F0;
+            font-size: 13.5px;
+        }
+        .sys-metric-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .sys-alert-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid #E2E8F0;
+            background: #F8FAFC;
+            text-decoration: none !important;
+            transition: all 0.18s ease;
+        }
+        .sys-alert-item:hover {
+            border-color: #088178;
+            background: #ffffff;
+            transform: translateY(-1px);
+        }
+        @@media print {
+            .no-print { display: none !important; }
+            .sys-hero { box-shadow: none !important; }
+        }
+    </style>
+}
+
+<!-- HERO GIÁM SÁT HỆ THỐNG -->
+<div class="sys-hero">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 rounded-pill px-3 py-1 mb-2" style="background: rgba(255,255,255,0.12); font-size: 12.5px;">
+                <span class="sys-live-dot"></span>
+                <span>Đang giám sát trực tiếp • Cập nhật lúc <strong>@Model.RefreshedAtLocal.ToString("HH:mm:ss dd/MM/yyyy")</strong></span>
+            </div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-pulse text-warning me-1"></i>Trung tâm Giám sát &amp; Phân tích Hệ thống Sellzy
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Theo dõi thời gian thực hiệu năng máy chủ, lưu lượng giao dịch, cơ cấu 10 ngành hàng và hiệu suất vận hành của hệ thống đối tác.
+            </p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2 no-print">
+            <a href="@Url.Action("Admin", "SystemStatistics", new { area = "Admin" })" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);">
+                <i class="bx bx-refresh me-1"></i>Làm mới
+            </a>
+            <a href="/Admin/SystemStatistics/FinancialReport" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);">
+                <i class="bx bx-file me-1"></i>Báo cáo tài chính
+            </a>
+            <button type="button" onclick="window.print()" class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-sm" style="background: #FFEB69; color: #161C24;">
+                <i class="bx bx-printer me-1"></i>In / Xuất PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- 4 CHỈ SỐ TỔNG QUAN CHÍNH -->
+    <div class="sys-kpi-grid">
+        <div class="sys-kpi-card">
+            <span class="sys-kpi-ic"><i class="bx bx-money"></i></span>
+            <div style="min-width: 0;">
+                <div class="fs-5 fw-bold lh-1 text-truncate" style="color: #FFEB69;">@Model.TotalRevenue.ToString("N0")₫</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.82);">Tổng doanh thu giao dịch (GMV)</div>
+            </div>
+        </div>
+        <div class="sys-kpi-card">
+            <span class="sys-kpi-ic" style="background: rgba(52,211,153,0.22); color: #6EE7B7;"><i class="bx bx-shopping-bag"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.TotalAllOrders.ToString("N0") đơn</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.82);">Hoàn tất: <strong>@Model.OrderCompletionRate%</strong> • Hủy: @Model.CancelRatePercent%</div>
+            </div>
+        </div>
+        <div class="sys-kpi-card">
+            <span class="sys-kpi-ic" style="background: rgba(56,189,248,0.22); color: #7DD3FC;"><i class="bx bx-store-alt"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.TotalShops đối tác</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.82);">Sellzy Mall: <strong>@Model.MallShopCount</strong> • Shop Thường: <strong>@Model.StandardShopCount</strong></div>
+            </div>
+        </div>
+        <div class="sys-kpi-card">
+            <span class="sys-kpi-ic"><i class="bx bx-package"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.TotalActiveProducts.ToString("N0") sản phẩm</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.82);">Khách hàng: <strong>@Model.TotalCustomers</strong> • Đánh giá: <strong>@Model.PlatformAvgRating.ToString("0.0")★</strong></div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-xl-9">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title mb-4">Biến động Thị trường & Dòng tiền (Nâng cao)</h4>
-                <div id="deep-revenue-chart" style="height: 450px;"></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title mb-4">Sức khỏe Vận hành</h4>
-                <div class="text-center mb-4">
-                    <div id="system-health-gauge" style="height: 200px;"></div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-sm table-nowrap mb-0">
-                        <tbody>
-                            <tr>
-                                <td><p class="mb-0">Tải CPU</p></td>
-                                <td class="text-end"><span class="badge bg-success">Thấp</span></td>
-                            </tr>
-                            <tr>
-                                <td><p class="mb-0">Ram Usage</p></td>
-                                <td class="text-end"><span class="badge bg-warning">4.2GB</span></td>
-                            </tr>
-                            <tr>
-                                <td><p class="mb-0">Disk I/O</p></td>
-                                <td class="text-end"><span class="badge bg-info">Ổn định</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-xl-6">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title mb-4">Cơ cấu Ngành hàng & Tiềm năng Tăng trưởng</h4>
-                <div id="category-radar" style="height: 400px;"></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-6">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title mb-4">So sánh Hiệu suất giữa các Đối tác Top</h4>
-                <div id="store-comparison-scatter" style="height: 400px;"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-xl-4">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title mb-4">Phân tích Người dùng Mới (24h)</h4>
-                <div id="user-growth-sparkline" style="height: 250px;"></div>
-            </div>
-        </div>
-    </div>
+<!-- HÀNG 1: BIỂU ĐỒ DÒNG TIỀN 6 THÁNG + SỨC KHỎE MÁY CHỦ THỰC TẾ -->
+<div class="row g-4 mb-4">
     <div class="col-xl-8">
-        <div class="card">
-            <div class="card-body">
-                <h4 class="card-title mb-4">Bản đồ Nhiệt Hoạt động Giao dịch</h4>
-                <div id="activity-heatmap" style="height: 250px;"></div>
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-line-chart text-primary me-2"></i>Biến động Doanh thu &amp; Lưu lượng Đơn hàng (6 tháng gần nhất)</h5>
+                    <div class="small text-muted">Dữ liệu tổng hợp thực tế từ đơn hàng đã thanh toán / hoàn tất trên sàn</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-3 py-1.5">
+                        Giá trị TB/đơn: <strong>@Model.AverageOrderValue.ToString("N0")₫</strong>
+                    </span>
+                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-3 py-1.5">
+                        Phí sàn ước tính: <strong>@Model.EstimatedPlatformCommission.ToString("N0")₫</strong>
+                    </span>
+                </div>
             </div>
+            <div class="card-body p-4">
+                <div id="deep-revenue-chart" style="height: 360px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-server text-primary me-2"></i>Sức khỏe Hệ thống Thực tế</h5>
+                <span class="badge border rounded-pill px-2.5 py-1 @latencyBadge.Item2">CSDL: @latencyBadge.Item1</span>
+            </div>
+            <div class="card-body p-4">
+                <div id="system-health-gauge" style="height: 185px;"></div>
+
+                <div class="mt-2">
+                    <div class="sys-metric-row">
+                        <span class="text-muted"><i class="bx bx-data text-primary me-1"></i>Độ trễ SQL Server</span>
+                        <strong class="text-dark font-monospace">@Model.DbLatencyMs ms</strong>
+                    </div>
+                    <div class="sys-metric-row">
+                        <span class="text-muted"><i class="bx bx-chip text-primary me-1"></i>Bộ nhớ tiến trình (RAM)</span>
+                        <strong class="text-dark font-monospace">@Model.ProcessMemoryMb.ToString("0.0") MB</strong>
+                    </div>
+                    <div class="sys-metric-row">
+                        <span class="text-muted"><i class="bx bx-memory-card text-primary me-1"></i>Bộ nhớ .NET Managed Heap</span>
+                        <strong class="text-dark font-monospace">@Model.ManagedHeapMb.ToString("0.0") MB</strong>
+                    </div>
+                    <div class="sys-metric-row">
+                        <span class="text-muted"><i class="bx bx-git-merge text-primary me-1"></i>Luồng xử lý đang chạy</span>
+                        <strong class="text-dark font-monospace">@Model.ActiveThreadCount luồng</strong>
+                    </div>
+                    <div class="sys-metric-row">
+                        <span class="text-muted"><i class="bx bx-time-five text-primary me-1"></i>Thời gian hoạt động liên tục</span>
+                        <strong class="text-success">@Model.AppUptimeDisplay</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HÀNG 2: CƠ CẤU NGÀNH HÀNG + CƠ CẤU TRẠNG THÁI ĐƠN HÀNG -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-7">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark">
+                        <i class="bx bx-category text-primary me-2"></i>
+                        @(Model.CategoryChartIsProductFallback ? "Phân bổ Sản phẩm Đang bán theo 10 Ngành hàng" : "Cơ cấu Doanh thu theo Ngành hàng")
+                    </h5>
+                    <div class="small text-muted">
+                        @(Model.CategoryChartIsProductFallback
+                            ? "Hiển thị quy mô sản phẩm thực tế theo từng ngành hàng gốc (tự động chuyển sang doanh thu khi có phát sinh đơn hàng)"
+                            : "Thống kê tổng giá trị sản phẩm đã bán theo từng nhóm ngành hàng")
+                    </div>
+                </div>
+                <a asp-area="Admin" asp-controller="Categories" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill px-3 no-print">
+                    Quản lý ngành hàng
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <div id="category-bar-chart" style="height: 320px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-pie-chart-alt-2 text-primary me-2"></i>Cơ cấu Trạng thái Đơn hàng</h5>
+                    <div class="small text-muted">Tỷ lệ xử lý thực tế trên tổng @Model.TotalAllOrders đơn hàng</div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                @if (Model.TotalAllOrders == 0)
+                {
+                    <div class="d-flex flex-column align-items-center justify-content-center text-center text-muted" style="height: 320px;">
+                        <i class="bx bx-receipt display-4 text-secondary opacity-50 mb-2"></i>
+                        <div class="fw-semibold text-dark">Chưa có đơn hàng phát sinh</div>
+                        <div class="small mt-1">Biểu đồ tỷ lệ trạng thái sẽ tự động hiển thị ngay khi có đơn hàng đầu tiên.</div>
+                    </div>
+                }
+                else
+                {
+                    <div id="order-status-donut" style="height: 320px;"></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HÀNG 3: TĂNG TRƯỞNG 7 NGÀY + CẢNH BÁO VẬN HÀNH CẦN XỬ LÝ -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-7">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-trending-up text-primary me-2"></i>Nhịp độ Hoạt động 7 ngày gần nhất</h5>
+                <div class="small text-muted">Theo dõi số tài khoản đăng ký mới và số đơn hàng phát sinh theo từng ngày</div>
+            </div>
+            <div class="card-body p-4">
+                <div id="recent-7day-chart" style="height: 290px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-bell-plus text-warning me-2"></i>Hạng mục Cần Quản trị viên theo dõi</h5>
+                    <div class="small text-muted">Cảnh báo vận hành theo thời gian thực từ CSDL</div>
+                </div>
+            </div>
+            <div class="card-body p-4 d-flex flex-column gap-2.5">
+                <a asp-area="Admin" asp-controller="PartnerApplications" asp-action="Index" asp-route-Status="Pending" class="sys-alert-item">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-3 p-2 fs-5"><i class="bx bx-user-check"></i></span>
+                        <div>
+                            <div class="fw-bold text-dark small">Hồ sơ đối tác chờ xét duyệt</div>
+                            <div class="text-muted" style="font-size: 12px;">Tỷ lệ duyệt toàn hệ thống: @Model.PartnerApprovalRate%</div>
+                        </div>
+                    </div>
+                    <span class="badge rounded-pill px-3 py-1.5 @(Model.PendingPartnerAppsCount > 0 ? "bg-warning text-dark fw-bold" : "bg-success-subtle text-success-emphasis")">
+                        @Model.PendingPartnerAppsCount hồ sơ
+                    </span>
+                </a>
+
+                <div class="sys-alert-item" style="cursor: default;">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-danger-subtle text-danger-emphasis rounded-3 p-2 fs-5"><i class="bx bx-error-circle"></i></span>
+                        <div>
+                            <div class="fw-bold text-dark small">Cảnh báo tồn kho sản phẩm</div>
+                            <div class="text-muted" style="font-size: 12px;">Hết hàng: @Model.OutOfStockVariantsCount biến thể • Sắp hết (&lt;10): @Model.LowStockVariantsCount</div>
+                        </div>
+                    </div>
+                    <span class="badge rounded-pill px-3 py-1.5 @(Model.OutOfStockVariantsCount > 0 ? "bg-danger text-white" : "bg-success-subtle text-success-emphasis")">
+                        @(Model.OutOfStockVariantsCount + Model.LowStockVariantsCount) mục
+                    </span>
+                </div>
+
+                <a asp-area="Admin" asp-controller="Accounts" asp-action="Index" asp-route-Status="Blocked" class="sys-alert-item">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-3 p-2 fs-5"><i class="bx bx-lock-alt"></i></span>
+                        <div>
+                            <div class="fw-bold text-dark small">Tài khoản đang bị tạm khóa</div>
+                            <div class="text-muted" style="font-size: 12px;">Tỷ lệ tài khoản hoạt động bình thường: @Model.ActiveUserPercentage%</div>
+                        </div>
+                    </div>
+                    <span class="badge rounded-pill px-3 py-1.5 bg-secondary-subtle text-dark">@Model.BlockedAccountsCount tài khoản</span>
+                </a>
+
+                <a asp-area="Admin" asp-controller="Vouchers" asp-action="Index" asp-route-Status="Active" class="sys-alert-item">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-primary-subtle text-primary-emphasis rounded-3 p-2 fs-5"><i class="bx bxs-coupon"></i></span>
+                        <div>
+                            <div class="fw-bold text-dark small">Chương trình Voucher đang hiệu lực</div>
+                            <div class="text-muted" style="font-size: 12px;">Đơn hàng đang chờ xử lý: @Model.PendingOrdersCount đơn</div>
+                        </div>
+                    </div>
+                    <span class="badge rounded-pill px-3 py-1.5 bg-primary-subtle text-primary-emphasis">@Model.ActiveVouchersCount mã</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HÀNG 4: BẢNG HIỆU SUẤT HỆ THỐNG ĐỐI TÁC (SELLZY MALL & SHOP THƯỜNG) -->
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-header bg-white border-bottom py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-trophy text-warning me-2"></i>Bảng Xếp hạng &amp; Hiệu suất Đối tác Bán hàng</h5>
+            <div class="small text-muted">Tổng hợp quy mô sản phẩm, số đơn hoàn tất và doanh thu thực tế của các gian hàng trên sàn</div>
+        </div>
+        <a asp-area="Admin" asp-controller="Accounts" asp-action="Index" asp-route-Role="Shop" class="btn btn-sm btn-outline-primary rounded-pill px-3 no-print">
+            Xem tất cả đối tác
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 70px;">Hạng</th>
+                        <th>Tên Gian hàng</th>
+                        <th>Phân hạng</th>
+                        <th class="text-center">Sản phẩm đang bán</th>
+                        <th class="text-center">Đơn thành công</th>
+                        <th class="text-end pe-4">Doanh thu ghi nhận</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.ShopPerformances.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">Chưa có gian hàng đối tác nào trên hệ thống.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        var rank = 1;
+                        foreach (var s in Model.ShopPerformances)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-bold @(rank <= 3 ? "text-primary" : "text-muted")">#@rank</td>
+                                <td class="fw-bold text-dark">@s.ShopName</td>
+                                <td>
+                                    @if (s.IsMall)
+                                    {
+                                        <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background: #00262A; color: #FFEB69;">
+                                            <i class="bx bxs-badge-check me-1"></i>Sellzy Mall
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bx bx-store me-1"></i>Shop Thường
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-center fw-semibold">@s.ProductCount</td>
+                                <td class="text-center fw-semibold">@s.OrderCount</td>
+                                <td class="text-end pe-4 fw-bold text-success">@s.Revenue.ToString("N0")₫</td>
+                            </tr>
+                            rank++;
+                        }
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -95,80 +434,192 @@
 @section Scripts {
     <script src="/admin/assets/libs/echarts/echarts.min.js"></script>
     <script>
-        $(function() {
-            // 1. Deep Revenue Chart (ECharts Area with Zoom)
-            var revenueChart = echarts.init(document.getElementById('deep-revenue-chart'));
-            var option = {
-                tooltip: { trigger: 'axis' },
-                grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
-                xAxis: { type: 'category', boundaryGap: false, data: @Html.Raw(Json.Serialize(Model.RevenueLabels)) },
-                yAxis: { type: 'value' },
-                dataZoom: [{ type: 'inside', start: 0, end: 100 }, { start: 0, end: 100 }],
-                series: [{
-                    name: 'Doanh thu', type: 'line', smooth: true, symbol: 'none',
-                    areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(85, 110, 230, 0.5)'}, {offset: 1, color: 'rgba(85, 110, 230, 0.1)'}]) },
-                    data: @Html.Raw(Json.Serialize(Model.RevenueValues))
-                }]
-            };
-            revenueChart.setOption(option);
+        $(function () {
+            var charts = [];
 
-            // 2. System Health Gauge
-            var healthChart = echarts.init(document.getElementById('system-health-gauge'));
-            healthChart.setOption({
-                series: [{
-                    type: 'gauge',
-                    progress: { show: true, width: 8 },
-                    axisLine: { lineStyle: { width: 8 } },
-                    axisTick: { show: false },
-                    splitLine: { length: 5, lineStyle: { width: 2, color: '#999' } },
-                    axisLabel: { distance: 10, color: '#999', fontSize: 10 },
-                    anchor: { show: true, showAbove: true, size: 15, itemStyle: { borderWidth: 5 } },
-                    title: { show: false },
-                    detail: { valueAnimation: true, fontSize: 30, offsetCenter: [0, '70%'], formatter: '{value}%' },
-                    data: [{ value: 94 }]
-                }]
-            });
-
-            // 3. Category Radar
-            var radarChart = echarts.init(document.getElementById('category-radar'));
-            radarChart.setOption({
-                radar: {
-                    indicator: @Html.Raw(Json.Serialize(Model.CategoryNames.Select(n => new { name = n, max = 10000000 })))
-                },
-                series: [{
-                    name: 'Phân tích Ngành', type: 'radar',
-                    data: [{ value: @Html.Raw(Json.Serialize(Model.CategoryRevenue)), name: 'Thực tế' }]
-                }]
-            });
-
-            // 4. Store Scatter
-            var scatterChart = echarts.init(document.getElementById('store-comparison-scatter'));
-            scatterChart.setOption({
-                xAxis: { name: 'Số đơn' }, yAxis: { name: 'Doanh thu' },
-                series: [{
-                    symbolSize: 20,
-                    data: [[10, 5000000], [15, 8000000], [8, 3000000], [20, 12000000], [12, 6000000]],
-                    type: 'scatter'
-                }]
-            });
-
-            // 5. Heatmap
-            var heatmapChart = echarts.init(document.getElementById('activity-heatmap'));
-            var hours = ['12a', '1a', '2a', '3a', '4a', '5a', '6a', '7a', '8a', '9a', '10a', '11a', '12p', '1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p', '10p', '11p'];
-            var days = ['Sat', 'Fri', 'Thu', 'Wed', 'Tue', 'Mon', 'Sun'];
-            var data = [];
-            for (let i = 0; i < 7; i++) {
-                for (let j = 0; j < 24; j++) {
-                    data.push([j, i, Math.floor(Math.random() * 10)]);
-                }
+            // 1. Biểu đồ Doanh thu & Số đơn hàng 6 tháng (Dual Axis)
+            var revEl = document.getElementById('deep-revenue-chart');
+            if (revEl) {
+                var revenueChart = echarts.init(revEl);
+                charts.push(revenueChart);
+                revenueChart.setOption({
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'cross' }
+                    },
+                    legend: { data: ['Doanh thu (₫)', 'Số đơn hàng'], top: 0 },
+                    grid: { left: '3%', right: '4%', bottom: '8%', top: '14%', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        data: @Html.Raw(Json.Serialize(Model.RevenueLabels))
+                    },
+                    yAxis: [
+                        {
+                            type: 'value',
+                            name: 'Doanh thu (₫)',
+                            axisLabel: {
+                                formatter: function (v) {
+                                    if (v >= 1000000) return (v / 1000000).toFixed(1) + 'tr';
+                                    if (v >= 1000) return (v / 1000).toFixed(0) + 'k';
+                                    return v;
+                                }
+                            }
+                        },
+                        {
+                            type: 'value',
+                            name: 'Đơn hàng',
+                            minInterval: 1
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'Doanh thu (₫)',
+                            type: 'line',
+                            smooth: true,
+                            itemStyle: { color: '#088178' },
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: 'rgba(8, 129, 120, 0.35)' },
+                                    { offset: 1, color: 'rgba(8, 129, 120, 0.03)' }
+                                ])
+                            },
+                            data: @Html.Raw(Json.Serialize(Model.RevenueValues))
+                        },
+                        {
+                            name: 'Số đơn hàng',
+                            type: 'bar',
+                            yAxisIndex: 1,
+                            barMaxWidth: 28,
+                            itemStyle: { color: '#F59E0B', borderRadius: [6, 6, 0, 0] },
+                            data: @Html.Raw(Json.Serialize(Model.MonthlyOrderCounts))
+                        }
+                    ]
+                });
             }
-            heatmapChart.setOption({
-                tooltip: { position: 'top' },
-                grid: { height: '50%', top: '10%' },
-                xAxis: { type: 'category', data: hours, splitArea: { show: true } },
-                yAxis: { type: 'category', data: days, splitArea: { show: true } },
-                visualMap: { min: 0, max: 10, calculable: true, orient: 'horizontal', left: 'center', bottom: '15%' },
-                series: [{ name: 'Activity', type: 'heatmap', data: data, label: { show: true }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } } }]
+
+            // 2. Đồng hồ Sức khỏe Hệ thống thực tế
+            var healthEl = document.getElementById('system-health-gauge');
+            if (healthEl) {
+                var healthChart = echarts.init(healthEl);
+                charts.push(healthChart);
+                var score = @Model.SystemHealthScore;
+                var scoreColor = score >= 85 ? '#088178' : (score >= 60 ? '#F59E0B' : '#EF4444');
+                healthChart.setOption({
+                    series: [{
+                        type: 'gauge',
+                        startAngle: 200,
+                        endAngle: -20,
+                        min: 0,
+                        max: 100,
+                        progress: { show: true, width: 12, itemStyle: { color: scoreColor } },
+                        axisLine: { lineStyle: { width: 12, color: [[1, '#E2E8F0']] } },
+                        pointer: { show: false },
+                        axisTick: { show: false },
+                        splitLine: { show: false },
+                        axisLabel: { show: false },
+                        title: { show: true, offsetCenter: [0, '32%'], fontSize: 12, color: '#64748B' },
+                        detail: {
+                            valueAnimation: true,
+                            fontSize: 30,
+                            fontWeight: 800,
+                            color: '#0F172A',
+                            offsetCenter: [0, '-4%'],
+                            formatter: '{value}%'
+                        },
+                        data: [{ value: score, name: 'Chỉ số ổn định' }]
+                    }]
+                });
+            }
+
+            // 3. Cơ cấu Ngành hàng (Horizontal Bar)
+            var catEl = document.getElementById('category-bar-chart');
+            if (catEl) {
+                var catChart = echarts.init(catEl);
+                charts.push(catChart);
+                var isFallback = @(Model.CategoryChartIsProductFallback ? "true" : "false");
+                catChart.setOption({
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' }
+                    },
+                    grid: { left: '3%', right: '8%', top: '4%', bottom: '6%', containLabel: true },
+                    xAxis: { type: 'value', minInterval: isFallback ? 1 : 0 },
+                    yAxis: {
+                        type: 'category',
+                        inverse: true,
+                        data: @Html.Raw(Json.Serialize(Model.CategoryNames))
+                    },
+                    series: [{
+                        name: isFallback ? 'Số sản phẩm' : 'Doanh thu (₫)',
+                        type: 'bar',
+                        barMaxWidth: 20,
+                        itemStyle: {
+                            color: '#088178',
+                            borderRadius: [0, 6, 6, 0]
+                        },
+                        label: {
+                            show: true,
+                            position: 'right',
+                            formatter: isFallback ? '{c} SP' : function (p) { return Number(p.value).toLocaleString('vi-VN') + '₫'; }
+                        },
+                        data: @Html.Raw(Json.Serialize(Model.CategoryRevenue))
+                    }]
+                });
+            }
+
+            // 4. Trạng thái Đơn hàng (Donut)
+            var statusEl = document.getElementById('order-status-donut');
+            if (statusEl) {
+                var statusChart = echarts.init(statusEl);
+                charts.push(statusChart);
+                statusChart.setOption({
+                    tooltip: { trigger: 'item', formatter: '{b}: <strong>{c}</strong> đơn ({d}%)' },
+                    legend: { bottom: 0, type: 'scroll' },
+                    series: [{
+                        name: 'Trạng thái',
+                        type: 'pie',
+                        radius: ['46%', '72%'],
+                        center: ['50%', '44%'],
+                        itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                        label: { show: false },
+                        data: @Html.Raw(Json.Serialize(localizedStatusData))
+                    }]
+                });
+            }
+
+            // 5. Hoạt động 7 ngày gần nhất
+            var recentEl = document.getElementById('recent-7day-chart');
+            if (recentEl) {
+                var recentChart = echarts.init(recentEl);
+                charts.push(recentChart);
+                recentChart.setOption({
+                    tooltip: { trigger: 'axis' },
+                    legend: { data: ['Tài khoản mới', 'Đơn hàng phát sinh'], top: 0 },
+                    grid: { left: '3%', right: '4%', bottom: '8%', top: '16%', containLabel: true },
+                    xAxis: { type: 'category', data: @Html.Raw(Json.Serialize(Model.Recent7DayLabels)) },
+                    yAxis: { type: 'value', minInterval: 1 },
+                    series: [
+                        {
+                            name: 'Tài khoản mới',
+                            type: 'bar',
+                            barMaxWidth: 22,
+                            itemStyle: { color: '#088178', borderRadius: [6, 6, 0, 0] },
+                            data: @Html.Raw(Json.Serialize(Model.Recent7DayNewUsers))
+                        },
+                        {
+                            name: 'Đơn hàng phát sinh',
+                            type: 'line',
+                            smooth: true,
+                            itemStyle: { color: '#F59E0B' },
+                            lineStyle: { width: 3 },
+                            data: @Html.Raw(Json.Serialize(Model.Recent7DayOrders))
+                        }
+                    ]
+                });
+            }
+
+            window.addEventListener('resize', function () {
+                charts.forEach(function (c) { c.resize(); });
             });
         });
     </script>

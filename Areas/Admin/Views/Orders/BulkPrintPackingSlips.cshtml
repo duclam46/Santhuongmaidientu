@@ -1,0 +1,148 @@
+@model List<DOAN_BANHANG.Models.Order>
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>In Phiếu Đóng Gói Hàng Loạt (@Model.Count đơn) - Sellzy</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { margin: 0; padding: 20px; background: #e2e8f0; color: #0f172a; }
+        .no-print-bar {
+            max-width: 820px; margin: 0 auto 20px; background: #063532; color: #fff;
+            padding: 14px 22px; border-radius: 14px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .btn-print {
+            background: #fde047; color: #022c22; border: none; padding: 9px 20px;
+            border-radius: 999px; font-weight: 800; cursor: pointer; font-size: 14px;
+        }
+        .slip-sheet {
+            max-width: 820px; margin: 0 auto 24px; background: #ffffff;
+            border: 2px solid #0f172a; border-radius: 10px; padding: 22px 26px;
+            page-break-after: always;
+        }
+        .slip-sheet:last-child { page-break-after: auto; }
+        .slip-head {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 2px dashed #0f172a; padding-bottom: 14px; margin-bottom: 14px;
+        }
+        .brand { font-size: 22px; font-weight: 900; color: #0b5c56; letter-spacing: -0.5px; }
+        .code-box { text-align: right; }
+        .order-code { font-family: monospace; font-size: 20px; font-weight: 900; letter-spacing: 1px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .addr-box { border: 1px solid #94a3b8; border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.45; }
+        .addr-title { font-weight: 800; text-transform: uppercase; font-size: 11px; color: #475569; margin-bottom: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+        th { background: #f1f5f9; font-weight: 800; font-size: 12px; text-transform: uppercase; }
+        .cod-banner {
+            display: flex; justify-content: space-between; align-items: center;
+            border: 2px solid #0f172a; border-radius: 8px; padding: 12px 16px; background: #f8fafc;
+        }
+        @@media print {
+            body { background: #fff; padding: 0; }
+            .no-print-bar { display: none !important; }
+            .slip-sheet { margin: 0 0 16px; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print-bar">
+        <div>
+            <strong>🖨️ Phiếu đóng gói &amp; Giao nhận Sellzy</strong>
+            <span style="margin-left: 10px; font-size: 13px; opacity: 0.85;">Đã chọn @Model.Count đơn hàng</span>
+        </div>
+        <button type="button" class="btn-print" onclick="window.print()">In toàn bộ (@Model.Count phiếu)</button>
+    </div>
+
+    @foreach (var o in Model)
+    {
+        var shopName = o.Shop?.Profile?.ShopName ?? o.Shop?.Profile?.FullName ?? $"Shop #{o.ShopId}";
+        var shopAddr = o.Shop?.Profile?.Address ?? "Kho đối tác trên sàn Sellzy";
+        bool isCod = string.Equals(o.PaymentMethod, "COD", StringComparison.OrdinalIgnoreCase);
+        decimal collectAmt = isCod && o.PaymentStatus != "Paid" ? o.FinalAmount : 0m;
+
+        <div class="slip-sheet">
+            <div class="slip-head">
+                <div>
+                    <div class="brand">SELLZY EXPRESS • PHIẾU GIAO HÀNG</div>
+                    <div style="font-size: 12px; color: #475569; margin-top: 4px;">
+                        Ngày đặt: @o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") • PTTT: <strong>@o.PaymentMethod</strong>
+                    </div>
+                </div>
+                <div class="code-box">
+                    <div class="order-code">#@o.OrderCode</div>
+                    @if (!string.IsNullOrWhiteSpace(o.TrackingCode))
+                    {
+                        <div style="font-size: 13px; font-weight: 800; margin-top: 3px;">Mã vận đơn GHN: @o.TrackingCode</div>
+                    }
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="addr-box">
+                    <div class="addr-title">Từ (Người gửi / Gian hàng)</div>
+                    <div style="font-weight: 800; font-size: 14px;">@shopName</div>
+                    @if (!string.IsNullOrWhiteSpace(o.Shop?.Profile?.PhoneNumber))
+                    {
+                        <div>SĐT: @o.Shop.Profile.PhoneNumber</div>
+                    }
+                    <div>@shopAddr</div>
+                </div>
+                <div class="addr-box">
+                    <div class="addr-title">Đến (Người nhận)</div>
+                    <div style="font-weight: 800; font-size: 14px;">@o.RecipientName — @o.RecipientPhone</div>
+                    <div>@o.ShippingAddress</div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 44px;">STT</th>
+                        <th>Sản phẩm &amp; Phân loại</th>
+                        <th style="width: 70px; text-align: center;">SL</th>
+                        <th style="width: 130px; text-align: right;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int idx = 1; }
+                    @foreach (var item in o.Items)
+                    {
+                        var variantText = !string.IsNullOrWhiteSpace(item.VariantDescription)
+                            ? item.VariantDescription
+                            : string.Join(" - ", new[] { item.ColorName, item.SizeName }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                        <tr>
+                            <td>@(idx++)</td>
+                            <td>
+                                <strong>@item.ProductName</strong>
+                                @if (!string.IsNullOrWhiteSpace(variantText))
+                                {
+                                    <div style="font-size: 12px; color: #475569;">Phân loại: @variantText</div>
+                                }
+                            </td>
+                            <td style="text-align: center; font-weight: 800;">@item.Quantity</td>
+                            <td style="text-align: right;">@item.LineTotal.ToString("N0")₫</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="cod-banner">
+                <div>
+                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #475569;">Tiền thu hộ người nhận (COD)</div>
+                    <div style="font-size: 22px; font-weight: 900; color: @(collectAmt > 0 ? "#dc2626" : "#059669");">
+                        @collectAmt.ToString("N0") VNĐ
+                    </div>
+                </div>
+                <div style="text-align: right; font-size: 12px; color: #475569;">
+                    <div>Tổng SL: <strong>@o.Items.Sum(x => x.Quantity) sản phẩm</strong></div>
+                    <div>Vui lòng quay video đồng kiểm khi mở kiện hàng.</div>
+                </div>
+            </div>
+        </div>
+    }
+</body>
+</html>

@@ -29,6 +29,12 @@ public sealed class AdminInventoryProductPickVm
     public int VariantCount { get; set; }
 
     public int TotalStockQuantity { get; set; }
+
+    public DateTime? ExpiryDate { get; set; }
+
+    public string? ShippingCondition { get; set; }
+
+    public bool IsDigital { get; set; }
 }
 
 public sealed class AdminInventorySelectedProductVm
@@ -38,6 +44,14 @@ public sealed class AdminInventorySelectedProductVm
     public string Name { get; set; } = string.Empty;
 
     public string? PrimaryImageUrl { get; set; }
+
+    public DateTime? ManufacturingDate { get; set; }
+
+    public DateTime? ExpiryDate { get; set; }
+
+    public string? ShippingCondition { get; set; }
+
+    public bool IsDigital { get; set; }
 
     public List<AdminInventoryVariantRowVm> Variants { get; set; } = new();
 }
@@ -51,6 +65,12 @@ public sealed class AdminInventoryVariantRowVm
     public string? ColorName { get; set; }
 
     public string? SizeName { get; set; }
+
+    public string? VariantLabel { get; set; }
+
+    public int WeightGram { get; set; } = 300;
+
+    public decimal CostPrice { get; set; } = 0m;
 
     public int StockQuantity { get; set; }
 
@@ -75,4 +95,6 @@ public sealed class AdminInventoryVariantUpdateRowVm
     public int VariantId { get; set; }
 
     public int StockQuantity { get; set; }
+
+    public decimal? CostPrice { get; set; }
 }

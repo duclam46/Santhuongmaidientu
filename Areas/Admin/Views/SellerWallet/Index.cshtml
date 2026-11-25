@@ -1,0 +1,385 @@
+@model DOAN_BANHANG.Areas.Admin.Controllers.SellerWalletDashboardVm
+@{
+    ViewData["Title"] = "Ví Doanh thu Người bán & Đối soát Dòng tiền";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@section Styles {
+    <style>
+        .sw-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .sw-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+        @@media (max-width: 991px) {
+            .sw-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .sw-kpi-card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sw-kpi-ic {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(255, 235, 105, 0.18);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+    </style>
+}
+
+@if (TempData["AdminToast"] is string okToast && !string.IsNullOrWhiteSpace(okToast))
+{
+    <div class="alert alert-success border-0 rounded-3 shadow-sm d-flex align-items-center gap-2 mb-3">
+        <i class="bx bx-check-circle fs-5"></i>
+        <span class="fw-semibold">@okToast</span>
+    </div>
+}
+@if (TempData["AdminToastError"] is string errToast && !string.IsNullOrWhiteSpace(errToast))
+{
+    <div class="alert alert-danger border-0 rounded-3 shadow-sm d-flex align-items-center gap-2 mb-3">
+        <i class="bx bx-error-circle fs-5"></i>
+        <span class="fw-semibold">@errToast</span>
+    </div>
+}
+
+<div class="sw-hero">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 rounded-pill px-3 py-1 mb-2" style="background: rgba(255,255,255,0.14); font-size: 12.5px;">
+                <i class="bx bx-shield-quarter text-warning"></i>
+                <span>Cơ chế Đảm bảo Thanh toán Escrow &amp; Quyết toán Tự động sau Khấu trừ Phí sàn</span>
+            </div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-wallet text-warning me-1"></i>Ví Doanh thu &amp; Đối soát Quyết toán — @Model.ShopName
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Theo dõi số dư khả dụng, dòng tiền đang tạm giữ chờ giao hàng hoàn tất, đồng bộ quyết toán đơn hàng và rút tiền trực tiếp về tài khoản ngân hàng.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            @if (Model.UnsettledCompletedCount > 0)
+            {
+                <form asp-action="SyncSettledOrders" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="shopId" value="@Model.ShopId" />
+                    <button type="submit" class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-sm" style="background: #FFEB69; color: #161C24;">
+                        <i class="bx bx-refresh me-1"></i>Quyết toán ngay @Model.UnsettledCompletedCount đơn hoàn tất (+@Model.UnsettledCompletedAmount.ToString("N0")₫)
+                    </button>
+                </form>
+            }
+            <a href="/Admin/SystemStatistics/Seller" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);">
+                <i class="bx bx-line-chart me-1"></i>Phân tích Chiến lược AI
+            </a>
+        </div>
+    </div>
+
+    <div class="sw-kpi-grid">
+        <div class="sw-kpi-card">
+            <span class="sw-kpi-ic"><i class="bx bx-wallet-alt"></i></span>
+            <div>
+                <div class="fs-5 fw-bold lh-1" style="color: #FFEB69;">@Model.CurrentBalance.ToString("N0")₫</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.80);">Số dư Ví khả dụng (Có thể rút)</div>
+            </div>
+        </div>
+        <div class="sw-kpi-card">
+            <span class="sw-kpi-ic" style="background: rgba(56,189,248,0.22); color: #7DD3FC;"><i class="bx bx-time-five"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.PendingEscrowAmount.ToString("N0")₫</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.80);">Doanh thu chờ đối soát (@Model.PendingEscrowCount đơn đang giao)</div>
+            </div>
+        </div>
+        <div class="sw-kpi-card">
+            <span class="sw-kpi-ic" style="background: rgba(52,211,153,0.22); color: #6EE7B7;"><i class="bx bx-check-double"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.TotalSettledNetRevenue.ToString("N0")₫</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.80);">Tổng thực nhận lũy kế sau phí &amp; thuế</div>
+            </div>
+        </div>
+        <div class="sw-kpi-card">
+            <span class="sw-kpi-ic" style="background: rgba(167,139,250,0.24); color: #DDD6FE;"><i class="bx bx-transfer"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.TotalWithdrawnAmount.ToString("N0")₫</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.80);">Tổng doanh thu đã rút về Ngân hàng</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- CỘT TRÁI: FORM RÚT TIỀN VỀ NGÂN HÀNG -->
+    <div class="col-xl-4">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bx bxs-bank text-primary me-1"></i>Lệnh Rút Doanh thu về Ngân hàng</h5>
+                <div class="small text-muted">Chuyển tiền từ Ví Gian hàng về tài khoản ngân hàng liên kết</div>
+            </div>
+            <div class="card-body p-4">
+                @if (Model.UnsettledCompletedCount > 0)
+                {
+                    <div class="alert alert-warning border-0 rounded-3 small mb-3">
+                        <div class="fw-bold text-dark mb-1"><i class="bx bx-bell me-1"></i>Bạn có @Model.UnsettledCompletedCount đơn hoàn tất chưa cộng vào Ví!</div>
+                        <div class="mb-2">Tổng số tiền thực nhận: <strong>+@Model.UnsettledCompletedAmount.ToString("N0")₫</strong>.</div>
+                        <form asp-action="SyncSettledOrders" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="shopId" value="@Model.ShopId" />
+                            <button type="submit" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3">
+                                Cộng ngay vào số dư Ví
+                            </button>
+                        </form>
+                    </div>
+                }
+
+                <form asp-action="Withdraw" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="shopId" value="@Model.ShopId" />
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Ngân hàng thụ hưởng</label>
+                        <select name="bankName" class="form-select form-select-sm" required>
+                            <option value="Vietcombank (VCB)">Vietcombank (VCB)</option>
+                            <option value="Techcombank (TCB)">Techcombank (TCB)</option>
+                            <option value="MB Bank (Quân Đội)">MB Bank (Quân Đội)</option>
+                            <option value="VietinBank (CTG)">VietinBank (CTG)</option>
+                            <option value="BIDV">BIDV</option>
+                            <option value="ACB (Á Châu)">ACB (Á Châu)</option>
+                            <option value="VPBank">VPBank</option>
+                            <option value="TPBank">TPBank</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Số tài khoản ngân hàng</label>
+                        <input type="text" name="accountNumber" class="form-control form-control-sm font-monospace fw-bold" placeholder="Nhập số tài khoản..." required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Tên chủ tài khoản (Không dấu)</label>
+                        <input type="text" name="accountHolder" class="form-control form-control-sm text-uppercase fw-semibold" placeholder="VD: NGUYEN VAN A" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Số tiền muốn rút (VNĐ)</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" name="amount" id="withdrawAmountInput" class="form-control fw-bold" min="50000" step="10000" value="@(Model.CurrentBalance >= 50000 ? Math.Floor(Model.CurrentBalance) : 100000)" required />
+                            <button type="button" class="btn btn-outline-primary fw-semibold" onclick="document.getElementById('withdrawAmountInput').value='@Math.Floor(Model.CurrentBalance)'">Tối đa</button>
+                        </div>
+                        <div class="form-text">Tối thiểu 50.000₫ • Khả dụng: <strong>@Model.CurrentBalance.ToString("N0")₫</strong></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm">
+                        <i class="bx bx-paper-plane me-1"></i>Gửi Yêu cầu Rút Doanh thu
+                    </button>
+                </form>
+
+                @if (Model.PayoutRequests != null && Model.PayoutRequests.Any())
+                {
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="fw-bold text-dark small mb-2"><i class="bx bx-transfer-alt text-primary me-1"></i>Trạng thái Yêu cầu Giải ngân gần đây</div>
+                        <div class="d-flex flex-column gap-2" style="max-height: 230px; overflow-y: auto;">
+                            @foreach (var pr in Model.PayoutRequests.Take(6))
+                            {
+                                var stBadge = pr.Status == "Approved"
+                                    ? ("bg-success-subtle text-success", "Đã chuyển khoản")
+                                    : (pr.Status == "Rejected" ? ("bg-danger-subtle text-danger", "Từ chối (Đã hoàn Ví)") : ("bg-warning-subtle text-warning-emphasis", "Chờ Admin duyệt"));
+                                <div class="p-2.5 rounded-3 border bg-light bg-opacity-50 small">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold font-monospace text-dark">#@pr.RequestCode</span>
+                                        <span class="badge rounded-pill @stBadge.Item1">@stBadge.Item2</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <span class="text-muted" style="font-size:11.5px;">@pr.BankName • @pr.AccountNumber</span>
+                                        <strong class="text-dark">@pr.Amount.ToString("N0")₫</strong>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(pr.TransactionRef))
+                                    {
+                                        <div class="text-success mt-1" style="font-size:11px;">Mã GD NH: <strong>@pr.TransactionRef</strong></div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(pr.AdminNote))
+                                    {
+                                        <div class="text-muted mt-0.5" style="font-size:11px;">Ghi chú Sàn: @pr.AdminNote</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI: LỊCH SỬ BIẾN ĐỘNG SỐ DƯ VÍ GIAN HÀNG -->
+    <div class="col-xl-8">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-history text-primary me-1"></i>Lịch sử Biến động Số dư Ví Gian hàng</h5>
+                    <div class="small text-muted">Ghi nhận mọi giao dịch cộng tiền quyết toán đơn hàng, hoàn tiền và lệnh rút tiền</div>
+                </div>
+                <span class="badge bg-light text-dark border rounded-pill px-3 py-1">@Model.Transactions.Count giao dịch gần nhất</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Thời gian</th>
+                                <th>Loại giao dịch</th>
+                                <th>Mã tham chiếu &amp; Nội dung</th>
+                                <th class="text-end">Số tiền</th>
+                                <th class="text-end pe-4">Số dư sau GD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Transactions.Any())
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        Chưa có phát sinh giao dịch trong Ví. Hãy bấm <strong>Quyết toán đơn hoàn tất</strong> để đồng bộ doanh thu vào Ví.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                foreach (var tx in Model.Transactions)
+                                {
+                                    bool isPos = tx.Amount >= 0;
+                                    <tr>
+                                        <td class="ps-4 small text-muted">@tx.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            @if (tx.TransactionType == "SETTLEMENT")
+                                            {
+                                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-2.5 py-1">Quyết toán đơn</span>
+                                            }
+                                            else if (tx.TransactionType == "WITHDRAW")
+                                            {
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1">Rút về NH</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-2.5 py-1">@tx.TransactionType</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold text-dark small">@tx.Description</div>
+                                            @if (!string.IsNullOrWhiteSpace(tx.ReferenceId))
+                                            {
+                                                <div class="text-muted" style="font-size: 11px;">Ref: #@tx.ReferenceId</div>
+                                            }
+                                        </td>
+                                        <td class="text-end fw-bold @(isPos ? "text-success" : "text-danger")">
+                                            @(isPos ? "+" : "")@tx.Amount.ToString("N0")₫
+                                        </td>
+                                        <td class="text-end pe-4 fw-semibold text-dark">@tx.BalanceAfter.ToString("N0")₫</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BẢNG ĐỐI SOÁT QUYẾT TOÁN TỪNG ĐƠN HÀNG -->
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-header bg-white border-bottom py-3 px-4">
+        <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-spreadsheet text-primary me-1"></i>Bảng Đối soát Trạng thái Giải ngân từng Đơn hàng</h5>
+        <div class="small text-muted">Đối chiếu số tiền thực nhận về Ví sau khi trừ phí chiết khấu sàn và thuế khấu trừ tại nguồn</div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Mã đơn hàng</th>
+                        <th>Ngày tạo</th>
+                        <th class="text-center">Trạng thái đơn</th>
+                        <th class="text-end">Doanh số hàng hóa</th>
+                        <th class="text-end">Voucher Shop tài trợ</th>
+                        <th class="text-end">Phí sàn</th>
+                        <th class="text-end">Thuế khấu trừ</th>
+                        <th class="text-end">Thực nhận về Ví</th>
+                        <th class="text-center pe-4">Trạng thái đối soát</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.OrderSettlements.Any())
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted">Chưa có đơn hàng nào để đối soát.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var o in Model.OrderSettlements)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-bold text-primary">
+                                    <a asp-area="Admin" asp-controller="Orders" asp-action="Details" asp-route-id="@o.OrderId">#@o.OrderCode</a>
+                                </td>
+                                <td class="small text-muted">@o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border rounded-pill">@o.OrderStatus</span>
+                                </td>
+                                <td class="text-end fw-semibold">@o.GrossSales.ToString("N0")₫</td>
+                                <td class="text-end @(o.ShopVoucherDiscount > 0 ? "text-warning-emphasis fw-semibold" : "text-muted") small">
+                                    @(o.ShopVoucherDiscount > 0 ? $"-{o.ShopVoucherDiscount:N0}₫" : "0₫")
+                                </td>
+                                <td class="text-end text-danger small">&minus;@o.PlatformCommission.ToString("N0")₫</td>
+                                <td class="text-end text-danger small">&minus;@o.SellerTax.ToString("N0")₫</td>
+                                <td class="text-end fw-bold text-success">@o.NetPayout.ToString("N0")₫</td>
+                                <td class="text-center pe-4">
+                                    @if (o.IsCancelled)
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger-emphasis rounded-pill">Đơn hủy / Hoàn</span>
+                                    }
+                                    else if (o.IsCreditedToWallet)
+                                    {
+                                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill">
+                                            <i class="bx bx-check-double me-1"></i>Đã cộng vào Ví
+                                        </span>
+                                    }
+                                    else if (o.IsCompleted)
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">
+                                            Sẵn sàng quyết toán
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill">
+                                            Tạm giữ Escrow (Đang giao)
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

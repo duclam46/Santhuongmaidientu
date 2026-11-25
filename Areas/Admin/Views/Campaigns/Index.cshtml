@@ -1,0 +1,167 @@
+@{
+    ViewData["Title"] = "Quản lý Banner Trang chủ & Chiến dịch Sàn";
+    var banners = ViewBag.Banners as List<DOAN_BANHANG.Models.HomeBanner> ?? new();
+    var campaigns = ViewBag.Campaigns as List<DOAN_BANHANG.Models.PlatformCampaign> ?? new();
+}
+
+<div class="p-4 rounded-4 text-white mb-4 shadow-sm" style="background: linear-gradient(135deg, #063532 0%, #0b5c56 58%, #0f766e 100%);">
+    <span class="badge rounded-pill mb-1" style="background: rgba(253,224,71,0.2); color: #fde047; font-weight: 700;">
+        <i class="bx bx-bullhorn me-1"></i>TRUYỀN THÔNG &amp; MARKETING TOÀN SÀN
+    </span>
+    <h4 class="fw-bold text-white mb-1">Quản lý Banner Trang chủ &amp; Chiến dịch Mega Sale</h4>
+    <div class="small" style="color: rgba(255,255,255,0.84);">Cấu hình linh hoạt các slide Banner Hero và thanh Sự kiện Chiến dịch hiển thị trực tiếp ngoài Trang chủ người mua.</div>
+</div>
+
+@if (TempData["AdminToast"] is string ok && !string.IsNullOrWhiteSpace(ok))
+{
+    <div class="alert alert-success rounded-3 shadow-sm"><i class="bx bx-check-circle me-1"></i><strong>@ok</strong></div>
+}
+@if (TempData["AdminToastError"] is string err && !string.IsNullOrWhiteSpace(err))
+{
+    <div class="alert alert-danger rounded-3 shadow-sm"><i class="bx bx-error-circle me-1"></i><strong>@err</strong></div>
+}
+
+<div class="row g-4">
+    <!-- CỘT 1: CHIẾN DỊCH SÀN (MEGA CAMPAIGNS) -->
+    <div class="col-xl-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bx bxs-flame text-danger me-1"></i>Chiến dịch Mega Sale Toàn Sàn</h5>
+                <div class="small text-muted">Hiển thị dải băng Sự kiện nổi bật ngay đầu Trang chủ</div>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" asp-area="Admin" asp-controller="Campaigns" asp-action="CreateCampaign" class="p-3 rounded-3 border bg-light bg-opacity-50 mb-4">
+                    @Html.AntiForgeryToken()
+                    <div class="fw-bold text-dark small mb-2">+ Phát động Chiến dịch Mới</div>
+                    <div class="row g-2">
+                        <div class="col-md-7">
+                            <input type="text" name="name" class="form-control form-control-sm" placeholder="VD: Siêu Hội Thương Hiệu 12.12" required />
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" name="discountUpToText" class="form-control form-control-sm" placeholder="VD: Giảm 50% + Freeship 0Đ" />
+                        </div>
+                        <div class="col-12">
+                            <input type="text" name="description" class="form-control form-control-sm" placeholder="Mô tả ngắn hiển thị kèm nút Săn Voucher & Flash Sale..." />
+                        </div>
+                        <div class="col-md-5">
+                            <input type="date" name="startDate" class="form-control form-control-sm" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-5">
+                            <input type="date" name="endDate" class="form-control form-control-sm" value="@DateTime.Now.AddDays(10).ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn btn-sm btn-primary fw-bold">Tạo</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="d-flex flex-column gap-2">
+                    @if (campaigns.Count == 0)
+                    {
+                        <div class="text-center py-4 text-muted small">Chưa có chiến dịch nào. Tạo chiến dịch ở khung trên để hiển thị ra Trang chủ!</div>
+                    }
+                    else
+                    {
+                        foreach (var c in campaigns)
+                        {
+                            <div class="p-3 rounded-3 border d-flex align-items-center justify-content-between gap-2">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-dark">@c.Name</span>
+                                        <span class="badge rounded-pill @(c.IsActive ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary")">
+                                            @(c.IsActive ? "Đang bật" : "Đang tắt")
+                                        </span>
+                                    </div>
+                                    <div class="small text-primary fw-semibold mt-0.5">@c.DiscountUpToText</div>
+                                    <div class="text-muted" style="font-size:11.5px;">@c.StartDate.ToLocalTime().ToString("dd/MM/yyyy") → @c.EndDate.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <form method="post" asp-area="Admin" asp-controller="Campaigns" asp-action="ToggleCampaign">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@c.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">@(c.IsActive ? "Tắt" : "Bật")</button>
+                                    </form>
+                                    <form method="post" asp-area="Admin" asp-controller="Campaigns" asp-action="DeleteCampaign">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@c.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bx bx-trash"></i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CỘT 2: BANNER HERO TRANG CHỦ -->
+    <div class="col-xl-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-images text-primary me-1"></i>Slide Banner Hero Trang chủ</h5>
+                <div class="small text-muted">Thêm slide quảng cáo tùy chỉnh lên đầu slider Trang chủ</div>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" asp-area="Admin" asp-controller="Campaigns" asp-action="CreateBanner" class="p-3 rounded-3 border bg-light bg-opacity-50 mb-4">
+                    @Html.AntiForgeryToken()
+                    <div class="fw-bold text-dark small mb-2">+ Thêm Slide Banner Mới</div>
+                    <div class="row g-2">
+                        <div class="col-md-7">
+                            <input type="text" name="title" class="form-control form-control-sm" placeholder="Tiêu đề lớn trên Banner *" required />
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" name="badgeText" class="form-control form-control-sm" placeholder="Nhãn nhỏ (VD: Giảm 40% hôm nay)" />
+                        </div>
+                        <div class="col-12">
+                            <input type="text" name="subtitle" class="form-control form-control-sm" placeholder="Mô tả phụ bên dưới tiêu đề..." />
+                        </div>
+                        <div class="col-md-6">
+                            <input type="file" name="imageFile" accept="image/*" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" name="linkUrl" class="form-control form-control-sm" placeholder="Link đích (VD: /vouchers)" value="/vouchers" />
+                        </div>
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn btn-sm btn-primary fw-bold">Thêm</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="d-flex flex-column gap-2">
+                    @if (banners.Count == 0)
+                    {
+                        <div class="text-center py-4 text-muted small">Đang sử dụng bộ 4 Banner mặc định của giao diện Sellzy. Khi bạn thêm Banner tại đây, chúng sẽ được ưu tiên hiển thị đầu tiên trên Trang chủ.</div>
+                    }
+                    else
+                    {
+                        foreach (var b in banners)
+                        {
+                            <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between gap-2">
+                                <div class="d-flex align-items-center gap-2.5 min-w-0">
+                                    <img src="@b.ImageUrl" alt="@b.Title" style="width:64px; height:42px; object-fit:cover; border-radius:8px;" class="border flex-shrink-0" />
+                                    <div class="text-truncate">
+                                        <div class="fw-bold text-dark small text-truncate">@b.Title</div>
+                                        <div class="text-muted" style="font-size:11px;">@b.BadgeText • Link: @b.LinkUrl</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-1 flex-shrink-0">
+                                    <form method="post" asp-area="Admin" asp-controller="Campaigns" asp-action="ToggleBanner">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@b.Id" />
+                                        <button type="submit" class="btn btn-sm @(b.IsActive ? "btn-success" : "btn-outline-secondary")">@(b.IsActive ? "Đang bật" : "Đã tắt")</button>
+                                    </form>
+                                    <form method="post" asp-area="Admin" asp-controller="Campaigns" asp-action="DeleteBanner">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@b.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bx bx-trash"></i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

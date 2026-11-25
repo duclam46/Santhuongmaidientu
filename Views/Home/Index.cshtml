@@ -1,32 +1,638 @@
 @model DOAN_BANHANG.ViewModels.HomeIndexVm
+@section Styles {
+  <style>
+    /* ========== HOME PAGE REDESIGN STYLES ========== */
+    .sellzy-section-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #088178;
+      background-color: #E6F4F3;
+      padding: 5px 14px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+    .sellzy-section-title {
+      font-size: clamp(24px, 2.5vw, 32px);
+      line-height: 1.25;
+      font-weight: 800;
+      color: #161C24;
+      letter-spacing: -0.02em;
+    }
+
+    /* Hero Slider */
+    .sellzy-hero-wrap {
+      position: relative;
+    }
+    .home-four-hero-slider .slick-list {
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px -14px rgba(22, 28, 36, 0.12);
+    }
+    .home-four-hero-slider .slick-dots {
+      margin-top: 14px;
+    }
+    .home-four-hero-slider-nav {
+      pointer-events: none;
+      z-index: 10;
+    }
+    .home-four-hero-slider-nav button {
+      pointer-events: auto;
+      width: 44px !important;
+      height: 44px !important;
+      border-radius: 50% !important;
+      background-color: rgba(255, 255, 255, 0.92) !important;
+      color: #161C24 !important;
+      border: 1px solid rgba(22, 28, 36, 0.08) !important;
+      box-shadow: 0 6px 16px rgba(22, 28, 36, 0.12) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: all 0.25s ease !important;
+    }
+    .home-four-hero-slider-nav button:hover {
+      background-color: #088178 !important;
+      color: #ffffff !important;
+      border-color: #088178 !important;
+      transform: scale(1.06);
+    }
+    .single-hero-slider-item {
+      position: relative;
+      overflow: hidden;
+      min-height: 460px;
+      padding: 40px 28px !important;
+      background-position: center center !important;
+      background-size: cover !important;
+    }
+    @@media (min-width: 768px) {
+      .single-hero-slider-item {
+        min-height: 540px;
+        padding: 48px 40px 48px 88px !important;
+      }
+    }
+    @@media (min-width: 1280px) {
+      .single-hero-slider-item {
+        min-height: 580px;
+        padding: 56px 48px 56px 128px !important;
+      }
+    }
+    .single-hero-slider-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+    }
+    .sellzy-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background-color: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(8, 129, 120, 0.2);
+      color: #056D6E;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 15px;
+      border-radius: 999px;
+      box-shadow: 0 4px 12px rgba(8, 129, 120, 0.08);
+      margin-bottom: 16px;
+    }
+    .sellzy-hero-badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #088178;
+      display: inline-block;
+    }
+    .single-hero-slider-content h2 {
+      font-size: clamp(28px, 3.2vw, 44px);
+      line-height: 1.18;
+      font-weight: 800;
+      color: #161C24;
+      margin-bottom: 14px;
+      padding: 0;
+    }
+    .single-hero-slider-content p {
+      font-size: 15.5px;
+      line-height: 1.65;
+      color: #212B36;
+      margin-bottom: 24px;
+    }
+
+    /* Category Cards */
+    .sellzy-cat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @@media (min-width: 768px) {
+      .sellzy-cat-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+    }
+    @@media (min-width: 1200px) {
+      .sellzy-cat-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 16px;
+      }
+    }
+    .sellzy-cat-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px 12px;
+      border-radius: 16px;
+      background-color: #ffffff;
+      border: 1px solid rgba(22, 28, 36, 0.08);
+      box-shadow: 0 2px 10px rgba(22, 28, 36, 0.03);
+      height: 100%;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+    }
+    .sellzy-cat-card:hover {
+      transform: translateY(-4px);
+      background-color: #ffffff;
+      border-color: rgba(8, 129, 120, 0.4);
+      box-shadow: 0 12px 24px -8px rgba(8, 129, 120, 0.16);
+    }
+    .sellzy-cat-icon-box {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      transition: transform 0.25s ease;
+    }
+    .sellzy-cat-card:hover .sellzy-cat-icon-box {
+      transform: scale(1.08);
+    }
+    .sellzy-cat-icon-box svg,
+    .sellzy-cat-icon-box img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+    .sellzy-cat-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: #161C24;
+      margin-bottom: 6px;
+      transition: color 0.2s ease;
+    }
+    .sellzy-cat-card:hover .sellzy-cat-name {
+      color: #088178;
+    }
+    .sellzy-cat-count {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #056D6E;
+      background-color: #E6F4F3;
+      padding: 2px 9px;
+      border-radius: 999px;
+      margin: 0;
+    }
+
+    /* Unified Product Card Polish */
+    .sellzy-product-title {
+      font-size: 16px !important;
+      line-height: 1.45 !important;
+      font-weight: 700 !important;
+      color: #161C24;
+      height: 46px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .sellzy-product-title a:hover {
+      color: #088178;
+    }
+    .sellzy-price-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .sellzy-price-current {
+      font-size: 17px;
+      font-weight: 800;
+      color: #088178;
+    }
+    .sellzy-price-old {
+      font-size: 13.5px;
+      color: #919EAB;
+      text-decoration: line-through;
+    }
+    .sellzy-price-off {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #B71D18;
+      background-color: #FFE4DE;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .product-card-1 {
+      padding: 18px !important;
+      overflow: hidden;
+    }
+    .product-card-1 .variation-buttons {
+      min-height: 36px;
+      align-items: center;
+    }
+    .product-card-1 .btn-section {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      width: 100% !important;
+      margin-top: auto;
+    }
+    .product-card-1 .btn-section button[data-wishlist-toggle] {
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      flex: 0 0 40px !important;
+    }
+    .product-card-1 .btn-section .btn {
+      flex: 1 1 0% !important;
+      min-width: 0 !important;
+      padding: 8px 10px !important;
+      font-size: 13px !important;
+      line-height: 20px !important;
+      gap: 6px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+    }
+    .product-card-1 .btn-section .btn i {
+      font-size: 17px !important;
+      flex-shrink: 0;
+    }
+    .home-four-picks-slider .slick-track {
+      display: flex !important;
+      align-items: stretch !important;
+    }
+    .home-four-picks-slider .slick-slide {
+      height: auto !important;
+      display: flex !important;
+    }
+    .home-four-picks-slider .slick-slide > div {
+      width: 100%;
+      display: flex;
+    }
+
+    /* Deal & Category Filter Tabs */
+    .home-four-product-filter,
+    .home-four-category-filter {
+      scrollbar-width: none;
+    }
+    .home-four-product-filter::-webkit-scrollbar,
+    .home-four-category-filter::-webkit-scrollbar {
+      display: none;
+    }
+    .home-four-product-filter button {
+      white-space: nowrap;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: 999px;
+      color: #454F5B;
+      background-color: #F4F6F8 !important;
+      border: 1px solid rgba(145, 158, 171, 0.24) !important;
+      transition: all 0.22s ease;
+    }
+    .home-four-product-filter button:hover {
+      color: #088178;
+      background-color: #E6F4F3 !important;
+      border-color: rgba(8, 129, 120, 0.35) !important;
+    }
+    .home-four-product-filter button.border-b-2,
+    .home-four-product-filter button.font-semibold {
+      background: linear-gradient(135deg, #088178 0%, #056d6e 100%) !important;
+      color: #ffffff !important;
+      border-color: transparent !important;
+      box-shadow: 0 6px 16px -4px rgba(8, 129, 120, 0.45);
+    }
+    .home-four-category-filter button {
+      white-space: nowrap;
+      font-size: 18px;
+      line-height: 1.4;
+      font-weight: 700;
+      padding: 10px 22px;
+      border-radius: 999px;
+      color: #454F5B;
+      background-color: #F4F6F8 !important;
+      border: 1px solid rgba(145, 158, 171, 0.24);
+      transition: all 0.22s ease;
+    }
+    .home-four-category-filter button:hover {
+      color: #088178;
+      background-color: #E6F4F3 !important;
+    }
+    .home-four-category-filter button.text-primary {
+      background: linear-gradient(135deg, #088178 0%, #056d6e 100%) !important;
+      color: #ffffff !important;
+      border-color: transparent;
+      box-shadow: 0 6px 16px -4px rgba(8, 129, 120, 0.45);
+    }
+    @@media (max-width: 767px) {
+      .home-four-category-filter button {
+        font-size: 16px;
+        padding: 8px 14px;
+      }
+    }
+
+    /* Promo Bento Cards */
+    .sellzy-promo-card {
+      border-radius: 24px;
+      overflow: hidden;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 12px 30px -10px rgba(22, 28, 36, 0.12);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .sellzy-promo-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -12px rgba(22, 28, 36, 0.16);
+    }
+    .sellzy-promo-card-top {
+      justify-content: flex-start;
+    }
+    .sellzy-promo-box {
+      padding: 26px 24px;
+    }
+
+    /* Promo Section 2: Clean Multi-Industry Bento Grid */
+    .sellzy-promo2-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    @@media (min-width: 768px) {
+      .sellzy-promo2-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .sellzy-promo2-wide {
+        grid-column: span 2 / span 2;
+      }
+    }
+    @@media (min-width: 1200px) {
+      .sellzy-promo2-grid {
+        grid-template-columns: 2fr 1fr 1fr;
+      }
+      .sellzy-promo2-wide {
+        grid-column: span 1 / span 1;
+      }
+    }
+    .sellzy-bento2-card {
+      border-radius: 24px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 290px;
+      box-shadow: 0 10px 28px -10px rgba(22, 28, 36, 0.10);
+      transition: transform 0.28s ease, box-shadow 0.28s ease;
+    }
+    .sellzy-bento2-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 36px -12px rgba(22, 28, 36, 0.16);
+    }
+    .sellzy-bento2-wide-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      height: 100%;
+    }
+    @@media (min-width: 768px) {
+      .sellzy-bento2-wide-inner {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+    .sellzy-bento2-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+    .sellzy-bento2-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #161C24;
+      margin: 0 0 8px 0;
+      line-height: 1.3;
+    }
+    .sellzy-bento2-desc {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #454F5B;
+      margin: 0 0 18px 0;
+    }
+    .sellzy-bento2-mini {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 14px rgba(22, 28, 36, 0.05);
+    }
+    .sellzy-bento2-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .sellzy-promo-box h3,
+    .sellzy-promo-box h4 {
+      font-size: 22px;
+      line-height: 1.3;
+      font-weight: 800;
+      color: #161C24;
+      margin: 10px 0 8px;
+    }
+    .sellzy-promo-box p {
+      font-size: 14px;
+      line-height: 1.55;
+      color: #212B36;
+      margin-bottom: 16px;
+    }
+    .sellzy-promo-pill {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #161C24;
+    }
+
+    /* Marquee & Brand Logos */
+    .sellzy-marquee-wrap {
+      border-radius: 20px;
+      background: linear-gradient(90deg, #E6F4F3 0%, #F0FAF9 50%, #E6F4F3 100%);
+      border: 1px solid rgba(8, 129, 120, 0.12);
+    }
+    .sellzy-brand-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    @@media (min-width: 768px) {
+      .sellzy-brand-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+    }
+    @@media (min-width: 1200px) {
+      .sellzy-brand-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 16px;
+      }
+    }
+    .sellzy-brand-tile {
+      padding: 16px 14px;
+      border-radius: 16px;
+      background-color: #F8FAFC;
+      border: 1px solid rgba(22, 28, 36, 0.06);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 4px;
+      text-decoration: none;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+    }
+    .sellzy-brand-tile:hover {
+      transform: translateY(-3px);
+      background-color: #ffffff;
+      border-color: rgba(8, 129, 120, 0.35);
+      box-shadow: 0 10px 24px -6px rgba(8, 129, 120, 0.14);
+    }
+    .sellzy-brand-name {
+      font-family: "Plus Jakarta Sans", "Be Vietnam Pro", sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #161C24;
+      transition: color 0.2s ease;
+    }
+    .sellzy-brand-tile:hover .sellzy-brand-name {
+      color: #088178;
+    }
+    .sellzy-brand-sub {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #637381;
+    }
+  </style>
+}
     <!-- ========== Hero Section Start ========== -->
     <section class="pt-6">
       <div class="container">
-        <div class="relative">
+        @if (Model.ActiveCampaigns != null && Model.ActiveCampaigns.Count > 0)
+        {
+          var topCamp = Model.ActiveCampaigns[0];
+          <div style="background: linear-gradient(135deg, #022c22 0%, #065f5b 55%, #008374 100%); border-radius: 20px; padding: 14px 22px; margin-bottom: 18px; color: #ffffff; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 12px 28px -12px rgba(2, 44, 34, 0.45);">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <span style="background: #fde047; color: #022c22; font-size: 11px; font-weight: 900; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.05em;">
+                🔥 CHIẾN DỊCH SÀN
+              </span>
+              <strong style="font-size: 15.5px; color: #ffffff;">@topCamp.Name</strong>
+              @if (!string.IsNullOrWhiteSpace(topCamp.DiscountUpToText))
+              {
+                <span style="background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.24); color: #fde047; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px;">
+                  @topCamp.DiscountUpToText
+                </span>
+              }
+              <span style="font-size: 13px; color: rgba(255,255,255,0.85);">@topCamp.Description</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <a href="/vouchers" style="background: #fde047; color: #022c22; font-size: 12.5px; font-weight: 800; padding: 7px 16px; border-radius: 999px; text-decoration: none; white-space: nowrap;">
+                🎟️ Trạm Săn Voucher →
+              </a>
+              <a href="/Home/FlashSale" style="background: rgba(255,255,255,0.15); color: #ffffff; font-size: 12.5px; font-weight: 700; padding: 7px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap;">
+                ⚡ Flash Sale
+              </a>
+            </div>
+          </div>
+        }
+        <div class="relative sellzy-hero-wrap">
           <div
             class="home-four-hero-slider rounded-3xl relative md:bg-transparent bg-[#FFEB69] sellzy-slider"
             data-slick='{"slidesToShow": 1, "slidesToScroll": 1, "loop": true, "arrows": true, "infinite": true, "dots": true, "appendArrows": ".home-four-hero-slider-nav", "autoplay": true, "autoplaySpeed": 7000, "fade": true, "responsive": [{"breakpoint": 1025, "settings": {"arrows": false}}]}'
           >
+            @if (Model.DynamicBanners != null && Model.DynamicBanners.Count > 0)
+            {
+              foreach (var dbBanner in Model.DynamicBanners)
+              {
+                var bgUrl = global::DOAN_BANHANG.Helpers.ImageUrlHelper.NormalizeStaticFileUrl(dbBanner.ImageUrl) ?? "/assets/images/home-4/hero-1.png";
+                <div class="bg-center bg-no-repeat bg-cover rounded-3xl single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
+                     style="background-image: url('@bgUrl');">
+                  <div class="single-hero-slider-content">
+                    @if (!string.IsNullOrWhiteSpace(dbBanner.BadgeText))
+                    {
+                      <div class="sellzy-hero-badge">
+                        <span class="sellzy-hero-badge-dot"></span>
+                        <span>@dbBanner.BadgeText</span>
+                      </div>
+                    }
+                    <h2>@dbBanner.Title</h2>
+                    @if (!string.IsNullOrWhiteSpace(dbBanner.Subtitle))
+                    {
+                      <p>@dbBanner.Subtitle</p>
+                    }
+                    <a class="btn btn-primary text-white btn-large rounded-[60px] group py-2.5 pl-6 pr-3 shadow-md" href="@(string.IsNullOrWhiteSpace(dbBanner.LinkUrl) ? "/vouchers" : dbBanner.LinkUrl)">
+                      @(string.IsNullOrWhiteSpace(dbBanner.ButtonText) ? "Khám Phá Ngay" : dbBanner.ButtonText)
+                      <span class="size-8 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300">
+                        <i class="hgi hgi-stroke hgi-arrow-right-02 text-xl text-primary-darker"></i>
+                      </span>
+                    </a>
+                  </div>
+                </div>
+              }
+            }
             <div
-              class="lg:p-0 p-8 pb-15 md:bg-[url(../images/home-4/hero-1.png)] bg-center bg-no-repeat bg-cover rounded-3xl xl:pl-[177px] lg:pl-[100px] single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
+              class="md:bg-[url(../images/home-4/hero-1.png)] bg-center bg-no-repeat bg-cover rounded-3xl single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
               data-wow-delay=".2s"
             >
               <!-- Content Section -->
               <div class="single-hero-slider-content">
-                <div class="flex items-center gap-x-2">
-                  <h6 class="text-black">
-                    Nhận ưu đãi lên đến 30% cho đơn hàng đầu tiên từ 150$
-                  </h6>
+                <div class="sellzy-hero-badge">
+                  <span class="sellzy-hero-badge-dot"></span>
+                  <span>Ưu đãi 30% cho đơn đầu tiên từ 500.000đ</span>
                 </div>
-                <h2 class="py-3 text-black">
+                <h2>
                   Khám Phá Các <br class="hidden lg:block" />
                   Phong Cách Mới Nhất Mùa Này
                 </h2>
-                <p class="text-black mb-6">
-                  Khám phá bộ sưu tập mới nhất với xu hướng, màu sắc và kiểu dáng <br class="hidden lg:block" />
+                <p>
+                  Khám phá bộ sưu tập mới nhất với xu hướng, màu sắc và kiểu dáng
                   giúp nâng tầm vẻ ngoài mỗi ngày của bạn.
                 </p>
-                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2 pl-5 pr-3' href='shop-left-sidebar-3col.html'>
+                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2.5 pl-6 pr-3 shadow-md' href='@(Url.RouteUrl("shop_index") ?? Url.Action("Index", "Shop"))'>
                   Mua Ngay
                   <span
                     class="size-8 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
@@ -39,22 +645,21 @@
               </div>
             </div>
             <div
-              class="lg:p-0 p-8 pb-15 md:bg-[url(../images/home-4/hero-2.png)] bg-center bg-no-repeat bg-cover rounded-3xl xl:pl-[177px] lg:pl-[100px] single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
+              class="md:bg-[url(../images/home-4/hero-2.png)] bg-center bg-no-repeat bg-cover rounded-3xl single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
               data-wow-delay=".2s"
             >
               <!-- Content Section -->
               <div class="single-hero-slider-content">
-                <div class="flex items-center gap-x-2">
-                  <h6 class="text-black">
-                    Nhận ưu đãi lên đến 30% cho đơn hàng đầu tiên từ 150$
-                  </h6>
+                <div class="sellzy-hero-badge">
+                  <span class="sellzy-hero-badge-dot"></span>
+                  <span>Ưu đãi 30% cho đơn đầu tiên từ 500.000đ</span>
                 </div>
-                <h2 class="py-3 text-black">Giữ Ấm Với Chi Phí Tiết Kiệm</h2>
-                <p class="text-black mb-6">
-                  Nhận ưu đãi đặc biệt cho áo len, hoodie, áo khoác và các sản phẩm <br class="hidden lg:block" />
-                  giữ ấm mùa đông trước khi mùa đông kết thúc.
+                <h2>Giữ Ấm Với Chi Phí Tiết Kiệm</h2>
+                <p>
+                  Nhận ưu đãi đặc biệt cho áo len, hoodie, áo khoác và các sản phẩm
+                  giữ ấm mùa đông với chất liệu mềm mịn, bền đẹp.
                 </p>
-                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2 pl-5 pr-3' href='shop-left-sidebar-3col.html'>
+                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2.5 pl-6 pr-3 shadow-md' href='@(Url.RouteUrl("shop_index") ?? Url.Action("Index", "Shop"))'>
                   Mua Ngay
                   <span
                     class="size-8 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
@@ -67,25 +672,24 @@
               </div>
             </div>
             <div
-              class="lg:p-0 p-8 pb-15 md:bg-[url(../images/home-4/hero-3.png)] bg-center bg-no-repeat bg-cover rounded-3xl xl:pl-[177px] lg:pl-[100px] single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
+              class="md:bg-[url(../images/home-4/hero-3.png)] bg-center bg-no-repeat bg-cover rounded-3xl single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
               data-wow-delay=".2s"
             >
               <!-- Content Section -->
               <div class="single-hero-slider-content">
-                <div class="flex items-center gap-x-2">
-                  <h6 class="text-black">
-                    Nhận ưu đãi lên đến 30% cho đơn hàng đầu tiên từ 150$
-                  </h6>
+                <div class="sellzy-hero-badge">
+                  <span class="sellzy-hero-badge-dot"></span>
+                  <span>Ưu đãi 30% cho đơn đầu tiên từ 500.000đ</span>
                 </div>
-                <h2 class="py-3 text-black">
+                <h2>
                   Thời Trang Cho <br class="hidden lg:block" />
-                  Giới Thượng Lưu Hiện Đại
+                  Phong Cách Hiện Đại
                 </h2>
-                <p class="text-black mb-6">
-                  Trải nghiệm tay nghề thủ công sang trọng, kiểu dáng vượt thời gian và chất liệu <br class="hidden lg:block" />
-                  vải cao cấp dành cho tủ đồ tinh tế của bạn.
+                <p>
+                  Trải nghiệm thiết kế tinh tế, kiểu dáng vượt thời gian và chất liệu
+                  vải cao cấp dành riêng cho tủ đồ của bạn.
                 </p>
-                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2 pl-5 pr-3' href='shop-left-sidebar-3col.html'>
+                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2.5 pl-6 pr-3 shadow-md' href='@(Url.RouteUrl("shop_index") ?? Url.Action("Index", "Shop"))'>
                   Mua Ngay
                   <span
                     class="size-8 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
@@ -98,24 +702,23 @@
               </div>
             </div>
             <div
-              class="lg:p-0 p-8 pb-15 md:bg-[url(../images/home-4/hero-4.png)] bg-center bg-no-repeat bg-cover rounded-3xl xl:pl-[177px] lg:pl-[100px] single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
+              class="md:bg-[url(../images/home-4/hero-4.png)] bg-center bg-no-repeat bg-cover rounded-3xl single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
               data-wow-delay=".2s"
             >
               <!-- Content Section -->
               <div class="single-hero-slider-content">
-                <div class="flex items-center gap-x-2">
-                  <h6 class="text-black">
-                    Nhận ưu đãi lên đến 30% cho đơn hàng đầu tiên từ 150$
-                  </h6>
+                <div class="sellzy-hero-badge">
+                  <span class="sellzy-hero-badge-dot"></span>
+                  <span>Ưu đãi 30% cho đơn đầu tiên từ 500.000đ</span>
                 </div>
-                <h2 class="py-3 text-black">
+                <h2>
                   Khoác Lên Mình <br class="hidden lg:block" />
                   Vẻ Lịch Lãm Mùa Đông
                 </h2>
-                <p class="text-black mb-6">
-                  Thiết kế thủ công tinh xảo & vải cao cấp cho vẻ ngoài lịch lãm vượt thời gian.
+                <p>
+                  Thiết kế thủ công tinh xảo cùng chất liệu cao cấp cho vẻ ngoài lịch lãm và tự tin mỗi ngày.
                 </p>
-                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2 pl-5 pr-3' href='shop-left-sidebar-3col.html'>
+                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2.5 pl-6 pr-3 shadow-md' href='@(Url.RouteUrl("shop_index") ?? Url.Action("Index", "Shop"))'>
                   Mua Ngay
                   <span
                     class="size-8 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
@@ -128,22 +731,21 @@
               </div>
             </div>
             <div
-              class="lg:p-0 p-8 pb-15 md:bg-[url(../images/home-4/hero-5.png)] bg-center bg-no-repeat bg-cover rounded-3xl xl:pl-[177px] lg:pl-[100px] single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
+              class="md:bg-[url(../images/home-4/hero-5.png)] bg-center bg-no-repeat bg-cover rounded-3xl single-hero-slider-item flex! items-center md:h-[600px]! h-[500px]!"
               data-wow-delay=".2s"
             >
               <!-- Content Section -->
               <div class="single-hero-slider-content">
-                <div class="flex items-center gap-x-2">
-                  <h6 class="text-black">
-                    Nhận ưu đãi lên đến 30% cho đơn hàng đầu tiên từ 150$
-                  </h6>
+                <div class="sellzy-hero-badge">
+                  <span class="sellzy-hero-badge-dot"></span>
+                  <span>Ưu đãi 30% cho đơn đầu tiên từ 500.000đ</span>
                 </div>
-                <h2 class="py-3 text-black">Tiết Kiệm Lớn, Phong Cách Hơn</h2>
-                <p class="text-black mb-6">
-                  Sở hữu những món đồ thời trang yêu thích với mức giá không tưởng —
+                <h2>Tiết Kiệm Lớn, Phong Cách Hơn</h2>
+                <p>
+                  Sở hữu những món đồ thời trang yêu thích với mức giá ưu đãi —
                   số lượng có hạn cho các thiết kế bán chạy nhất.
                 </p>
-                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2 pl-5 pr-3' href='shop-left-sidebar-3col.html'>
+                <a class='btn btn-primary text-white btn-large rounded-[60px] group py-2.5 pl-6 pr-3 shadow-md' href='@(Url.RouteUrl("shop_index") ?? Url.Action("Index", "Shop"))'>
                   Mua Ngay
                   <span
                     class="size-8 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
@@ -157,216 +759,178 @@
             </div>
           </div>
           <div
-            class="home-four-hero-slider-nav absolute top-1/2 -translate-y-1/2 right-0 w-full flex items-center justify-between px-6"
+            class="home-four-hero-slider-nav absolute top-1/2 -translate-y-1/2 right-0 w-full flex items-center justify-between px-6 z-10 pointer-events-none"
           ></div>
         </div>
       </div>
     </section>
     <!-- ========== Hero Section End ========== -->
 
+    @if (Model.HotVouchers != null && Model.HotVouchers.Count > 0)
+    {
+      <section class="pt-8">
+        <div class="container">
+          <div style="background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 55%, #fffbeb 100%); border: 1px solid #cce7e3; border-radius: 24px; padding: 20px 24px; box-shadow: 0 10px 28px -14px rgba(2, 44, 34, 0.12);">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="background: linear-gradient(135deg, #022c22, #008374); color: #fde047; font-size: 11.5px; font-weight: 800; padding: 5px 12px; border-radius: 999px; letter-spacing: 0.04em;">🎟️ SĂN MÃ HÔM NAY</span>
+                <h4 style="margin:0; font-size:18px; font-weight:800; color:#0f172a;">Trạm Voucher Hot — Lưu Trước, Tự Áp Khi Thanh Toán</h4>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <a href="/my-vouchers" style="font-size:12.5px; font-weight:700; color:#475569; background:#ffffff; border:1px solid #cbd5e1; padding:7px 14px; border-radius:999px; text-decoration:none;">💼 Kho của tôi</a>
+                <a href="/vouchers" style="font-size:12.5px; font-weight:800; color:#ffffff; background:#008374; padding:7px 16px; border-radius:999px; text-decoration:none;">Xem tất cả mã →</a>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-3.5">
+              @foreach (var hv in Model.HotVouchers)
+              {
+                var hDisc = hv.DiscountType == "FreeShipping"
+                  ? $"Freeship {hv.DiscountValue:N0}₫"
+                  : (hv.DiscountType == "Percent" ? $"Giảm {hv.DiscountValue:0.##}%" : $"Giảm {hv.DiscountValue:N0}₫");
+                var stubBg = hv.DiscountType == "FreeShipping"
+                  ? "linear-gradient(135deg, #0369a1, #0ea5e9)"
+                  : (hv.IsShopVoucher ? "linear-gradient(135deg, #c2410c, #f59e0b)" : "linear-gradient(135deg, #022c22, #008374)");
+                <div class="col-span-12 sm:col-span-6 xl:col-span-3">
+                  <div style="background:#ffffff; border:1px solid #dbe3ec; border-radius:16px; display:flex; overflow:hidden; height:100%;">
+                    <div style="width:74px; flex-shrink:0; background:@stubBg; color:#ffffff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 6px; text-align:center; border-right:2px dashed rgba(255,255,255,0.5);">
+                      <span style="font-size:18px;">@(hv.DiscountType == "FreeShipping" ? "🚚" : (hv.IsShopVoucher ? "🏪" : "💎"))</span>
+                      <span style="font-size:9.5px; font-weight:800; text-transform:uppercase; margin-top:3px;">@hv.SponsorBadge</span>
+                    </div>
+                    <div style="flex:1; padding:11px 12px; display:flex; flex-direction:column; justify-content:space-between; min-width:0;">
+                      <div>
+                        <div style="font-size:14.5px; font-weight:800; color:#0f172a; line-height:1.25;">@hDisc</div>
+                        <div style="font-size:11.5px; color:#64748b; margin-top:2px;">Đơn từ @hv.MinOrderValue.ToString("N0")₫</div>
+                      </div>
+                      <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:8px;">
+                        <span style="font-size:10.5px; font-family:monospace; font-weight:700; color:#475569;">@hv.Code</span>
+                        <button type="button"
+                                onclick="saveHomeHotVoucher(@hv.Id, '@hv.Code', this)"
+                                style="border:none; border-radius:999px; padding:4px 11px; font-size:11px; font-weight:800; cursor:pointer; background:@(hv.IsSaved ? "#ecfdf5" : "#008374"); color:@(hv.IsSaved ? "#059669" : "#ffffff"); border:@(hv.IsSaved ? "1px solid #a7f3d0" : "none");">
+                          @(hv.IsSaved ? "✓ Đã lưu" : "Lưu mã")
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+      <script>
+        async function saveHomeHotVoucher(voucherId, code, btnEl) {
+          try {
+            const res = await fetch('/vouchers/save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({ voucherId, code })
+            });
+            if (res.ok && btnEl) {
+              btnEl.textContent = '✓ Đã lưu';
+              btnEl.style.background = '#ecfdf5';
+              btnEl.style.color = '#059669';
+              btnEl.style.border = '1px solid #a7f3d0';
+            }
+          } catch (e) {}
+        }
+      </script>
+    }
+
     <!-- ========== Category Section Start ========== -->
-    <div class="py-[70px]">
+    <div class="py-[48px]">
       <div class="container">
 @{
-    var top = Model.TopCategories ?? new List<DOAN_BANHANG.ViewModels.CategoryLinkVm>();
-    var catWomen = top.FirstOrDefault(c => c.Name != null && c.Name.Contains("nữ", StringComparison.OrdinalIgnoreCase) && !c.Name.Contains("trẻ", StringComparison.OrdinalIgnoreCase));
-    var catMen = top.FirstOrDefault(c => c.Name != null && c.Name.Contains("nam", StringComparison.OrdinalIgnoreCase) && !c.Name.Contains("trẻ", StringComparison.OrdinalIgnoreCase));
-    var catKids = top.FirstOrDefault(c => c.Name != null && (c.Name.Contains("trẻ", StringComparison.OrdinalIgnoreCase) || c.Name.Contains("bé", StringComparison.OrdinalIgnoreCase)));
-    var catLingerie = top.FirstOrDefault(c => c.Name != null && (c.Name.Contains("lót", StringComparison.OrdinalIgnoreCase) || c.Name.Contains("ngủ", StringComparison.OrdinalIgnoreCase)));
-    var catAccessories = top.FirstOrDefault(c => c.Name != null && c.Name.Contains("phụ kiện", StringComparison.OrdinalIgnoreCase));
-    var catJewelry = top.FirstOrDefault(c => c.Name != null && (c.Name.Contains("trang sức", StringComparison.OrdinalIgnoreCase) || c.Name.Contains("đồng", StringComparison.OrdinalIgnoreCase)));
-    
-    // Add generic shoe category based on keyword "giày"
-    var catShoe = top.FirstOrDefault(c => c.Name != null && c.Name.Contains("giày", StringComparison.OrdinalIgnoreCase));
+    var topCategoriesList = Model.TopCategories ?? new List<DOAN_BANHANG.ViewModels.CategoryLinkVm>();
+    (string Type, string CircleBg) GetHomeCatVisual(DOAN_BANHANG.ViewModels.CategoryLinkVm item)
+    {
+        var name = (item.Name ?? string.Empty).Trim().ToLowerInvariant();
+        var slug = (item.Slug ?? string.Empty).Trim().ToLowerInvariant();
+        var icon = (item.IconUrl ?? string.Empty).Trim().ToLowerInvariant();
+
+        if (slug.Contains("dien-thoai") || name.Contains("điện thoại") || icon.Contains("mobile")) return ("phone", "#DBEAFE");
+        if (slug.Contains("may-tinh") || slug.Contains("laptop") || name.Contains("laptop") || name.Contains("máy tính") || icon.Contains("laptop")) return ("laptop", "#E0E7FF");
+        if (slug.Contains("gia-dung") || name.Contains("gia dụng") || name.Contains("điện tử") || icon.Contains("fridge")) return ("appliance", "#CFFAFE");
+        if (slug.Contains("thoi-trang-nam") || name.Contains("thời trang nam")) return ("men", "#DCFCE7");
+        if (slug.Contains("thoi-trang-nu") || name.Contains("thời trang nữ")) return ("women", "#FCE7F3");
+        if (slug.Contains("giay-dep") || slug.Contains("tui-xach") || name.Contains("giày") || name.Contains("túi") || icon.Contains("walk")) return ("shoes", "#FFEDD5");
+        if (slug.Contains("my-pham") || slug.Contains("sac-dep") || name.Contains("mỹ phẩm") || name.Contains("sắc đẹp") || icon.Contains("spa")) return ("beauty", "#F3E8FF");
+        if (slug.Contains("thuc-pham") || slug.Contains("do-uong") || name.Contains("thực phẩm") || name.Contains("đồ uống") || icon.Contains("bowl")) return ("food", "#FEE2E2");
+        if (slug.Contains("nha-sach") || slug.Contains("van-phong") || name.Contains("sách") || name.Contains("văn phòng") || icon.Contains("book")) return ("book", "#FEF3C7");
+        if (slug.Contains("san-pham-so") || slug.Contains("evoucher") || name.Contains("sản phẩm số") || name.Contains("voucher") || icon.Contains("barcode")) return ("digital", "#CCFBF1");
+        return ("default", "#E6F4F3");
+    }
 }
-        <div class="flex flex-wrap justify-center text-center gap-y-10 gap-x-2 xl:gap-y-0 xl:gap-x-4">
-          @if (catWomen != null) {
-          <div class="w-1/2 md:w-1/3 xl:w-auto xl:flex-1 px-2">
-            <div
-              data-wow-delay="0.2s"
-              class="flex flex-col items-center text-center wow animate__animated animate__fadeInUp"
-            >
-              <a href="@Url.RouteUrl("category", new { slug = catWomen.Slug })" class="block hover:opacity-80 transition-opacity">
-              <svg
-                width="100"
-                height="100"
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M39.4922 43.9021H39.7754C40.5198 43.9021 41.123 43.2989 41.123 42.5544C41.123 41.81 40.5198 41.2068 39.7754 41.2068H39.4922C38.7477 41.2068 38.1445 41.81 38.1445 42.5544C38.1445 43.2989 38.7477 43.9021 39.4922 43.9021ZM44.2286 43.9021H44.5117C45.2562 43.9021 45.8594 43.2989 45.8594 42.5544C45.8594 41.81 45.2562 41.2068 44.5117 41.2068H44.2286C43.4841 41.2068 42.8809 41.81 42.8809 42.5544C42.8809 43.2989 43.4843 43.9021 44.2286 43.9021ZM39.4922 67.212H39.7754C40.5198 67.212 41.123 66.6088 41.123 65.8643C41.123 65.1199 40.5198 64.5167 39.7754 64.5167H39.4922C38.7477 64.5167 38.1445 65.1199 38.1445 65.8643C38.1445 66.6088 38.7477 67.212 39.4922 67.212ZM44.2286 67.212H44.5117C45.2562 67.212 45.8594 66.6088 45.8594 65.8643C45.8594 65.1199 45.2562 64.5167 44.5117 64.5167H44.2286C43.4841 64.5167 42.8809 65.1199 42.8809 65.8643C42.8809 66.6088 43.4843 67.212 44.2286 67.212ZM39.4922 74.3366H39.7754C40.5198 74.3366 41.123 73.7334 41.123 72.9889C41.123 72.2445 40.5198 71.6413 39.7754 71.6413H39.4922C38.7477 71.6413 38.1445 72.2445 38.1445 72.9889C38.1445 73.7334 38.7477 74.3366 39.4922 74.3366ZM44.2286 74.3366H44.5117C45.2562 74.3366 45.8594 73.7334 45.8594 72.9889C45.8594 72.2445 45.2562 71.6413 44.5117 71.6413H44.2286C43.4841 71.6413 42.8809 72.2445 42.8809 72.9889C42.8809 73.7334 43.4843 74.3366 44.2286 74.3366ZM39.4922 81.4614H39.7754C40.5198 81.4614 41.123 80.8582 41.123 80.1137C41.123 79.3693 40.5198 78.7661 39.7754 78.7661H39.4922C38.7477 78.7661 38.1445 79.3693 38.1445 80.1137C38.1445 80.8582 38.7477 81.4614 39.4922 81.4614ZM44.2286 81.4614H44.5117C45.2562 81.4614 45.8594 80.8582 45.8594 80.1137C45.8594 79.3693 45.2562 78.7661 44.5117 78.7661H44.2286C43.4841 78.7661 42.8809 79.3693 42.8809 80.1137C42.8809 80.8582 43.4843 81.4614 44.2286 81.4614Z"
-                  fill="#919EAB"
-                />
-                <path
-                  d="M95.3213 82.411L94.5567 79.3522C94.4314 78.8488 94.1411 78.4019 93.7321 78.0827C93.3232 77.7635 92.8192 77.5904 92.3004 77.5909H92.2628L81.1776 19.2339C80.5735 16.0535 78.3056 13.3973 75.259 12.302L62.2044 7.60835C61.4364 6.6472 60.6257 5.75721 59.7668 4.9391C59.1158 4.31882 58.258 3.97723 57.3518 3.97723H52.6952C51.9508 3.97723 51.3475 4.58044 51.3475 5.32488C51.3475 6.06933 51.9508 6.67254 52.6952 6.67254H57.3518C57.5627 6.67254 57.76 6.74998 57.9077 6.89068C60.5283 9.38689 62.6844 12.6304 64.4737 16.7756L58.456 18.3748C58.2553 18.4282 58.0696 18.5272 57.9134 18.6641C57.7573 18.8011 57.6349 18.9722 57.5559 19.1643C57.4768 19.3563 57.4432 19.564 57.4577 19.7712C57.4721 19.9784 57.5343 20.1794 57.6393 20.3586L60.0728 24.5115L51.3475 33.9649V21.013L58.2396 12.5528C58.4006 12.3552 58.5022 12.116 58.5328 11.863C58.5633 11.61 58.5214 11.3535 58.412 11.1233C58.3027 10.8931 58.1303 10.6986 57.9148 10.5625C57.6994 10.4263 57.4498 10.354 57.1949 10.354H42.8049C42.55 10.3539 42.3003 10.4262 42.0848 10.5623C41.8693 10.6985 41.6969 10.893 41.5875 11.1232C41.4781 11.3534 41.4363 11.6099 41.4669 11.863C41.4974 12.116 41.5991 12.3552 41.7602 12.5528L48.6522 21.013V38.0502L39.8454 24.651L42.3605 20.3584C42.4655 20.1792 42.5276 19.9782 42.5421 19.7711C42.5566 19.5639 42.523 19.3562 42.444 19.1641C42.444 19.1641 42.444 19.1641 42.444 19.1641ZM17.4562 77.5909H10.4806L21.4702 19.7369C21.8972 17.4893 23.4998 15.6123 25.6526 14.8382L35.2124 11.4012C34.1982 13.1436 33.2766 15.0657 32.4407 17.1898C32.3712 17.3667 32.3399 17.5562 32.3488 17.746C32.3577 17.9358 32.4066 18.1216 32.4923 18.2912C32.5781 18.4608 32.6987 18.6103 32.8463 18.73C32.9939 18.8496 33.1652 18.9368 33.3488 18.9856L39.1394 20.5244L37.0969 24.0102C36.9699 24.227 36.906 24.475 36.9125 24.7261C36.9189 24.9773 36.9954 25.2217 37.1334 25.4317L48.6522 42.9575V51.3365C47.5587 51.3247 46.4653 51.2988 45.3724 51.2588V51.0495C45.3724 49.4406 44.0634 48.1316 42.4545 48.1316H39.3182C37.8559 48.1316 36.6448 49.214 36.4357 50.619C35.0298 50.4685 33.6265 50.2953 32.2263 50.0993C31.9638 48.5325 31.4603 47.0053 30.7209 45.5886L27.3604 39.1506ZM32.2423 55.0368C32.36 54.314 32.4248 53.5836 32.4362 52.8514C33.7551 53.029 35.0766 53.187 36.4003 53.3252V55.5496C35.0117 55.4007 33.6255 55.2298 32.2423 55.0368ZM42.6771 58.6084C42.6771 58.6674 42.6536 58.724 42.6118 58.7658C42.5701 58.8075 42.5135 58.831 42.4545 58.831H39.3182C39.2592 58.831 39.2026 58.8075 39.1608 58.7658C39.1191 58.724 39.0956 58.6674 39.0956 58.6084V51.0499C39.0956 50.9908 39.1191 50.9342 39.1608 50.8925C39.2026 50.8508 39.2592 50.8273 39.3182 50.8272H42.4545C42.5135 50.8273 42.5701 50.8508 42.6118 50.8925C42.6536 50.9342 42.6771 50.9908 42.6771 51.0499V58.6084ZM45.3724 56.1931V53.9565C46.4631 53.9951 47.5569 54.0206 48.6522 54.032V56.2696C47.5587 56.2584 46.4653 56.2329 45.3724 56.1931ZM70.7317 89.688H51.3475V58.9653C56.9981 58.9039 62.6388 58.4789 68.2347 57.6929C68.3799 58.479 68.526 59.2616 68.6699 60.0312C70.4925 69.7868 72.3769 79.8722 70.7317 89.688ZM69.2789 45.589C68.5393 47.0062 68.0354 48.5328 67.7727 50.0984C65.5576 50.4089 63.3348 50.6623 61.1065 50.8583C60.7534 50.8932 60.4283 51.066 60.2018 51.3391C59.9752 51.6122 59.8655 51.9636 59.8964 52.3171C59.9273 52.6705 60.0964 52.9976 60.3669 53.2272C60.6374 53.4568 60.9876 53.5705 61.3414 53.5436C63.4202 53.361 65.4945 53.1296 67.5625 52.8496C67.5739 53.5828 67.639 54.3141 67.7575 55.0377C62.3192 55.7964 56.8381 56.2073 51.3475 56.2678V54.032C52.8677 54.0163 54.3864 53.9748 55.8969 53.9062C56.6406 53.8724 57.2159 53.2424 57.182 52.4989C57.148 51.7553 56.5164 51.185 55.7747 51.2137C54.3047 51.2806 52.8269 51.321 51.3474 51.3367V37.939L62.7305 25.6058C62.9264 25.3935 63.0489 25.1238 63.08 24.8365C63.111 24.5493 63.0489 24.2597 62.9029 24.0104L60.8605 20.5246L66.6513 18.9858C66.835 18.9369 67.0062 18.8498 67.1538 18.7302C67.3014 18.6105 67.422 18.461 67.5078 18.2914C67.5936 18.1218 67.6425 17.936 67.6514 17.7462C67.6603 17.5564 67.629 17.3668 67.5595 17.19C66.7237 15.0659 65.8019 13.1436 64.7878 11.4014L74.3475 14.8384C76.5001 15.6125 78.1028 17.4895 78.5297 19.7371L89.5194 77.5911H82.5436L75.2506 39.8755C75.5465 39.0604 76.05 37.2143 75.8213 34.5147C75.7582 33.7728 75.1033 33.2249 74.3647 33.2855C74.0086 33.3156 73.679 33.486 73.4485 33.7592C73.218 34.0323 73.1054 34.3859 73.1355 34.742C73.3632 37.4285 72.694 39.0261 72.6392 39.1517L69.2789 45.589ZM81.0263 80.2862H92.012L92.5917 82.6055H81.606L81.0263 80.2862ZM89.9643 88.3227H84.4842V85.3008H89.9643V88.3227Z"
-                  fill="#919EAB"
-                />
-              </svg>
+        <div class="sellzy-cat-grid">
+          @for (int i = 0; i < topCategoriesList.Count; i++)
+          {
+              var cat = topCategoriesList[i];
+              var vis = GetHomeCatVisual(cat);
+              <a href="@Url.RouteUrl("category", new { slug = cat.Slug })" data-wow-delay="0.@(Math.Min(i + 1, 9))s" class="sellzy-cat-card wow animate__animated animate__fadeInUp">
+                <span class="sellzy-cat-icon-box" style="background-color: @vis.CircleBg;">
+                  @switch (vis.Type)
+                  {
+                    case "men":
+                      <img src="assets/images/category_list_icon_1.png" alt="@cat.Name" />
+                      break;
+                    case "women":
+                      <img src="assets/images/category_list_icon_2.png" alt="@cat.Name" />
+                      break;
+                    case "shoes":
+                      <img src="assets/images/category_list_icon_7.png" alt="@cat.Name" />
+                      break;
+                    case "beauty":
+                      <img src="assets/images/category_list_icon_9.png" alt="@cat.Name" />
+                      break;
+                    case "phone":
+                      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="6" y="2.5" width="10" height="17" rx="2.2" fill="#60A5FA" stroke="#161C24" stroke-width="1.5" />
+                        <rect x="7.5" y="4.5" width="7" height="11" rx="1" fill="#EFF6FF" stroke="#161C24" stroke-width="1.2" />
+                        <circle cx="11" cy="17.5" r="0.9" fill="#161C24" />
+                      </svg>
+                      break;
+                    case "laptop":
+                      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3.5" y="4" width="15" height="10.5" rx="1.8" fill="#818CF8" stroke="#161C24" stroke-width="1.5" />
+                        <rect x="5.2" y="5.7" width="11.6" height="7" rx="0.8" fill="#EEF2FF" />
+                        <path d="M2 15.5H20L18.5 18H3.5L2 15.5Z" fill="#C7D2FE" stroke="#161C24" stroke-width="1.5" stroke-linejoin="round" />
+                      </svg>
+                      break;
+                    case "appliance":
+                      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="2.5" width="12" height="17" rx="2" fill="#22D3EE" stroke="#161C24" stroke-width="1.5" />
+                        <path d="M5 9.5H17" stroke="#161C24" stroke-width="1.5" />
+                        <line x1="7.5" y1="5.5" x2="7.5" y2="7.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" />
+                        <line x1="7.5" y1="12" x2="7.5" y2="15" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" />
+                      </svg>
+                      break;
+                    case "food":
+                      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 9.5H15V13.5C15 16.5376 12.5376 19 9.5 19C6.46243 19 4 16.5376 4 13.5V9.5Z" fill="#FB7185" stroke="#161C24" stroke-width="1.5" />
+                        <path d="M15 10.5H16.8C18.015 10.5 19 11.485 19 12.7C19 13.915 18.015 14.9 16.8 14.9H15" stroke="#161C24" stroke-width="1.5" />
+                        <path d="M7 4.5V6.8M9.5 3.5V6.8M12 4.5V6.8" stroke="#E11D48" stroke-width="1.6" stroke-linecap="round" />
+                      </svg>
+                      break;
+                    case "book":
+                      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 5C3 4.17157 3.67157 3.5 4.5 3.5H9.5C10.3284 3.5 11 4.17157 11 5V17.5C11 16.9477 10.5523 16.5 10 16.5H4.5C3.67157 16.5 3 15.8284 3 15V5Z" fill="#FBBF24" stroke="#161C24" stroke-width="1.5" />
+                        <path d="M19 5C19 4.17157 18.3284 3.5 17.5 3.5H12.5C11.6716 3.5 11 4.17157 11 5V17.5C11 16.9477 11.4477 16.5 12 16.5H17.5C18.3284 16.5 19 15.8284 19 15V5Z" fill="#FEF3C7" stroke="#161C24" stroke-width="1.5" />
+                      </svg>
+                      break;
+                    case "digital":
+                      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 7C3 5.89543 3.89543 5 5 5H17C18.1046 5 19 5.89543 19 7V9.2C17.8954 9.2 17 10.0954 17 11.2C17 12.3046 17.8954 13.2 19 13.2V15C19 16.1046 18.1046 17 17 17H5C3.89543 17 3 16.1046 3 15V13.2C4.10457 13.2 5 12.3046 5 11.2C5 10.0954 4.10457 9.2 3 9.2V7Z" fill="#2DD4BF" stroke="#161C24" stroke-width="1.5" />
+                        <line x1="9" y1="8" x2="9" y2="14" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2 2" />
+                      </svg>
+                      break;
+                    default:
+                      <img src="assets/images/category_list_icon_8.png" alt="@cat.Name" />
+                      break;
+                  }
+                </span>
+                <span class="sellzy-cat-name">@cat.Name</span>
+                <p class="sellzy-cat-count">@cat.ProductCount mặt hàng</p>
               </a>
-
-              <a
-                href="@Url.RouteUrl("category", new { slug = catWomen.Slug })"
-                class="hover:text-primary pt-4 pb-2.5 font-semibold text-light-primary-text"
-                >@catWomen.Name</a>
-              <p class="text-sm leading-[22px]">@catWomen.ProductCount mặt hàng</p>
-            </div>
-          </div>
-          }
-          @if (catMen != null) {
-          <div class="w-1/2 md:w-1/3 xl:w-auto xl:flex-1 px-2">
-            <div
-              data-wow-delay=".3s"
-              class="flex flex-col items-center text-center wow animate__animated animate__fadeInUp"
-            >
-              <a href="@Url.RouteUrl("category", new { slug = catMen.Slug })" class="block hover:opacity-80 transition-opacity">
-                <svg
-                  width="100"
-                  height="100"
-                  viewBox="0 0 100 100"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M92.4641 87L85.4406 28.6156C85.272 27.2041 84.7207 25.8655 83.8463 24.7446C82.972 23.6238 81.8078 22.7633 80.4797 22.2563L63.625 15.7891L61.3594 8.97501C61.2454 8.66992 61.0435 8.40544 60.7793 8.21495C60.5152 8.02446 60.2005 7.9165 59.875 7.90469H39.6094C39.3128 7.91214 39.0238 8.00049 38.7738 8.16021C38.5237 8.31994 38.3221 8.54495 38.1906 8.81094L35.0016 15.7172C31.4739 16.8078 28.0056 18.0819 24.6109 19.5344C20.2781 21.6688 16.7859 22.6484 14.5437 26.5813L7.65625 39.5688C6.93959 40.922 6.56414 42.4297 6.5625 43.9609V64.2281C6.5641 65.6649 6.8944 67.0824 7.52812 68.3719L18.5937 90.8313C18.7898 91.2298 19.0686 91.582 19.4115 91.8644C19.7544 92.1467 20.1535 92.3527 20.5823 92.4686C21.0111 92.5845 21.4597 92.6077 21.8981 92.5366C22.3366 92.4655 22.7548 92.3018 23.125 92.0563L29.8391 87.6047C32.1172 89.5922 38.2141 94.1484 45.8547 93.7172C46.1763 93.6987 46.4843 93.5813 46.7366 93.3811C46.9889 93.1808 47.1731 92.9075 47.2641 92.5984L49.4797 85.0969L52.6484 92.7844C52.7666 93.0704 52.9671 93.3148 53.2244 93.4867C53.4817 93.6586 53.7843 93.7503 54.0937 93.75C59.6341 93.7225 64.9397 91.5094 68.8573 87.5917C72.775 83.6741 74.9881 78.3685 75.0156 72.8281V72.4906L79.125 90.4391C79.2246 90.8618 79.4108 91.2593 79.6717 91.6066C79.9325 91.9538 80.2625 92.2433 80.6408 92.4567C81.0191 92.6702 81.4374 92.8029 81.8696 92.8467C82.3017 92.8904 82.7382 92.8442 83.1516 92.7109L90.3391 90.3359C91.0224 90.1088 91.6067 89.6533 91.9937 89.0461C92.3806 88.4389 92.5468 87.7153 92.4641 87ZM60.6937 16.8797L55.8656 26.6578L51.5687 23.3266L59.3422 12.8188L60.6937 16.8797ZM54.0469 14.7188H45.1969L42.6688 11.0313H56.775L54.0469 14.7188ZM51.7344 17.8438L49.4531 20.9281L47.3391 17.8438H51.7344ZM39.9125 12.5375L47.2344 23.2219L42.6047 26.4047L38.0953 16.4719L39.9125 12.5375ZM21.3969 89.4531L10.3328 66.9891C9.91024 66.1294 9.69004 65.1845 9.68906 64.2266V43.9609C9.69004 42.9395 9.94053 41.9338 10.4188 41.0313L17.3062 28.0484C18.7156 25.5141 21.0312 24.8359 23.6734 23.4047V57.1359L21.4594 49.2047C21.3426 48.8117 21.0761 48.4804 20.7173 48.2821C20.3584 48.0839 19.9361 48.0346 19.5412 48.1448C19.1464 48.2551 18.8107 48.5162 18.6066 48.8717C18.4024 49.2272 18.3462 49.6487 18.45 50.0453L26.4797 78.8141L20.7078 81.9547C20.5276 82.0528 20.3684 82.1854 20.2394 82.345C20.1104 82.5046 20.0141 82.688 19.956 82.8849C19.8978 83.0817 19.8791 83.288 19.9007 83.4921C19.9223 83.6962 19.9839 83.894 20.082 84.0742C20.1801 84.2545 20.3127 84.4137 20.4723 84.5427C20.6319 84.6717 20.8154 84.768 21.0122 84.8261C21.209 84.8842 21.4153 84.903 21.6194 84.8813C21.8235 84.8597 22.0213 84.7981 22.2016 84.7L27.3422 81.9031L28.1922 84.95L21.3969 89.4531ZM44.5906 90.6203C37.9391 90.5078 32.6219 85.9438 31.3906 84.7969L26.7969 68.3359V22.0078C29.7164 20.7963 32.6892 19.7176 35.7062 18.775L40.5297 29.3969C40.6253 29.6037 40.7647 29.7873 40.9383 29.9349C41.1119 30.0825 41.3156 30.1906 41.5351 30.2516C41.7546 30.3127 41.9848 30.3254 42.2097 30.2886C42.4346 30.2519 42.6488 30.1668 42.8375 30.0391L47.9078 26.5531L47.6734 80.1781L44.5906 90.6203ZM66.6766 85.4125C63.5989 88.5077 59.4847 90.3545 55.1266 90.5969L50.7984 80.1016L51.0328 26.8656L55.4656 30.3C55.6493 30.4404 55.8617 30.5384 56.0877 30.5872C56.3137 30.636 56.5476 30.6342 56.7728 30.5822C56.9981 30.5301 57.209 30.4289 57.3906 30.2859C57.5722 30.1428 57.72 29.9614 57.8234 29.7547L63.1516 18.9578L71.8906 22.3094V72.8281C71.8965 75.166 71.4387 77.4819 70.5437 79.6417C69.6487 81.8015 68.3343 83.7624 66.6766 85.4109V85.4125ZM82.1719 89.7453L75.0156 58.4984V23.5063L79.3594 25.1719C80.1563 25.4764 80.8549 25.9929 81.3795 26.6657C81.9042 27.3385 82.2349 28.1419 82.3359 28.9891L88.7312 82.1484L83.6531 83.4219C83.2903 83.5214 82.9754 83.748 82.7659 84.0604C82.5564 84.3728 82.4663 84.7502 82.512 85.1236C82.5576 85.497 82.7361 85.8415 83.0147 86.0942C83.2934 86.3469 83.6536 86.4909 84.0297 86.5C83.9672 86.6906 89.0031 85.2281 89.1078 85.2766L89.3594 87.3703L82.1719 89.7453Z"
-                    fill="#919EAB"
-                  />
-                  <path
-                    d="M68.0674 39.0203H56.4158C56.0014 39.0203 55.604 39.1849 55.311 39.478C55.0179 39.771 54.8533 40.1684 54.8533 40.5828V50.5266C54.8533 50.7901 54.9199 51.0493 55.0469 51.2801C55.1739 51.511 55.3573 51.7059 55.5799 51.8469L61.1033 55.3438C61.3539 55.5023 61.6443 55.5863 61.9408 55.586C62.1377 55.8297 68.7643 52.475 69.0846 52.3922C69.3606 52.262 69.5925 52.0539 69.7517 51.7934C69.9108 51.533 69.9901 51.2316 69.9799 50.9266L69.6299 40.5297C69.6161 40.1246 69.4454 39.7407 69.1539 39.459C68.8623 39.1774 68.4727 39.0201 68.0674 39.0203ZM62.0518 52.2453L57.9783 49.6672V42.1453H66.5564L66.8221 50.0016L62.0518 52.2453ZM43.1299 35.9813C43.5443 35.9813 43.9417 35.8166 44.2347 35.5236C44.5278 35.2306 44.6924 34.8332 44.6924 34.4188C44.6924 34.0044 44.5278 33.6069 44.2347 33.3139C43.9417 33.0209 43.5443 32.8563 43.1299 32.8563C42.7155 32.8563 42.3181 33.0209 42.025 33.3139C41.732 33.6069 41.5674 34.0044 41.5674 34.4188C41.5674 34.8332 41.732 35.2306 42.025 35.5236C42.3181 35.8166 42.7155 35.9813 43.1299 35.9813ZM43.1299 42.6188C42.7155 42.6188 42.3181 42.7834 42.025 43.0764C41.732 43.3694 41.5674 43.7669 41.5674 44.1813C41.5674 44.5957 41.732 44.9931 42.025 45.2861C42.3181 45.5791 42.7155 45.7438 43.1299 45.7438C43.5443 45.7438 43.9417 45.5791 44.2347 45.2861C44.5278 44.9931 44.6924 44.5957 44.6924 44.1813C44.6924 43.7669 44.5278 43.3694 44.2347 43.0764C43.9417 42.7834 43.5443 42.6188 43.1299 42.6188ZM43.1299 52.3813C42.7155 52.3813 42.3181 52.5459 42.025 52.8389C41.732 53.1319 41.5674 53.5294 41.5674 53.9438C41.5674 54.3582 41.732 54.7556 42.025 55.0486C42.3181 55.3416 42.7155 55.5063 43.1299 55.5063C43.5443 55.5063 43.9417 55.3416 44.2347 55.0486C44.5278 54.7556 44.6924 54.3582 44.6924 53.9438C44.6924 53.5294 44.5278 53.1319 44.2347 52.8389C43.9417 52.5459 43.5443 52.3813 43.1299 52.3813ZM43.1299 62.1453C42.7155 62.1453 42.3181 62.3099 42.025 62.603C41.732 62.896 41.5674 63.2934 41.5674 63.7078C41.5674 64.1222 41.732 64.5197 42.025 64.8127C42.3181 65.1057 42.7155 65.2703 43.1299 65.2703C43.5443 65.2703 43.9417 65.1057 44.2347 64.8127C44.5278 64.5197 44.6924 64.1222 44.6924 63.7078C44.6924 63.2934 44.5278 62.896 44.2347 62.603C43.9417 62.3099 43.5443 62.1453 43.1299 62.1453ZM43.1299 71.9063C42.7155 71.9063 42.3181 72.0709 42.025 72.3639C41.732 72.6569 41.5674 73.0544 41.5674 73.4688C41.5674 73.8832 41.732 74.2806 42.025 74.5736C42.3181 74.8666 42.7155 75.0313 43.1299 75.0313C43.5443 75.0313 43.9417 74.8666 44.2347 74.5736C44.5278 74.2806 44.6924 73.8832 44.6924 73.4688C44.6924 73.0544 44.5278 72.6569 44.2347 72.3639C43.9417 72.0709 43.5443 71.9063 43.1299 71.9063Z"
-                    fill="#919EAB"
-                  />
-                </svg>
-              </a>
-              <a
-                href="@Url.RouteUrl("category", new { slug = catMen.Slug })"
-                class="hover:text-primary pt-4 pb-2.5 font-semibold text-light-primary-text"
-                >@catMen.Name</a>
-              <p class="text-sm leading-[22px]">@catMen.ProductCount mặt hàng</p>
-            </div>
-          </div>
-          }
-          @if (catKids != null) {
-          <div class="w-1/2 md:w-1/3 xl:w-auto xl:flex-1 px-2">
-            <div
-              data-wow-delay="0.4s"
-              class="flex flex-col items-center text-center wow animate__animated animate__fadeInUp"
-            >
-              <a href="@Url.RouteUrl("category", new { slug = catKids.Slug })" class="block hover:opacity-80 transition-opacity">
-                <svg
-                  width="100"
-                  height="100"
-                  viewBox="0 0 100 100"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M21.5475 60.6718V28.4441L15.378 32.3906C12.57 34.1868 8.83967 33.3633 7.0463 30.5538L0.949456 21.0018C-0.843408 18.1931 -0.0228478 14.4607 2.78433 12.6652L7.82755 9.43928C8.50905 9.00337 9.41493 9.20239 9.85086 9.88388C10.2868 10.5654 10.0876 11.4713 9.40607 11.9072L4.36304 15.1333C2.91905 16.0569 2.49538 17.9788 3.4189 19.4256L9.51555 28.9774H9.51574C10.4387 30.4234 12.3565 30.8455 13.7993 29.9227L22.2231 24.5344C22.674 24.246 23.2463 24.2265 23.7158 24.4835C24.1852 24.7405 24.4771 25.2331 24.4772 25.7683V60.6718C24.4772 62.3893 25.8676 63.779 27.5795 63.7791H72.4212C74.133 63.7791 75.5237 62.3893 75.5237 60.6718V25.7683C75.5238 25.2331 75.8157 24.7405 76.2851 24.4835C76.7547 24.2265 77.3269 24.246 77.7778 24.5344L86.2013 29.9227L86.2692 29.9648C87.704 30.8322 89.5764 30.4009 90.4848 28.9776L96.5816 19.4256L96.624 19.3573C97.4917 17.9189 97.0591 16.0425 95.6377 15.1333L80.871 5.68752C78.1443 3.94315 74.989 2.99051 71.7567 2.93255L71.4437 2.92969H28.5566C25.2154 2.92979 21.9441 3.88685 19.1295 5.68752H19.1293L15.1706 8.21991C14.4892 8.65586 13.5833 8.45679 13.1473 7.77531C12.7114 7.09381 12.9104 6.18794 13.5919 5.75199L17.5506 3.2196L17.7051 3.12176C20.956 1.08272 24.7167 9.87457e-05 28.5566 0H71.4439L71.6266 0.000762939C75.4639 0.0352635 79.2151 1.1503 82.4497 3.2196L97.2164 12.6652C100.023 14.4607 100.844 18.193 99.0511 21.0016L92.9544 30.5536C91.1611 33.3636 87.4306 34.1867 84.6226 32.3906L78.4534 28.4443V60.6718C78.4534 64.0043 75.754 66.7088 72.4212 66.7088H27.5795C24.2465 66.7087 21.5475 64.0043 21.5475 60.6718Z"
-                    fill="#919EAB"
-                  />
-                  <path
-                    d="M63.108 44.2999C63.108 37.0508 57.2382 31.1768 50.0009 31.1768C42.7635 31.1768 36.8936 37.0506 36.8936 44.2999C36.8936 47.8757 38.3132 50.3543 40.5585 51.9878C42.8652 53.666 46.1704 54.5376 50.0009 54.5376C53.8313 54.5376 57.1363 53.666 59.443 51.9878C61.6883 50.3543 63.1079 47.8756 63.108 44.2999ZM40.5478 44.2719V42.7353C40.5479 41.9263 41.2037 41.2704 42.0127 41.2704C42.8217 41.2704 43.4775 41.9263 43.4775 42.7353V44.2719C43.4775 45.0809 42.8217 45.7367 42.0127 45.7367C41.2037 45.7367 40.5478 45.0809 40.5478 44.2719ZM56.524 44.2719V42.7353C56.524 41.9263 57.1799 41.2705 57.9888 41.2704C58.7978 41.2704 59.4536 41.9263 59.4537 42.7353V44.2719C59.4537 45.0809 58.7978 45.7367 57.9888 45.7367C57.1798 45.7367 56.524 45.0809 56.524 44.2719ZM66.0377 44.2999C66.0376 48.7807 64.1952 52.1533 61.1665 54.3568C58.1991 56.5157 54.2182 57.4673 50.0009 57.4673C45.7835 57.4673 41.8025 56.5158 38.835 54.357C35.8063 52.1535 33.9639 48.7808 33.9639 44.2999C33.9639 35.4355 41.1425 28.2471 50.0009 28.2471C58.8592 28.2471 66.0377 35.4358 66.0377 44.2999Z"
-                    fill="#919EAB"
-                  />
-                  <path
-                    d="M37.6402 64.8138C37.8778 64.0405 38.6974 63.6061 39.4707 63.8437C40.244 64.0813 40.6784 64.9009 40.4408 65.6742L33.5434 88.1239C33.0767 89.643 33.929 91.2515 35.4435 91.7179L52.4107 96.9421C53.9246 97.4083 55.5313 96.5581 55.9979 95.0396L62.2729 74.6149L62.3173 74.4799C63.3008 71.6883 67.3275 71.7333 68.2129 74.6149L74.4879 95.0396C74.9545 96.5581 76.5611 97.4083 78.075 96.9421L95.0422 91.7179C96.5568 91.2515 97.4091 89.6431 96.9423 88.1239L95.088 82.0887C94.8504 81.3153 95.2848 80.4958 96.0581 80.2582C96.8314 80.0206 97.651 80.4549 97.8886 81.2283L99.7429 87.2635C100.684 90.3263 98.967 93.5749 95.9044 94.5179L78.9372 99.7421C75.8737 100.685 72.6288 98.9634 71.6875 95.9L65.4125 75.4753C65.3999 75.4343 65.3863 75.4129 65.379 75.4028C65.3713 75.3924 65.3635 75.385 65.3546 75.3788C65.3347 75.3651 65.2962 75.349 65.2428 75.349C65.1894 75.3491 65.151 75.3651 65.1312 75.3788C65.1222 75.385 65.1144 75.3924 65.1068 75.4028C65.1013 75.4104 65.0922 75.4243 65.0828 75.448L65.0732 75.4753L58.7982 95.9C57.857 98.9634 54.612 100.685 51.5486 99.7421L34.5814 94.5179C31.519 93.5749 29.8018 90.3264 30.7429 87.2635L37.6402 64.8138ZM85.277 44.2484C85.277 43.2472 84.4653 42.4355 83.4641 42.4355H76.9882C76.1792 42.4354 75.5234 41.7796 75.5234 40.9706C75.5234 40.1617 76.1793 39.5058 76.9882 39.5058H83.4641C86.0835 39.5058 88.2067 41.6293 88.2067 44.2484V49.7147L92.7817 64.6055C92.7833 64.6107 92.7848 64.6158 92.7864 64.621L95.8811 74.6937C96.1187 75.467 95.6843 76.2866 94.911 76.5242C94.1377 76.7617 93.3181 76.3274 93.0805 75.5541L90.3031 66.514H84.3697C80.9746 66.514 77.9177 65.0647 75.7816 62.7579C75.232 62.1643 75.2676 61.2375 75.8612 60.6878C76.4548 60.1382 77.3816 60.1738 77.9312 60.7674C79.5373 62.5019 81.8261 63.5843 84.3697 63.5843H89.403L85.6592 51.3988H76.9882C76.1793 51.3988 75.5234 50.743 75.5234 49.934C75.5234 49.125 76.1792 48.4692 76.9882 48.4692H85.277V44.2484ZM51.0014 43.2644C51.5326 42.6542 52.4578 42.5902 53.068 43.1213C53.6782 43.6525 53.7422 44.5778 53.211 45.188C52.4334 46.0812 51.2835 46.6516 50.0002 46.6516C48.7169 46.6516 47.567 46.0812 46.7894 45.188C46.2582 44.5778 46.3222 43.6525 46.9324 43.1213C47.5426 42.5902 48.4679 42.6542 48.999 43.2644C49.2456 43.5477 49.6023 43.722 50.0002 43.722C50.3981 43.722 50.7548 43.5477 51.0014 43.2644ZM29.8184 31.0665C29.8184 26.2141 33.7481 22.2776 38.5992 22.2776C43.1441 22.2776 46.8786 25.732 47.3335 30.1584C47.4163 30.9632 46.8308 31.6827 46.0261 31.7654C45.2213 31.848 44.5018 31.2626 44.4191 30.4579C44.1158 27.5075 41.6238 25.2073 38.5992 25.2073C35.3692 25.2073 32.7481 27.8291 32.748 31.0665C32.748 33.7987 34.6167 36.096 37.1441 36.7432C37.9278 36.9439 38.4003 37.7421 38.1996 38.5258C37.9989 39.3094 37.2009 39.782 36.4172 39.5813C32.6232 38.6097 29.8184 35.1671 29.8184 31.0665ZM67.2524 31.0665C67.2523 27.8291 64.6311 25.2073 61.4012 25.2073C58.3765 25.2073 55.8844 27.5075 55.5813 30.4579C55.4986 31.2626 54.7793 31.848 53.9745 31.7654C53.1698 31.6827 52.5844 30.9632 52.6671 30.1584C53.1218 25.7319 56.8563 22.2776 61.4012 22.2776C66.2521 22.2777 70.182 26.2141 70.1821 31.0665C70.1821 35.1672 67.3771 38.6097 63.583 39.5813C62.7993 39.7819 62.0013 39.3094 61.8006 38.5258C61.5999 37.7421 62.0726 36.9439 62.8563 36.7432C65.3837 36.096 67.2524 33.7987 67.2524 31.0665ZM36.7333 1.46484C36.7333 0.655833 37.3891 0 38.1981 0C39.0071 3.22125e-05 39.6629 0.655853 39.6629 1.46484C39.6629 7.18254 44.2926 11.8151 50.0002 11.8151C55.7079 11.8151 60.3375 7.18272 60.3375 1.46484C60.3375 0.655845 60.9933 1.93273e-05 61.8023 0C62.6113 0 63.2672 0.655833 63.2672 1.46484C63.2672 8.79774 57.3289 14.7448 50.0002 14.7448C42.6715 14.7448 36.7333 8.79753 36.7333 1.46484Z"
-                    fill="#919EAB"
-                  />
-                </svg>
-              </a>
-              <a
-                href="@Url.RouteUrl("category", new { slug = catKids.Slug })"
-                class="hover:text-primary pt-4 pb-2.5 font-semibold text-light-primary-text"
-                >@catKids.Name</a>
-              <p class="text-sm leading-[22px]">@catKids.ProductCount mặt hàng</p>
-            </div>
-          </div>
-          }
-          @if (catLingerie != null) {
-          <div class="w-1/2 md:w-1/3 xl:w-auto xl:flex-1 px-2">
-            <div
-              data-wow-delay="0.5s"
-              class="flex flex-col items-center text-center wow animate__animated animate__fadeInUp"
-            >
-              <a href="@Url.RouteUrl("category", new { slug = catLingerie.Slug })" class="block hover:opacity-80 transition-opacity">
-              <svg
-                width="100"
-                height="100"
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M80.7946 17.0867C82.6305 12.1593 83.4925 6.92249 83.3329 1.66667C83.3329 1.22464 83.1573 0.800716 82.8447 0.488155C82.5322 0.175595 82.1083 0 81.6662 0C81.2242 0 80.8003 0.175595 80.4877 0.488155C80.1752 0.800716 79.9996 1.22464 79.9996 1.66667C79.9996 10.1883 78.1512 14.9733 77.3329 16.6817C76.1148 16.7226 74.9078 16.9278 73.7446 17.2917C66.5579 19.4983 58.8729 27.7817 55.4712 31.7917C55.0068 31.2327 54.4254 30.7825 53.7679 30.4729C53.1104 30.1633 52.393 30.0019 51.6662 30H48.3329C47.6067 30.0024 46.8899 30.164 46.2331 30.4736C45.5762 30.7832 44.9953 31.2331 44.5312 31.7917C41.1296 27.7817 33.4446 19.4983 26.2596 17.2917C25.0957 16.9282 23.8882 16.723 22.6696 16.6817C21.8479 14.9717 19.9996 10.1883 19.9996 1.66667C19.9996 1.22464 19.824 0.800716 19.5114 0.488155C19.1988 0.175595 18.7749 0 18.3329 0C17.8909 0 17.4669 0.175595 17.1544 0.488155C16.8418 0.800716 16.6662 1.22464 16.6662 1.66667C16.5066 6.92249 17.3687 12.1593 19.2046 17.0867C16.6991 17.85 14.4812 19.3497 12.8396 21.3906C11.1979 23.4315 10.2083 25.9191 9.99956 28.53C9.89548 34.0053 10.5119 39.4705 11.8329 44.785C12.1019 45.9703 12.6745 47.0653 13.4943 47.9626C14.3142 48.8599 15.3533 49.5287 16.5096 49.9033C20.7658 51.1398 25.1828 51.7342 29.6146 51.6667C32.4405 51.6539 35.2321 51.0459 37.8074 49.8823C40.3826 48.7187 42.6839 47.0256 44.5612 44.9133C45.0262 45.4604 45.604 45.9004 46.255 46.2031C46.9061 46.5057 47.6149 46.6639 48.3329 46.6667H51.6662C52.3842 46.6639 53.093 46.5057 53.7441 46.2031C54.3951 45.9004 54.973 45.4604 55.4379 44.9133C57.3152 47.0256 59.6165 48.7187 62.1918 49.8823C64.7671 51.0459 67.5586 51.6539 70.3846 51.6667C74.8162 51.7333 79.2329 51.14 83.4879 49.9033C84.6442 49.5296 85.6834 48.8613 86.5031 47.9642C87.3228 47.0671 87.8948 45.972 88.1629 44.7867C89.4856 39.4718 90.1031 34.006 89.9996 28.53C89.7908 25.9191 88.8012 23.4315 87.1596 21.3906C85.5179 19.3497 83.3001 17.85 80.7946 17.0867ZM29.6146 48.3333C25.5174 48.4009 21.433 47.8571 17.4962 46.72C16.8935 46.5169 16.3538 46.1609 15.93 45.6868C15.5061 45.2126 15.2125 44.6366 15.0779 44.015C13.8202 38.9521 13.2335 33.7458 13.3329 28.53C13.3329 26.07 16.2746 20.1967 21.9796 20.005C23.0979 19.9767 24.2129 20.1383 25.2796 20.4783C32.7912 22.7833 41.5579 33.3617 43.3329 35.58V41.1667C41.7712 43.3561 39.7149 45.1462 37.3313 46.3915C34.9476 47.6367 32.3037 48.302 29.6146 48.3333ZM53.3329 41.6667C53.3329 42.1087 53.1573 42.5326 52.8447 42.8452C52.5322 43.1577 52.1083 43.3333 51.6662 43.3333H48.3329C47.8909 43.3333 47.4669 43.1577 47.1544 42.8452C46.8418 42.5326 46.6662 42.1087 46.6662 41.6667V35C46.6662 34.558 46.8418 34.134 47.1544 33.8215C47.4669 33.5089 47.8909 33.3333 48.3329 33.3333H51.6662C52.1083 33.3333 52.5322 33.5089 52.8447 33.8215C53.1573 34.134 53.3329 34.558 53.3329 35V41.6667ZM84.9212 44.0167C84.7861 44.6383 84.4919 45.2143 84.0674 45.6881C83.6429 46.162 83.1027 46.5176 82.4996 46.72C78.5638 47.8568 74.4806 48.4005 70.3846 48.3333C67.6955 48.3016 65.0518 47.6362 62.6682 46.3909C60.2845 45.1457 58.2282 43.3558 56.6662 41.1667V35.58C58.4412 33.3617 67.2079 22.7833 74.7212 20.4783C75.7863 20.1359 76.9011 19.9742 78.0196 20C83.7246 20.1983 86.6662 26.07 86.6662 28.53C86.7662 33.7467 86.1796 38.9533 84.9212 44.0167Z"
-                  fill="#919EAB"
-                />
-                <path
-                  d="M38.3333 36.6667H31.6667C31.2246 36.6667 30.8007 36.8423 30.4882 37.1548C30.1756 37.4674 30 37.8913 30 38.3333C30 38.7754 30.1756 39.1993 30.4882 39.5119C30.8007 39.8244 31.2246 40 31.6667 40H38.3333C38.7754 40 39.1993 39.8244 39.5119 39.5119C39.8244 39.1993 40 38.7754 40 38.3333C40 37.8913 39.8244 37.4674 39.5119 37.1548C39.1993 36.8423 38.7754 36.6667 38.3333 36.6667ZM68.3333 36.6667H61.6667C61.2246 36.6667 60.8007 36.8423 60.4882 37.1548C60.1756 37.4674 60 37.8913 60 38.3333C60 38.7754 60.1756 39.1993 60.4882 39.5119C60.8007 39.8244 61.2246 40 61.6667 40H68.3333C68.7754 40 69.1993 39.8244 69.5119 39.5119C69.8244 39.1993 70 38.7754 70 38.3333C70 37.8913 69.8244 37.4674 69.5119 37.1548C69.1993 36.8423 68.7754 36.6667 68.3333 36.6667ZM85 60H15C14.7257 60 14.4556 60.0676 14.2137 60.197C13.9718 60.3264 13.7656 60.5135 13.6133 60.7417C13.2433 61.2967 10 66.27 10 70C9.99997 70.4103 10.1513 70.8062 10.425 71.1119C10.6987 71.4176 11.0755 71.6115 11.4833 71.6567C11.5167 71.6567 12.3567 71.7583 13.6733 71.96C15.1267 80.135 21.5483 86.1733 32.8067 89.9133C37.255 91.3967 41.9367 97.58 41.9833 97.65L42.0183 97.6883V97.6967C42.0583 97.7483 42.1017 97.7967 42.1483 97.845C42.2335 97.9162 42.3263 97.9777 42.425 98.0283C42.4745 98.0748 42.5268 98.1182 42.5817 98.1583C44.9033 99.2708 47.4277 99.8974 50 100C52.5695 99.8991 55.0915 99.2753 57.4117 98.1667C57.4814 98.1163 57.5472 98.0606 57.6083 98C57.6979 97.9526 57.7827 97.8968 57.8617 97.8333C57.9022 97.7909 57.9406 97.7464 57.9767 97.7L58.0117 97.66C58.0583 97.5983 62.74 91.4067 67.1783 89.925C78.4517 86.1667 84.8733 80.135 86.3333 71.96C87.65 71.7583 88.49 71.66 88.525 71.6567C88.9313 71.6096 89.3061 71.4148 89.5781 71.1093C89.8501 70.8039 90.0003 70.409 90 70C90 66.27 86.7567 61.2967 86.3867 60.7417C86.2344 60.5135 86.0282 60.3264 85.7863 60.197C85.5444 60.0676 85.2743 60 85 60ZM33.8583 86.7517C30.225 85.545 19.705 82.035 17.2233 72.585C22.0133 73.5183 28.625 75.2233 32.3333 78.005C35.6883 80.5217 38.175 85.9867 39.7433 90.42C38.0341 88.8324 36.0364 87.5872 33.8583 86.7517ZM66.14 86.7517C63.9608 87.5851 61.9623 88.8299 60.2533 90.4183C61.82 85.9867 64.3067 80.52 67.6667 78C71.37 75.2217 77.985 73.5167 82.7767 72.5817C80.2933 82.035 69.775 85.5433 66.14 86.7517ZM65.6667 75.3333C59.4483 80 56.0633 92.1667 55.2367 95.4783C53.5783 96.1917 51.8033 96.595 50 96.6667C48.1965 96.594 46.4216 96.1912 44.7633 95.4783C43.9367 92.1667 40.5517 80 34.3333 75.3333C28.6767 71.09 17.7533 69.1667 13.5433 68.565C14.1034 66.7247 14.9025 64.9658 15.92 63.3333H84.0867C85.1042 64.9658 85.9033 66.7247 86.4633 68.565C82.2467 69.1667 71.3233 71.09 65.6667 75.3333Z"
-                  fill="#919EAB"
-                />
-              </svg>
-              </a>
-
-              <a
-                href="@Url.RouteUrl("category", new { slug = catLingerie.Slug })"
-                class="hover:text-primary pt-4 pb-2.5 font-semibold text-light-primary-text"
-                >@catLingerie.Name</a>
-              <p class="text-sm leading-[22px]">@catLingerie.ProductCount mặt hàng</p>
-            </div>
-          </div>
-          }
-          @if (catAccessories != null) {
-          <div class="w-1/2 md:w-1/3 xl:w-auto xl:flex-1 px-2">
-            <div
-              data-wow-delay="0.6s"
-              class="flex flex-col items-center text-center wow animate__animated animate__fadeInUp"
-            >
-              <a href="@Url.RouteUrl("category", new { slug = catAccessories.Slug })" class="block hover:opacity-80 transition-opacity">
-              <svg
-                width="100"
-                height="100"
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M96.8664 36.101C96.8893 35.8832 96.8662 35.663 96.7985 35.4548C96.7309 35.2465 96.6202 35.0548 96.4737 34.892C96.3272 34.7293 96.1481 34.5992 95.9481 34.5101C95.748 34.421 95.5315 34.375 95.3125 34.375H86.4105L85.9375 34.0596V29.6875C85.9375 15.041 74.0217 3.125 59.375 3.125C52.3302 3.125 45.5739 5.92354 40.5925 10.905C35.611 15.8864 32.8125 22.6427 32.8125 29.6875V34.0596L32.3395 34.375H23.4375C23.2185 34.375 23.002 34.421 22.8019 34.5101C22.6019 34.5992 22.4228 34.7293 22.2763 34.892C22.1298 35.0548 22.0191 35.2465 21.9515 35.4548C21.8838 35.663 21.8607 35.8832 21.8836 36.101L23.6746 53.125H20.3125V51.5625C20.3125 51.2502 20.2189 50.9451 20.0439 50.6865C19.8688 50.4279 19.6202 50.2277 19.3303 50.1117L11.5178 46.9867C11.3332 46.9129 11.1363 46.875 10.9375 46.875H4.6875C4.2731 46.875 3.87567 47.0396 3.58265 47.3326C3.28962 47.6257 3.125 48.0231 3.125 48.4375V54.6875C3.125 55.1019 3.28962 55.4993 3.58265 55.7924C3.87567 56.0854 4.2731 56.25 4.6875 56.25H7.36484C6.46505 57.4354 5.92553 58.8547 5.81074 60.3385L3.64727 88.4635C3.56473 89.5367 3.70488 90.6155 4.05891 91.632C4.41294 92.6485 4.97322 93.581 5.7046 94.3707C6.43599 95.1605 7.32269 95.7907 8.30909 96.2216C9.29548 96.6525 10.3603 96.875 11.4367 96.875H95.3125C95.7269 96.875 96.1243 96.7104 96.4174 96.4174C96.7104 96.1243 96.875 95.7269 96.875 95.3125V64.0625C96.8751 63.8282 96.8224 63.5969 96.721 63.3857C96.6196 63.1745 96.472 62.9888 96.2891 62.8424L94.0936 61.0859L94.2355 61.101L96.8664 36.101ZM34.375 36.7736L37.5 34.6904L40.625 36.7736V46.875H34.375V36.7736ZM42.6605 34.375L42.1875 34.0596V29.6875C42.1875 25.1291 43.9983 20.7574 47.2216 17.5341C50.4449 14.3108 54.8166 12.5 59.375 12.5C63.9334 12.5 68.3051 14.3108 71.5284 17.5341C74.7517 20.7574 76.5625 25.1291 76.5625 29.6875V34.0596L76.0895 34.375H42.6605ZM78.125 36.7736L81.25 34.6904L84.375 36.7736V46.875H78.125V36.7736ZM35.9375 29.6875C35.9375 23.4715 38.4068 17.5101 42.8022 13.1147C47.1976 8.7193 53.159 6.25 59.375 6.25C65.591 6.25 71.5524 8.7193 75.9478 13.1147C80.3432 17.5101 82.8125 23.4715 82.8125 29.6875V31.9764L82.1168 31.5125C81.8601 31.3414 81.5585 31.25 81.25 31.25C80.9415 31.25 80.6399 31.3414 80.3832 31.5125L79.6875 31.9764V29.6875C79.6875 24.3003 77.5474 19.1337 73.7381 15.3244C69.9288 11.5151 64.7622 9.375 59.375 9.375C53.9878 9.375 48.8212 11.5151 45.0119 15.3244C41.2026 19.1337 39.0625 24.3003 39.0625 29.6875V31.9764L38.3668 31.5125C38.1101 31.3414 37.8085 31.25 37.5 31.25C37.1915 31.25 36.8899 31.3414 36.6332 31.5125L35.9375 31.9764V29.6875ZM28.125 62.5H37.5C37.9144 62.5 38.3118 62.3354 38.6049 62.0424C38.8979 61.7493 39.0625 61.3519 39.0625 60.9375V56.25H52.0248C53.2044 56.2548 54.3393 56.7022 55.2049 57.5036C56.0705 58.305 56.6038 59.4022 56.6992 60.5779L58.2887 81.25H7.33633L8.92578 60.5779C9.02123 59.4022 9.5545 58.305 10.4201 57.5036C11.2857 56.7022 12.4206 56.2548 13.6002 56.25H26.5625V60.9375C26.5625 61.3519 26.7271 61.7493 27.0201 62.0424C27.3132 62.3354 27.7106 62.5 28.125 62.5ZM35.9375 59.375H29.6875V56.25H35.9375V59.375ZM6.25 50H10.6365L17.1875 52.6203V53.125H6.25V50ZM54.1875 93.75H11.4367C10.7909 93.75 10.152 93.6165 9.56011 93.3579C8.96827 93.0994 8.43624 92.7213 7.99741 92.2474C7.55859 91.7735 7.22242 91.214 7.01002 90.6041C6.79761 89.9941 6.71354 89.3469 6.76309 88.7029L7.09609 84.375H58.5289L58.8609 88.7029C58.9105 89.3468 58.8264 89.994 58.6141 90.6039C58.4017 91.2137 58.0657 91.7731 57.6269 92.247C57.1882 92.7209 56.6563 93.099 56.0646 93.3576C55.4729 93.6163 54.8341 93.7499 54.1883 93.75H54.1875ZM93.75 93.75H71.875V64.8135L78.673 59.375H86.952L93.75 64.8135V93.75ZM88.4766 56.5924C88.1994 56.3706 87.855 56.2499 87.5 56.25H78.125C77.77 56.2499 77.4256 56.3706 77.1484 56.5924L69.3359 62.8424C69.153 62.9888 69.0054 63.1745 68.904 63.3857C68.8026 63.5969 68.7499 63.8282 68.75 64.0625V93.75H60.4377C61.5734 92.232 62.1205 90.3539 61.9777 88.4635L59.8143 60.3385C59.6552 58.379 58.7666 56.5507 57.3242 55.2149C55.8818 53.8792 53.9907 53.1334 52.0248 53.125H26.8164L25.1725 37.5H31.25V48.4375C31.25 48.8519 31.4146 49.2493 31.7076 49.5424C32.0007 49.8354 32.3981 50 32.8125 50H42.1875C42.6019 50 42.9993 49.8354 43.2924 49.5424C43.5854 49.2493 43.75 48.8519 43.75 48.4375V37.5H75V48.4375C75 48.8519 75.1646 49.2493 75.4576 49.5424C75.7507 49.8354 76.1481 50 76.5625 50H85.9375C86.3519 50 86.7493 49.8354 87.0424 49.5424C87.3354 49.2493 87.5 48.8519 87.5 48.4375V37.5H93.577L91.3281 58.8734L88.4766 56.5924Z"
-                  fill="#919EAB"
-                />
-                <path
-                  d="M64.0625 40.625H54.6875C54.2731 40.625 53.8757 40.7896 53.5826 41.0826C53.2896 41.3757 53.125 41.7731 53.125 42.1875V48.4375C53.125 48.8519 53.2896 49.2493 53.5826 49.5424C53.8757 49.8354 54.2731 50 54.6875 50H64.0625C64.4769 50 64.8743 49.8354 65.1674 49.5424C65.4604 49.2493 65.625 48.8519 65.625 48.4375V42.1875C65.625 41.7731 65.4604 41.3757 65.1674 41.0826C64.8743 40.7896 64.4769 40.625 64.0625 40.625ZM62.5 46.875H56.25V43.75H62.5V46.875ZM82.8125 75C83.2268 75.0005 83.6239 75.1652 83.9168 75.4582C84.2098 75.7511 84.3745 76.1482 84.375 76.5625C84.375 76.9769 84.5396 77.3743 84.8326 77.6674C85.1257 77.9604 85.5231 78.125 85.9375 78.125C86.3519 78.125 86.7493 77.9604 87.0424 77.6674C87.3354 77.3743 87.5 76.9769 87.5 76.5625C87.4988 75.5935 87.1977 74.6487 86.6382 73.8576C86.0788 73.0664 85.2882 72.4678 84.375 72.1438V70.3125C84.375 69.8981 84.2104 69.5007 83.9174 69.2076C83.6243 68.9146 83.2269 68.75 82.8125 68.75C82.3981 68.75 82.0007 68.9146 81.7076 69.2076C81.4146 69.5007 81.25 69.8981 81.25 70.3125V72.1438C80.208 72.5127 79.3298 73.238 78.7707 74.1916C78.2116 75.1452 78.0075 76.2657 78.1944 77.3552C78.3813 78.4447 78.9473 79.4331 79.7923 80.1458C80.6374 80.8585 81.7071 81.2496 82.8125 81.25C83.1215 81.25 83.4236 81.3416 83.6806 81.5133C83.9375 81.685 84.1378 81.9291 84.2561 82.2146C84.3743 82.5001 84.4053 82.8142 84.345 83.1173C84.2847 83.4204 84.1359 83.6988 83.9174 83.9174C83.6988 84.1359 83.4204 84.2847 83.1173 84.345C82.8142 84.4053 82.5001 84.3743 82.2146 84.2561C81.929 84.1378 81.685 83.9375 81.5133 83.6806C81.3416 83.4236 81.25 83.1215 81.25 82.8125C81.25 82.3981 81.0854 82.0007 80.7924 81.7076C80.4993 81.4146 80.1019 81.25 79.6875 81.25C79.2731 81.25 78.8757 81.4146 78.5826 81.7076C78.2896 82.0007 78.125 82.3981 78.125 82.8125C78.1262 83.7815 78.4273 84.7263 78.9868 85.5174C79.5463 86.3086 80.3368 86.9072 81.25 87.2312V89.0625C81.25 89.4769 81.4146 89.8743 81.7076 90.1674C82.0007 90.4604 82.3981 90.625 82.8125 90.625C83.2269 90.625 83.6243 90.4604 83.9174 90.1674C84.2104 89.8743 84.375 89.4769 84.375 89.0625V87.2312C85.417 86.8623 86.2952 86.137 86.8543 85.1834C87.4134 84.2298 87.6175 83.1093 87.4306 82.0198C87.2437 80.9303 86.6777 79.9419 85.8327 79.2292C84.9876 78.5165 83.9179 78.1254 82.8125 78.125C82.3981 78.125 82.0007 77.9604 81.7076 77.6674C81.4146 77.3743 81.25 76.9769 81.25 76.5625C81.25 76.1481 81.4146 75.7507 81.7076 75.4576C82.0007 75.1646 82.3981 75 82.8125 75Z"
-                  fill="#919EAB"
-                />
-                <path
-                  d="M82.8125 65.625C83.6754 65.625 84.375 64.9254 84.375 64.0625C84.375 63.1996 83.6754 62.5 82.8125 62.5C81.9496 62.5 81.25 63.1996 81.25 64.0625C81.25 64.9254 81.9496 65.625 82.8125 65.625Z"
-                  fill="#919EAB"
-                />
-              </svg>
-              </a>
-
-              <a
-                href="@Url.RouteUrl("category", new { slug = catAccessories.Slug })"
-                class="hover:text-primary pt-4 pb-2.5 font-semibold text-light-primary-text"
-                >@catAccessories.Name</a>
-              <p class="text-sm leading-[22px]">@catAccessories.ProductCount mặt hàng</p>
-            </div>
-          </div>
-          }
-          @if (catShoe != null) {
-          <div class="w-1/2 md:w-1/3 xl:w-auto xl:flex-1 px-2">
-            <div
-              data-wow-delay="0.8s"
-              class="flex flex-col items-center text-center wow animate__animated animate__fadeInUp"
-            >
-              <a href="@Url.RouteUrl("category", new { slug = catShoe.Slug })" class="block hover:opacity-80 transition-opacity">
-                <img src="https://cdn-icons-png.flaticon.com/512/6456/6456651.png" alt="Giày dép" width="100" height="100" style="filter: invert(72%) sepia(12%) saturate(366%) hue-rotate(172deg) brightness(89%) contrast(88%);" />
-              </a>
-              <a
-                href="@Url.RouteUrl("category", new { slug = catShoe.Slug })"
-                class="hover:text-primary pt-4 pb-2.5 font-semibold text-light-primary-text"
-                >Giày dép</a>
-              <p class="text-sm leading-[22px]">@catShoe.ProductCount mặt hàng</p>
-            </div>
-          </div>
           }
         </div>
       </div>
@@ -376,30 +940,31 @@
     <!-- ========== Hot Picks Section Start ========== -->
     <section class="pb-[70px]">
       <div class="container">
-        <div class="md:flex md:justify-between md:items-center mb-10">
+        <div class="md:flex md:justify-between md:items-end mb-10">
           <div
             class="text-center md:text-left wow animate__animated animate__fadeInUp"
             data-wow-delay=".2s"
           >
-            <h3>Lựa chọn nổi bật hôm nay</h3>
+            <span class="sellzy-section-eyebrow">Ưu đãi hôm nay</span>
+            <h3 class="sellzy-section-title">Lựa chọn nổi bật hôm nay</h3>
           </div>
           <div class="flex items-center gap-x-5">
             <div
-              class="limited-time-countdown flex items-center justify-center gap-x-1 bg-error-lighter py-[9px] px-6 rounded-[50px] mx-auto mt-5 md:mt-0 wow animate__animated animate__fadeInUp sellzy-countdown"
+              class="limited-time-countdown flex items-center justify-center gap-x-1.5 bg-error-lighter py-[9px] px-5 rounded-[50px] mx-auto mt-5 md:mt-0 wow animate__animated animate__fadeInUp sellzy-countdown"
               data-wow-delay=".2s"
             >
-              <h5 class="text-error">Ends in:</h5>
-              <h5 class="days text-error">00</h5>
-              <h5 class="text-error">&colon;</h5>
-              <h5 class="hours text-error">00</h5>
-              <h5 class="text-error">&colon;</h5>
-              <h5 class="minutes text-error">00</h5>
-              <h5 class="text-error">&colon;</h5>
-              <h5 class="seconds text-error">00</h5>
+              <h5 class="text-error text-sm font-bold">Kết thúc sau:</h5>
+              <h5 class="days text-error text-sm font-extrabold">00</h5>
+              <h5 class="text-error text-sm">&colon;</h5>
+              <h5 class="hours text-error text-sm font-extrabold">00</h5>
+              <h5 class="text-error text-sm">&colon;</h5>
+              <h5 class="minutes text-error text-sm font-extrabold">00</h5>
+              <h5 class="text-error text-sm">&colon;</h5>
+              <h5 class="seconds text-error text-sm font-extrabold">00</h5>
             </div>
             <div
               data-wow-delay=".2s"
-              class="home-four-picks-slider-nav md:flex items-center justify-between gap-x-6 hidden wow animate__animated animate__fadeInUp"
+              class="home-four-picks-slider-nav md:flex items-center justify-between gap-x-4 hidden wow animate__animated animate__fadeInUp"
             ></div>
           </div>
         </div>
@@ -471,12 +1036,12 @@
 
               <div class="product-content">
 
-                <p class="py-3 text-sm leading-[22px]">Cửa hàng / Danh mục</p>
+                <span class="inline-block text-[11.5px] font-bold uppercase tracking-wider text-primary bg-[#E6F4F3] px-2.5 py-0.5 rounded-full mb-2">Nổi bật</span>
 
-                <h6 class="text-[18px] leading-7 font-bold pb-3">
+                <h6 class="sellzy-product-title">
                   <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="line-clamp-2">@product.Name</a>
                 </h6>
-                <div class="rating-section flex items-center mb-3">
+                <div class="rating-section flex items-center mb-2.5">
                   <div
                     class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]"
                   >
@@ -486,21 +1051,15 @@
                     ></div>
                   </div>
                   <span
-                    class="text-sm leading-[22px] font-normal inline-block ml-1"
+                    class="text-xs leading-[18px] text-light-secondary-text inline-block ml-1.5"
                     >(@product.RatingCount)</span
                   >
                 </div>
-                <div class="price-section flex items-center gap-x-3 mb-3">
-                  <span
-                    class="current-price text-[16px] leading-6 font-semibold text-light-primary-text"
-                    >@product.Price.ToString("N0")đ</span
-                  >
+                <div class="sellzy-price-row">
+                  <span class="sellzy-price-current">@product.Price.ToString("N0")đ</span>
                   @if (product.OldPrice.HasValue && product.OldPrice.Value > product.Price) {
-                  <span
-                    class="old-price text-sm leading-[22px] text-light-disabled-text line-through"
-                    >@product.OldPrice.Value.ToString("N0")đ</span
-                  >
-                  <span class="text-xs font-semibold text-error ml-1">@product.DiscountPercent% OFF</span>
+                  <span class="sellzy-price-old">@product.OldPrice.Value.ToString("N0")đ</span>
+                  <span class="sellzy-price-off">-@product.DiscountPercent%</span>
                   }
                 </div>
                 @if (product.Colors != null && product.Colors.Any()) {
@@ -530,18 +1089,14 @@
                       class="progress-bar h-full bg-warning rounded-[50px]"
                     ></div>
                   </div>
-                  <div class="deal-stock flex items-center justify-between">
-                    <div class="stock-sold flex items-center gap-x-2.5">
-                      <p class="text-[16px] leading-6">Đã bán:</p>
-                      <p class="text-[16px] leading-6 text-light-primary-text">
-                        4
-                      </p>
+                  <div class="deal-stock flex items-center justify-between text-xs mt-1">
+                    <div class="stock-sold flex items-center gap-x-1 text-light-secondary-text">
+                      <span>Đã bán:</span>
+                      <span class="font-bold text-light-primary-text">4</span>
                     </div>
-                    <div class="stock-remaining flex items-center gap-x-2.5">
-                      <p class="text-[16px] leading-6">Còn lại:</p>
-                      <p class="text-[16px] leading-6 text-light-primary-text">
-                        200
-                      </p>
+                    <div class="stock-remaining flex items-center gap-x-1 text-light-secondary-text">
+                      <span>Còn lại:</span>
+                      <span class="font-bold text-light-primary-text">200</span>
                     </div>
                   </div>
                 </div>
@@ -572,11 +1127,12 @@
     <section class="pb-[70px]">
       <div class="container">
         <div class="mb-10 text-center">
+          <span class="sellzy-section-eyebrow wow animate__animated animate__fadeInUp" data-wow-delay=".15s">Săn deal đa ngành giá tốt</span>
           <h3
             data-wow-delay=".2s"
-            class="pb-6 wow animate__animated animate__fadeInUp"
+            class="sellzy-section-title pb-6 wow animate__animated animate__fadeInUp"
           >
-            Deal Thời Trang Hot
+            Săn Deal Đa Ngành Hot
           </h3>
 
           <div
@@ -584,11 +1140,11 @@
             class="flex items-center justify-center gap-x-4 wow animate__animated animate__fadeInUp"
           >
             <div
-              class="flex gap-x-8 overflow-x-auto home-four-product-filter border-b border-gray-300"
+              class="flex flex-wrap justify-center gap-2.5 home-four-product-filter pb-2"
             >
               @foreach (var rootCat in Model.TopCategories)
               {
-                  <button data-tab="@rootCat.Slug" class="pt-[13px] pb-[22px]">
+                  <button data-tab="@rootCat.Slug">
                       @rootCat.Name
                   </button>
               }
@@ -652,14 +1208,14 @@
                                       </div>
 
                                       <div class="product-content">
-                                          <h6 class="text-[20px] leading-[30px] font-bold pb-3" style="height: 48px; overflow: hidden;">
+                                          <h6 class="sellzy-product-title">
                                               <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="line-clamp-2">@product.Name</a>
                                           </h6>
                                           <div class="rating-section flex items-center mb-3">
                                               <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
                                                   <div style="width: @(product.RatingAverage * 20)%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
                                               </div>
-                                              <span class="text-sm leading-[22px] font-normal inline-block ml-1">(@product.RatingCount)</span>
+                                              <span class="text-xs leading-[18px] text-light-secondary-text inline-block ml-1.5">(@product.RatingCount)</span>
                                           </div>
                                           @if (product.Colors != null && product.Colors.Any()) {
                                               <div class="variation-buttons flex gap-x-2.5 mb-3 flex-wrap">
@@ -680,12 +1236,12 @@
                                               <div class="variation-buttons flex gap-x-2.5 mb-3 h-[32px]"></div>
                                           }
 
-                                          <div class="price-section flex items-center gap-x-3 mb-3">
-                                              <span class="current-price text-[20px] font-urbanist leading-[30px] font-bold text-light-primary-text">@product.Price.ToString("N0")đ</span>
+                                          <div class="sellzy-price-row">
+                                              <span class="sellzy-price-current">@product.Price.ToString("N0")đ</span>
                                               @if (product.OldPrice.HasValue && product.OldPrice.Value > product.Price)
                                               {
-                                                  <span class="old-price text-[20px] font-urbanist font-medium leading-[30px] text-light-disabled-text line-through">@product.OldPrice.Value.ToString("N0")đ</span>
-                                                  <span class="text-sm font-semibold text-error ml-1 self-center">@product.DiscountPercent% OFF</span>
+                                                  <span class="sellzy-price-old">@product.OldPrice.Value.ToString("N0")đ</span>
+                                                  <span class="sellzy-price-off">-@product.DiscountPercent%</span>
                                               }
                                           </div>
                                           <div class="btn-section flex items-center gap-x-4">
@@ -728,28 +1284,27 @@
     <!-- ========== Promo Section Start ========== -->
     <section class="pb-[70px]">
       <div class="container">
-        <div class="grid grid-cols-12 gap-6">
+        <div class="grid grid-cols-12 gap-6 items-stretch">
           <div
             class="md:col-span-6 col-span-12 xl:col-span-6 wow animate__animated animate__fadeInUp"
             data-wow-delay="0.2s"
           >
             <div
-              class="flex flex-col justify-end text-center min-h-[844px] rounded-2xl bg-[url(../images/home-4/man-woman.png)] bg-[#FFF5FB] bg-top bg-cover bg-no-repeat"
+              class="sellzy-promo-card h-full bg-[#FFF5FB] bg-top bg-cover bg-no-repeat"
+              style="min-height: 540px; background-image: url('/assets/images/home-4/promo-tech.jpg');"
             >
-              <div class="py-12 bg-[#FFD6EF] rounded-b-2xl">
+              <div class="sellzy-promo-box bg-[#FFD6EF]">
                 <div>
-                  <span
-                    class="text-light-primary-text bg-warning-light px-3 py-1 rounded-full text-base font-semibold"
-                  >
-                    Nhận ưu đãi 20%
+                  <span class="sellzy-promo-pill bg-warning-light">
+                    Giảm đến 20%
                   </span>
                 </div>
-                <h3 class="py-1.5">Thời Trang Từ Sàn Diễn Đến Tủ Đồ Của Bạn</h3>
-                <p class="pb-4 text-light-primary-text">
-                  Khám phá các sản phẩm hàng đầu và phụ kiện thời trang thiết yếu ngay hôm nay.
+                <h3>Công Nghệ &amp; Thiết Bị Số Chính Hãng</h3>
+                <p>
+                  Khám phá điện thoại, laptop, tai nghe &amp; phụ kiện công nghệ hàng đầu với bảo hành điện tử.
                 </p>
-                <a class='btn btn-primary text-white font-semibold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-4 pr-2' href='shop-left-sidebar-3col.html'>
-                  Mua Ngay
+                <a class='btn btn-primary text-white font-semibold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-5 pr-2' href='/category/dien-thoai-phu-kien'>
+                  Khám Phá Ngay
                   <span
                     class="size-8 ml-0.5 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
                   >
@@ -766,23 +1321,20 @@
             data-wow-delay="0.3s"
           >
             <div
-              class="flex flex-col text-center rounded-2xl bg-[#FFF9D3] bg-bottom bg-no-repeat"
+              class="sellzy-promo-card sellzy-promo-card-top h-full bg-[#FFF9D3]"
+              style="min-height: 540px;"
             >
-              <div
-                class="py-[33px] lg:px-[66px] px-11 bg-[#FFEB69] rounded-t-2xl"
-              >
+              <div class="sellzy-promo-box bg-[#FFEB69]">
                 <div>
-                  <span
-                    class="text-light-primary-text bg-[#FFD6EF] px-3 py-1 rounded-full text-base font-semibold"
-                  >
+                  <span class="sellzy-promo-pill bg-[#FFD6EF]">
                     Nhận ưu đãi 20%
                   </span>
                 </div>
-                <h3 class="py-1.5">Thời Trang Nữ</h3>
-                <p class="pb-4 text-light-primary-text">
-                  Mua sắm bộ sưu tập độc quyền và tự tin thể hiện phong cách của bạn.
+                <h3>Thời Trang &amp; Phong Cách</h3>
+                <p>
+                  Bộ sưu tập thời trang thiết kế, giày dép &amp; phụ kiện giúp bạn tự tin tỏa sáng mỗi ngày.
                 </p>
-                <a class='btn btn-primary text-white font-semibold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-4 pr-2' href='shop-left-sidebar-3col.html'>
+                <a class='btn btn-primary text-white font-semibold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-5 pr-2' href='/category/thoi-trang-nu'>
                   Mua Ngay
                   <span
                     class="size-8 ml-0.5 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
@@ -794,8 +1346,11 @@
                 </a>
               </div>
               <div
-                class="min-h-[586px] bg-[url('images/home-4/black-dress-woman.html')] bg-no-repeat bg-center rounded-b-2xl"
-              ></div>
+                class="flex-1 flex items-end justify-center pt-2 px-3"
+                style="min-height: 310px;"
+              >
+                <img src="/assets/images/home-4/black-dress-woman.png" alt="Thời Trang &amp; Phong Cách" style="max-height: 300px; width: auto; object-fit: contain;" />
+              </div>
             </div>
           </div>
           <div
@@ -803,23 +1358,20 @@
             data-wow-delay="0.4s"
           >
             <div
-              class="flex flex-col justify-end text-center min-h-[844px] rounded-2xl bg-[url(../images/home-4/kid-with-skateboard.jpg)] bg-center bg-cover bg-no-repeat"
+              class="sellzy-promo-card h-full bg-[#E0F7F6] bg-top bg-cover bg-no-repeat"
+              style="min-height: 540px; background-image: url('/assets/images/home-4/promo-lifestyle.jpg');"
             >
-              <div
-                class="py-[33px] lg:px-11 px-[22px] bg-[#A0E2E0] rounded-b-2xl"
-              >
+              <div class="sellzy-promo-box bg-[#A0E2E0]">
                 <div>
-                  <span
-                    class="text-light-primary-text bg-[#FFEB69] px-3 py-1 rounded-full text-base font-semibold"
-                  >
-                    Nhận ưu đãi 20%
+                  <span class="sellzy-promo-pill bg-[#FFEB69]">
+                    Ưu đãi 25%
                   </span>
                 </div>
-                <h3 class="py-1.5">Thời Trang Trẻ Em & Em Bé</h3>
-                <p class="pb-4 text-light-primary-text">
-                  Mua sắm bộ sưu tập độc quyền và tự tin thể hiện phong cách của bé.
+                <h3>Gia Dụng &amp; Làm Đẹp</h3>
+                <p>
+                  Thiết bị gia dụng thông minh &amp; mỹ phẩm chính hãng nâng tầm chất lượng sống mỗi ngày.
                 </p>
-                <a class='btn btn-primary text-white font-semibold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-4 pr-2' href='shop-left-sidebar-3col.html'>
+                <a class='btn btn-primary text-white font-semibold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-5 pr-2' href='/category/thiet-bi-dien-gia-dung'>
                   Mua Ngay
                   <span
                     class="size-8 ml-0.5 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
@@ -842,197 +1394,89 @@
       class="pb-12 wow animate__animated animate__fadeInUp"
       data-wow-delay="0.2s"
     >
-      <div class="xl:max-w-[1728px] w-full mx-auto px-4 xl:px-0">
+      <div class="container">
         <div
-          class="flex items-center overflow-x-hidden bg-primary-lighter py-8"
+          class="sellzy-marquee-wrap flex items-center overflow-x-hidden py-6"
         >
           <!-- ========== Marquee Text Start ========== -->
           <div
             class="flex items-center justify-center animate-marquee gap-x-15 pr-[30px]"
           >
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Miễn phí vận chuyển toàn quốc</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Đổi trả dễ dàng trong 30 ngày</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Cam kết chính hãng 100%</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Hỗ trợ khách hàng 24/7</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Ưu đãi thành viên hấp dẫn</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Thanh toán an toàn &amp; bảo mật</h5>
             </div>
           </div>
           <div
             class="flex items-center justify-center animate-marquee gap-x-15 pl-[30px]"
           >
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Miễn phí vận chuyển toàn quốc</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Đổi trả dễ dàng trong 30 ngày</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Cam kết chính hãng 100%</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Hỗ trợ khách hàng 24/7</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Ưu đãi thành viên hấp dẫn</h5>
             </div>
             <div class="flex items-center gap-x-15 whitespace-nowrap">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z"
-                  fill="#04535C"
-                />
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0L16.6738 9.36891L26.1244 7L19.3475 14L26.1244 21L16.6738 18.6311L14 28L11.3262 18.6311L1.87564 21L8.65248 14L1.87564 7L11.3262 9.36891L14 0Z" fill="#04535C" />
               </svg>
-              <h5 class="text-primary-darker">Free shipment</h5>
+              <h5 class="text-primary-darker">Thanh toán an toàn &amp; bảo mật</h5>
             </div>
           </div>
           <!-- ========== Marquee Text End ========== -->
@@ -1044,47 +1488,35 @@
     <!-- ========== Logo Section Start ========== -->
     <div class="pb-[70px]">
       <div class="container">
-        <div class="flex flex-wrap justify-center xl:justify-between gap-y-8">
-          <div class="w-1/2 md:w-1/3 xl:w-auto flex justify-center">
-            <img
-              src="assets/images/home-4/cowshed.png"
-              alt="Cowshed"
-              class="wow animate__animated animate__fadeInUp"
-              data-wow-delay="0.2s"
-            />
-          </div>
-          <div class="w-1/2 md:w-1/3 xl:w-auto flex justify-center">
-            <img
-              src="assets/images/home-4/ninoa.png"
-              alt="Ninoa"
-              class="wow animate__animated animate__fadeInUp"
-              data-wow-delay="0.3s"
-            />
-          </div>
-          <div class="w-1/2 md:w-1/3 xl:w-auto flex justify-center">
-            <img
-              src="assets/images/home-4/claudia.png"
-              alt="Claudia"
-              class="wow animate__animated animate__fadeInUp"
-              data-wow-delay="0.4s"
-            />
-          </div>
-          <div class="w-1/2 md:w-1/3 xl:w-auto flex justify-center">
-            <img
-              src="assets/images/home-4/minut.png"
-              alt="Minut"
-              class="wow animate__animated animate__fadeInUp"
-              data-wow-delay="0.5s"
-            />
-          </div>
-          <div class="w-1/2 md:w-1/3 xl:w-auto flex justify-center">
-            <img
-              src="assets/images/home-4/orchard.png"
-              alt="Orchard"
-              class="wow animate__animated animate__fadeInUp"
-              data-wow-delay="0.6s"
-            />
-          </div>
+        <div class="text-center mb-6 wow animate__animated animate__fadeInUp" data-wow-delay="0.15s">
+          <span class="sellzy-section-eyebrow">Thương hiệu chính hãng</span>
+          <h4 class="text-xl font-bold text-light-primary-text mt-1">Đối Tác Thương Hiệu Đa Ngành</h4>
+        </div>
+        <div class="sellzy-brand-grid">
+          <a href="/search?q=Apple" class="sellzy-brand-tile wow animate__animated animate__fadeInUp" data-wow-delay="0.1s">
+            <span class="sellzy-brand-name" style="letter-spacing: -0.02em;"> Apple</span>
+            <span class="sellzy-brand-sub">Công nghệ &amp; Di động</span>
+          </a>
+          <a href="/search?q=Samsung" class="sellzy-brand-tile wow animate__animated animate__fadeInUp" data-wow-delay="0.2s">
+            <span class="sellzy-brand-name" style="color: #1428A0;">SAMSUNG</span>
+            <span class="sellzy-brand-sub">Điện tử &amp; Gia dụng</span>
+          </a>
+          <a href="/search?q=Philips" class="sellzy-brand-tile wow animate__animated animate__fadeInUp" data-wow-delay="0.3s">
+            <span class="sellzy-brand-name" style="color: #0B5ED7;">PHILIPS</span>
+            <span class="sellzy-brand-sub">Gia dụng thông minh</span>
+          </a>
+          <a href="/search?q=Uniqlo" class="sellzy-brand-tile wow animate__animated animate__fadeInUp" data-wow-delay="0.4s">
+            <span class="sellzy-brand-name" style="color: #DC2626;">UNIQLO</span>
+            <span class="sellzy-brand-sub">Thời trang LifeWear</span>
+          </a>
+          <a href="/search?q=Nike" class="sellzy-brand-tile wow animate__animated animate__fadeInUp" data-wow-delay="0.5s">
+            <span class="sellzy-brand-name" style="font-style: italic;">NIKE</span>
+            <span class="sellzy-brand-sub">Giày dép &amp; Thể thao</span>
+          </a>
+          <a href="/search?q=L'Oréal" class="sellzy-brand-tile wow animate__animated animate__fadeInUp" data-wow-delay="0.6s">
+            <span class="sellzy-brand-name" style="color: #7C3AED;">L'ORÉAL</span>
+            <span class="sellzy-brand-sub">Mỹ phẩm &amp; Sắc đẹp</span>
+          </a>
         </div>
       </div>
     </div>
@@ -1093,12 +1525,12 @@
     <!-- ========== Hand Picked Section Start ========== -->
     <section class="pb-[70px]">
       <div class="container">
-        <h2
-          class="text-center pb-12 wow animate__animated animate__fadeInUp"
-          data-wow-delay="0.2s"
-        >
-          Sản phẩm tuyển chọn dành riêng cho bạn
-        </h2>
+        <div class="text-center pb-10 wow animate__animated animate__fadeInUp" data-wow-delay="0.2s">
+          <span class="sellzy-section-eyebrow">Gợi ý dành riêng</span>
+          <h2 class="sellzy-section-title">
+            Sản phẩm tuyển chọn dành riêng cho bạn
+          </h2>
+        </div>
         <div class="grid grid-cols-12 gap-6">
           <!-- ========== Dynamic Product Cards Start ========== -->
           @if (Model.FeaturedProducts != null)
@@ -1182,8 +1614,8 @@
                           <!-- ========== Product Image Slider End ========== -->
 
                           <div class="product-content">
-                            <h5 class="text-[20px] leading-[30px] font-bold pb-4">
-                              <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="hover:text-primary transition-colors">
+                            <h5 class="sellzy-product-title">
+                              <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="line-clamp-2 transition-colors">
                                   @product.Name
                               </a>
                             </h5>
@@ -1255,22 +1687,16 @@
                       </div>
 
                       <div>
-                          <div class="price-section flex items-center gap-x-3 mb-4">
-                            <span
-                              class="current-price text-[20px] font-urbanist leading-[30px] font-bold text-light-primary-text"
-                            >
+                          <div class="sellzy-price-row">
+                            <span class="sellzy-price-current">
                                 @product.Price.ToString("N0")đ
                             </span>
                             @if (product.OldPrice.HasValue && product.OldPrice.Value > product.Price)
                             {
-                                <span
-                                  class="old-price text-[20px] font-urbanist font-medium leading-[30px] text-light-disabled-text line-through"
-                                >
+                                <span class="sellzy-price-old">
                                     @product.OldPrice.Value.ToString("N0")đ
-                                  </span>
-                                <span
-                                  class="discount-percentage text-[20px] font-urbanist font-medium leading-[30px] text-error"
-                                >
+                                </span>
+                                <span class="sellzy-price-off">
                                     -@product.DiscountPercent%
                                 </span>
                             }
@@ -1281,17 +1707,10 @@
                               <i class="hgi hgi-stroke hgi-favourite text-xl text-light-secondary-text"></i>
                             </button>
 
-                            <form asp-controller="Cart" asp-action="AddToCart" method="post" class="flex-1">
-                                <input type="hidden" name="productId" value="@product.ProductId" />
-                                <input type="hidden" name="variantId" value="@product.DefaultVariantId" />
-                                <input type="hidden" name="quantity" value="1" />
-                                <button type="submit" class="btn btn-primary rounded-full font-semibold text-sm leading-6 px-6.5 py-2 w-full flex items-center justify-center gap-2">
-                                  <i
-                                    class="hgi hgi-stroke hgi-shopping-cart-02 text-xl text-white"
-                                  ></i>
-                                  <span>Thêm vào giỏ</span>
-                                </button>
-                            </form>
+                            <a class="btn btn-primary rounded-full font-semibold text-sm leading-6 px-6.5 py-2 flex-1 flex items-center justify-center gap-2" href="#" data-add-to-cart data-variant-id="@product.DefaultVariantId">
+                              <i class="hgi hgi-stroke hgi-shopping-cart-02 text-xl text-white"></i>
+                              <span>Thêm vào giỏ</span>
+                            </a>
                           </div>
                       </div>
                     </div>
@@ -1307,101 +1726,122 @@
     <!-- ========== Promo Section Start ========== -->
     <section class="pb-[70px]">
       <div class="container">
-        <div class="grid grid-cols-12 gap-6">
+        <div class="sellzy-promo2-grid">
+          <!-- Card 1: Thực Phẩm Sạch & Đồ Uống (Emerald Green Gradient) -->
           <div
-            class="md:col-span-6 col-span-12 xl:col-span-6 wow animate__animated animate__fadeInUp"
+            class="sellzy-bento2-card sellzy-promo2-wide wow animate__animated animate__fadeInUp"
             data-wow-delay=".2s"
+            style="background: linear-gradient(135deg, #047857 0%, #088178 55%, #10B981 100%); border: none; color: #ffffff;"
           >
-            <div
-              class="flex flex-col justify-end text-center p-4 lg:p-8 min-h-[532px] rounded-2xl bg-[url(/assets/images/home-4/2-women-red-dress.png)] bg-[#D5FFFC] bg-no-repeat bg-center"
-            >
-              <div class="p-6 bg-[#9EE872] rounded-2xl">
+            <div class="sellzy-bento2-wide-inner">
+              <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
                 <div>
-                  <span
-                    class="text-light-primary-text bg-warning-light px-3 py-1 rounded-full text-base font-semibold"
-                  >
-                    Nhận ưu đãi 50%
+                  <span class="sellzy-bento2-pill" style="background-color: #FFEB69; color: #161C24;">
+                    Freeship &amp; Giảm đến 30%
                   </span>
+                  <h3 class="sellzy-bento2-title" style="font-size: 24px; color: #ffffff;">Thực Phẩm Sạch &amp; Đồ Uống</h3>
+                  <p class="sellzy-bento2-desc" style="color: rgba(255, 255, 255, 0.85);">
+                    Bánh kẹo nhập khẩu, cà phê, trà sữa &amp; thực phẩm tươi sống được kiểm soát hạn sử dụng nghiêm ngặt.
+                  </p>
                 </div>
-                <h3 class="py-3">Phong Cách Khẳng Định Bản Thân</h3>
-                <p class="pb-4 text-light-primary-text">
-                  Khám phá các xu hướng mới nhất và nâng tầm tủ đồ của bạn ngay hôm nay.
-                </p>
-                <a class='btn btn-primary text-white font-semibold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-4 pr-2' href='shop-left-sidebar-3col.html'>
-                  Mua Ngay
-                  <span
-                    class="size-8 ml-0.5 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
-                  >
-                    <i
-                      class="hgi hgi-stroke hgi-arrow-right-02 text-xl text-primary-darker"
-                    ></i>
+                <div>
+                  <a class='btn font-bold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-5 pr-2 inline-flex items-center gap-2'
+                     style="background-color: #FFEB69; color: #161C24;"
+                     href='/category/thuc-pham-do-uong'>
+                    Khám Phá Ngay
+                    <span class="size-8 inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300" style="background-color: #161C24;">
+                      <i class="hgi hgi-stroke hgi-arrow-right-02 text-xl" style="color: #ffffff;"></i>
+                    </span>
+                  </a>
+                </div>
+              </div>
+
+              <div style="width: 100%; max-width: 235px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+                <div class="sellzy-bento2-mini" style="background: rgba(255, 255, 255, 0.96); border: none;">
+                  <span style="width: 40px; height: 40px; border-radius: 12px; background: #D1FAE5; color: #065F46; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   </span>
-                </a>
+                  <div>
+                    <div style="font-size: 13px; font-weight: 700; color: #161C24;">Hạn sử dụng rõ ràng</div>
+                    <div style="font-size: 11.5px; color: #637381;">Cảnh báo lô cận date</div>
+                  </div>
+                </div>
+                <div class="sellzy-bento2-mini" style="background: rgba(255, 255, 255, 0.96); border: none;">
+                  <span style="width: 40px; height: 40px; border-radius: 12px; background: #FEF3C7; color: #B45309; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                  </span>
+                  <div>
+                    <div style="font-size: 13px; font-weight: 700; color: #161C24;">Giao hàng bảo quản</div>
+                    <div style="font-size: 11.5px; color: #637381;">Đóng gói chống sốc &amp; mát</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Card 2: Nhà Sách & Văn Phòng Phẩm (Warm Peach / Amber - Không trùng nền trắng) -->
           <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 wow animate__animated animate__fadeInUp"
+            class="sellzy-bento2-card wow animate__animated animate__fadeInUp"
             data-wow-delay=".3s"
+            style="background: linear-gradient(145deg, #FFF7ED 0%, #FFEDD5 50%, #FED7AA 100%); border: 1px solid #FDBA74;"
           >
-            <div
-              class="flex flex-col justify-end text-center p-4 lg:pb-8 lg:px-6 min-h-[532px] rounded-2xl bg-[url(/assets/images/home-4/promo-card-2.png)] bg-[#FFF0F9] bg-center bg-no-repeat"
-            >
-              <div class="py-4 bg-[#FFD6EF] rounded-2xl">
-                <div>
-                  <span
-                    class="text-light-primary-text bg-warning-light px-3 py-1 rounded-full text-base font-semibold"
-                  >
-                    Nhận ưu đãi 25%
-                  </span>
-                </div>
-                <h4 class="py-1.5">Diện Mạo Mới Cho Mỗi Mùa</h4>
-                <p class="pb-4 text-light-primary-text">
-                  Mua sắm bộ sưu tập tuyển chọn cho mọi dịp và mọi tâm trạng.
-                </p>
-                <a class='btn btn-primary text-white font-semibold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-4 pr-2' href='shop-left-sidebar-3col.html'>
-                  Mua Ngay
-                  <span
-                    class="size-8 ml-0.5 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
-                  >
-                    <i
-                      class="hgi hgi-stroke hgi-arrow-right-02 text-xl text-primary-darker"
-                    ></i>
-                  </span>
-                </a>
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                <span class="sellzy-bento2-pill" style="background-color: #EA580C; color: #ffffff; margin-bottom: 0;">Ưu đãi đến 25%</span>
+                <span style="width: 42px; height: 42px; border-radius: 12px; background: #ffffff; color: #EA580C; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(234, 88, 12, 0.14);">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </span>
+              </div>
+              <h4 class="sellzy-bento2-title" style="color: #431407;">Nhà Sách &amp; Văn Phòng Phẩm</h4>
+              <p class="sellzy-bento2-desc" style="color: #7C2D12;">
+                Sách hay chọn lọc, sổ tay &amp; dụng cụ văn phòng chính hãng cho học tập và doanh nghiệp.
+              </p>
+              <div class="sellzy-bento2-tag" style="background: rgba(255, 255, 255, 0.92); color: #9A3412; border: 1px solid #FDBA74;">
+                🧾 Hỗ trợ xuất Hóa đơn VAT
               </div>
             </div>
+            <div>
+              <a class='btn font-bold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-5 pr-2 inline-flex items-center gap-2'
+                 style="background-color: #EA580C; color: #ffffff;"
+                 href='/category/nha-sach-van-phong-pham'>
+                Mua Ngay
+                <span class="size-8 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300">
+                  <i class="hgi hgi-stroke hgi-arrow-right-02 text-xl" style="color: #EA580C;"></i>
+                </span>
+              </a>
+            </div>
           </div>
+
+          <!-- Card 3: Sản Phẩm Số & E-Voucher (Royal Indigo Gradient) -->
           <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 wow animate__animated animate__fadeInUp"
+            class="sellzy-bento2-card wow animate__animated animate__fadeInUp"
             data-wow-delay=".4s"
+            style="background: linear-gradient(145deg, #312E81 0%, #4338CA 60%, #4F46E5 100%); border: none; color: #ffffff;"
           >
-            <div
-              class="flex flex-col justify-end text-center p-4 lg:pb-8 lg:px-6 min-h-[532px] rounded-2xl bg-[url(/assets/images/home-4/promo-card-3.png)] bg-[#FFF8CC] bg-center bg-no-repeat"
-            >
-              <div class="py-4 bg-[#FFEB69] rounded-2xl">
-                <div>
-                  <span
-                    class="text-light-primary-text bg-success-light px-3 py-1 rounded-full text-base font-semibold"
-                  >
-                    Nhận ưu đãi 30%
-                  </span>
-                </div>
-                <h4 class="py-1.5">Diện Mạo Mới Cho Mỗi Mùa</h4>
-                <p class="pb-4 text-light-primary-text">
-                  Mua sắm bộ sưu tập tuyển chọn cho mọi dịp và mọi tâm trạng.
-                </p>
-                <a class='btn btn-primary text-white font-semibold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-4 pr-2' href='shop-left-sidebar-3col.html'>
-                  Mua Ngay
-                  <span
-                    class="size-8 ml-0.5 bg-white inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300"
-                  >
-                    <i
-                      class="hgi hgi-stroke hgi-arrow-right-02 text-xl text-primary-darker"
-                    ></i>
-                  </span>
-                </a>
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                <span class="sellzy-bento2-pill" style="background-color: #FDE047; color: #1E1B4B; margin-bottom: 0;">Giao tức thời 24/7</span>
+                <span style="width: 42px; height: 42px; border-radius: 12px; background: rgba(255, 255, 255, 0.14); color: #FDE047; display: inline-flex; align-items: center; justify-content: center;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                </span>
               </div>
+              <h4 class="sellzy-bento2-title" style="color: #ffffff;">Sản Phẩm Số &amp; E-Voucher</h4>
+              <p class="sellzy-bento2-desc" style="color: #E0E7FF;">
+                Key bản quyền, thẻ game, khóa học &amp; E-Voucher gửi mã tự động ngay sau thanh toán.
+              </p>
+              <div class="sellzy-bento2-tag" style="background: rgba(255, 255, 255, 0.14); color: #FEF08A; border: 1px solid rgba(255, 255, 255, 0.22);">
+                ⚡ Giao mã tự động • 0đ ship
+              </div>
+            </div>
+            <div>
+              <a class='btn font-bold btn-large rounded-[60px] text-sm leading-6 group py-1.5 pl-5 pr-2 inline-flex items-center gap-2'
+                 style="background-color: #ffffff; color: #312E81;"
+                 href='/category/san-pham-so-evoucher'>
+                Mua Ngay
+                <span class="size-8 inline-flex items-center justify-center rounded-full rotate-[-40deg] transform group-hover:rotate-0 transition-all duration-300" style="background-color: #312E81;">
+                  <i class="hgi hgi-stroke hgi-arrow-right-02 text-xl" style="color: #ffffff;"></i>
+                </span>
+              </a>
             </div>
           </div>
         </div>
@@ -1413,27 +1853,19 @@
     <section class="pb-[70px]">
       <div class="container">
         <div class="mb-10 text-center">
+          <span class="sellzy-section-eyebrow wow animate__animated animate__fadeInUp" data-wow-delay=".15s">Bộ sưu tập</span>
           <div
             data-wow-delay=".2s"
             class="flex items-center justify-center gap-x-4 wow animate__animated animate__fadeInUp"
           >
-            <div class="flex gap-x-8 overflow-x-auto home-four-category-filter">
-              <button
-                data-tab="fresh-finds"
-                class="pt-[13px] pb-[22px] text-[32px] leading-[48px] font-bold"
-              >
+            <div class="flex gap-x-3 overflow-x-auto home-four-category-filter pb-2">
+              <button data-tab="fresh-finds">
                 Sản Phẩm Mới
               </button>
-              <button
-                data-tab="top-sellers"
-                class="pt-[13px] pb-[22px] text-[32px] leading-[48px] font-bold"
-              >
+              <button data-tab="top-sellers">
                 Bán Chạy Nhất
               </button>
-              <button
-                data-tab="most-wanted"
-                class="pt-[13px] pb-[22px] text-[32px] leading-[48px] font-bold"
-              >
+              <button data-tab="most-wanted">
                 Yêu Thích Nhất
               </button>
             </div>
@@ -1474,15 +1906,16 @@
                                     </button>
                                   </li>
                                   <li>
-                                    <a aria-label="So sánh" class="product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="@Url.RouteUrl("product_details", new { slug = product.Slug })">
+                                    <a aria-label="So sánh" class="product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="javascript:void(0)" onclick="addToCompare(@product.ProductId)">
                                       <i class="hgi hgi-stroke hgi-reload text-xl text-light-primary-text"></i>
                                     </a>
                                   </li>
                                   <li>
                                     <a
-                                      aria-label="Xem chi tiết"
-                                      class="relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5"
-                                      href="@Url.RouteUrl("product_details", new { slug = product.Slug })"
+                                      aria-label="Xem nhanh"
+                                      class="quick-view-sidebar-btn product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5"
+                                      href="#"
+                                      data-quick-view-url="@Url.Action("QuickView", "Products", new { id = product.ProductId })"
                                     >
                                       <i class="hgi hgi-stroke hgi-view text-xl text-light-primary-text"></i>
                                     </a>
@@ -1493,8 +1926,8 @@
 
                             <div class="product-content flex-1 flex flex-col justify-between">
                               <div>
-                                <h5 class="text-[20px] leading-[30px] font-bold pb-2 line-clamp-2">
-                                  <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="hover:text-primary transition-colors">
+                                <h5 class="sellzy-product-title">
+                                  <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="line-clamp-2 transition-colors">
                                       @product.Name
                                   </a>
                                 </h5>
@@ -1554,22 +1987,16 @@
                               </div>
 
                               <div>
-                                <div class="price-section flex items-center gap-x-3 mb-4">
-                                  <span
-                                    class="current-price text-[20px] font-urbanist leading-[30px] font-bold text-light-primary-text"
-                                  >
+                                <div class="sellzy-price-row">
+                                  <span class="sellzy-price-current">
                                     @product.Price.ToString("N0")đ
                                   </span>
                                   @if (product.OldPrice.HasValue && product.OldPrice.Value > product.Price)
                                   {
-                                      <span
-                                        class="old-price text-[16px] font-urbanist font-medium leading-[24px] text-light-disabled-text line-through"
-                                      >
+                                      <span class="sellzy-price-old">
                                         @product.OldPrice.Value.ToString("N0")đ
                                       </span>
-                                      <span
-                                        class="discount-percentage text-[16px] font-urbanist font-medium leading-[24px] text-error"
-                                      >
+                                      <span class="sellzy-price-off">
                                         -@product.DiscountPercent%
                                       </span>
                                   }
@@ -1578,15 +2005,10 @@
                                   <button type="button" data-wishlist-toggle data-product-id="@product.ProductId" class="size-10 flex flex-none items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300">
                                     <i class="hgi hgi-stroke hgi-favourite text-lg text-light-secondary-text"></i>
                                   </button>
-                                  <form asp-controller="Cart" asp-action="AddToCart" method="post" class="flex-1">
-                                      <input type="hidden" name="productId" value="@product.ProductId" />
-                                      <input type="hidden" name="variantId" value="@product.DefaultVariantId" />
-                                      <input type="hidden" name="quantity" value="1" />
-                                      <button type="submit" class="btn btn-primary rounded-full font-semibold text-xs leading-5 py-2 w-full flex items-center justify-center gap-1.5">
-                                        <i class="hgi hgi-stroke hgi-shopping-cart-02 text-lg text-white"></i>
-                                        <span>Thêm vào giỏ</span>
-                                      </button>
-                                  </form>
+                                  <a class="btn btn-primary rounded-full font-semibold text-xs leading-5 py-2 flex-1 flex items-center justify-center gap-1.5" href="#" data-add-to-cart data-variant-id="@product.DefaultVariantId">
+                                    <i class="hgi hgi-stroke hgi-shopping-cart-02 text-lg text-white"></i>
+                                    <span>Thêm vào giỏ</span>
+                                  </a>
                                 </div>
                               </div>
                             </div>
@@ -1632,15 +2054,16 @@
                                     </button>
                                   </li>
                                   <li>
-                                    <a aria-label="So sánh" class="product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="@Url.RouteUrl("product_details", new { slug = product.Slug })">
+                                    <a aria-label="So sánh" class="product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="javascript:void(0)" onclick="addToCompare(@product.ProductId)">
                                       <i class="hgi hgi-stroke hgi-reload text-xl text-light-primary-text"></i>
                                     </a>
                                   </li>
                                   <li>
                                     <a
-                                      aria-label="Xem chi tiết"
-                                      class="relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5"
-                                      href="@Url.RouteUrl("product_details", new { slug = product.Slug })"
+                                      aria-label="Xem nhanh"
+                                      class="quick-view-sidebar-btn product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5"
+                                      href="#"
+                                      data-quick-view-url="@Url.Action("QuickView", "Products", new { id = product.ProductId })"
                                     >
                                       <i class="hgi hgi-stroke hgi-view text-xl text-light-primary-text"></i>
                                     </a>
@@ -1651,8 +2074,8 @@
 
                             <div class="product-content flex-1 flex flex-col justify-between">
                               <div>
-                                <h5 class="text-[20px] leading-[30px] font-bold pb-2 line-clamp-2">
-                                  <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="hover:text-primary transition-colors">
+                                <h5 class="sellzy-product-title">
+                                  <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="line-clamp-2 transition-colors">
                                       @product.Name
                                   </a>
                                 </h5>
@@ -1712,22 +2135,16 @@
                               </div>
 
                               <div>
-                                <div class="price-section flex items-center gap-x-3 mb-4">
-                                  <span
-                                    class="current-price text-[20px] font-urbanist leading-[30px] font-bold text-light-primary-text"
-                                  >
+                                <div class="sellzy-price-row">
+                                  <span class="sellzy-price-current">
                                     @product.Price.ToString("N0")đ
                                   </span>
                                   @if (product.OldPrice.HasValue && product.OldPrice.Value > product.Price)
                                   {
-                                      <span
-                                        class="old-price text-[16px] font-urbanist font-medium leading-[24px] text-light-disabled-text line-through"
-                                      >
+                                      <span class="sellzy-price-old">
                                         @product.OldPrice.Value.ToString("N0")đ
                                       </span>
-                                      <span
-                                        class="discount-percentage text-[16px] font-urbanist font-medium leading-[24px] text-error"
-                                      >
+                                      <span class="sellzy-price-off">
                                         -@product.DiscountPercent%
                                       </span>
                                   }
@@ -1736,15 +2153,10 @@
                                   <button type="button" data-wishlist-toggle data-product-id="@product.ProductId" class="size-10 flex flex-none items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300">
                                     <i class="hgi hgi-stroke hgi-favourite text-lg text-light-secondary-text"></i>
                                   </button>
-                                  <form asp-controller="Cart" asp-action="AddToCart" method="post" class="flex-1">
-                                      <input type="hidden" name="productId" value="@product.ProductId" />
-                                      <input type="hidden" name="variantId" value="@product.DefaultVariantId" />
-                                      <input type="hidden" name="quantity" value="1" />
-                                      <button type="submit" class="btn btn-primary rounded-full font-semibold text-xs leading-5 py-2 w-full flex items-center justify-center gap-1.5">
-                                        <i class="hgi hgi-stroke hgi-shopping-cart-02 text-lg text-white"></i>
-                                        <span>Thêm vào giỏ</span>
-                                      </button>
-                                  </form>
+                                  <a class="btn btn-primary rounded-full font-semibold text-xs leading-5 py-2 flex-1 flex items-center justify-center gap-1.5" href="#" data-add-to-cart data-variant-id="@product.DefaultVariantId">
+                                    <i class="hgi hgi-stroke hgi-shopping-cart-02 text-lg text-white"></i>
+                                    <span>Thêm vào giỏ</span>
+                                  </a>
                                 </div>
                               </div>
                             </div>
@@ -1790,15 +2202,16 @@
                                     </button>
                                   </li>
                                   <li>
-                                    <a aria-label="So sánh" class="product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="@Url.RouteUrl("product_details", new { slug = product.Slug })">
+                                    <a aria-label="So sánh" class="product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="javascript:void(0)" onclick="addToCompare(@product.ProductId)">
                                       <i class="hgi hgi-stroke hgi-reload text-xl text-light-primary-text"></i>
                                     </a>
                                   </li>
                                   <li>
                                     <a
-                                      aria-label="Xem chi tiết"
-                                      class="relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5"
-                                      href="@Url.RouteUrl("product_details", new { slug = product.Slug })"
+                                      aria-label="Xem nhanh"
+                                      class="quick-view-sidebar-btn product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5"
+                                      href="#"
+                                      data-quick-view-url="@Url.Action("QuickView", "Products", new { id = product.ProductId })"
                                     >
                                       <i class="hgi hgi-stroke hgi-view text-xl text-light-primary-text"></i>
                                     </a>
@@ -1809,8 +2222,8 @@
 
                             <div class="product-content flex-1 flex flex-col justify-between">
                               <div>
-                                <h5 class="text-[20px] leading-[30px] font-bold pb-2 line-clamp-2">
-                                  <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="hover:text-primary transition-colors">
+                                <h5 class="sellzy-product-title">
+                                  <a href="@Url.RouteUrl("product_details", new { slug = product.Slug })" class="line-clamp-2 transition-colors">
                                       @product.Name
                                   </a>
                                 </h5>
@@ -1870,22 +2283,16 @@
                               </div>
 
                               <div>
-                                <div class="price-section flex items-center gap-x-3 mb-4">
-                                  <span
-                                    class="current-price text-[20px] font-urbanist leading-[30px] font-bold text-light-primary-text"
-                                  >
+                                <div class="sellzy-price-row">
+                                  <span class="sellzy-price-current">
                                     @product.Price.ToString("N0")đ
                                   </span>
                                   @if (product.OldPrice.HasValue && product.OldPrice.Value > product.Price)
                                   {
-                                      <span
-                                        class="old-price text-[16px] font-urbanist font-medium leading-[24px] text-light-disabled-text line-through"
-                                      >
+                                      <span class="sellzy-price-old">
                                         @product.OldPrice.Value.ToString("N0")đ
                                       </span>
-                                      <span
-                                        class="discount-percentage text-[16px] font-urbanist font-medium leading-[24px] text-error"
-                                      >
+                                      <span class="sellzy-price-off">
                                         -@product.DiscountPercent%
                                       </span>
                                   }
@@ -1894,15 +2301,10 @@
                                   <button type="button" data-wishlist-toggle data-product-id="@product.ProductId" class="size-10 flex flex-none items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300">
                                     <i class="hgi hgi-stroke hgi-favourite text-lg text-light-secondary-text"></i>
                                   </button>
-                                  <form asp-controller="Cart" asp-action="AddToCart" method="post" class="flex-1">
-                                      <input type="hidden" name="productId" value="@product.ProductId" />
-                                      <input type="hidden" name="variantId" value="@product.DefaultVariantId" />
-                                      <input type="hidden" name="quantity" value="1" />
-                                      <button type="submit" class="btn btn-primary rounded-full font-semibold text-xs leading-5 py-2 w-full flex items-center justify-center gap-1.5">
-                                        <i class="hgi hgi-stroke hgi-shopping-cart-02 text-lg text-white"></i>
-                                        <span>Thêm vào giỏ</span>
-                                      </button>
-                                  </form>
+                                  <a class="btn btn-primary rounded-full font-semibold text-xs leading-5 py-2 flex-1 flex items-center justify-center gap-1.5" href="#" data-add-to-cart data-variant-id="@product.DefaultVariantId">
+                                    <i class="hgi hgi-stroke hgi-shopping-cart-02 text-lg text-white"></i>
+                                    <span>Thêm vào giỏ</span>
+                                  </a>
                                 </div>
                               </div>
                             </div>
@@ -1925,79 +2327,61 @@
     <!-- ========== CTA Section Start ========== -->
     <section class="pb-[70px]">
       <div class="container">
-        <div class="grid grid-cols-12 gap-6">
+        <div class="grid grid-cols-12 gap-6 items-stretch">
           <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 wow animate__animated animate__fadeInUp"
+            class="md:col-span-6 col-span-12 xl:col-span-3 flex wow animate__animated animate__fadeInUp"
             data-wow-delay=".2s"
           >
-            <div
-              class="p-6 border-gray-300 border rounded-2xl text-center bg-[#A0E2E0]"
-            >
-              <span
-                class="inline-flex items-center justify-center size-14 bg-white rounded-full"
-              >
+            <div class="sellzy-cta-card w-full bg-[#A0E2E0]">
+              <span class="sellzy-cta-icon">
                 <i
                   class="hgi hgi-stroke hgi-container-truck text-3xl text-light-primary-text"
                 ></i>
               </span>
-              <h5 class="pt-3 pb-0.5">Miễn Phí Vận Chuyển</h5>
+              <h5>Miễn Phí Vận Chuyển</h5>
               <p>Hưởng đặc quyền giao hàng miễn phí trên mọi đơn hàng</p>
             </div>
           </div>
           <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 wow animate__animated animate__fadeInUp"
+            class="md:col-span-6 col-span-12 xl:col-span-3 flex wow animate__animated animate__fadeInUp"
             data-wow-delay=".3s"
           >
-            <div
-              class="p-6 border-gray-300 border rounded-2xl text-center bg-[#FFEB69]"
-            >
-              <span
-                class="inline-flex items-center justify-center size-14 bg-white rounded-full"
-              >
+            <div class="sellzy-cta-card w-full bg-[#FFEB69]">
+              <span class="sellzy-cta-icon">
                 <i
                   class="hgi hgi-stroke hgi-customer-support text-3xl text-light-primary-text"
                 ></i>
               </span>
-              <h5 class="pt-3 pb-0.5">Hỗ Trợ 24/7</h5>
-              <p>Hỗ trợ khách hàng mọi lúc, mọi nơi khi bạn cần</p>
+              <h5>Hỗ Trợ 24/7</h5>
+              <p>Hỗ trợ khách hàng tận tâm mọi lúc, mọi nơi khi bạn cần</p>
             </div>
           </div>
           <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 wow animate__animated animate__fadeInUp"
+            class="md:col-span-6 col-span-12 xl:col-span-3 flex wow animate__animated animate__fadeInUp"
             data-wow-delay=".4s"
           >
-            <div
-              class="p-6 border-gray-300 border rounded-2xl text-center bg-[#FFC091]"
-            >
-              <span
-                class="inline-flex items-center justify-center size-14 bg-white rounded-full"
-              >
+            <div class="sellzy-cta-card w-full bg-[#FFC091]">
+              <span class="sellzy-cta-icon">
                 <i
                   class="hgi hgi-stroke hgi-delivery-return-02 text-3xl text-light-primary-text"
                 ></i>
               </span>
-              <h5 class="pt-3 pb-0.5">Đổi Trả 30 Ngày</h5>
-              <p>
-                Sự hài lòng của bạn là ưu tiên hàng đầu: đổi trả sản phẩm trong 30 ngày
-              </p>
+              <h5>Đổi Trả 30 Ngày</h5>
+              <p>Đổi trả sản phẩm linh hoạt, hoàn tiền nhanh trong 30 ngày</p>
             </div>
           </div>
           <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 wow animate__animated animate__fadeInUp"
+            class="md:col-span-6 col-span-12 xl:col-span-3 flex wow animate__animated animate__fadeInUp"
             data-wow-delay=".5s"
           >
-            <div
-              class="p-6 border-gray-300 border rounded-2xl text-center bg-[#9EE872]"
-            >
-              <span
-                class="inline-flex items-center justify-center size-14 bg-white rounded-full"
-              >
+            <div class="sellzy-cta-card w-full bg-[#9EE872]">
+              <span class="sellzy-cta-icon">
                 <i
                   class="hgi hgi-stroke hgi-transaction text-3xl text-light-primary-text"
                 ></i>
               </span>
-              <h5 class="pt-3 pb-0.5">Thanh Toán Bảo Mật</h5>
-              <p>Trải nghiệm mua sắm an toàn với các phương thức thanh toán bảo mật</p>
+              <h5>Thanh Toán Bảo Mật</h5>
+              <p>Mua sắm an toàn với đa dạng phương thức thanh toán bảo mật</p>
             </div>
           </div>
         </div>

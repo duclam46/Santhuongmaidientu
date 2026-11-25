@@ -1,0 +1,281 @@
+@model DOAN_BANHANG.Areas.Admin.Controllers.SellerReviewDashboardVm
+@{
+    ViewData["Title"] = "Quản lý Đánh giá & Trợ lý Phản hồi AI";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@section Styles {
+    <style>
+        .rev-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .rev-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+        @@media (max-width: 991px) {
+            .rev-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .rev-kpi-card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .rev-kpi-ic {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(255, 235, 105, 0.18);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .rev-card {
+            border: 1px solid #E2E8F0;
+            border-radius: 18px;
+            background: #ffffff;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.2s ease;
+        }
+        .rev-card:hover {
+            border-color: #088178;
+            box-shadow: 0 10px 26px -14px rgba(8, 129, 120, 0.22);
+        }
+        .ai-suggest-pill {
+            border: 1px dashed #088178;
+            background: #F4FBFA;
+            color: #0F766E;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 12.5px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.18s ease;
+            display: block;
+            width: 100%;
+            margin-bottom: 6px;
+        }
+        .ai-suggest-pill:hover {
+            background: #E6F4F3;
+            border-style: solid;
+        }
+    </style>
+}
+
+@if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+{
+    <div class="alert alert-success border-0 rounded-3 shadow-sm d-flex align-items-center gap-2 mb-3">
+        <i class="bx bx-check-circle fs-5"></i>
+        <span class="fw-semibold">@toast</span>
+    </div>
+}
+
+<div class="rev-hero">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 rounded-pill px-3 py-1 mb-2" style="background: rgba(255,255,255,0.14); font-size: 12.5px;">
+                <i class="bx bx-brain text-warning"></i>
+                <span>Phân tích Cảm xúc Khách hàng (Sentiment AI) &amp; Gợi ý Phản hồi Tự động 1-Click</span>
+            </div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-star text-warning me-1"></i>Quản lý Đánh giá Sản phẩm &amp; Chăm sóc Uy tín — @Model.ShopName
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Phản hồi nhanh các đánh giá của người mua giúp tăng mức độ tin cậy của gian hàng và nâng tỷ lệ chuyển đổi đơn hàng mới thêm 18%–25%.
+            </p>
+        </div>
+        <a href="/Admin/SystemStatistics/Seller" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);">
+            <i class="bx bx-line-chart me-1"></i>Phân tích Chiến lược AI
+        </a>
+    </div>
+
+    <div class="rev-kpi-grid">
+        <div class="rev-kpi-card">
+            <span class="rev-kpi-ic"><i class="bx bxs-star"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.AverageRating / 5.0 ★</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.80);">Điểm trung bình (@Model.TotalReviews đánh giá)</div>
+            </div>
+        </div>
+        <div class="rev-kpi-card">
+            <span class="rev-kpi-ic" style="background: rgba(52,211,153,0.22); color: #6EE7B7;"><i class="bx bx-smile"></i></span>
+            <div>
+                <div class="fs-5 fw-bold lh-1" style="color: #FFEB69;">@Model.PositiveCount đánh giá</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.80);">Cảm xúc Tích cực (4★ - 5★)</div>
+            </div>
+        </div>
+        <div class="rev-kpi-card">
+            <span class="rev-kpi-ic" style="background: rgba(248,113,113,0.22); color: #FCA5A5;"><i class="bx bx-error-circle"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.UnrepliedCount chưa trả lời</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.80);">Cần phản hồi (1–3★: @(Model.NeutralCount + Model.NegativeCount))</div>
+            </div>
+        </div>
+        <div class="rev-kpi-card">
+            <span class="rev-kpi-ic" style="background: rgba(56,189,248,0.22); color: #7DD3FC;"><i class="bx bx-check-shield"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.ReplyRatePercent%</div>
+                <div class="small mt-1" style="color: rgba(255,255,255,0.80);">Tỷ lệ phản hồi khách hàng</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- THANH LỌC & TÌM KIẾM -->
+<div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex flex-wrap gap-1.5">
+            <a href="@Url.Action("Index", new { filter = "all" })" class="btn btn-sm rounded-pill px-3 fw-semibold @(Model.Filter == "all" ? "btn-primary" : "btn-light")">
+                Tất cả (@Model.TotalReviews)
+            </a>
+            <a href="@Url.Action("Index", new { filter = "unreplied" })" class="btn btn-sm rounded-pill px-3 fw-semibold @(Model.Filter == "unreplied" ? "btn-warning text-dark" : "btn-light")">
+                Chưa phản hồi (@Model.UnrepliedCount)
+            </a>
+            <a href="@Url.Action("Index", new { filter = "positive" })" class="btn btn-sm rounded-pill px-3 fw-semibold @(Model.Filter == "positive" ? "btn-success" : "btn-light")">
+                Tích cực 4–5★ (@Model.PositiveCount)
+            </a>
+            <a href="@Url.Action("Index", new { filter = "negative" })" class="btn btn-sm rounded-pill px-3 fw-semibold @(Model.Filter == "negative" ? "btn-danger" : "btn-light")">
+                Cần xử lý 1–3★ (@(Model.NeutralCount + Model.NegativeCount))
+            </a>
+            <a href="@Url.Action("Index", new { filter = "replied" })" class="btn btn-sm rounded-pill px-3 fw-semibold @(Model.Filter == "replied" ? "btn-info text-white" : "btn-light")">
+                Đã phản hồi
+            </a>
+        </div>
+
+        <form method="get" class="d-flex align-items-center gap-2">
+            <input type="hidden" name="filter" value="@Model.Filter" />
+            <input type="text" name="search" value="@Model.Search" class="form-control form-control-sm rounded-pill px-3" placeholder="Tìm sản phẩm, tên khách, nội dung..." style="min-width: 240px;" />
+            <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3">Tìm</button>
+        </form>
+    </div>
+</div>
+
+<!-- DANH SÁCH ĐÁNH GIÁ & TRỢ LÝ AI GỢI Ý PHẢN HỒI -->
+@if (!Model.Reviews.Any())
+{
+    <div class="card shadow-sm border-0 rounded-4 p-5 text-center text-muted">
+        <i class="bx bx-message-rounded-Check fs-1 mb-2 text-primary"></i>
+        <h6 class="fw-bold text-dark">Không có đánh giá nào trong bộ lọc này</h6>
+        <p class="small mb-0">Khi khách hàng đánh giá sản phẩm sau khi mua, hệ thống AI sẽ tự động phân tích cảm xúc và soạn sẵn mẫu câu trả lời tại đây.</p>
+    </div>
+}
+else
+{
+    foreach (var r in Model.Reviews)
+    {
+        <div class="rev-card">
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2.5">
+                            @if (!string.IsNullOrWhiteSpace(r.ProductImageUrl))
+                            {
+                                <img src="@r.ProductImageUrl" class="rounded-3 border" style="width: 44px; height: 44px; object-fit: cover;" alt="@r.ProductName" />
+                            }
+                            else
+                            {
+                                <span class="rounded-3 d-inline-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px; background: #E6F4F3; color: #088178;">P</span>
+                            }
+                            <div>
+                                <div class="fw-bold text-dark">@r.ProductName</div>
+                                <div class="small text-muted">
+                                    Khách hàng: <strong>@r.CustomerName</strong> • @r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </div>
+                        </div>
+                        <span class="badge border rounded-pill px-2.5 py-1 @r.AiSentimentBadgeClass">
+                            <i class="bx bx-bot me-1"></i>@r.AiSentimentLabel
+                        </span>
+                    </div>
+
+                    <div class="mb-2">
+                        @for (int s = 1; s <= 5; s++)
+                        {
+                            <i class="bx @(s <= r.Rating ? "bxs-star text-warning" : "bx-star text-muted") fs-5"></i>
+                        }
+                        <span class="fw-bold text-dark ms-1">@r.Rating / 5 sao</span>
+                    </div>
+
+                    <div class="p-3 rounded-3 bg-light border text-dark small mb-2">
+                        @r.Comment
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(r.SellerReply))
+                    {
+                        <div class="p-3 rounded-3 border mt-2" style="background: #F4FBFA; border-color: #CCE3DF !important;">
+                            <div class="d-flex align-items-center justify-content-between small mb-1">
+                                <strong style="color: #088178;"><i class="bx bx-check-double me-1"></i>Phản hồi chính thức của Shop:</strong>
+                                @if (r.RepliedAt.HasValue)
+                                {
+                                    <span class="text-muted">@r.RepliedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                }
+                            </div>
+                            <div class="small text-dark">@r.SellerReply</div>
+                        </div>
+                    }
+                </div>
+
+                <!-- KHUNG SOẠN PHẢN HỒI & GỢI Ý AI 1-CLICK -->
+                <div class="col-lg-5 border-start ps-lg-4">
+                    <form asp-action="Reply" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="reviewId" value="@r.Id" />
+                        <input type="hidden" name="returnFilter" value="@Model.Filter" />
+
+                        <div class="d-flex align-items-center justify-content-between mb-1.5">
+                            <label class="small fw-bold text-dark">
+                                <i class="bx bx-magic-wand text-primary me-1"></i>Gợi ý phản hồi nhanh bởi Sellzy AI (Bấm để điền):
+                            </label>
+                        </div>
+
+                        <button type="button" class="ai-suggest-pill" data-target-input="#reply-box-@r.Id" data-reply-text="@r.AiSuggestedReply1">
+                            <strong>Mẫu AI 1:</strong> @r.AiSuggestedReply1
+                        </button>
+                        <button type="button" class="ai-suggest-pill mb-2" data-target-input="#reply-box-@r.Id" data-reply-text="@r.AiSuggestedReply2">
+                            <strong>Mẫu AI 2:</strong> @r.AiSuggestedReply2
+                        </button>
+
+                        <textarea id="reply-box-@r.Id" name="replyText" rows="3" class="form-control form-control-sm rounded-3 mb-2" placeholder="Nhập hoặc bấm chọn mẫu phản hồi AI ở trên...">@r.SellerReply</textarea>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3.5 fw-semibold">
+                                <i class="bx bx-send me-1"></i>@(string.IsNullOrWhiteSpace(r.SellerReply) ? "Gửi phản hồi" : "Cập nhật phản hồi")
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('.ai-suggest-pill').on('click', function () {
+                var targetSel = $(this).attr('data-target-input');
+                var text = $(this).attr('data-reply-text');
+                var $box = $(targetSel);
+                if ($box.length) {
+                    $box.val(text).focus();
+                }
+            });
+        });
+    </script>
+}

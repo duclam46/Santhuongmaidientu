@@ -1,115 +1,141 @@
 @model DOAN_BANHANG.ViewModels.WalletIndexVm
 
 @{
-    ViewData["Title"] = "Số dư tài khoản";
+    ViewData["Title"] = "Ví Sellzy & Số dư";
 
     string FormatVnd(decimal amount) => string.Format("{0:N0}đ", amount);
 
     string GetTxnTypeLabel(string type) => type switch
     {
-        "DEPOSIT"  => "Nạp tiền",
-        "PAYMENT"  => "Thanh toán đơn hàng",
-        "REFUND"   => "Hoàn tiền đơn hủy",
-        "CASHBACK" => "Thưởng hoàn tiền",
-        _          => type
+        "DEPOSIT"    => "Nạp tiền qua VNPAY",
+        "PAYMENT"    => "Thanh toán đơn hàng",
+        "REFUND"     => "Hoàn tiền đơn hàng",
+        "CASHBACK"   => "Thưởng điểm danh / Xu",
+        "SETTLEMENT" => "Giải ngân doanh thu",
+        _            => type
     };
 
     string GetTxnTypeIcon(string type) => type switch
     {
-        "DEPOSIT"  => "hgi-add-circle",
-        "PAYMENT"  => "hgi-shopping-bag-01",
-        "REFUND"   => "hgi-money-receive-01",
-        "CASHBACK" => "hgi-gift-card",
-        _          => "hgi-information-circle"
-    };
-
-    string GetTxnColorClass(string type) => type switch
-    {
-        "DEPOSIT"  or "REFUND" or "CASHBACK" => "text-green-600",
-        "PAYMENT"  => "text-red-500",
-        _          => "text-gray-500"
-    };
-
-    string GetTxnBgClass(string type) => type switch
-    {
-        "DEPOSIT"  or "REFUND" or "CASHBACK" => "bg-green-50",
-        "PAYMENT"  => "bg-red-50",
-        _          => "bg-gray-50"
+        "DEPOSIT"    => "hgi-add-circle",
+        "PAYMENT"    => "hgi-shopping-bag-01",
+        "REFUND"     => "hgi-money-receive-01",
+        "CASHBACK"   => "hgi-gift-card",
+        "SETTLEMENT" => "hgi-wallet-add-01",
+        _            => "hgi-information-circle"
     };
 }
 
 <style>
-/* ─── Wallet Page Styles ─── */
+/* ─── Sellzy Wallet Page — Unified Dark-Teal Luxury Theme ─── */
+.sz-wal-shell {
+    background: #eef2f6;
+    min-height: 82vh;
+    color: #0f172a;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.sz-wal-card {
+    background: #ffffff;
+    border-radius: 22px;
+    border: 1px solid #dbe4ee;
+    box-shadow: 0 6px 22px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+}
+
+.sz-wal-card-head {
+    padding: 16px 24px;
+    background: #f0fdfa;
+    border-bottom: 1px solid #ccfbf1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sz-wal-card-head h5 {
+    font-size: 16px;
+    font-weight: 800;
+    color: #043e37 !important;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ─── Wallet Hero Bank Card ─── */
 .wallet-hero {
-    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #7c3aed 100%);
+    background: linear-gradient(135deg, #022c22 0%, #065f5b 55%, #008374 100%);
     border-radius: 24px;
-    padding: 36px 32px;
+    padding: 28px 26px;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 20px 60px -10px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 18px 42px -12px rgba(0, 131, 116, 0.45);
+    border: 1px solid rgba(94, 234, 212, 0.25);
 }
 
 .wallet-hero::before {
     content: '';
     position: absolute;
-    top: -60px;
-    right: -60px;
-    width: 260px;
-    height: 260px;
+    top: -65px;
+    right: -55px;
+    width: 220px;
+    height: 220px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.06);
+    background: radial-gradient(circle, rgba(94, 234, 212, 0.22) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
 }
 
 .wallet-hero::after {
     content: '';
     position: absolute;
-    bottom: -80px;
-    left: -40px;
-    width: 200px;
-    height: 200px;
+    bottom: -75px;
+    left: -35px;
+    width: 190px;
+    height: 190px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.04);
+    background: radial-gradient(circle, rgba(253, 224, 71, 0.14) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
 }
 
 .wallet-balance-label {
-    color: rgba(255,255,255,0.7);
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
+    color: #ccfbf1 !important;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     margin-bottom: 8px;
 }
 
 .wallet-balance-amount {
-    font-size: 42px;
+    font-size: 38px;
     font-weight: 800;
-    color: #ffffff;
+    color: #ffffff !important;
     letter-spacing: -0.03em;
-    line-height: 1;
+    line-height: 1.05;
     margin-bottom: 4px;
 }
 
 .wallet-balance-currency {
-    font-size: 22px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.8);
-    vertical-align: super;
     font-size: 20px;
-    margin-left: 2px;
+    font-weight: 700;
+    color: #fde047 !important;
+    vertical-align: super;
+    margin-left: 3px;
 }
 
 .wallet-status-badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 100px;
-    padding: 6px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.95);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff !important;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.24);
 }
 
 .wallet-status-dot {
@@ -117,48 +143,76 @@
     height: 8px;
     border-radius: 50%;
     background: #4ade80;
-    box-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.9);
     animation: statusPulse 2s infinite;
+}
+
+.wallet-brand-chip {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #fde047 !important;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(253, 224, 71, 0.3);
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+
+.wallet-hero-foot {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.wallet-hero-foot p {
+    color: #d1fae5 !important;
+    font-size: 12px;
+    font-weight: 500;
+    margin: 0;
 }
 
 @@keyframes statusPulse {
     0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.3); }
+    50% { opacity: 0.65; transform: scale(1.3); }
 }
 
-.topup-form-wrapper {
-    background: #fff;
-    border-radius: 20px;
-    border: 1.5px solid #e2e8f0;
-    padding: 28px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
-
+/* ─── Top-up Form ─── */
 .topup-presets {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 9px;
     margin-bottom: 16px;
 }
 
 .topup-preset-btn {
-    padding: 10px 8px;
-    border: 1.5px solid #e2e8f0;
+    padding: 10px 6px;
+    border: 1.5px solid #dbe4ee;
     border-radius: 12px;
     font-size: 13px;
-    font-weight: 600;
-    color: #334155;
+    font-weight: 700;
+    color: #1e293b !important;
     background: #f8fafc;
     cursor: pointer;
     text-align: center;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
-.topup-preset-btn:hover,
+.topup-preset-btn:hover {
+    border-color: #008374;
+    background: #f0fdfa;
+    color: #008374 !important;
+}
+
 .topup-preset-btn.active {
-    border-color: #2563eb;
-    background: #eff6ff;
-    color: #2563eb;
+    border-color: #008374;
+    background: #008374;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(0, 131, 116, 0.28);
 }
 
 .topup-input-wrapper {
@@ -167,47 +221,50 @@
 
 .topup-input-wrapper input {
     width: 100%;
-    padding: 14px 60px 14px 20px;
-    border: 1.5px solid #e2e8f0;
+    padding: 14px 66px 14px 18px;
+    border: 1.5px solid #cbd5e1;
     border-radius: 14px;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     color: #0f172a;
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
     box-sizing: border-box;
     background: #f8fafc;
 }
 
 .topup-input-wrapper input:focus {
-    border-color: #2563eb;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    border-color: #008374;
+    background: #ffffff;
+    box-shadow: 0 0 0 3.5px rgba(0, 131, 116, 0.12);
 }
 
 .topup-input-suffix {
     position: absolute;
-    right: 16px;
+    right: 12px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 15px;
-    font-weight: 700;
-    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+    color: #065f5b;
+    background: #ccfbf1;
+    padding: 4px 9px;
+    border-radius: 8px;
 }
 
 .topup-submit-btn {
     width: 100%;
-    padding: 16px;
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
-    color: white;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #008374 0%, #065f5b 100%);
+    color: #ffffff !important;
     border: none;
-    border-radius: 14px;
-    font-size: 16px;
+    border-radius: 999px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     margin-top: 16px;
-    box-shadow: 0 4px 15px rgba(37,99,235,0.3);
+    box-shadow: 0 8px 20px -4px rgba(0, 131, 116, 0.38);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -215,28 +272,241 @@
 }
 
 .topup-submit-btn:hover {
-    box-shadow: 0 8px 25px rgba(37,99,235,0.4);
+    box-shadow: 0 12px 26px -4px rgba(0, 131, 116, 0.48);
     transform: translateY(-1px);
 }
 
-.topup-submit-btn:active {
-    transform: translateY(0);
+.topup-submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
 }
 
-/* Transaction History */
+.sz-wal-note-box {
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+    border-radius: 18px;
+    padding: 18px 20px;
+}
+
+.sz-wal-note-box h6 {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #043e37 !important;
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sz-wal-note-box ul {
+    font-size: 12.5px;
+    color: #065f5b;
+    line-height: 1.8;
+    padding-left: 18px;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* ─── Daily Attendance Card (Sellzy Dark-Teal + Gold) ─── */
+.attendance-card {
+    background: linear-gradient(135deg, #022c22 0%, #065f5b 58%, #008374 100%);
+    border-radius: 22px;
+    padding: 24px 26px;
+    color: #ffffff;
+    box-shadow: 0 16px 36px -10px rgba(0, 131, 116, 0.42);
+    border: 1px solid rgba(94, 234, 212, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.attendance-card::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -40px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(253, 224, 71, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+}
+
+.attendance-title-tag {
+    background: #fde047;
+    color: #022c22 !important;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 5px 14px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.attendance-card .att-sub {
+    color: #d1fae5 !important;
+    font-size: 13.5px;
+    font-weight: 500;
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.attendance-streak-box {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 14px;
+    padding: 10px 16px;
+    text-align: right;
+}
+
+.attendance-streak-box .streak-lbl {
+    font-size: 10.5px;
+    color: #ccfbf1 !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+}
+
+.attendance-streak-box .streak-val {
+    font-size: 22px;
+    font-weight: 800;
+    color: #fde047 !important;
+    margin: 2px 0 0 0;
+    line-height: 1.1;
+}
+
+.attendance-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    margin: 20px 0;
+}
+
+@@media (max-width: 640px) {
+    .attendance-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.attendance-day-box {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 11px 4px;
+    text-align: center;
+    color: #1e293b;
+    position: relative;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 98px;
+}
+
+.attendance-day-box.claimed {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #d1fae5;
+}
+
+.attendance-day-box.claimed span {
+    color: #d1fae5 !important;
+}
+
+.attendance-day-box.claimable {
+    border-color: #fde047;
+    box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.28);
+    animation: claimablePulse 1.8s infinite ease-in-out;
+    cursor: pointer;
+}
+
+.attendance-day-box.claimable:hover {
+    transform: translateY(-2px);
+}
+
+.attendance-day-box.locked {
+    background: rgba(255, 255, 255, 0.9);
+    opacity: 0.85;
+}
+
+.attendance-day-box .bonus-tag {
+    position: absolute;
+    top: -9px;
+    background: #ef4444;
+    color: #ffffff !important;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.attendance-coin-icon {
+    font-size: 22px;
+    margin: 4px 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.attendance-btn {
+    width: 100%;
+    padding: 13px 18px;
+    background: #fde047;
+    color: #022c22 !important;
+    border: none;
+    border-radius: 999px;
+    font-size: 14.5px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.attendance-btn:hover {
+    background: #facc15;
+    transform: translateY(-1px);
+}
+
+.attendance-btn:disabled {
+    background: rgba(255, 255, 255, 0.18);
+    color: #d1fae5 !important;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none;
+}
+
+@@keyframes claimablePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.035); }
+}
+
+/* ─── Transaction History ─── */
 .txn-list {
     display: flex;
     flex-direction: column;
-    gap: 0;
 }
 
 .txn-item {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 18px 0;
+    padding: 16px 24px;
     border-bottom: 1px solid #f1f5f9;
-    transition: background 0.15s;
+    transition: background 0.15s ease;
+}
+
+.txn-item:hover {
+    background: #f8fafc;
 }
 
 .txn-item:last-child {
@@ -244,14 +514,14 @@
 }
 
 .txn-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 22px;
+    font-size: 21px;
 }
 
 .txn-info {
@@ -261,17 +531,29 @@
 
 .txn-type {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: #0f172a;
     margin-bottom: 2px;
 }
 
 .txn-ref {
     font-size: 12px;
-    color: #94a3b8;
+    color: #64748b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.txn-ref-pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 1px 7px;
+    border-radius: 6px;
+    margin-top: 4px;
 }
 
 .txn-meta {
@@ -280,46 +562,37 @@
 }
 
 .txn-amount {
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 15.5px;
+    font-weight: 800;
     margin-bottom: 2px;
 }
 
 .txn-date {
-    font-size: 12px;
-    color: #94a3b8;
+    font-size: 11.5px;
+    color: #64748b;
+    font-weight: 500;
 }
 
 .txn-balance-after {
     font-size: 11px;
-    color: #b0b8c8;
+    color: #94a3b8;
+    margin-top: 2px;
 }
 
-.txn-amount-positive {
-    color: #10b981 !important; /* Emerald Green */
-}
-.txn-amount-negative {
-    color: #ef4444 !important; /* Red */
-}
-.txn-color-positive {
-    color: #10b981 !important;
-}
-.txn-bg-positive {
-    background: #ecfdf5 !important;
-}
-.txn-color-negative {
-    color: #ef4444 !important;
-}
-.txn-bg-negative {
-    background: #fef2f2 !important;
-}
+.txn-amount-positive { color: #059669 !important; }
+.txn-amount-negative { color: #dc2626 !important; }
+.txn-color-positive { color: #059669 !important; }
+.txn-bg-positive { background: #ecfdf5 !important; border: 1px solid #a7f3d0; }
+.txn-color-negative { color: #dc2626 !important; }
+.txn-bg-negative { background: #fef2f2 !important; border: 1px solid #fecaca; }
 
 /* Pagination */
 .wallet-pagination {
     display: flex;
     justify-content: center;
     gap: 8px;
-    padding-top: 20px;
+    padding: 18px 24px 24px 24px;
+    border-top: 1px solid #f1f5f9;
 }
 
 .wallet-pagination a,
@@ -327,641 +600,435 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    border: 1.5px solid #e2e8f0;
+    font-size: 13.5px;
+    font-weight: 700;
+    border: 1.5px solid #dbe4ee;
     color: #334155;
     text-decoration: none;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
 .wallet-pagination a:hover {
-    border-color: #2563eb;
-    color: #2563eb;
-    background: #eff6ff;
+    border-color: #008374;
+    color: #008374;
+    background: #f0fdfa;
 }
 
 .wallet-pagination .active-page {
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
-    color: white;
+    background: linear-gradient(135deg, #008374, #065f5b);
+    color: #ffffff;
     border-color: transparent;
-    box-shadow: 0 4px 10px rgba(37,99,235,0.3);
+    box-shadow: 0 4px 10px rgba(0, 131, 116, 0.3);
 }
 
-/* ─── Attendance Feature CSS ─── */
-.attendance-card {
-    background: linear-gradient(135deg, #ffb800 0%, #ff5722 100%);
-    border-radius: 24px;
-    padding: 26px;
-    color: white;
-    box-shadow: 0 12px 36px -4px rgba(255, 87, 34, 0.35);
-    position: relative;
-    overflow: hidden;
+/* ─── Centered Modal Popup Styles ─── */
+.wallet-popup-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 0 !important;
+    transition: opacity 0.35s ease !important;
 }
-
-.attendance-card::before {
-    content: '';
-    position: absolute;
-    top: -50px;
-    left: -50px;
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.08);
+.wallet-popup-overlay.show { opacity: 1 !important; }
+.wallet-popup-card {
+    background: #ffffff !important;
+    padding: 36px 32px !important;
+    border-radius: 26px !important;
+    max-width: 430px !important;
+    width: 90% !important;
+    box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.32) !important;
+    border: 1px solid #e2e8f0 !important;
+    text-align: center !important;
+    transform: scale(0.9) translateY(16px) !important;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
-
-.attendance-title-tag {
-    background: rgba(255, 255, 255, 0.95);
-    color: #ff5722;
-    font-size: 15px;
-    font-weight: 850;
-    padding: 6px 20px;
-    border-radius: 100px;
-    display: inline-block;
-    box-shadow: 0 4px 12px rgba(255, 87, 34, 0.15);
-    letter-spacing: 0.03em;
+.wallet-popup-overlay.show .wallet-popup-card { transform: scale(1) translateY(0) !important; }
+.wallet-popup-icon {
+    width: 70px !important;
+    height: 70px !important;
+    border-radius: 50% !important;
+    margin: 0 auto 18px auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #ffffff !important;
 }
-
-.attendance-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 10px;
-    margin: 22px 0;
+.wallet-popup-icon.success {
+    background: linear-gradient(135deg, #10b981, #008374) !important;
+    box-shadow: 0 10px 25px rgba(0, 131, 116, 0.35) !important;
 }
-
-.attendance-day-box {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 16px;
-    padding: 12px 4px;
-    text-align: center;
-    color: #334155;
-    position: relative;
-    border: 2px solid transparent;
-    transition: all 0.25s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 106px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+.wallet-popup-icon.error {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    box-shadow: 0 10px 25px rgba(239, 68, 68, 0.35) !important;
 }
-
-.attendance-day-box.claimed {
-    background: rgba(255, 255, 255, 0.55);
-    color: #94a3b8;
-    box-shadow: none;
+.wallet-popup-title {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.08em !important;
+    margin: 0 0 10px 0 !important;
 }
-
-.attendance-day-box.claimable {
-    border-color: #ff3d00;
-    animation: claimablePulse 1.6s infinite ease-in-out;
-    cursor: pointer;
-    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.15);
+.wallet-popup-title.success { color: #008374 !important; }
+.wallet-popup-title.error { color: #dc2626 !important; }
+.wallet-popup-divider {
+    width: 40px !important;
+    height: 3px !important;
+    background: #e2e8f0 !important;
+    border-radius: 999px !important;
+    margin: 0 auto 14px auto !important;
 }
-
-.attendance-day-box.claimable:hover {
-    transform: translateY(-2px);
-    background: #ffffff;
+.wallet-popup-message {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    line-height: 1.35 !important;
+    margin: 0 0 10px 0 !important;
 }
-
-.attendance-day-box.locked {
-    opacity: 0.85;
+.wallet-popup-sub {
+    font-size: 13px !important;
+    color: #64748b !important;
+    line-height: 1.55 !important;
+    margin: 0 0 24px 0 !important;
 }
-
-.attendance-day-box .bonus-tag {
-    position: absolute;
-    top: -8px;
-    background: #ff3d00;
-    color: white;
-    font-size: 9px;
-    font-weight: 800;
-    padding: 2px 8px;
-    border-radius: 100px;
-    box-shadow: 0 2px 6px rgba(255, 61, 0, 0.3);
+.wallet-popup-btn {
+    width: 100% !important;
+    padding: 14px !important;
+    border: none !important;
+    border-radius: 999px !important;
+    font-size: 14.5px !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    cursor: pointer !important;
 }
-
-.attendance-coin-icon {
-    font-size: 24px;
-    margin: 6px 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s;
-}
-
-.attendance-day-box.claimable:hover .attendance-coin-icon {
-    transform: scale(1.18);
-}
-
-.attendance-btn {
-    width: 100%;
-    padding: 15px;
-    background: #ffffff;
-    color: #ff5722;
-    border: none;
-    border-radius: 16px;
-    font-size: 16px;
-    font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-    transition: all 0.25s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.attendance-btn:hover {
-    background: #fff6f2;
-    transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    color: #ff3d00;
-}
-
-.attendance-btn:active {
-    transform: translateY(0);
-}
-
-.attendance-btn:disabled {
-    background: rgba(255, 255, 255, 0.3);
-    color: rgba(255, 255, 255, 0.85);
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none;
-}
-
-@@keyframes claimablePulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.04); }
-}
+.wallet-popup-btn.success { background: linear-gradient(135deg, #008374, #065f5b) !important; }
+.wallet-popup-btn.error { background: linear-gradient(135deg, #ef4444, #dc2626) !important; }
+@@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
 
-<!-- Breadcrumb -->
-<div class="container py-12">
-    <div class="breadcrumb">
-        <ul>
-            <li>
-                <a href="@Url.Action("Index", "Home")">
-                    <span class="inline-flex items-center justify-center">
-                        <i class="hgi hgi-stroke hgi-home-01 text-2xl leading-6"></i>
-                    </span>
-                    Home
-                </a>
-            </li>
-            <li class="text-light-disabled-text">&#8226;</li>
-            <li><span class="text-sm leading-[22px]">Số dư tài khoản</span></li>
-        </ul>
+<div class="sz-wal-shell">
+    <!-- Breadcrumb -->
+    <div class="container pt-8 pb-4">
+        <div class="breadcrumb">
+            <ul>
+                <li>
+                    <a href="@Url.Action("Index", "Home")">
+                        <span class="inline-flex items-center justify-center">
+                            <i class="hgi hgi-stroke hgi-home-01 text-xl leading-6"></i>
+                        </span>
+                        Trang chủ
+                    </a>
+                </li>
+                <li class="text-light-disabled-text">&#8226;</li>
+                <li><a href="/my-account" class="text-sm text-slate-500 hover:text-teal-700">Tài khoản</a></li>
+                <li class="text-light-disabled-text">&#8226;</li>
+                <li><span class="text-sm leading-[22px] font-semibold text-slate-700">Ví Sellzy &amp; Số dư</span></li>
+            </ul>
+        </div>
     </div>
-</div>
 
-<section class="pb-[90px]">
-    <div class="container">
+    <section class="pb-[90px]">
+        <div class="container">
 
-        @if (TempData["WalletSuccess"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
-        {
-            <!-- Centered Success Modal Popup -->
-            <div id="walletSuccessAlert" class="wallet-popup-overlay" style="display: none;" onclick="dismissAlert('walletSuccessAlert')">
-                <div class="wallet-popup-card" onclick="event.stopPropagation()">
-                    <div class="wallet-popup-icon success">
-                        <i class="hgi hgi-stroke hgi-tick-02" style="font-size: 36px !important; color: #ffffff !important;"></i>
+            @if (TempData["WalletSuccess"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
+            {
+                <div id="walletSuccessAlert" class="wallet-popup-overlay" style="display: none;" onclick="dismissAlert('walletSuccessAlert')">
+                    <div class="wallet-popup-card" onclick="event.stopPropagation()">
+                        <div class="wallet-popup-icon success">
+                            <i class="hgi hgi-stroke hgi-tick-02" style="font-size: 34px !important; color: #ffffff !important;"></i>
+                        </div>
+                        <h4 class="wallet-popup-title success">GIAO DỊCH THÀNH CÔNG</h4>
+                        <div class="wallet-popup-divider"></div>
+                        <p class="wallet-popup-message">@okMsg</p>
+                        <p class="wallet-popup-sub">Số dư mới đã được cộng vào Ví Sellzy của bạn. Chúc bạn mua sắm vui vẻ!</p>
+                        <button class="wallet-popup-btn success" onclick="dismissAlert('walletSuccessAlert')">Tuyệt vời! Đã hiểu</button>
                     </div>
-                    <h4 class="wallet-popup-title success">GIAO DỊCH THÀNH CÔNG</h4>
-                    <div class="wallet-popup-divider"></div>
-                    <p class="wallet-popup-message">@okMsg</p>
-                    <p class="wallet-popup-sub">Số dư mới đã được cộng vào tài khoản của bạn. Chúc bạn có những trải nghiệm mua sắm tuyệt vời!</p>
-                    <button class="wallet-popup-btn success" onclick="dismissAlert('walletSuccessAlert')">Tuyệt vời! Đã hiểu</button>
                 </div>
-            </div>
-        }
-        @if (TempData["WalletError"] is string errMsg && !string.IsNullOrWhiteSpace(errMsg))
-        {
-            <!-- Centered Error Modal Popup -->
-            <div id="walletErrorAlert" class="wallet-popup-overlay" style="display: none;" onclick="dismissAlert('walletErrorAlert')">
-                <div class="wallet-popup-card" onclick="event.stopPropagation()">
-                    <div class="wallet-popup-icon error">
-                        <i class="hgi hgi-stroke hgi-alert-circle" style="font-size: 36px !important; color: #ffffff !important;"></i>
+            }
+            @if (TempData["WalletError"] is string errMsg && !string.IsNullOrWhiteSpace(errMsg))
+            {
+                <div id="walletErrorAlert" class="wallet-popup-overlay" style="display: none;" onclick="dismissAlert('walletErrorAlert')">
+                    <div class="wallet-popup-card" onclick="event.stopPropagation()">
+                        <div class="wallet-popup-icon error">
+                            <i class="hgi hgi-stroke hgi-alert-circle" style="font-size: 34px !important; color: #ffffff !important;"></i>
+                        </div>
+                        <h4 class="wallet-popup-title error">GIAO DỊCH THẤT BẠI</h4>
+                        <div class="wallet-popup-divider"></div>
+                        <p class="wallet-popup-message">@errMsg</p>
+                        <p class="wallet-popup-sub">Đã xảy ra sự cố trong quá trình giao dịch. Vui lòng kiểm tra lại hoặc thử lại sau.</p>
+                        <button class="wallet-popup-btn error" onclick="dismissAlert('walletErrorAlert')">Đã hiểu</button>
                     </div>
-                    <h4 class="wallet-popup-title error">GIAO DỊCH THẤT BẠI</h4>
-                    <div class="wallet-popup-divider"></div>
-                    <p class="wallet-popup-message">@errMsg</p>
-                    <p class="wallet-popup-sub">Đã xảy ra sự cố trong quá trình giao dịch. Vui lòng kiểm tra lại tài khoản hoặc thử lại sau.</p>
-                    <button class="wallet-popup-btn error" onclick="dismissAlert('walletErrorAlert')">Đã hiểu</button>
                 </div>
-            </div>
-        }
-
-        <style>
-            /* ─── Premium Centered Modal Popup Styles ─── */
-            .wallet-popup-overlay {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100vw !important;
-                height: 100vh !important;
-                background: rgba(15, 23, 42, 0.6) !important;
-                backdrop-filter: blur(8px) !important;
-                -webkit-backdrop-filter: blur(8px) !important;
-                z-index: 999999 !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                opacity: 0 !important;
-                transition: opacity 0.4s ease !important;
-            }
-            .wallet-popup-overlay.show {
-                opacity: 1 !important;
-            }
-            .wallet-popup-card {
-                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
-                padding: 40px 36px !important;
-                border-radius: 28px !important;
-                max-width: 440px !important;
-                width: 90% !important;
-                box-shadow: 0 30px 70px -15px rgba(15, 23, 42, 0.3) !important;
-                border: 1px solid rgba(255, 255, 255, 0.8) !important;
-                text-align: center !important;
-                transform: scale(0.85) translateY(20px) !important;
-                transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-            }
-            .wallet-popup-overlay.show .wallet-popup-card {
-                transform: scale(1) translateY(0) !important;
-            }
-            .wallet-popup-icon {
-                width: 72px !important;
-                height: 72px !important;
-                border-radius: 50% !important;
-                margin: 0 auto 20px auto !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                font-size: 32px !important;
-                font-weight: bold !important;
-                color: #ffffff !important;
-            }
-            .wallet-popup-icon.success {
-                background: #22c55e !important;
-                box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35) !important;
-                animation: popIconScale 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-            }
-            .wallet-popup-icon.error {
-                background: #ef4444 !important;
-                box-shadow: 0 10px 25px rgba(239, 68, 68, 0.35) !important;
-            }
-            .wallet-popup-title {
-                font-size: 16px !important;
-                font-weight: 850 !important;
-                letter-spacing: 0.08em !important;
-                margin: 0 0 12px 0 !important;
-            }
-            .wallet-popup-title.success {
-                color: #16a34a !important;
-            }
-            .wallet-popup-title.error {
-                color: #dc2626 !important;
-            }
-            .wallet-popup-divider {
-                width: 40px !important;
-                height: 3px !important;
-                background: #e2e8f0 !important;
-                border-radius: 9999px !important;
-                margin: 0 auto 16px auto !important;
-            }
-            .wallet-popup-message {
-                font-size: 19px !important;
-                font-weight: 800 !important;
-                color: #0f172a !important;
-                line-height: 1.3 !important;
-                margin: 0 0 10px 0 !important;
-            }
-            .wallet-popup-sub {
-                font-size: 13px !important;
-                font-weight: 500 !important;
-                color: #64748b !important;
-                line-height: 1.5 !important;
-                margin: 0 0 28px 0 !important;
-            }
-            .wallet-popup-btn {
-                width: 100% !important;
-                padding: 15px !important;
-                border: none !important;
-                border-radius: 16px !important;
-                font-size: 15px !important;
-                font-weight: 800 !important;
-                color: #ffffff !important;
-                cursor: pointer !important;
-                transition: all 0.25s ease !important;
-                outline: none !important;
-            }
-            .wallet-popup-btn.success {
-                background: linear-gradient(135deg, #22c55e, #16a34a) !important;
-                box-shadow: 0 8px 20px rgba(34, 197, 94, 0.25) !important;
-            }
-            .wallet-popup-btn.success:hover {
-                box-shadow: 0 12px 25px rgba(34, 197, 94, 0.35) !important;
-                transform: translateY(-1.5px) !important;
-            }
-            .wallet-popup-btn.error {
-                background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-                box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25) !important;
-            }
-            .wallet-popup-btn.error:hover {
-                box-shadow: 0 12px 25px rgba(239, 68, 68, 0.35) !important;
-                transform: translateY(-1.5px) !important;
-            }
-            .wallet-popup-btn:active {
-                transform: translateY(0.5px) !important;
             }
 
-            @@keyframes popIconScale {
-                0% { transform: scale(0.6); opacity: 0; }
-                100% { transform: scale(1); opacity: 1; }
-            }
-        </style>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <script>
-            function dismissAlert(alertId) {
-                var overlayEl = document.getElementById(alertId);
-                if (overlayEl && overlayEl.classList.contains('show')) {
-                    overlayEl.classList.remove('show');
-                    setTimeout(function() {
-                        overlayEl.style.display = 'none';
-                    }, 400);
-                }
-            }
+                <!-- Left Column: Wallet Card + Top-up Form + Notes -->
+                <div class="lg:col-span-1 flex flex-col gap-6">
 
-            document.addEventListener("DOMContentLoaded", function() {
-                var successPopup = document.getElementById('walletSuccessAlert');
-                var errorPopup = document.getElementById('walletErrorAlert');
-                
-                if (successPopup) {
-                    successPopup.style.display = 'flex';
-                    setTimeout(function() {
-                        successPopup.classList.add('show');
-                    }, 50);
-                }
-                
-                if (errorPopup) {
-                    errorPopup.style.display = 'flex';
-                    setTimeout(function() {
-                        errorPopup.classList.add('show');
-                    }, 50);
-                }
-
-                // Tự động đóng sau 5 giây
-                setTimeout(function() {
-                    dismissAlert('walletSuccessAlert');
-                    dismissAlert('walletErrorAlert');
-                }, 5000);
-            });
-        </script>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            <!-- Left Column: Wallet Card + Top-up Form -->
-            <div class="lg:col-span-1 flex flex-col gap-6">
-
-                <!-- Wallet Hero Card -->
-                <div class="wallet-hero">
-                    <div class="relative z-10">
-                        <div class="flex items-start justify-between mb-6">
-                            <div class="wallet-status-badge">
-                                <div class="wallet-status-dot"></div>
-                                Đang hoạt động
+                    <!-- Wallet Hero Bank Card -->
+                    <div class="wallet-hero">
+                        <div class="relative z-10">
+                            <div class="flex items-center justify-between gap-2 mb-6">
+                                <div class="wallet-status-badge">
+                                    <div class="wallet-status-dot"></div>
+                                    Đang hoạt động
+                                </div>
+                                <span class="wallet-brand-chip">VÍ SELLZY</span>
                             </div>
-                            <div style="opacity:0.5">
-                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                                    <rect x="2" y="6" width="20" height="14" rx="3" fill="rgba(255,255,255,0.2)"/>
-                                    <path d="M16 13C16 13.5523 15.5523 14 15 14C14.4477 14 14 13.5523 14 13C14 12.4477 14.4477 12 15 12C15.5523 12 16 12.4477 16 13Z" fill="white"/>
-                                    <path d="M2 10H22" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-                                </svg>
+
+                            <div>
+                                <p class="wallet-balance-label">Số dư khả dụng</p>
+                                <div class="wallet-balance-amount">
+                                    @string.Format("{0:N0}", Model.Balance)<span class="wallet-balance-currency">đ</span>
+                                </div>
+                            </div>
+
+                            <div class="wallet-hero-foot">
+                                <p>⚡ Thanh toán 1 chạm &amp; nhận hoàn tiền tức thì</p>
                             </div>
                         </div>
+                    </div>
 
-                        <div>
-                            <p class="wallet-balance-label">Số dư hiện tại</p>
-                            <div class="wallet-balance-amount">
-                                @string.Format("{0:N0}", Model.Balance)<span class="wallet-balance-currency">đ</span>
+                    <!-- Top-up Form -->
+                    <div class="sz-wal-card">
+                        <div class="sz-wal-card-head">
+                            <h5>
+                                <i class="hgi hgi-stroke hgi-wallet-add-01" style="color:#008374; font-size:20px;"></i>
+                                Nạp tiền vào Ví
+                            </h5>
+                            <span style="font-size:11px; font-weight:800; color:#065f5b; background:#ccfbf1; padding:3px 9px; border-radius:999px;">VNPAY</span>
+                        </div>
+
+                        <div style="padding:22px 24px;">
+                            <div class="topup-presets" id="presetButtons">
+                                @{
+                                    var presets = new[] { 50_000m, 100_000m, 200_000m, 500_000m, 1_000_000m, 2_000_000m };
+                                }
+                                @foreach (var preset in presets)
+                                {
+                                    <button type="button" class="topup-preset-btn" data-value="@preset" onclick="selectPreset(this)">
+                                        @string.Format("{0:N0}đ", preset)
+                                    </button>
+                                }
                             </div>
-                        </div>
 
-                        <div class="mt-6 pt-5 border-t border-white/15">
-                            <p style="color:rgba(255,255,255,0.55); font-size:12px;">
-                                💡 Dùng số dư để thanh toán đơn hàng nhanh hơn
-                            </p>
+                            <form method="post" action="/my-wallet/topup" id="topupForm">
+                                @Html.AntiForgeryToken()
+                                <div class="topup-input-wrapper mb-3">
+                                    <input type="text" id="topupAmountText" placeholder="Nhập số tiền muốn nạp"
+                                           oninput="formatAmountInput(this)"
+                                           required autocomplete="off" />
+                                    <input type="hidden" id="topupAmount" name="amount" required />
+                                    <span class="topup-input-suffix">VNĐ</span>
+                                </div>
+                                <p style="font-size:12px; color:#64748b; margin-bottom:4px;">Tối thiểu: <strong>10.000đ</strong> &nbsp;•&nbsp; Tối đa: <strong>50.000.000đ</strong></p>
+                                <p style="font-size:12px; color:#64748b; margin-bottom:0;">Thanh toán qua cổng <strong>VNPAY</strong> an toàn, cộng số dư tự động.</p>
+                                <button type="submit" class="topup-submit-btn" id="topupSubmitBtn">
+                                    <i class="hgi hgi-stroke hgi-credit-card" style="font-size:19px;"></i>
+                                    <span>Nạp tiền qua VNPAY</span>
+                                </button>
+                            </form>
                         </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div class="sz-wal-note-box">
+                        <h6>
+                            <i class="hgi hgi-stroke hgi-information-circle" style="font-size:17px; color:#008374;"></i>
+                            Lưu ý về Ví Sellzy
+                        </h6>
+                        <ul>
+                            <li>Số dư dùng để thanh toán đơn hàng trực tiếp trên Sellzy</li>
+                            <li>Đơn hủy hoặc trả hàng sẽ được hoàn tiền ngay vào Ví</li>
+                            <li>Số dư không có thời hạn sử dụng và luôn được bảo mật</li>
+                            <li>Điểm danh mỗi ngày để nhận thêm xu thưởng mua sắm</li>
+                        </ul>
                     </div>
                 </div>
 
-                <!-- Top-up Form -->
-                <div class="topup-form-wrapper">
-                    <h5 style="font-size:17px;font-weight:700;color:#0f172a;margin-bottom:18px;">
-                        <i class="hgi hgi-stroke hgi-add-circle mr-1" style="color:#2563eb"></i>
-                        Nạp tiền vào số dư
-                    </h5>
+                <!-- Right Column: Attendance & Transaction History -->
+                <div class="lg:col-span-2 flex flex-col gap-6">
 
-                    <div class="topup-presets" id="presetButtons">
-                        @{
-                            var presets = new[] { 50_000m, 100_000m, 200_000m, 500_000m, 1_000_000m, 2_000_000m };
-                        }
-                        @foreach (var preset in presets)
-                        {
-                            <button type="button" class="topup-preset-btn" data-value="@preset" onclick="selectPreset(this)">
-                                @string.Format("{0:N0}đ", preset)
-                            </button>
-                        }
-                    </div>
-
-                    <form method="post" action="/my-wallet/topup" id="topupForm">
-                        @Html.AntiForgeryToken()
-                        <div class="topup-input-wrapper mb-3">
-                            <!-- Input hiển thị định dạng phân cách hàng nghìn bằng dấu chấm -->
-                            <input type="text" id="topupAmountText" placeholder="Nhập số tiền muốn nạp"
-                                   oninput="formatAmountInput(this)"
-                                   required autocomplete="off" />
-                            <!-- Input ẩn thực tế để gửi giá trị số thuần túy về controller -->
-                            <input type="hidden" id="topupAmount" name="amount" required />
-                            <span class="topup-input-suffix">VNĐ</span>
+                    <!-- Daily Attendance Card -->
+                    <div class="attendance-card" id="attendanceCard" style="display:none;">
+                        <div class="flex flex-wrap items-center justify-between gap-4 relative z-10">
+                            <div>
+                                <span class="attendance-title-tag">⭐ Điểm danh nhận xu</span>
+                                <p class="att-sub">Tích luỹ xu thưởng mua sắm mỗi ngày — chuỗi 7 ngày nhận quà khủng!</p>
+                            </div>
+                            <div class="attendance-streak-box">
+                                <p class="streak-lbl">Chuỗi hiện tại</p>
+                                <p class="streak-val" id="attendanceStreak">0 ngày</p>
+                            </div>
                         </div>
-                        <p style="font-size:12px;color:#94a3b8;margin-bottom:4px;">Tối thiểu: 10.000đ &nbsp;|&nbsp; Tối đa: 50.000.000đ</p>
-                        <p style="font-size:12px;color:#94a3b8;margin-bottom:0;">Thanh toán qua cổng <strong>VNPAY</strong> an toàn, bảo mật.</p>
-                        <button type="submit" class="topup-submit-btn" id="topupSubmitBtn">
-                            <i class="hgi hgi-stroke hgi-bank-card" style="font-size:20px"></i>
-                            Nạp tiền qua VNPAY
+
+                        <div class="attendance-grid relative z-10" id="attendanceGrid">
+                            <!-- JS Render daily boxes -->
+                        </div>
+
+                        <button class="attendance-btn relative z-10" id="attendanceClaimBtn" onclick="claimDailyAttendance()" disabled>
+                            <span id="attendanceBtnText">💰 Đang tải dữ liệu điểm danh...</span>
                         </button>
-                    </form>
-                </div>
+                    </div>
 
-                <!-- Info Box -->
-                <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:16px;padding:18px;">
-                    <p style="font-size:13px;font-weight:700;color:#0369a1;margin-bottom:10px;">
-                        ℹ️ Lưu ý về Số dư tài khoản
-                    </p>
-                    <ul style="font-size:12.5px;color:#0369a1;line-height:1.8;padding-left:16px;margin:0;">
-                        <li>Số dư chỉ dùng để mua sắm tại website</li>
-                        <li>Đơn hủy sẽ được hoàn tiền ngay vào số dư</li>
-                        <li>Không hỗ trợ rút tiền mặt</li>
-                        <li>Số dư không có thời hạn sử dụng</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Right Column: Attendance & Transaction History -->
-            <div class="lg:col-span-2 flex flex-col gap-6">
-                <!-- Premium Daily Attendance Card -->
-                <div class="attendance-card" id="attendanceCard" style="display:none;">
-                    <div class="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <span class="attendance-title-tag">⭐ Điểm Danh Nhận Xu</span>
-                            <p class="text-sm text-white/90 mt-2 font-semibold">Tích luỹ xu thưởng mua sắm mỗi ngày!</p>
+                    <!-- Transaction History Card -->
+                    <div class="sz-wal-card">
+                        <div class="sz-wal-card-head">
+                            <h5>
+                                <i class="hgi hgi-stroke hgi-time-02" style="color:#008374; font-size:20px;"></i>
+                                Lịch sử biến động số dư
+                            </h5>
+                            <span style="font-size:12px; font-weight:700; color:#065f5b; background:#ffffff; border:1px solid #99f6e4; padding:4px 12px; border-radius:999px;">
+                                @Model.TotalCount giao dịch
+                            </span>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs text-white/75 font-semibold uppercase tracking-wider">Chuỗi hiện tại</p>
-                            <p class="text-2xl font-black text-white" id="attendanceStreak">0 ngày</p>
-                        </div>
-                    </div>
 
-                    <!-- 7 Days Grid -->
-                    <div class="attendance-grid" id="attendanceGrid">
-                        <!-- JS Render daily boxes -->
-                    </div>
-
-                    <!-- Action Button -->
-                    <button class="attendance-btn" id="attendanceClaimBtn" onclick="claimDailyAttendance()" disabled>
-                        <span id="attendanceBtnText">💰 Đang tải dữ liệu điểm danh...</span>
-                    </button>
-                </div>
-
-                <div style="background:#fff;border-radius:20px;border:1.5px solid #e2e8f0;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,0.05); margin-top:0;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
-                        <h5 style="font-size:17px;font-weight:700;color:#0f172a;margin:0;">
-                            <i class="hgi hgi-stroke hgi-time-02 mr-1" style="color:#7c3aed"></i>
-                            Lịch sử giao dịch
-                        </h5>
-                        <span style="font-size:13px;color:#94a3b8;">@Model.TotalCount giao dịch</span>
-                    </div>
-
-                    @if (Model.Transactions.Count == 0)
-                    {
-                        <div style="text-align:center;padding:60px 20px;">
-                            <div style="width:72px;height:72px;background:#f1f5f9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-                                <i class="hgi hgi-stroke hgi-transfer-horizontal" style="font-size:32px;color:#94a3b8"></i>
+                        @if (Model.Transactions.Count == 0)
+                        {
+                            <div style="text-align:center; padding:64px 20px;">
+                                <div style="width:72px; height:72px; background:#f0fdfa; border:1px solid #ccfbf1; border-radius:20px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                                    <i class="hgi hgi-stroke hgi-transfer-horizontal" style="font-size:32px; color:#008374;"></i>
+                                </div>
+                                <p style="color:#0f172a; font-size:15.5px; font-weight:700; margin-bottom:4px;">Chưa có giao dịch nào</p>
+                                <p style="color:#64748b; font-size:13px; margin:0;">Hãy nạp tiền hoặc điểm danh mỗi ngày để bắt đầu sử dụng Ví Sellzy!</p>
                             </div>
-                            <p style="color:#64748b;font-size:15px;font-weight:500;">Chưa có giao dịch nào.</p>
-                            <p style="color:#94a3b8;font-size:13px;">Hãy nạp tiền để bắt đầu!</p>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="txn-list">
-                            @foreach (var txn in Model.Transactions)
-                            {
-                                var isPositive = txn.Amount >= 0;
-                                var amountPrefix = isPositive ? "+" : "-";
-                                var colorClass = isPositive ? "txn-color-positive" : "txn-color-negative";
-                                var bgClass = isPositive ? "txn-bg-positive" : "txn-bg-negative";
-                                var amountColorClass = isPositive ? "txn-amount-positive" : "txn-amount-negative";
+                        }
+                        else
+                        {
+                            <div class="txn-list">
+                                @foreach (var txn in Model.Transactions)
+                                {
+                                    var isPositive = txn.Amount >= 0;
+                                    var amountPrefix = isPositive ? "+" : "-";
+                                    var colorClass = isPositive ? "txn-color-positive" : "txn-color-negative";
+                                    var bgClass = isPositive ? "txn-bg-positive" : "txn-bg-negative";
+                                    var amountColorClass = isPositive ? "txn-amount-positive" : "txn-amount-negative";
 
-                                <div class="txn-item">
-                                    <div class="txn-icon @bgClass">
-                                        <i class="hgi hgi-stroke @GetTxnTypeIcon(txn.TransactionType) @colorClass"></i>
+                                    <div class="txn-item">
+                                        <div class="txn-icon @bgClass">
+                                            <i class="hgi hgi-stroke @GetTxnTypeIcon(txn.TransactionType) @colorClass"></i>
+                                        </div>
+                                        <div class="txn-info">
+                                            <div class="txn-type">@GetTxnTypeLabel(txn.TransactionType)</div>
+                                            @if (!string.IsNullOrWhiteSpace(txn.Description))
+                                            {
+                                                <div class="txn-ref" title="@txn.Description">@txn.Description</div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(txn.ReferenceId))
+                                            {
+                                                <span class="txn-ref-pill">Mã: @txn.ReferenceId</span>
+                                            }
+                                        </div>
+                                        <div class="txn-meta">
+                                            <div class="txn-amount @amountColorClass">@amountPrefix@FormatVnd(Math.Abs(txn.Amount))</div>
+                                            <div class="txn-date">@txn.CreatedAt.ToLocalTime().ToString("HH:mm, dd/MM/yy")</div>
+                                            <div class="txn-balance-after">Số dư sau GD: @FormatVnd(txn.BalanceAfter)</div>
+                                        </div>
                                     </div>
-                                    <div class="txn-info">
-                                        <div class="txn-type">@GetTxnTypeLabel(txn.TransactionType)</div>
-                                        @if (!string.IsNullOrWhiteSpace(txn.Description))
+                                }
+                            </div>
+
+                            @if (Model.TotalPages > 1)
+                            {
+                                <div class="wallet-pagination">
+                                    @if (Model.Page > 1)
+                                    {
+                                        <a href="?page=@(Model.Page - 1)">&#8249;</a>
+                                    }
+                                    @for (int p = 1; p <= Model.TotalPages; p++)
+                                    {
+                                        if (p == Model.Page)
                                         {
-                                            <div class="txn-ref" title="@txn.Description">@txn.Description</div>
+                                            <span class="active-page">@p</span>
                                         }
-                                        @if (!string.IsNullOrWhiteSpace(txn.ReferenceId))
+                                        else if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.Page) <= 2)
                                         {
-                                            <div class="txn-ref">Ref: @txn.ReferenceId</div>
+                                            <a href="?page=@p">@p</a>
                                         }
-                                    </div>
-                                    <div class="txn-meta">
-                                        <div class="txn-amount @amountColorClass">@amountPrefix@FormatVnd(Math.Abs(txn.Amount))</div>
-                                        <div class="txn-date">@txn.CreatedAt.ToLocalTime().ToString("HH:mm, dd/MM/yy")</div>
-                                        <div class="txn-balance-after">Số dư: @FormatVnd(txn.BalanceAfter)</div>
-                                    </div>
+                                        else if (Math.Abs(p - Model.Page) == 3)
+                                        {
+                                            <span style="border:none;color:#94a3b8;">…</span>
+                                        }
+                                    }
+                                    @if (Model.Page < Model.TotalPages)
+                                    {
+                                        <a href="?page=@(Model.Page + 1)">&#8250;</a>
+                                    }
                                 </div>
                             }
-                        </div>
-
-                        <!-- Pagination -->
-                        @if (Model.TotalPages > 1)
-                        {
-                            <div class="wallet-pagination">
-                                @if (Model.Page > 1)
-                                {
-                                    <a href="?page=@(Model.Page - 1)">&#8249;</a>
-                                }
-                                @for (int p = 1; p <= Model.TotalPages; p++)
-                                {
-                                    if (p == Model.Page)
-                                    {
-                                        <span class="active-page">@p</span>
-                                    }
-                                    else if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.Page) <= 2)
-                                    {
-                                        <a href="?page=@p">@p</a>
-                                    }
-                                    else if (Math.Abs(p - Model.Page) == 3)
-                                    {
-                                        <span style="border:none;color:#94a3b8;">…</span>
-                                    }
-                                }
-                                @if (Model.Page < Model.TotalPages)
-                                {
-                                    <a href="?page=@(Model.Page + 1)">&#8250;</a>
-                                }
-                            </div>
                         }
-                    }
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
+</div>
 
 <script>
-// Định dạng chuỗi số nguyên thành dạng có dấu chấm phân cách hàng nghìn (VD: 50000 -> 50.000)
+function dismissAlert(alertId) {
+    var overlayEl = document.getElementById(alertId);
+    if (overlayEl && overlayEl.classList.contains('show')) {
+        overlayEl.classList.remove('show');
+        setTimeout(function() {
+            overlayEl.style.display = 'none';
+        }, 350);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    var successPopup = document.getElementById('walletSuccessAlert');
+    var errorPopup = document.getElementById('walletErrorAlert');
+
+    if (successPopup) {
+        successPopup.style.display = 'flex';
+        setTimeout(function() { successPopup.classList.add('show'); }, 50);
+    }
+    if (errorPopup) {
+        errorPopup.style.display = 'flex';
+        setTimeout(function() { errorPopup.classList.add('show'); }, 50);
+    }
+    setTimeout(function() {
+        dismissAlert('walletSuccessAlert');
+        dismissAlert('walletErrorAlert');
+    }, 5000);
+
+    loadAttendanceData();
+});
+
 function formatNumberWithDots(val) {
     if (!val) return '';
     return new Intl.NumberFormat('vi-VN').format(val);
 }
 
-// Xử lý định dạng khi người dùng tự gõ vào input
 function formatAmountInput(input) {
-    // Chỉ giữ lại các chữ số
     let cleanVal = input.value.replace(/[^0-9]/g, '');
-    
     if (!cleanVal) {
         input.value = '';
         document.getElementById('topupAmount').value = '';
         onAmountInput();
         return;
     }
-    
     let numVal = parseInt(cleanVal, 10);
-    
-    // Lưu giá trị số thuần túy vào input ẩn để gửi đi
     document.getElementById('topupAmount').value = numVal;
-    
-    // Hiển thị giá trị đã định dạng bằng dấu chấm vào input text
     input.value = formatNumberWithDots(numVal);
-    
-    // Đồng bộ trạng thái active của các nút Preset
     onAmountInput();
 }
 
 function selectPreset(btn) {
     document.querySelectorAll('.topup-preset-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    
     let presetVal = parseInt(btn.getAttribute('data-value'), 10);
-    
-    // Cập nhật cả input ẩn và input hiển thị đã được định dạng dấu chấm
     document.getElementById('topupAmount').value = presetVal;
     document.getElementById('topupAmountText').value = formatNumberWithDots(presetVal);
 }
@@ -969,7 +1036,6 @@ function selectPreset(btn) {
 function onAmountInput() {
     document.querySelectorAll('.topup-preset-btn').forEach(b => b.classList.remove('active'));
     const val = parseInt(document.getElementById('topupAmount').value, 10) || 0;
-    
     document.querySelectorAll('.topup-preset-btn').forEach(b => {
         if (parseInt(b.getAttribute('data-value'), 10) === val) {
             b.classList.add('active');
@@ -977,7 +1043,6 @@ function onAmountInput() {
     });
 }
 
-// Kiểm tra form trước khi gửi đi
 document.getElementById('topupForm').addEventListener('submit', function(e) {
     const amt = parseInt(document.getElementById('topupAmount').value, 10) || 0;
     if (!amt || amt < 10000) {
@@ -991,12 +1056,7 @@ document.getElementById('topupForm').addEventListener('submit', function(e) {
         return;
     }
     document.getElementById('topupSubmitBtn').disabled = true;
-    document.getElementById('topupSubmitBtn').innerHTML = '<i class="hgi hgi-stroke hgi-loading-02" style="font-size:18px;animation:spin 1s linear infinite"></i> Đang chuyển hướng...';
-});
-
-// ─── Xử lý Điểm Danh Nhận Xu Hàng Ngày ───
-document.addEventListener('DOMContentLoaded', function() {
-    loadAttendanceData();
+    document.getElementById('topupSubmitBtn').innerHTML = '<i class="hgi hgi-stroke hgi-loading-02" style="font-size:18px;animation:spin 1s linear infinite"></i> Đang chuyển hướng VNPAY...';
 });
 
 async function loadAttendanceData() {
@@ -1013,59 +1073,57 @@ async function loadAttendanceData() {
             return;
         }
         const state = await res.json();
-        
+
         card.style.display = 'block';
         streakEl.textContent = `${state.streakCount} ngày`;
-        
+
         grid.innerHTML = '';
         state.dailyRewards.forEach(item => {
             const box = document.createElement('div');
             box.className = `attendance-day-box ${item.status}`;
-            
             if (item.status === 'claimable') {
                 box.onclick = claimDailyAttendance;
             }
-            
+
             const dayLabel = document.createElement('span');
-            dayLabel.className = 'text-[11px] font-bold text-gray-500 uppercase';
-            dayLabel.textContent = item.dayNumber === 7 ? 'Ngày 7' : `Ngày ${item.dayNumber}`;
+            dayLabel.style.cssText = 'font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;';
+            dayLabel.textContent = `Ngày ${item.dayNumber}`;
             box.appendChild(dayLabel);
-            
+
             const coinIcon = document.createElement('span');
             coinIcon.className = 'attendance-coin-icon';
             if (item.status === 'claimed') {
-                coinIcon.innerHTML = '✔️';
-                coinIcon.style.color = '#ff5722';
+                coinIcon.innerHTML = '✓';
+                coinIcon.style.cssText = 'color:#fde047;font-weight:900;font-size:20px;';
             } else if (item.dayNumber === 7) {
-                coinIcon.innerHTML = '🎁'; 
+                coinIcon.innerHTML = '🎁';
             } else {
-                coinIcon.innerHTML = '🟡';
+                coinIcon.innerHTML = '🪙';
             }
             box.appendChild(coinIcon);
-            
+
             const rewardLabel = document.createElement('span');
-            rewardLabel.className = 'text-[12px] font-black text-gray-800';
+            rewardLabel.style.cssText = 'font-size:12px;font-weight:800;color:#065f5b;';
             rewardLabel.textContent = `+${item.rewardFormatted}`;
             box.appendChild(rewardLabel);
-            
+
             if (item.dayNumber === 7) {
                 const bonus = document.createElement('span');
                 bonus.className = 'bonus-tag';
                 bonus.textContent = 'XU KHỦNG';
                 box.appendChild(bonus);
             }
-            
+
             grid.appendChild(box);
         });
-        
+
         if (state.hasCheckedInToday) {
             claimBtn.disabled = true;
-            btnText.innerHTML = '🎉 Đã điểm danh hôm nay! Hẹn gặp lại ngày mai';
+            btnText.innerHTML = '✓ Đã điểm danh hôm nay! Hẹn gặp lại ngày mai';
         } else {
             claimBtn.disabled = false;
-            btnText.innerHTML = `🌟 Điểm danh nhận ngay +${state.nextRewardFormatted}đ hôm nay!`;
+            btnText.innerHTML = `⭐ Điểm danh nhận ngay +${state.nextRewardFormatted}đ hôm nay!`;
         }
-        
     } catch (err) {
         console.error('Lỗi khi tải dữ liệu điểm danh:', err);
         card.style.display = 'none';
@@ -1075,10 +1133,10 @@ async function loadAttendanceData() {
 async function claimDailyAttendance() {
     const claimBtn = document.getElementById('attendanceClaimBtn');
     const btnText = document.getElementById('attendanceBtnText');
-    
+
     claimBtn.disabled = true;
     btnText.innerHTML = '<i class="hgi hgi-stroke hgi-loading-02" style="font-size:18px;animation:spin 1s linear infinite"></i> Đang điểm danh nhận xu...';
-    
+
     try {
         const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
         const headers = { 'Content-Type': 'application/json' };
@@ -1090,18 +1148,17 @@ async function claimDailyAttendance() {
             method: 'POST',
             headers: headers
         });
-        
+
         const data = await res.json();
         if (!res.ok) {
             alert(data.message || 'Điểm danh thất bại. Vui lòng thử lại sau.');
             await loadAttendanceData();
             return;
         }
-        
+
         showCelebrationPopup(data.rewardFormatted);
         await loadAttendanceData();
         await updateWalletHeroBalance();
-        
     } catch (err) {
         console.error('Lỗi khi điểm danh:', err);
         alert('Có lỗi xảy ra. Vui lòng thử lại sau.');
@@ -1126,61 +1183,32 @@ async function updateWalletHeroBalance() {
 
 function showCelebrationPopup(rewardFormatted) {
     const overlay = document.createElement('div');
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.75)';
-    overlay.style.backdropFilter = 'blur(8px)';
-    overlay.style.zIndex = '99999';
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.style.transition = 'opacity 0.3s ease';
-    
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.72);backdrop-filter:blur(8px);z-index:99999;display:flex;align-items:center;justify-content:center;transition:opacity 0.3s ease;';
+
     const content = document.createElement('div');
-    content.style.background = 'linear-gradient(135deg, #ffffff 0%, #fff8f5 100%)';
-    content.style.padding = '40px 32px';
-    content.style.borderRadius = '32px';
-    content.style.textAlign = 'center';
-    content.style.maxWidth = '400px';
-    content.style.width = '90%';
-    content.style.boxShadow = '0 25px 50px -12px rgba(255, 87, 34, 0.4)';
-    content.style.transform = 'scale(0.8)';
-    content.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    
+    content.style.cssText = 'background:#ffffff;padding:38px 32px;border-radius:28px;text-align:center;max-width:400px;width:90%;box-shadow:0 25px 60px -12px rgba(0,131,116,0.45);border:1px solid #ccfbf1;transform:scale(0.85);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);';
+
     content.innerHTML = `
-        <div style="font-size: 72px; margin-bottom: 16px; animation: bounce 1s infinite alternate;">🎉</div>
-        <h3 style="font-size: 24px; font-weight: 850; color: #ff5722; margin-bottom: 8px;">ĐIỂM DANH THÀNH CÔNG!</h3>
-        <p style="font-size: 15px; color: #475569; margin-bottom: 24px; font-weight: 500;">Bạn đã nhận được phần quà xu thưởng trị giá:</p>
-        <div style="font-size: 42px; font-weight: 900; color: #ff5722; margin-bottom: 24px; letter-spacing: -0.02em;">
+        <div style="font-size:64px;margin-bottom:14px;">🎉</div>
+        <h3 style="font-size:21px;font-weight:800;color:#043e37;margin:0 0 8px 0;">ĐIỂM DANH THÀNH CÔNG!</h3>
+        <p style="font-size:14px;color:#475569;margin:0 0 20px 0;font-weight:500;">Bạn vừa nhận được xu thưởng cộng thẳng vào Ví Sellzy:</p>
+        <div style="font-size:38px;font-weight:900;color:#008374;margin-bottom:24px;letter-spacing:-0.02em;">
             +${rewardFormatted}đ
         </div>
-        <button id="closeCelebrationBtn" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #ff9800, #ff5722); color: white; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 87, 34, 0.3);">
+        <button id="closeCelebrationBtn" style="width:100%;padding:13px;background:linear-gradient(135deg,#008374,#065f5b);color:#ffffff;border:none;border-radius:999px;font-size:15px;font-weight:800;cursor:pointer;">
             Tuyệt vời! Nhận ngay
         </button>
     `;
-    
+
     overlay.appendChild(content);
     document.body.appendChild(overlay);
-    
-    setTimeout(() => {
-        content.style.transform = 'scale(1)';
-    }, 10);
-    
-    const closePopup = () => {
+
+    setTimeout(() => { content.style.transform = 'scale(1)'; }, 10);
+
+    document.getElementById('closeCelebrationBtn').onclick = () => {
         overlay.style.opacity = '0';
-        content.style.transform = 'scale(0.8)';
-        setTimeout(() => {
-            document.body.removeChild(overlay);
-        }, 300);
+        content.style.transform = 'scale(0.85)';
+        setTimeout(() => document.body.removeChild(overlay), 280);
     };
-    
-    document.getElementById('closeCelebrationBtn').onclick = closePopup;
 }
 </script>
-
-<style>
-@@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-</style>

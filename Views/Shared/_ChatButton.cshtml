@@ -4,42 +4,57 @@
     var shopId = Model.ShopId;
 }
 
-<button type="button" onclick="openChatWithShop(@productId, @shopId)" class="flex-1 bg-white border border-primary text-primary hover:bg-primary/5 rounded-[100px] font-semibold text-sm h-12 flex items-center justify-center gap-x-2 transition-colors">
+<button type="button" onclick="openChatWithShop(@productId, @shopId)" class="flex-1 bg-white border border-primary text-primary hover:bg-primary/5 rounded-[100px] font-semibold text-sm h-12 flex items-center justify-center gap-x-2 transition-colors cursor-pointer">
     <i class="hgi hgi-stroke hgi-chatting-01 text-xl"></i>
     Hỏi Shop
 </button>
 
-<!-- Thêm đoạn script này vào cuối trang hoặc để trong _Layout -->
 <script>
-    function openChatWithShop(productId, shopId) {
-        fetch('/Chat/StartOrOpen', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                ShopId: shopId,
-                ProductId: productId
+    if (typeof window.openChatWithShop !== 'function') {
+        window.openChatWithShop = function (productId, shopId) {
+            fetch('/Chat/StartOrOpen', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ShopId: shopId,
+                    ProductId: productId,
+                    AutoSendCard: false
+                })
             })
-        })
-        .then(res => {
-            if (res.status === 401) {
-                window.location.href = '/Auth/Login';
-                throw new Error('Chưa đăng nhập');
-            }
-            if (!res.ok) throw new Error('Có lỗi xảy ra');
-            return res.json();
-        })
-        .then(data => {
-            if (data && data.conversationId) {
-                window.location.href = '/Chat/Index?id=' + data.conversationId;
-            }
-        })
-        .catch(err => {
-            if(err.message !== 'Chưa đăng nhập') {
-                console.error(err);
-                alert("Không thể kết nối đến Shop. Vui lòng thử lại sau.");
-            }
-        });
+            .then(async res => {
+                if (res.status === 401) {
+                    const targetUrl = '/Chat?startShopId=' + encodeURIComponent(shopId)
+                        + (productId ? '&attachProductId=' + encodeURIComponent(productId) : '');
+                    if (typeof window.showSellzyAuthPrompt === 'function') {
+                        window.showSellzyAuthPrompt({ context: 'shop_chat', returnUrl: targetUrl });
+                    } else {
+                        const loginTrigger = document.querySelector('.login-page-btn');
+                        if (loginTrigger) {
+                            loginTrigger.click();
+                        } else {
+                            alert('Vui lòng đăng nhập để nhắn tin hỏi Shop.');
+                        }
+                    }
+                    throw new Error('UNAUTHORIZED');
+                }
+                const data = await res.json().catch(() => null);
+                if (!res.ok) throw new Error(data?.error || 'Không thể mở khung chat.');
+                return data;
+            })
+            .then(data => {
+                if (data && data.conversationId) {
+                    const url = '/Chat/Index?id=' + data.conversationId
+                        + (productId ? '&attachProductId=' + encodeURIComponent(productId) : '');
+                    window.location.href = url;
+                }
+            })
+            .catch(err => {
+                if (err.message !== 'UNAUTHORIZED') {
+                    console.error(err);
+                    alert(err.message || 'Không thể kết nối đến Shop. Vui lòng thử lại sau.');
+                }
+            });
+        };
     }
 </script>

@@ -1,275 +1,247 @@
 @model IEnumerable<DOAN_BANHANG.Models.SystemNotification>
 @{
-    ViewData["Title"] = "Quản lý Thông báo hệ thống";
+    ViewData["Title"] = "Thông báo hệ thống";
+    var list = Model.ToList();
+    var totalCount = list.Count;
+    var allTargetCount = list.Count(n => n.TargetType == "All");
+    var roleTargetCount = list.Count(n => n.TargetType == "Role");
+    var accountTargetCount = list.Count(n => n.TargetType == "Account");
 }
 
-<style>
-    :root {
-        --primary: #088178;
-        --secondary: #3366ff;
-        --accent: #ffc107;
-        --glass: rgba(255, 255, 255, 0.8);
-    }
+@section Styles {
+    <style>
+        .sm-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .sm-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+        @@media (max-width: 991px) {
+            .sm-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .sm-kpi-card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sm-kpi-ic {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 235, 105, 0.18);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .sm-sender-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #088178 0%, #04464C 100%);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .sm-preview {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+}
 
-    .page-header {
-        background: linear-gradient(135deg, #088178 0%, #0c53b7 100%);
-        padding: 2.5rem 2rem;
-        border-radius: 0 0 2rem 2rem;
-        margin: -1.5rem -1.5rem 2rem -1.5rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
+<!-- HERO HEADER -->
+<div class="sm-hero">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-broadcast text-warning me-1"></i>Thông báo hệ thống
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Quản lý lịch sử phát thông báo tức thời tới toàn bộ người dùng, nhóm đối tác bán hàng hoặc từng tài khoản cụ thể.
+            </p>
+        </div>
+        <a asp-action="Create" class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-sm" style="background: #FFEB69; color: #161C24;">
+            <i class="bx bx-send me-1"></i>Soạn thông báo mới
+        </a>
+    </div>
 
-    .header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    .page-title {
-        color: white;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .title-icon {
-        background: rgba(255,255,255,0.2);
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
-        backdrop-filter: blur(8px);
-        font-size: 24px;
-    }
-
-    .btn-create {
-        background: white;
-        color: var(--primary);
-        font-weight: 700;
-        padding: 0.75rem 1.5rem;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .btn-create:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-        color: var(--primary-dark);
-    }
-
-    .msg-card {
-        background: white;
-        border-radius: 1.5rem;
-        border: 1px solid #f1f5f9;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-        overflow: hidden;
-        margin-top: -1rem;
-        backdrop-filter: blur(10px);
-    }
-
-    .modern-table thead {
-        background: #f8fafc;
-    }
-
-    .modern-table th {
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        color: #64748b;
-        padding: 1.25rem 1.5rem;
-        border: none;
-    }
-
-    .modern-table td {
-        padding: 1.25rem 1.5rem;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f5f9;
-    }
-
-    .modern-table tr:hover {
-        background-color: #fcfdfe;
-    }
-
-    .time-badge {
-        background: #f1f5f9;
-        color: #475569;
-        padding: 0.4rem 0.75rem;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.85rem;
-    }
-
-    .msg-title {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 0.25rem;
-    }
-
-    .msg-preview {
-        color: #64748b;
-        font-size: 0.875rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .badge-pill {
-        padding: 0.4rem 1rem;
-        border-radius: 2rem;
-        font-weight: 700;
-        font-size: 0.75rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .badge-all { background: #e0f2fe; color: #0369a1; }
-    .badge-role { background: #f3e8ff; color: #7e22ce; }
-    .badge-user { background: #ffedd5; color: #c2410c; }
-
-    .sender-info {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .sender-avatar {
-        width: 32px;
-        height: 32px;
-        background: var(--primary-lighter);
-        color: var(--primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        font-weight: 700;
-        font-size: 0.75rem;
-    }
-
-    .animate-in {
-        animation: slideUp 0.5s ease-out forwards;
-    }
-
-    @@keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
-
-<div class="page-header">
-    <div class="header-content">
-        <div class="page-title">
-            <div class="title-icon">
-                <i class="hgi hgi-stroke hgi-notification-01"></i>
-            </div>
+    <div class="sm-kpi-grid">
+        <div class="sm-kpi-card">
+            <span class="sm-kpi-ic"><i class="bx bx-bell"></i></span>
             <div>
-                <h2 class="font-bold text-2xl">Thông báo hệ thống</h2>
-                <p class="text-white/70 text-sm font-medium">Quản lý và gửi thông báo tới người dùng</p>
+                <div class="fs-5 fw-bold text-white lh-1">@totalCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Tổng thông báo đã gửi</div>
             </div>
         </div>
-        <a href="@Url.Action("Create")" class="btn-create flex items-center gap-2 no-underline">
-            <i class="hgi hgi-stroke hgi-plus"></i> Soạn thông báo mới
-        </a>
+        <div class="sm-kpi-card">
+            <span class="sm-kpi-ic" style="background: rgba(56,189,248,0.22); color: #7DD3FC;"><i class="bx bx-globe"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@allTargetCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Gửi toàn hệ thống</div>
+            </div>
+        </div>
+        <div class="sm-kpi-card">
+            <span class="sm-kpi-ic"><i class="bx bx-group"></i></span>
+            <div>
+                <div class="fs-5 fw-bold lh-1" style="color: #FFEB69;">@roleTargetCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Gửi theo nhóm quyền</div>
+            </div>
+        </div>
+        <div class="sm-kpi-card">
+            <span class="sm-kpi-ic" style="background: rgba(251,191,36,0.22); color: #FDE68A;"><i class="bx bx-user"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@accountTargetCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Gửi đích danh cá nhân</div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="container-fluid px-4">
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success border-0 shadow-sm rounded-2xl p-4 mb-6 flex items-center gap-3 animate-in">
-            <i class="hgi hgi-solid hgi-checkmark-circle-02 text-xl"></i>
-            <span class="font-semibold">@TempData["SuccessMessage"]</span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-        </div>
-    }
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-4">
+        @if (TempData["SuccessMessage"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
+        {
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 rounded-3" role="alert">
+                <i class="bx bx-check-circle fs-5"></i>
+                <div>@okMsg</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
 
-    <div class="msg-card animate-in">
+        <!-- THANH LỌC NHANH -->
+        <div class="border rounded-3 px-3 py-2.5 bg-light mb-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="d-flex flex-wrap align-items-center gap-1.5">
+                    <span class="small fw-bold text-secondary me-1"><i class="bx bx-filter-alt me-1"></i>Đối tượng:</span>
+                    <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 fw-semibold sm-filter-btn" data-target="">Tất cả</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold sm-filter-btn" data-target="All">Toàn hệ thống</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold sm-filter-btn" data-target="Role">Theo nhóm</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold sm-filter-btn" data-target="Account">Cá nhân</button>
+                </div>
+                <div class="input-group input-group-sm" style="max-width: 340px;">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bx bx-search"></i></span>
+                    <input type="text" id="smSearchInput" class="form-control border-start-0 ps-0" placeholder="Tìm theo tiêu đề hoặc nội dung..." />
+                </div>
+            </div>
+        </div>
+
+        <!-- BẢNG LỊCH SỬ THÔNG BÁO -->
         <div class="table-responsive">
-            <table class="table modern-table mb-0">
-                <thead>
+            <table class="table table-hover align-middle mb-0" id="smTable">
+                <thead class="table-light">
                     <tr>
-                        <th>Thời gian</th>
-                        <th>Thông tin thông báo</th>
-                        <th>Đối tượng nhận</th>
-                        <th>Người gửi</th>
+                        <th style="width: 155px;">Thời gian gửi</th>
+                        <th>Nội dung thông báo</th>
+                        <th style="width: 190px;">Đối tượng nhận</th>
+                        <th style="width: 210px;">Người phát hành</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model)
+                    @if (!list.Any())
                     {
                         <tr>
-                            <td>
-                                <div class="time-badge">
-                                    @item.CreatedAt.ToString("dd/MM/yyyy")
-                                    <span class="text-gray-400 font-normal mx-1">|</span>
-                                    @item.CreatedAt.ToString("HH:mm")
-                                </div>
-                            </td>
-                            <td>
-                                <div class="msg-title">@item.Title</div>
-                                <div class="msg-preview" title="@item.Content">@item.Content</div>
-                            </td>
-                            <td>
-                                @if (item.TargetType == "All")
-                                {
-                                    <span class="badge-pill badge-all">
-                                        <i class="hgi hgi-stroke hgi-user-group"></i> Tất cả
-                                    </span>
-                                }
-                                else if (item.TargetType == "Role")
-                                {
-                                    <span class="badge-pill badge-role">
-                                        <i class="hgi hgi-stroke hgi-user-settings-01"></i> @(item.TargetRole == "Shop" ? "Chủ Shop" : "Khách hàng")
-                                    </span>
-                                }
-                                else if (item.TargetType == "Account")
-                                {
-                                    <span class="badge-pill badge-user">
-                                        <i class="hgi hgi-stroke hgi-user"></i> ID: @item.TargetAccountId
-                                    </span>
-                                }
-                            </td>
-                            <td>
-                                <div class="sender-info">
-                                    <div class="sender-avatar">
-                                        @{
-                                            var senderName = item.SentByAdmin?.Profile?.FullName ?? item.SentByAdmin?.Email ?? "A";
-                                            var initial = senderName.Substring(0, 1).ToUpper();
-                                        }
-                                        @initial
-                                    </div>
-                                    <div class="text-sm font-semibold text-gray-700">@senderName</div>
-                                </div>
+                            <td colspan="4" class="text-center py-5">
+                                <i class="bx bx-bell-off display-5 text-muted d-block mb-2"></i>
+                                <div class="fw-bold text-dark">Chưa có thông báo hệ thống nào</div>
+                                <div class="text-muted small mt-1">Bấm <strong>Soạn thông báo mới</strong> để gửi thông báo đầu tiên tới người dùng.</div>
                             </td>
                         </tr>
                     }
-                    @if (!Model.Any())
+                    else
                     {
-                        <tr>
-                            <td colspan="4" class="py-20 text-center">
-                                <div class="flex flex-col items-center gap-4">
-                                    <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
-                                        <i class="hgi hgi-stroke hgi-bubble-chat text-4xl"></i>
+                        foreach (var item in list)
+                        {
+                            var localTime = item.CreatedAt.ToLocalTime();
+                            var senderName = item.SentByAdmin?.Profile?.FullName ?? item.SentByAdmin?.Email ?? "Quản trị viên";
+                            var initial = !string.IsNullOrWhiteSpace(senderName) ? senderName.Trim()[0].ToString().ToUpperInvariant() : "Q";
+                            <tr class="sm-row" data-target="@item.TargetType" data-search="@($"{item.Title} {item.Content}".ToLowerInvariant())">
+                                <td>
+                                    <div class="fw-semibold text-dark small">@localTime.ToString("dd/MM/yyyy")</div>
+                                    <div class="text-muted small">@localTime.ToString("HH:mm")</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark mb-0.5">@item.Title</div>
+                                    <div class="small text-muted sm-preview" title="@item.Content">@item.Content</div>
+                                </td>
+                                <td>
+                                    @if (item.TargetType == "All")
+                                    {
+                                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bx bx-globe me-1"></i>Toàn hệ thống
+                                        </span>
+                                    }
+                                    else if (item.TargetType == "Role")
+                                    {
+                                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bx bx-group me-1"></i>@(item.TargetRole == "Shop" ? "Đối tác bán hàng" : "Khách hàng")
+                                        </span>
+                                    }
+                                    else if (item.TargetType == "Account")
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bx bx-user me-1"></i>Tài khoản #@item.TargetAccountId
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="sm-sender-avatar">@initial</span>
+                                        <span class="small fw-semibold text-dark text-truncate">@senderName</span>
                                     </div>
-                                    <div>
-                                        <p class="text-gray-900 font-bold text-lg mb-1">Chưa có thông báo nào</p>
-                                        <p class="text-gray-500 text-sm">Bắt đầu gửi thông báo đầu tiên của bạn ngay hôm nay!</p>
-                                    </div>
-                                    <a href="@Url.Action("Create")" class="btn btn-primary rounded-xl px-6">Bắt đầu ngay</a>
-                                </div>
-                            </td>
-                        </tr>
+                                </td>
+                            </tr>
+                        }
                     }
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            let activeTarget = '';
+            function applyFilters() {
+                const q = ($('#smSearchInput').val() || '').trim().toLowerCase();
+                $('.sm-row').each(function () {
+                    const $row = $(this);
+                    const targetMatch = !activeTarget || $row.data('target') === activeTarget;
+                    const textMatch = !q || (($row.data('search') || '').indexOf(q) !== -1);
+                    $row.toggle(targetMatch && textMatch);
+                });
+            }
+
+            $('.sm-filter-btn').on('click', function () {
+                $('.sm-filter-btn').removeClass('btn-dark').addClass('btn-outline-secondary');
+                $(this).removeClass('btn-outline-secondary').addClass('btn-dark');
+                activeTarget = $(this).data('target') || '';
+                applyFilters();
+            });
+
+            $('#smSearchInput').on('input', applyFilters);
+        })();
+    </script>
+}

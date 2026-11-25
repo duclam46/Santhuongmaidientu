@@ -13,6 +13,12 @@ public class HomeIndexVm
     public List<ProductCardVm> MostWanted { get; set; } = new();
 
     public Dictionary<string, List<ProductCardVm>> CategoryDeals { get; set; } = new();
+
+    public List<DOAN_BANHANG.Models.HomeBanner> DynamicBanners { get; set; } = new();
+
+    public List<DOAN_BANHANG.Models.PlatformCampaign> ActiveCampaigns { get; set; } = new();
+
+    public List<StorefrontVoucherVm> HotVouchers { get; set; } = new();
 }
 
 public class CategoryLinkVm
@@ -22,6 +28,8 @@ public class CategoryLinkVm
     public string Name { get; set; } = string.Empty;
 
     public string Slug { get; set; } = string.Empty;
+
+    public string? IconUrl { get; set; }
 
     public int ProductCount { get; set; }
 }

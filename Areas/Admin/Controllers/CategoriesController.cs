@@ -12,16 +12,17 @@ namespace DOAN_BANHANG.Areas.Admin.Controllers;
 public class CategoriesController : Controller
 {
     private readonly DataContext _db;
+    private readonly IWebHostEnvironment _env;
 
-    public CategoriesController(DataContext db)
+    public CategoriesController(DataContext db, IWebHostEnvironment env)
     {
         _db = db;
+        _env = env;
     }
 
     private string GenerateSlug(string title)
     {
         var slug = title.ToLower().Trim();
-        // Remove Vietnamese diacritics
         slug = Regex.Replace(slug, @"[àáạảãâầấậẩẫăằắặẳẵ]", "a");
         slug = Regex.Replace(slug, @"[èéẹẻẽêềếệểễ]", "e");
         slug = Regex.Replace(slug, @"[ìíịỉĩ]", "i");
@@ -34,10 +35,30 @@ public class CategoriesController : Controller
         return slug;
     }
 
+    private async Task<string?> SaveCategoryIconAsync(IFormFile? iconFile)
+    {
+        if (iconFile == null || iconFile.Length == 0) return null;
+
+        var uploadDir = Path.Combine(_env.WebRootPath, "uploads", "categories");
+        if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);
+
+        var ext = Path.GetExtension(iconFile.FileName);
+        var fileName = $"cat_{Guid.NewGuid():N}{ext}";
+        var filePath = Path.Combine(uploadDir, fileName);
+
+        await using var stream = new FileStream(filePath, FileMode.Create);
+        await iconFile.CopyToAsync(stream);
+
+        return $"/uploads/categories/{fileName}";
+    }
+
+    [HttpGet]
+    [HttpGet("/Admin/Categories")]
     public async Task<IActionResult> Index()
     {
         var categories = await _db.Categories
             .Include(c => c.Parent)
+            .Include(c => c.Attributes)
             .Where(c => !c.IsDeleted)
             .OrderBy(c => c.ParentId)
             .ThenBy(c => c.SortOrder)
@@ -50,16 +71,17 @@ public class CategoriesController : Controller
     {
         ViewBag.AllCategories = await _db.Categories.Where(c => !c.IsDeleted).OrderBy(c => c.SortOrder).ToListAsync();
         ViewBag.Parents = await GetHierarchicalCategories();
-        return View(new Category());
+        return View(new Category { IsActive = true, IsReturnableDefault = true, HasSizeGuide = false });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Category category)
+    public async Task<IActionResult> Create(Category category, IFormFile? iconFile)
     {
         ModelState.Remove("Slug");
         ModelState.Remove("Parent");
         ModelState.Remove("Children");
+        ModelState.Remove("Attributes");
 
         if (ModelState.IsValid)
         {
@@ -71,12 +93,18 @@ public class CategoriesController : Controller
                 category.Slug = $"{baseSlug}-{counter++}";
             }
 
+            var uploadedIcon = await SaveCategoryIconAsync(iconFile);
+            if (!string.IsNullOrWhiteSpace(uploadedIcon))
+            {
+                category.IconUrl = uploadedIcon;
+            }
+
             category.CreatedAt = DateTime.UtcNow;
             category.UpdatedAt = DateTime.UtcNow;
             _db.Categories.Add(category);
             await _db.SaveChangesAsync();
-            TempData["AdminToast"] = "Tạo danh mục thành công!";
-            return RedirectToAction(nameof(Index));
+            TempData["AdminToast"] = "Tạo danh mục ngành hàng thành công!";
+            return RedirectToAction(nameof(Edit), new { id = category.Id });
         }
 
         ViewBag.AllCategories = await _db.Categories.Where(c => !c.IsDeleted).OrderBy(c => c.SortOrder).ToListAsync();
@@ -87,21 +115,37 @@ public class CategoriesController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
-        var category = await _db.Categories.FindAsync(id);
-        if (category == null || category.IsDeleted) return NotFound();
+        var category = await _db.Categories
+            .Include(c => c.Attributes.OrderBy(a => a.SortOrder))
+            .Include(c => c.Parent)
+            .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+
+        if (category == null) return NotFound();
 
         ViewBag.AllCategories = await _db.Categories.Where(c => !c.IsDeleted).OrderBy(c => c.SortOrder).ToListAsync();
         ViewBag.Parents = await GetHierarchicalCategories(category.Id);
+
+        // If parent has attributes, also show inherited attributes for reference
+        if (category.ParentId.HasValue)
+        {
+            ViewBag.ParentAttributes = await _db.CategoryAttributes
+                .AsNoTracking()
+                .Where(a => a.CategoryId == category.ParentId.Value)
+                .OrderBy(a => a.SortOrder)
+                .ToListAsync();
+        }
+
         return View(category);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(Category category)
+    public async Task<IActionResult> Edit(Category category, IFormFile? iconFile)
     {
         ModelState.Remove("Slug");
         ModelState.Remove("Parent");
         ModelState.Remove("Children");
+        ModelState.Remove("Attributes");
 
         if (ModelState.IsValid)
         {
@@ -110,9 +154,23 @@ public class CategoriesController : Controller
 
             existing.Name = category.Name;
             existing.ParentId = category.ParentId;
+            existing.CommissionRate = category.CommissionRate;
+            existing.MaxCommissionAmount = category.MaxCommissionAmount;
+            existing.HasSizeGuide = category.HasSizeGuide;
+            existing.IsReturnableDefault = category.IsReturnableDefault;
             existing.SortOrder = category.SortOrder;
             existing.IsActive = category.IsActive;
             existing.UpdatedAt = DateTime.UtcNow;
+
+            var uploadedIcon = await SaveCategoryIconAsync(iconFile);
+            if (!string.IsNullOrWhiteSpace(uploadedIcon))
+            {
+                existing.IconUrl = uploadedIcon;
+            }
+            else if (!string.IsNullOrWhiteSpace(category.IconUrl))
+            {
+                existing.IconUrl = category.IconUrl.Trim();
+            }
 
             existing.Slug = GenerateSlug(category.Name);
             var baseSlug = existing.Slug;
@@ -124,12 +182,79 @@ public class CategoriesController : Controller
 
             await _db.SaveChangesAsync();
             TempData["AdminToast"] = "Cập nhật danh mục thành công!";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Edit), new { id = existing.Id });
         }
 
         ViewBag.AllCategories = await _db.Categories.Where(c => !c.IsDeleted).OrderBy(c => c.SortOrder).ToListAsync();
         ViewBag.Parents = await GetHierarchicalCategories(category.Id);
         return View(category);
+    }
+
+    // ── CRUD CategoryAttributes (Thông số kỹ thuật theo Ngành) ──
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddAttribute(int categoryId, string name, string? unit, bool isFilterable = true, int sortOrder = 0)
+    {
+        if (categoryId <= 0 || string.IsNullOrWhiteSpace(name))
+        {
+            TempData["AdminError"] = "Vui lòng nhập tên thuộc tính kỹ thuật.";
+            return RedirectToAction(nameof(Edit), new { id = categoryId });
+        }
+
+        var attr = new CategoryAttribute
+        {
+            CategoryId = categoryId,
+            Name = name.Trim(),
+            Unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim(),
+            IsFilterable = isFilterable,
+            SortOrder = sortOrder
+        };
+
+        _db.CategoryAttributes.Add(attr);
+        await _db.SaveChangesAsync();
+        TempData["AdminToast"] = $"Đã thêm thuộc tính kỹ thuật \"{attr.Name}\".";
+        return RedirectToAction(nameof(Edit), new { id = categoryId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateAttribute(int id, int categoryId, string name, string? unit, bool isFilterable = false, int sortOrder = 0)
+    {
+        var attr = await _db.CategoryAttributes.FirstOrDefaultAsync(a => a.Id == id && a.CategoryId == categoryId);
+        if (attr == null) return RedirectToAction(nameof(Edit), new { id = categoryId });
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            attr.Name = name.Trim();
+            attr.Unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim();
+            attr.IsFilterable = isFilterable;
+            attr.SortOrder = sortOrder;
+            await _db.SaveChangesAsync();
+            TempData["AdminToast"] = $"Đã cập nhật thuộc tính \"{attr.Name}\".";
+        }
+
+        return RedirectToAction(nameof(Edit), new { id = categoryId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAttribute(int id, int categoryId)
+    {
+        var attr = await _db.CategoryAttributes.FirstOrDefaultAsync(a => a.Id == id && a.CategoryId == categoryId);
+        if (attr != null)
+        {
+            var usedValues = await _db.ProductAttributeValues.Where(v => v.CategoryAttributeId == id).ToListAsync();
+            if (usedValues.Count > 0)
+            {
+                _db.ProductAttributeValues.RemoveRange(usedValues);
+            }
+            _db.CategoryAttributes.Remove(attr);
+            await _db.SaveChangesAsync();
+            TempData["AdminToast"] = $"Đã xóa thuộc tính \"{attr.Name}\".";
+        }
+
+        return RedirectToAction(nameof(Edit), new { id = categoryId });
     }
 
     private async Task<List<Category>> GetHierarchicalCategories(int? excludeId = null)
@@ -167,20 +292,17 @@ public class CategoriesController : Controller
         var category = await _db.Categories.FindAsync(id);
         if (category == null) return NotFound();
 
-        // 1. Move child categories to parent
         var children = await _db.Categories.Where(c => c.ParentId == id && !c.IsDeleted).ToListAsync();
         foreach (var child in children)
         {
             child.ParentId = category.ParentId;
         }
 
-        // 2. Handle products
         var hasProducts = await _db.Products.AnyAsync(p => p.CategoryId == id && !p.IsDeleted);
         if (hasProducts)
         {
             if (category.ParentId == null)
             {
-                // Cannot move products to null because CategoryId is required
                 TempData["AdminError"] = "Không thể xóa danh mục gốc đang có sản phẩm. Vui lòng chuyển sản phẩm sang danh mục khác trước!";
                 return RedirectToAction(nameof(Index));
             }
@@ -197,9 +319,17 @@ public class CategoriesController : Controller
             TempData["AdminToast"] = "Xóa danh mục thành công!";
         }
 
+        // Remove category attributes and values
+        var attrIds = await _db.CategoryAttributes.Where(a => a.CategoryId == id).Select(a => a.Id).ToListAsync();
+        if (attrIds.Count > 0)
+        {
+            var pVals = await _db.ProductAttributeValues.Where(v => attrIds.Contains(v.CategoryAttributeId)).ToListAsync();
+            _db.ProductAttributeValues.RemoveRange(pVals);
+        }
+
         _db.Categories.Remove(category);
         await _db.SaveChangesAsync();
-        
+
         return RedirectToAction(nameof(Index));
     }
 

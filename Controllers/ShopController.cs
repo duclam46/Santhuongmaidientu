@@ -15,11 +15,21 @@ public class ShopController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(int? page, int? categoryId, int? minRating, int? maxRating, CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(int? page, int? categoryId, int? minRating, int? maxRating, string? tier, CancellationToken cancellationToken)
     {
         const int pageSize = 12;
         var currentPage = page.GetValueOrDefault(1);
         if (currentPage < 1) currentPage = 1;
+
+        string? selectedTier = null;
+        if (string.Equals(tier?.Trim(), "Mall", StringComparison.OrdinalIgnoreCase))
+        {
+            selectedTier = "Mall";
+        }
+        else if (string.Equals(tier?.Trim(), "Standard", StringComparison.OrdinalIgnoreCase))
+        {
+            selectedTier = "Standard";
+        }
 
         int? selectedMinRating = null;
         if (minRating.HasValue)
@@ -38,32 +48,48 @@ public class ShopController : Controller
             (selectedMinRating, selectedMaxRating) = (selectedMaxRating, selectedMinRating);
         }
 
-        var rootCategories = await _context.Categories
+        var allActiveCategories = await _context.Categories
             .AsNoTracking()
-            .Where(c => c.IsActive && !c.IsDeleted && c.ParentId == null)
+            .Where(c => c.IsActive && !c.IsDeleted)
+            .Select(c => new { c.Id, c.Name, c.ParentId })
+            .ToListAsync(cancellationToken);
+
+        var parentById = allActiveCategories.ToDictionary(c => c.Id, c => c.ParentId);
+        int GetRootCategoryId(int catId)
+        {
+            var current = catId;
+            var guard = 0;
+            while (parentById.TryGetValue(current, out var parentId) && parentId.HasValue && guard++ < 10)
+            {
+                current = parentId.Value;
+            }
+            return current;
+        }
+
+        var rootCategories = allActiveCategories
+            .Where(c => c.ParentId == null)
             .OrderBy(c => c.Name)
             .Select(c => new { c.Id, c.Name })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         var validRootCategoryIds = rootCategories.Select(c => c.Id).ToHashSet();
         int? selectedCategoryId = (categoryId.HasValue && validRootCategoryIds.Contains(categoryId.Value))
             ? categoryId.Value
             : null;
 
-        var rootCategoryShopCounts = await (
-                from p in _context.Products.AsNoTracking()
-                join c in _context.Categories.AsNoTracking() on p.CategoryId equals c.Id
-                where p.Status == "Active" && !p.IsDeleted
-                      && c.IsActive && !c.IsDeleted
-                select new
-                {
-                    RootCategoryId = c.ParentId ?? c.Id,
-                    p.ShopId
-                })
+        var activeProductPairs = await _context.Products
+            .AsNoTracking()
+            .Where(p => p.Status == "Active" && !p.IsDeleted)
+            .Select(p => new { p.CategoryId, p.ShopId })
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var rootCategoryShopCounts = activeProductPairs
+            .Where(x => parentById.ContainsKey(x.CategoryId))
+            .Select(x => new { RootCategoryId = GetRootCategoryId(x.CategoryId), x.ShopId })
             .Distinct()
             .GroupBy(x => x.RootCategoryId)
-            .Select(g => new { RootCategoryId = g.Key, ShopCount = g.Count() })
-            .ToDictionaryAsync(x => x.RootCategoryId, x => x.ShopCount, cancellationToken);
+            .ToDictionary(g => g.Key, g => g.Count());
 
         var categoryFilters = rootCategories
             .Select(c => new ShopCategoryFilterItemVm
@@ -73,7 +99,6 @@ public class ShopController : Controller
                 ShopCount = rootCategoryShopCounts.TryGetValue(c.Id, out var count) ? count : 0,
                 IsSelected = selectedCategoryId == c.Id
             })
-            .Where(x => x.ShopCount > 0)
             .ToList();
 
         string? selectedCategoryName = null;
@@ -90,19 +115,21 @@ public class ShopController : Controller
             .Where(a => a.Status == "Active" && !a.IsDeleted)
             .Where(a => a.Profile != null && !string.IsNullOrWhiteSpace(a.Profile.ShopSlug));
 
+        if (selectedTier == "Mall")
+        {
+            shopsQuery = shopsQuery.Where(a => a.Profile!.IsMall);
+        }
+        else if (selectedTier == "Standard")
+        {
+            shopsQuery = shopsQuery.Where(a => !a.Profile!.IsMall);
+        }
+
         if (selectedCategoryId.HasValue)
         {
-            var selectedChildrenIds = await _context.Categories
-                .AsNoTracking()
-                .Where(c => c.IsActive && !c.IsDeleted && c.ParentId == selectedCategoryId.Value)
+            var categoryScopeIds = allActiveCategories
+                .Where(c => GetRootCategoryId(c.Id) == selectedCategoryId.Value)
                 .Select(c => c.Id)
-                .ToListAsync(cancellationToken);
-
-            var categoryScopeIds = new List<int> { selectedCategoryId.Value };
-            if (selectedChildrenIds.Count != 0)
-            {
-                categoryScopeIds.AddRange(selectedChildrenIds);
-            }
+                .ToList();
 
             shopsQuery = shopsQuery.Where(a => _context.Products
                 .AsNoTracking()
@@ -148,7 +175,8 @@ public class ShopController : Controller
         }
 
         var shops = await shopsQuery
-            .OrderBy(a => a.Profile!.ShopName)
+            .OrderByDescending(a => a.Profile!.IsMall)
+            .ThenBy(a => a.Profile!.ShopName)
             .ThenBy(a => a.Profile!.FullName)
             .ThenBy(a => a.Id)
             .Select(a => new ShopSummaryVm
@@ -161,6 +189,8 @@ public class ShopController : Controller
                 LogoUrl = a.Profile!.ShopLogoUrl,
                 Location = a.Profile!.Address,
                 LastActiveText = null,
+                IsMall = a.Profile!.IsMall,
+                ShopTier = a.Profile!.IsMall ? "Mall" : "Standard",
                 RatingAverage = _context.Products
                     .AsNoTracking()
                     .Where(p => p.Status == "Active" && !p.IsDeleted && p.ShopId == a.Id)
@@ -185,6 +215,7 @@ public class ShopController : Controller
             SelectedCategoryName = selectedCategoryName,
             SelectedMinRating = selectedMinRating,
             SelectedMaxRating = selectedMaxRating,
+            SelectedTier = selectedTier,
             Categories = categoryFilters,
             Shops = shops
         };
@@ -307,6 +338,60 @@ public class ShopController : Controller
             ? $"{shopAddress!.DistrictName}, {shopAddress.ProvinceName}"
             : shopAccount.Profile.Address;
 
+        var rawShopVouchers = await _context.Vouchers
+            .AsNoTracking()
+            .Where(v => v.IsActive && v.StartDate <= now && v.EndDate >= now && (v.UsageLimit == 0 || v.UsedCount < v.UsageLimit))
+            .Where(v => v.ShopId == shopAccount.Id || (v.ShopId == null && (v.ScopeType == "All" || (v.ScopeType == "MallOnly" && shopAccount.Profile.IsMall))))
+            .Where(v => v.TargetAudience != "PrivateChatOnly")
+            .OrderByDescending(v => v.ShopId != null)
+            .ThenByDescending(v => v.DiscountValue)
+            .Take(8)
+            .ToListAsync(cancellationToken);
+
+        int viewerId = 0;
+        if (User?.Identity?.IsAuthenticated == true)
+        {
+            var rawId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            int.TryParse(rawId, out viewerId);
+        }
+
+        var savedSet = viewerId > 0
+            ? (await _context.SavedVouchers
+                .AsNoTracking()
+                .Where(s => s.AccountId == viewerId)
+                .Select(s => s.VoucherId)
+                .ToListAsync(cancellationToken)).ToHashSet()
+            : new HashSet<int>();
+
+        var followerCount = await _context.ShopFollowers
+            .AsNoTracking()
+            .CountAsync(f => f.ShopId == shopAccount.Id, cancellationToken);
+
+        var isFollowing = viewerId > 0 && await _context.ShopFollowers
+            .AsNoTracking()
+            .AnyAsync(f => f.FollowerAccountId == viewerId && f.ShopId == shopAccount.Id, cancellationToken);
+
+        var shopVouchers = rawShopVouchers.Select(v => new StorefrontVoucherVm
+        {
+            Id = v.Id,
+            Code = v.Code,
+            DiscountType = v.DiscountType,
+            DiscountValue = v.DiscountValue,
+            MinOrderValue = v.MinOrderValue,
+            MaxDiscountValue = v.MaxDiscountValue,
+            EndDate = v.EndDate,
+            IsShopVoucher = v.ShopId.HasValue,
+            SponsorBadge = v.ShopId.HasValue ? "Voucher Gian hàng" : "Voucher Toàn Sàn",
+            ScopeBadge = (v.ScopeType ?? "All") switch
+            {
+                "MallOnly" => "Độc quyền Mall",
+                "ByCategory" => "Theo danh mục",
+                "SpecificProducts" => "Sản phẩm chọn lọc",
+                _ => v.ShopId.HasValue ? "Toàn Gian hàng" : "Toàn Sàn Sellzy"
+            },
+            IsSaved = savedSet.Contains(v.Id)
+        }).ToList();
+
         var vm = new ShopDetailsVm
         {
             Shop = new ShopSummaryVm
@@ -321,14 +406,66 @@ public class ShopController : Controller
                 LastActiveText = null,
                 RatingAverage = Math.Round(ratingAvg, 1),
                 ProductCount = productCount,
-                ChatResponseRate = null
+                ChatResponseRate = 99,
+                IsMall = shopAccount.Profile.IsMall,
+                ShopTier = shopAccount.Profile.IsMall ? "Mall" : "Standard",
+                FollowerCount = followerCount,
+                IsFollowing = isFollowing
             },
             Page = currentPage,
             PageSize = pageSize,
             TotalItems = productCount,
-            Products = products
+            Products = products,
+            ShopVouchers = shopVouchers
         };
 
         return View(vm);
+    }
+
+    public sealed record ToggleFollowRequest(int ShopId);
+
+    [HttpPost("/shop/toggle-follow")]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> ToggleFollow([FromBody] ToggleFollowRequest? req, CancellationToken cancellationToken)
+    {
+        if (User?.Identity?.IsAuthenticated != true)
+            return Unauthorized(new { ok = false, message = "Vui lòng đăng nhập để theo dõi Gian hàng." });
+
+        var rawId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(rawId, out var viewerId) || viewerId <= 0)
+            return Unauthorized(new { ok = false, message = "Phiên đăng nhập không hợp lệ." });
+
+        if (req == null || req.ShopId <= 0)
+            return BadRequest(new { ok = false, message = "Gian hàng không hợp lệ." });
+
+        if (req.ShopId == viewerId)
+            return BadRequest(new { ok = false, message = "Bạn không thể tự theo dõi gian hàng của chính mình." });
+
+        var existing = await _context.ShopFollowers
+            .FirstOrDefaultAsync(f => f.FollowerAccountId == viewerId && f.ShopId == req.ShopId, cancellationToken);
+
+        bool isNowFollowing;
+        if (existing != null)
+        {
+            _context.ShopFollowers.Remove(existing);
+            isNowFollowing = false;
+        }
+        else
+        {
+            _context.ShopFollowers.Add(new ShopFollower
+            {
+                FollowerAccountId = viewerId,
+                ShopId = req.ShopId,
+                CreatedAt = DateTime.UtcNow
+            });
+            isNowFollowing = true;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        var count = await _context.ShopFollowers
+            .AsNoTracking()
+            .CountAsync(f => f.ShopId == req.ShopId, cancellationToken);
+
+        return Ok(new { ok = true, isFollowing = isNowFollowing, followerCount = count });
     }
 }

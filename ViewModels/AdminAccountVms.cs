@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace DOAN_BANHANG.ViewModels;
 
 public sealed class AdminAccountListQueryVm
@@ -34,6 +32,18 @@ public sealed class AdminAccountListItemVm
     public string? FullName { get; set; }
 
     public string? PhoneNumber { get; set; }
+
+    public string? AvatarUrl { get; set; }
+
+    public string? ShopName { get; set; }
+
+    public string? ShopSlug { get; set; }
+
+    public bool IsMall { get; set; }
+
+    public int OrderCount { get; set; }
+
+    public int ProductCount { get; set; }
 }
 
 public sealed class AdminAccountListVm
@@ -43,4 +53,12 @@ public sealed class AdminAccountListVm
     public List<AdminAccountListItemVm> Accounts { get; set; } = new();
 
     public int TotalItems { get; set; }
+
+    public int TotalCustomers { get; set; }
+
+    public int TotalShops { get; set; }
+
+    public int TotalMallShops { get; set; }
+
+    public int TotalBlocked { get; set; }
 }

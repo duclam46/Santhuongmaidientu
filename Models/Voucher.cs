@@ -41,5 +41,21 @@ public class Voucher
 
     public bool IsActive { get; set; } = true;
 
+    [MaxLength(40)]
+    public string ScopeType { get; set; } = "All"; // All | ByCategory | SpecificProducts | MallOnly
+
+    [MaxLength(1000)]
+    public string? TargetCategoryIds { get; set; }
+
+    [MaxLength(2000)]
+    public string? TargetProductIds { get; set; }
+
+    public int MaxUsagePerUser { get; set; } = 1;
+
+    [MaxLength(30)]
+    public string TargetAudience { get; set; } = "Public"; // Public | NewBuyerOnly | PrivateChatOnly
+
+    public bool ExcludeFlashSaleItems { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

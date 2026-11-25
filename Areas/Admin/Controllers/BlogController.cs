@@ -60,6 +60,7 @@ public class BlogController : Controller
 
     // ==================== INDEX ====================
     [HttpGet]
+    [HttpGet("/Admin/Blog")]
     public async Task<IActionResult> Index(string? search, string? status, int page = 1, CancellationToken ct = default)
     {
         var (account, isAdmin) = await GetCurrentUserAsync();
@@ -75,6 +76,12 @@ public class BlogController : Controller
         {
             q = q.Where(b => b.ShopId == account.Id);
         }
+
+        var totalAllCount = await q.CountAsync(ct);
+        var publishedCount = await q.CountAsync(b => b.Status == "Published", ct);
+        var draftCount = await q.CountAsync(b => b.Status == "Draft", ct);
+        var hiddenCount = await q.CountAsync(b => b.Status == "Hidden", ct);
+        var totalViewsCount = await q.SumAsync(b => (int?)b.ViewCount, ct) ?? 0;
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -116,6 +123,12 @@ public class BlogController : Controller
             Posts = items,
             CurrentPage = page,
             TotalPages = totalPages,
+            TotalItems = totalItems,
+            TotalAllCount = totalAllCount,
+            PublishedCount = publishedCount,
+            DraftCount = draftCount,
+            HiddenCount = hiddenCount,
+            TotalViewsCount = totalViewsCount,
             SearchQuery = search,
             StatusFilter = status
         };
@@ -327,7 +340,7 @@ public class BlogController : Controller
 
     // ==================== API: Search Products for Picker ====================
     [HttpGet]
-    [Route("Admin/Blog/SearchProducts")]
+    [Route("/Admin/Blog/SearchProducts")]
     public async Task<IActionResult> SearchProducts(string? q, CancellationToken ct)
     {
         var (account, isAdmin) = await GetCurrentUserAsync();

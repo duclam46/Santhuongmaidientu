@@ -2,233 +2,377 @@
 @model VoucherAdminListVm
 
 @{
-    ViewData["Title"] = "Quản lý Voucher";
+    ViewData["Title"] = Model.IsAdmin ? "Quản lý Voucher Hệ thống" : "Quản lý Mã giảm giá của Shop";
+
+    var activeStatus = string.IsNullOrWhiteSpace(Model.Query.Status) ? "All" : Model.Query.Status.Trim();
+    var statusTabs = new (string status, string label, string icon, int count)[]
+    {
+        ("All", "Tất cả mã", "bx bx-purchase-tag-alt", Model.AllCount),
+        ("Active", "Đang diễn ra", "bx bx-check-circle", Model.ActiveCount),
+        ("Inactive", "Đang tạm ẩn", "bx bx-hide", Model.InactiveCount),
+        ("Expired", "Hết hạn / Hết lượt", "bx bx-time-five", Model.ExpiredCount)
+    };
 }
 
-<div class="row">
-    <div class="col-12">
-        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18">Quản lý Voucher @(Model.IsAdmin ? "Toàn Sàn" : "Của Shop")</h4>
+@section Styles {
+    <style>
+        .vc-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .vc-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+        @@media (max-width: 991px) {
+            .vc-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .vc-kpi-card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .vc-kpi-ic {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 235, 105, 0.18);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .vc-tab-bar {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            background: #F1F5F9;
+            padding: 6px;
+            border-radius: 16px;
+            margin-bottom: 18px;
+        }
+        @@media (max-width: 767px) {
+            .vc-tab-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .vc-tab-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #475569;
+            transition: all 0.2s ease;
+            text-decoration: none !important;
+        }
+        .vc-tab-btn:hover {
+            color: #088178;
+            background: rgba(255, 255, 255, 0.65);
+        }
+        .vc-tab-btn.is-active {
+            background: #088178;
+            color: #ffffff !important;
+            box-shadow: 0 6px 14px -6px rgba(8, 129, 120, 0.45);
+        }
+        .vc-code-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .vc-code-icon.is-ship {
+            background: #ECFDF5;
+            color: #059669;
+            border: 1px solid #A7F3D0;
+        }
+        .vc-code-icon.is-disc {
+            background: #FFFBEB;
+            color: #D97706;
+            border: 1px solid #FDE68A;
+        }
+    </style>
+}
 
-            <div class="page-title-right">
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a asp-action="Index" asp-controller="Home">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Voucher</li>
-                </ol>
+<!-- HERO HEADER -->
+<div class="vc-hero">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 rounded-pill px-3 py-1 mb-2" style="background: rgba(255,255,255,0.14); font-size: 12.5px;">
+                <i class="bx bx-shield-quarter text-warning"></i>
+                @if (Model.IsAdmin)
+                {
+                    <span>Nguồn tài trợ: <strong>Quỹ Phí chiết khấu sàn thu từ Đối tác</strong> • Hỗ trợ lọc theo Ngành hàng &amp; Sellzy Mall</span>
+                }
+                else
+                {
+                    <span>Hạch toán chuẩn Shopee: <strong>Khấu trừ vào Tiền hàng Quyết toán về Ví Shop</strong> (Giảm tương ứng Phí sàn &amp; Thuế)</span>
+                }
+            </div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bxs-coupon text-warning me-1"></i>Quản lý Mã giảm giá @(Model.IsAdmin ? "Hệ thống Toàn Sàn" : "Của Gian Hàng")
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Thiết lập phạm vi theo ngành hàng / sản phẩm chỉ định, đối tượng khách hàng mới hoặc mã ẩn gửi qua Chat kèm AI bảo vệ biên lợi nhuận.
+            </p>
+        </div>
+        <a asp-action="Create" class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-sm" style="background: #FFEB69; color: #161C24;">
+            <i class="bx bx-plus-circle me-1"></i>Tạo mã giảm giá mới
+        </a>
+    </div>
+
+    <div class="vc-kpi-grid">
+        <div class="vc-kpi-card">
+            <span class="vc-kpi-ic"><i class="bx bx-purchase-tag-alt"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.AllCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Tổng mã giảm giá</div>
+            </div>
+        </div>
+        <div class="vc-kpi-card">
+            <span class="vc-kpi-ic" style="background: rgba(52,211,153,0.22); color: #6EE7B7;"><i class="bx bx-check-circle"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.ActiveCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Đang diễn ra</div>
+            </div>
+        </div>
+        <div class="vc-kpi-card">
+            <span class="vc-kpi-ic"><i class="bx bx-trending-up"></i></span>
+            <div>
+                <div class="fs-5 fw-bold lh-1" style="color: #FFEB69;">@Model.TotalUsedCount.ToString("N0")</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Tổng lượt đã dùng</div>
+            </div>
+        </div>
+        <div class="vc-kpi-card">
+            <span class="vc-kpi-ic" style="background: rgba(248,113,113,0.22); color: #FCA5A5;"><i class="bx bx-time-five"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@(Model.ExpiredCount + Model.InactiveCount)</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Hết hạn / Đang ẩn</div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                
-                <form asp-action="Index" method="get" class="row mb-4 align-items-end">
-                    <div class="col-sm-4">
-                        <div class="search-box me-2 mb-2 d-inline-block w-100">
-                            <div class="position-relative">
-                                <label for="Search" class="form-label">Tìm kiếm</label>
-                                <input type="text" class="form-control" name="Search" value="@Model.Query.Search" placeholder="Nhập mã voucher...">
-                                <i class="bx bx-search-alt search-icon" style="top: 36px;"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-3">
-                        <div class="mb-2">
-                            <label for="Status" class="form-label">Trạng thái</label>
-                            <select name="Status" class="form-select">
-                                <!option value="All" @(Model.Query.Status == "All" ? "selected" : "")>Tất cả trạng thái</!option>
-                                <!option value="Active" @(Model.Query.Status == "Active" ? "selected" : "")>Đang diễn ra</!option>
-                                <!option value="Inactive" @(Model.Query.Status == "Inactive" ? "selected" : "")>Đã ẩn</!option>
-                                <!option value="Expired" @(Model.Query.Status == "Expired" ? "selected" : "")>Đã kết thúc / Hết lượt</!option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-sm-2">
-                        <div class="mb-2">
-                            <button type="submit" class="btn btn-primary w-100"><i class="bx bx-filter-alt"></i> Lọc</button>
-                        </div>
-                    </div>
-                    <div class="col-sm-3 text-sm-end">
-                        <div class="mb-2">
-                            <a asp-action="Create" class="btn btn-success btn-rounded waves-effect waves-light w-100"><i class="mdi mdi-plus me-1"></i> Thêm Voucher mới</a>
-                        </div>
-                    </div>
-                </form>
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-4">
+        @if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+        {
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 rounded-3" role="alert">
+                <i class="bx bx-check-circle fs-5"></i>
+                <div>@toast</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
 
-                <div class="table-responsive">
-                    <table class="table align-middle table-nowrap table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Mã Voucher</th>
-                                <th>Loại mức giảm</th>
-                                <th>Điều kiện</th>
-                                <th>Số lượng</th>
-                                <th>Thời gian sử dụng</th>
-                                <th>Trạng thái</th>
-                                <th>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!Model.Items.Any())
+        <div class="vc-tab-bar">
+            @foreach (var t in statusTabs)
+            {
+                var isActive = string.Equals(activeStatus, t.status, StringComparison.OrdinalIgnoreCase);
+                <a class="vc-tab-btn @(isActive ? "is-active" : "")"
+                   asp-action="Index"
+                   asp-route-Status="@t.status"
+                   asp-route-Search="@Model.Query.Search">
+                    <i class="@t.icon fs-6"></i>
+                    <span>@t.label</span>
+                    <span class="badge rounded-pill @(isActive ? "bg-white text-primary" : "bg-secondary-subtle text-dark")">@t.count</span>
+                </a>
+            }
+        </div>
+
+        <div class="border rounded-3 px-3 py-2.5 bg-light mb-4">
+            <form asp-action="Index" method="get" class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <input type="hidden" name="Status" value="@activeStatus" />
+                <div class="small text-secondary fw-semibold">
+                    <i class="bx bx-list-ul me-1"></i>Hiển thị <strong>@Model.Items.Count</strong> / <strong>@Model.TotalItems</strong> mã phù hợp
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 460px;">
+                    <div class="input-group input-group-sm flex-grow-1">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bx bx-search"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" name="Search" value="@Model.Query.Search" placeholder="Nhập mã giảm giá cần tìm..." />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold text-nowrap">Tìm kiếm</button>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary" title="Đặt lại bộ lọc"><i class="bx bx-reset"></i></a>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã Voucher &amp; Nguồn Hạch toán</th>
+                        <th>Phạm vi &amp; Đối tượng</th>
+                        <th>Loại &amp; Mức ưu đãi</th>
+                        <th>Đơn tối thiểu</th>
+                        <th style="width: 165px;">Tiến độ &amp; Giới hạn</th>
+                        <th>Thời gian hiệu lực</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end" style="width: 145px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="bx bxs-coupon display-5 text-muted d-block mb-2"></i>
+                                <div class="fw-bold text-dark">Chưa có mã giảm giá nào phù hợp</div>
+                                <div class="text-muted small mt-1">Bấm nút <strong>Tạo mã giảm giá mới</strong> ở góc trên để khởi tạo chương trình khuyến mãi đầu tiên.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            var isFreeShip = item.DiscountType == "FreeShipping";
+
+                            var discountText = item.DiscountType switch
                             {
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted py-5">
-                                        <div class="mb-3">
-                                            <i class="bx bx-package display-4 text-light"></i>
-                                        </div>
-                                        Không tìm thấy voucher nào.
-                                    </td>
-                                </tr>
+                                "Percent" => $"Giảm {item.DiscountValue:0.##}%",
+                                "FixedAmount" => $"Giảm {item.DiscountValue:N0}₫",
+                                "FreeShipping" => $"Hỗ trợ ship {item.DiscountValue:N0}₫",
+                                _ => $"{item.DiscountValue:N0}₫"
+                            };
+
+                            var maxDiscountText = item.MaxDiscountValue.HasValue && item.DiscountType == "Percent"
+                                ? $"Tối đa {item.MaxDiscountValue:N0}₫"
+                                : string.Empty;
+
+                            var now = DateTime.Now;
+                            string statusClass;
+                            string statusText;
+                            string statusIcon;
+
+                            if (!item.IsActive)
+                            {
+                                statusClass = "badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill px-2.5 py-1";
+                                statusText = "Đang tạm ẩn";
+                                statusIcon = "bx bx-hide";
+                            }
+                            else if (item.EndDate < now)
+                            {
+                                statusClass = "badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill px-2.5 py-1";
+                                statusText = "Đã kết thúc";
+                                statusIcon = "bx bx-x-circle";
+                            }
+                            else if (item.UsageLimit > 0 && item.UsedCount >= item.UsageLimit)
+                            {
+                                statusClass = "badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1";
+                                statusText = "Hết lượt dùng";
+                                statusIcon = "bx bx-error-circle";
+                            }
+                            else if (item.StartDate > now)
+                            {
+                                statusClass = "badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-1";
+                                statusText = "Sắp diễn ra";
+                                statusIcon = "bx bx-calendar-star";
                             }
                             else
                             {
-                                @foreach (var item in Model.Items)
-                                {
-                                    var isFreeShip = item.DiscountType == "FreeShipping";
-                                    
-                                    var discountText = "";
-                                    if (item.DiscountType == "Percent") discountText = $"Giảm {item.DiscountValue}%";
-                                    else if (item.DiscountType == "FixedAmount") discountText = $"Giảm {item.DiscountValue:N0}đ";
-                                    else if (item.DiscountType == "FreeShipping") discountText = $"Tối đa {item.DiscountValue:N0}đ";
-
-                                    var maxDiscountText = item.MaxDiscountValue.HasValue && item.DiscountType == "Percent" 
-                                        ? $" (Tối đa {item.MaxDiscountValue:N0}đ)" : "";
-                                    
-                                    var now = DateTime.Now;
-                                    var statusClass = "";
-                                    var statusText = "";
-
-                                    if (!item.IsActive)
-                                    {
-                                        statusClass = "badge bg-secondary font-size-12";
-                                        statusText = "Đã ẩn";
-                                    }
-                                    else if (item.EndDate < now)
-                                    {
-                                        statusClass = "badge bg-danger font-size-12";
-                                        statusText = "Đã kết thúc";
-                                    }
-                                    else if (item.UsageLimit > 0 && item.UsedCount >= item.UsageLimit)
-                                    {
-                                        statusClass = "badge bg-warning font-size-12";
-                                        statusText = "Hết lượt";
-                                    }
-                                    else if (item.StartDate > now)
-                                    {
-                                        statusClass = "badge bg-info font-size-12";
-                                        statusText = "Sắp diễn ra";
-                                    }
-                                    else
-                                    {
-                                        statusClass = "badge bg-success font-size-12";
-                                        statusText = "Đang diễn ra";
-                                    }
-
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm me-3">
-                                                    <span class="avatar-title rounded-circle @(isFreeShip ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning") font-size-20">
-                                                        <i class="bx @(isFreeShip ? "bx-truck" : "bxs-discount")"></i>
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <h5 class="font-size-15 mb-1">
-                                                        <span class="text-dark fw-bold" style="letter-spacing: 0.5px;">@item.Code</span>
-                                                    </h5>
-                                                    <p class="text-muted mb-0 font-size-12">Tạo ngày: @item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="fw-semibold @(isFreeShip ? "text-success" : "text-warning")">
-                                                @(isFreeShip ? "Miễn phí vận chuyển" : "Mã giảm giá")
-                                            </div>
-                                            <div class="text-muted font-size-13">
-                                                @discountText @maxDiscountText
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="font-size-13">
-                                                Đơn tối thiểu <br/>
-                                                <span class="fw-semibold">@(item.MinOrderValue > 0 ? $"{item.MinOrderValue:N0}đ" : "0đ")</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="font-size-13">
-                                                Đã dùng: <span class="fw-semibold">@item.UsedCount / @(item.UsageLimit == 0 ? "∞" : item.UsageLimit.ToString())</span>
-                                            </div>
-                                            <div class="progress mt-2" style="height: 5px;">
-                                                @{
-                                                    var percent = item.UsageLimit > 0 ? (int)((double)item.UsedCount / item.UsageLimit * 100) : 0;
-                                                    if (percent > 100) percent = 100;
-                                                }
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: @percent%;" aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100"></div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="font-size-13">
-                                                <i class="bx bx-calendar-event text-muted me-1"></i> @item.StartDate.ToLocalTime().ToString("dd/MM HH:mm") <br/>
-                                                <i class="bx bx-calendar-x text-muted me-1"></i> @item.EndDate.ToLocalTime().ToString("dd/MM HH:mm")
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="@statusClass">@statusText</span>
-                                        </td>
-                                        <td>
-                                            <ul class="list-inline font-size-20 contact-links mb-0">
-                                                <li class="list-inline-item px-1">
-                                                    <a asp-action="Edit" asp-route-id="@item.Id" class="text-primary" title="Chỉnh sửa" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bx bx-edit-alt"></i></a>
-                                                </li>
-                                                <li class="list-inline-item px-1">
-                                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa/ngưng kích hoạt voucher này?');">
-                                                        <button type="submit" class="btn btn-link text-danger p-0" title="Xóa/Ẩn" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bx bx-trash-alt"></i></button>
-                                                    </form>
-                                                </li>
-                                            </ul>
-                                        </td>
-                                    </tr>
-                                }
+                                statusClass = "badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-2.5 py-1";
+                                statusText = "Đang diễn ra";
+                                statusIcon = "bx bx-check-circle";
                             }
-                        </tbody>
-                    </table>
-                </div>
 
-                @if (Model.TotalItems > Model.Query.PageSize)
-                {
-                    <div class="row mt-4">
-                        <div class="col-sm-6">
-                            <div>
-                                <p class="mb-sm-0">Hiển thị @((Model.Query.Page - 1) * Model.Query.PageSize + 1) đến @(Math.Min(Model.Query.Page * Model.Query.PageSize, Model.TotalItems)) của @Model.TotalItems mục</p>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="float-sm-end">
-                                <ul class="pagination pagination-rounded mb-sm-0">
-                                    @{
-                                        var totalPages = (int)Math.Ceiling((double)Model.TotalItems / Model.Query.PageSize);
-                                    }
-                                    <li class="page-item @(Model.Query.Page <= 1 ? "disabled" : "")">
-                                        <a href="?Page=@(Model.Query.Page - 1)&Search=@Model.Query.Search&Status=@Model.Query.Status" class="page-link"><i class="mdi mdi-chevron-left"></i></a>
-                                    </li>
-                                    @for (var i = 1; i <= totalPages; i++)
+                            var percent = item.UsageLimit > 0 ? Math.Min(100, (int)((double)item.UsedCount / item.UsageLimit * 100)) : 0;
+
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2.5">
+                                        <div class="vc-code-icon @(isFreeShip ? "is-ship" : "is-disc")">
+                                            <i class="bx @(isFreeShip ? "bx-truck" : "bxs-discount")"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark font-monospace fs-6">@item.Code</div>
+                                            <div class="small text-muted" style="font-size: 11px;">
+                                                @item.FundingSourceText
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="mb-1">
+                                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-2.5 py-1">
+                                            @item.ScopeDisplayText
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted">
+                                        @item.AudienceDisplayText
+                                        @if (item.ExcludeFlashSaleItems)
+                                        {
+                                            <span class="text-danger fw-semibold"> • Chặn trùng Flash Sale</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold @(isFreeShip ? "text-success" : "text-primary")">@discountText</div>
+                                    @if (!string.IsNullOrWhiteSpace(maxDiscountText))
                                     {
-                                        <li class="page-item @(i == Model.Query.Page ? "active" : "")">
-                                            <a href="?Page=@i&Search=@Model.Query.Search&Status=@Model.Query.Status" class="page-link">@i</a>
-                                        </li>
+                                        <div class="small text-muted">@maxDiscountText</div>
                                     }
-                                    <li class="page-item @(Model.Query.Page >= totalPages ? "disabled" : "")">
-                                        <a href="?Page=@(Model.Query.Page + 1)&Search=@Model.Query.Search&Status=@Model.Query.Status" class="page-link"><i class="mdi mdi-chevron-right"></i></a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
+                                </td>
+                                <td>
+                                    <span class="fw-semibold text-dark">@(item.MinOrderValue > 0 ? $"{item.MinOrderValue:N0}₫" : "0₫")</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="text-muted">Đã dùng</span>
+                                        <span class="fw-bold text-dark">@item.UsedCount / @(item.UsageLimit == 0 ? "∞" : item.UsageLimit.ToString("N0"))</span>
+                                    </div>
+                                    @if (item.UsageLimit > 0)
+                                    {
+                                        <div class="progress mb-1" style="height: 6px; border-radius: 999px;">
+                                            <div class="progress-bar @(percent >= 90 ? "bg-danger" : "bg-success")" role="progressbar" style="width: @percent%;"></div>
+                                        </div>
+                                    }
+                                    <div class="text-muted" style="font-size: 11px;">
+                                        Giới hạn: <strong>@(item.MaxUsagePerUser <= 0 ? "Không giới hạn/khách" : $"{item.MaxUsagePerUser} lần/khách")</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small text-dark"><i class="bx bx-calendar-event text-success me-1"></i>@item.StartDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                    <div class="small text-muted"><i class="bx bx-calendar-x text-danger me-1"></i>@item.EndDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                </td>
+                                <td>
+                                    <span class="@statusClass"><i class="@statusIcon me-1"></i>@statusText</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex align-items-center gap-1.5">
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 fw-semibold">
+                                            <i class="bx bx-edit-alt me-1"></i>Sửa
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
+                                              onsubmit="return confirm('Xác nhận xóa hoặc ngưng kích hoạt mã giảm giá @item.Code?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" title="Xóa hoặc ngưng kích hoạt">
+                                                <i class="bx bx-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

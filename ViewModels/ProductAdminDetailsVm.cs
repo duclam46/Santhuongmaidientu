@@ -12,6 +12,24 @@ public class ProductAdminDetailsVm
 
     public string? CategoryName { get; set; }
 
+    public string? BrandName { get; set; }
+
+    public int WarrantyMonths { get; set; }
+
+    public string? WarrantyType { get; set; }
+
+    public bool IsReturnable { get; set; } = true;
+
+    public bool IsDigital { get; set; } = false;
+
+    public string? DigitalContent { get; set; }
+
+    public DateTime? ManufacturingDate { get; set; }
+
+    public DateTime? ExpiryDate { get; set; }
+
+    public string? ShippingCondition { get; set; } = "Tiêu chuẩn";
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
@@ -22,11 +40,21 @@ public class ProductAdminDetailsVm
 
     public int TotalStockQuantity { get; set; }
 
+    public int TotalReservedStock { get; set; }
+
+    public int TotalSoldQuantity { get; set; }
+
+    public string? Option1Name { get; set; }
+
+    public string? Option2Name { get; set; }
+
     public string? Description { get; set; }
 
     public List<ProductAdminDetailsImageVm> Images { get; set; } = new();
 
     public List<ProductAdminDetailsVariantVm> Variants { get; set; } = new();
+
+    public List<ProductAdminAttributeInputVm> Attributes { get; set; } = new();
 
     public int? SelectedVariantId { get; set; }
 
@@ -62,7 +90,25 @@ public class ProductAdminDetailsVariantVm
 
     public string? SizeName { get; set; }
 
+    public string? Option1Value { get; set; }
+
+    public string? Option2Value { get; set; }
+
+    public string? VariantLabel { get; set; }
+
+    public string? ImageUrl { get; set; }
+
+    public int WeightGram { get; set; } = 300;
+
+    public int LengthCm { get; set; } = 10;
+
+    public int WidthCm { get; set; } = 10;
+
+    public int HeightCm { get; set; } = 10;
+
     public decimal Price { get; set; }
+
+    public decimal CostPrice { get; set; } = 0m;
 
     public decimal? SalePrice { get; set; }
 
@@ -71,6 +117,12 @@ public class ProductAdminDetailsVariantVm
     public DateTime? SaleEndDate { get; set; }
 
     public int StockQuantity { get; set; }
+
+    public int ReservedStock { get; set; }
+
+    public int AvailableStock => Math.Max(0, StockQuantity - ReservedStock);
+
+    public int SoldQuantity { get; set; }
 
     public bool IsActive { get; set; }
 

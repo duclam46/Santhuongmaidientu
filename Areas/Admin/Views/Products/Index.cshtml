@@ -1,448 +1,1104 @@
 @model DOAN_BANHANG.ViewModels.ProductAdminListVm
 
 @{
-    ViewData["Title"] = "Quản lý sản phẩm";
+    ViewData["Title"] = "Quản lý kho & sản phẩm";
 
-    (string Label, string BadgeClass, string Icon) ResolveStatusUi(string? status)
+    (string Label, string BadgeClass, string DotClass) ResolveStatusUi(string? status)
     {
         if (string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase))
-            return ("Đang bán", "badge-soft-success", "bx bx-check-circle");
+            return ("Đang bán", "pi-status-active", "pi-dot-success");
         if (string.Equals(status, "Hidden", StringComparison.OrdinalIgnoreCase))
-            return ("Tạm ẩn", "badge-soft-warning", "bx bx-hide");
+            return ("Tạm ẩn", "pi-status-hidden", "pi-dot-warning");
         if (string.Equals(status, "Draft", StringComparison.OrdinalIgnoreCase))
-            return ("Nháp", "badge-soft-secondary", "bx bx-file");
-            
-        return (status ?? "—", "badge-soft-dark", "bx bx-help-circle");
+            return ("Bản nháp", "pi-status-draft", "pi-dot-muted");
+        return (status ?? "—", "pi-status-draft", "pi-dot-muted");
     }
+
+    string BuildUrl(int page, string? statusOverride = null, string? stockOverride = null, bool clearFilters = false)
+    {
+        return Url.Action("Index", "Products", new
+        {
+            area = "Admin",
+            Search = clearFilters ? null : Model.Query.Search,
+            CategoryId = clearFilters ? (int?)null : Model.Query.CategoryId,
+            Status = statusOverride != null ? (statusOverride == "" ? null : statusOverride) : (clearFilters ? null : Model.Query.Status),
+            StockFilter = stockOverride != null ? (stockOverride == "" ? null : stockOverride) : (clearFilters ? null : Model.Query.StockFilter),
+            SortBy = clearFilters ? null : Model.Query.SortBy,
+            Page = page,
+            PageSize = Model.Query.PageSize
+        }) ?? "#";
+    }
+
+    bool isTabAll = string.IsNullOrEmpty(Model.Query.Status) && string.IsNullOrEmpty(Model.Query.StockFilter);
+    bool isTabActive = string.Equals(Model.Query.Status, "Active", StringComparison.OrdinalIgnoreCase) && string.IsNullOrEmpty(Model.Query.StockFilter);
+    bool isTabHidden = string.Equals(Model.Query.Status, "Hidden", StringComparison.OrdinalIgnoreCase) && string.IsNullOrEmpty(Model.Query.StockFilter);
+    bool isTabDraft = string.Equals(Model.Query.Status, "Draft", StringComparison.OrdinalIgnoreCase) && string.IsNullOrEmpty(Model.Query.StockFilter);
+    bool isTabLow = string.Equals(Model.Query.StockFilter, "LowStock", StringComparison.OrdinalIgnoreCase);
+    bool isTabOut = string.Equals(Model.Query.StockFilter, "OutOfStock", StringComparison.OrdinalIgnoreCase);
 }
 
 <style>
-    /* Premium Dashboard Styles */
     :root {
-        --prod-primary: #556ee6;
-        --prod-primary-light: rgba(85, 110, 230, 0.1);
-        --prod-danger: #f46a6a;
-        --prod-success: #34c38f;
-        --prod-success-light: rgba(52, 195, 143, 0.1);
-        --prod-warning: #f1b44c;
-        --prod-warning-light: rgba(241, 180, 76, 0.1);
-        --prod-info: #50a5f1;
-        --prod-info-light: rgba(80, 165, 241, 0.1);
-        --prod-secondary: #74788d;
-        --prod-secondary-light: rgba(116, 120, 141, 0.1);
+        --pi-teal: #0b5c56;
+        --pi-teal-dark: #063532;
+        --pi-emerald: #10b981;
+        --pi-emerald-soft: #ecfdf5;
+        --pi-amber: #d97706;
+        --pi-amber-soft: #fffbeb;
+        --pi-red: #dc2626;
+        --pi-red-soft: #fef2f2;
+        --pi-blue: #2563eb;
+        --pi-blue-soft: #eff6ff;
+        --pi-slate: #0f172a;
+        --pi-muted: #64748b;
+        --pi-border: #e2e8f0;
     }
 
-    .prod-page-header {
-        background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
-        border-radius: 16px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-        padding: 24px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 24px;
+    /* Hero Banner */
+    .pi-hero {
+        background: linear-gradient(135deg, #063532 0%, #0b5c56 58%, #0f766e 100%);
+        border-radius: 18px;
+        padding: 24px 28px;
+        color: #fff;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 10px 28px rgba(6, 53, 50, 0.16);
+        margin-bottom: 20px;
     }
 
-    .prod-page-header::after {
+    .pi-hero::before {
         content: '';
         position: absolute;
-        top: -50px;
-        right: -30px;
-        width: 180px;
-        height: 180px;
-        background: var(--prod-primary-light);
+        top: -60px;
+        right: -40px;
+        width: 240px;
+        height: 240px;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.28) 0%, rgba(16, 185, 129, 0) 70%);
         border-radius: 50%;
-        filter: blur(40px);
+        pointer-events: none;
     }
 
-    .prod-card {
-        border-radius: 16px;
+    .pi-hero-title {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+        margin-bottom: 4px;
+    }
+
+    .pi-hero-sub {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.88rem;
+    }
+
+    .pi-btn-create {
+        background: #10b981;
+        color: #fff;
         border: none;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        background: #fff;
-    }
-
-    .filter-wrapper {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 14px;
-        padding: 16px;
-        margin-bottom: 24px;
-    }
-
-    .search-input-group {
-        position: relative;
-    }
-
-    .search-input-group i {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-        z-index: 5;
-    }
-
-    .search-input-group input {
-        padding-left: 40px;
-        border-radius: 10px;
-        border: 1px solid #cbd5e1;
-        background: #fff;
-        transition: all 0.3s;
-    }
-
-    .search-input-group input:focus {
-        border-color: var(--prod-primary);
-        box-shadow: 0 0 0 3px var(--prod-primary-light);
-    }
-
-    .custom-select {
-        border-radius: 10px;
-        border: 1px solid #cbd5e1;
-        transition: all 0.3s;
-    }
-
-    .custom-select:focus {
-        border-color: var(--prod-primary);
-        box-shadow: 0 0 0 3px var(--prod-primary-light);
-    }
-
-    .btn-create {
-        background: linear-gradient(135deg, var(--prod-primary), #3b82f6);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 10px 24px;
-        font-weight: 600;
-        box-shadow: 0 4px 15px rgba(85, 110, 230, 0.3);
-        transition: all 0.3s;
+        border-radius: 12px;
+        padding: 11px 22px;
+        font-weight: 700;
+        font-size: 0.9rem;
         display: inline-flex;
         align-items: center;
         gap: 8px;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+        transition: all 0.2s ease;
+        text-decoration: none;
     }
 
-    .btn-create:hover {
+    .pi-btn-create:hover {
+        background: #059669;
+        color: #fff;
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(85, 110, 230, 0.4);
-        color: white;
+        box-shadow: 0 8px 22px rgba(16, 185, 129, 0.45);
     }
 
-    .table-prod th {
-        background-color: #f8f9fa;
-        color: #495057;
+    /* KPI Cards */
+    .pi-kpi-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid var(--pi-border);
+        padding: 18px 20px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+        transition: all 0.2s ease;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .pi-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        border-color: #cbd5e1;
+        color: inherit;
+    }
+
+    .pi-kpi-label {
+        font-size: 0.76rem;
         font-weight: 700;
         text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-        padding: 16px;
-        border-bottom: 2px solid #e2e8f0;
+        letter-spacing: 0.04em;
+        color: var(--pi-muted);
+        margin-bottom: 4px;
     }
 
-    .table-prod td {
-        padding: 16px;
+    .pi-kpi-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--pi-slate);
+        line-height: 1.15;
+    }
+
+    .pi-kpi-meta {
+        font-size: 0.78rem;
+        color: var(--pi-muted);
+        margin-top: 4px;
+    }
+
+    .pi-kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.45rem;
+        flex-shrink: 0;
+    }
+
+    /* Main Panel */
+    .pi-main-card {
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid var(--pi-border);
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.035);
+        overflow: hidden;
+    }
+
+    /* Quick Tabs */
+    .pi-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 16px 22px 0 22px;
+        border-bottom: 1px solid var(--pi-border);
+        background: #fafcff;
+    }
+
+    .pi-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 16px;
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: var(--pi-muted);
+        text-decoration: none;
+        border-bottom: 2.5px solid transparent;
+        margin-bottom: -1px;
+        transition: all 0.18s ease;
+    }
+
+    .pi-tab:hover {
+        color: var(--pi-teal);
+    }
+
+    .pi-tab.active {
+        color: var(--pi-teal);
+        border-bottom-color: var(--pi-teal);
+        font-weight: 700;
+    }
+
+    .pi-tab-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .pi-tab.active .pi-tab-badge {
+        background: rgba(11, 92, 86, 0.12);
+        color: var(--pi-teal);
+    }
+
+    .pi-tab-badge-warn { background: var(--pi-amber-soft); color: var(--pi-amber); }
+    .pi-tab-badge-danger { background: var(--pi-red-soft); color: var(--pi-red); }
+
+    /* Filter Toolbar */
+    .pi-filter-bar {
+        padding: 18px 22px;
+        background: #fff;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .pi-search-wrap {
+        position: relative;
+    }
+
+    .pi-search-wrap i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 1.05rem;
+    }
+
+    .pi-search-wrap input {
+        padding-left: 38px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        font-size: 0.88rem;
+        height: 40px;
+    }
+
+    .pi-search-wrap input:focus,
+    .pi-select:focus {
+        border-color: var(--pi-teal);
+        box-shadow: 0 0 0 3px rgba(11, 92, 86, 0.12);
+    }
+
+    .pi-select {
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        font-size: 0.88rem;
+        height: 40px;
+    }
+
+    .pi-btn-filter {
+        background: var(--pi-teal);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        height: 40px;
+        font-weight: 600;
+        font-size: 0.86rem;
+        padding: 0 16px;
+        transition: all 0.18s;
+    }
+
+    .pi-btn-filter:hover {
+        background: var(--pi-teal-dark);
+        color: #fff;
+    }
+
+    /* Table */
+    .pi-table {
+        margin-bottom: 0;
+    }
+
+    .pi-table thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 0.74rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 13px 16px;
+        border-bottom: 1.5px solid var(--pi-border);
+        white-space: nowrap;
+    }
+
+    .pi-table tbody tr.pi-prod-row td {
+        padding: 15px 16px;
         vertical-align: middle;
         border-bottom: 1px solid #f1f5f9;
-        color: #495057;
+        transition: background-color 0.15s ease;
     }
 
-    .table-prod tbody tr {
-        transition: background-color 0.2s;
-    }
-    
-    .table-prod tbody tr:hover {
-        background-color: #f8fafc;
+    .pi-table tbody tr.pi-prod-row:hover td {
+        background: #f8fafc;
     }
 
-    .prod-img {
-        width: 54px;
-        height: 54px;
+    .pi-prod-thumb {
+        width: 58px;
+        height: 58px;
         border-radius: 12px;
         object-fit: cover;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid #e2e8f0;
         background: #fff;
-        border: 1px solid #f1f5f9;
+        flex-shrink: 0;
     }
 
-    .prod-img-placeholder {
-        width: 54px;
-        height: 54px;
+    .pi-prod-thumb-empty {
+        width: 58px;
+        height: 58px;
         border-radius: 12px;
-        background: #f1f5f9;
+        border: 1px dashed #cbd5e1;
+        background: #f8fafc;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #94a3b8;
-        font-size: 24px;
-        border: 1px dashed #cbd5e1;
+        font-size: 1.4rem;
+        flex-shrink: 0;
     }
 
-    .badge-soft {
-        padding: 6px 12px;
-        border-radius: 8px;
+    .pi-prod-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--pi-slate);
+        text-decoration: none;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.35;
+    }
+
+    .pi-prod-name:hover {
+        color: var(--pi-teal);
+    }
+
+    .pi-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.72rem;
         font-weight: 600;
-        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .pi-variant-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 6px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        background: rgba(11, 92, 86, 0.08);
+        color: var(--pi-teal);
+        border: 1px solid rgba(11, 92, 86, 0.16);
+        cursor: pointer;
+        transition: all 0.18s;
+    }
+
+    .pi-variant-toggle:hover {
+        background: rgba(11, 92, 86, 0.15);
+    }
+
+    .pi-variant-toggle i.bx-chevron-down {
+        transition: transform 0.2s ease;
+    }
+
+    .pi-variant-toggle.expanded i.bx-chevron-down {
+        transform: rotate(180deg);
+    }
+
+    /* Stock Pill & Mini Progress */
+    .pi-stock-num {
+        font-size: 1.02rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    .pi-stock-bar {
+        width: 96px;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+
+    .pi-stock-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+    }
+
+    .pi-stock-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.71rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+    }
+
+    .pi-stock-ok { background: var(--pi-emerald-soft); color: #059669; }
+    .pi-stock-low { background: var(--pi-amber-soft); color: var(--pi-amber); }
+    .pi-stock-out { background: var(--pi-red-soft); color: var(--pi-red); }
+
+    /* Status Badge */
+    .pi-status-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        padding: 5px 11px;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        white-space: nowrap;
     }
 
-    .badge-soft-success { background: var(--prod-success-light); color: var(--prod-success); }
-    .badge-soft-warning { background: var(--prod-warning-light); color: #d97706; }
-    .badge-soft-secondary { background: var(--prod-secondary-light); color: var(--prod-secondary); }
-    .badge-soft-primary { background: var(--prod-primary-light); color: var(--prod-primary); }
-    .badge-soft-info { background: var(--prod-info-light); color: var(--prod-info); }
+    .pi-status-active { background: var(--pi-emerald-soft); color: #047857; }
+    .pi-status-hidden { background: var(--pi-amber-soft); color: #b45309; }
+    .pi-status-draft { background: #f1f5f9; color: #475569; }
 
-    .btn-action {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
+    .pi-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+    }
+    .pi-dot-success { background: #10b981; }
+    .pi-dot-warning { background: #f59e0b; }
+    .pi-dot-muted { background: #94a3b8; }
+
+    /* Action Buttons */
+    .pi-act-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.1rem;
-        transition: all 0.2s;
-        border: none;
+        font-size: 1.05rem;
+        border: 1px solid transparent;
+        transition: all 0.18s;
+        text-decoration: none;
     }
 
-    .btn-action.view { background: #f8fafc; color: #64748b; }
-    .btn-action.view:hover { background: #e2e8f0; color: #334155; }
-    
-    .btn-action.edit { background: var(--prod-primary-light); color: var(--prod-primary); }
-    .btn-action.edit:hover { background: var(--prod-primary); color: white; }
-    
-    .btn-action.reviews { background: var(--prod-info-light); color: var(--prod-info); }
-    .btn-action.reviews:hover { background: var(--prod-info); color: white; }
+    .pi-act-view { background: #f1f5f9; color: #334155; }
+    .pi-act-view:hover { background: var(--pi-teal); color: #fff; }
 
-    .pagination-rounded .page-link {
-        border-radius: 50% !important;
-        margin: 0 4px;
-        width: 36px;
+    .pi-act-edit { background: var(--pi-blue-soft); color: var(--pi-blue); }
+    .pi-act-edit:hover { background: var(--pi-blue); color: #fff; }
+
+    .pi-act-reviews { background: var(--pi-amber-soft); color: var(--pi-amber); }
+    .pi-act-reviews:hover { background: var(--pi-amber); color: #fff; }
+
+    .pi-act-store { background: var(--pi-emerald-soft); color: #059669; }
+    .pi-act-store:hover { background: #059669; color: #fff; }
+
+    /* Expandable Variant Drawer Row */
+    .pi-variant-drawer-row {
+        display: none;
+        background: #f8fafc;
+    }
+
+    .pi-variant-drawer-row.open {
+        display: table-row;
+    }
+
+    .pi-variant-drawer-cell {
+        padding: 0 20px 18px 20px !important;
+        border-bottom: 1.5px solid #e2e8f0 !important;
+    }
+
+    .pi-subtable-wrap {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 2px 8px rgba(15,23,42,0.04);
+    }
+
+    .pi-subtable {
+        width: 100%;
+        margin: 0;
+        font-size: 0.83rem;
+    }
+
+    .pi-subtable thead th {
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 9px 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .pi-subtable tbody td {
+        padding: 9px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .pi-subtable tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .pi-v-thumb {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+    }
+
+    /* Pagination */
+    .pi-pagination .page-link {
+        border-radius: 10px !important;
+        margin: 0 3px;
+        min-width: 36px;
         height: 36px;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: none;
-        color: #495057;
+        border: 1px solid #e2e8f0;
+        color: #334155;
         font-weight: 600;
-        transition: all 0.3s;
+        font-size: 0.85rem;
     }
 
-    .pagination-rounded .page-item.active .page-link {
-        background-color: var(--prod-primary);
-        box-shadow: 0 4px 10px var(--prod-primary-light);
+    .pi-pagination .page-item.active .page-link {
+        background: var(--pi-teal);
+        border-color: var(--pi-teal);
+        color: #fff;
     }
 
-    .pagination-rounded .page-item:not(.active) .page-link:hover {
-        background-color: #f1f5f9;
-        color: var(--prod-primary);
+    .pi-pagination .page-item:not(.active) .page-link:hover {
+        background: #f1f5f9;
+        color: var(--pi-teal);
     }
 </style>
 
-<!-- Header Section -->
-<div class="row">
-    <div class="col-12">
-        <div class="prod-page-header d-flex flex-wrap align-items-center justify-content-between gap-3">
-            <div>
-                <h4 class="mb-1 fw-bold" style="color: #495057;">
-                    <i class="bx bx-package text-primary me-2" style="font-size: 1.4rem;"></i>Kho Sản phẩm
-                </h4>
-                <div class="text-muted small">
-                    Quản lý danh sách, phân loại và theo dõi trạng thái hiển thị của <span class="fw-bold text-primary">@Model.TotalItems</span> sản phẩm
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <a asp-area="Admin" asp-controller="Products" asp-action="Create" class="btn-create">
-                    <i class="bx bx-plus-circle font-size-18"></i> Thêm sản phẩm mới
-                </a>
-            </div>
+<!-- 1. HERO HEADER -->
+<div class="pi-hero d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div style="position: relative; z-index: 2;">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge rounded-pill" style="background: rgba(255,255,255,0.16); color: #a7f3d0; font-weight: 700; font-size: 0.72rem;">
+                <i class="bx bx-store-alt me-1"></i>KÊNH NGƯỜI BÁN
+            </span>
+            <span class="badge rounded-pill" style="background: rgba(16,185,129,0.22); color: #ecfdf5; font-weight: 700; font-size: 0.72rem;">
+                @Model.AllProductsCount sản phẩm • @Model.TotalVariantsAll SKU
+            </span>
         </div>
+        <h3 class="pi-hero-title">
+            <i class="bx bx-package me-2" style="color: #6ee7b7;"></i>Kho Sản phẩm &amp; Tồn kho Biến thể
+        </h3>
+        <div class="pi-hero-sub">
+            Theo dõi nhanh khoảng giá, tồn kho khả dụng, hàng giữ đơn và cảnh báo sắp hết cho từng phân loại SKU.
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2" style="position: relative; z-index: 2;">
+        <button type="button" id="btnToggleAllVariants" class="btn btn-sm" style="background: rgba(255,255,255,0.14); color: #fff; border: 1px solid rgba(255,255,255,0.24); border-radius: 10px; padding: 10px 14px; font-weight: 600;">
+            <i class="bx bx-expand-vertical me-1"></i><span>Mở rộng tất cả biến thể</span>
+        </button>
+        <a asp-area="Admin" asp-controller="Products" asp-action="Create" class="pi-btn-create">
+            <i class="bx bx-plus-circle fs-5"></i> Thêm sản phẩm mới
+        </a>
     </div>
 </div>
 
-<!-- Main Table Card -->
-<div class="row">
-    <div class="col-12">
-        <div class="card prod-card">
-            <div class="card-body p-4">
-                
-                <!-- Filter Section -->
-                <div class="filter-wrapper">
-                    <form method="get" class="row g-3 align-items-end">
-                        <div class="col-lg-4 col-md-12">
-                            <label class="form-label text-muted fw-semibold small">TÌM KIẾM THEO TÊN</label>
-                            <div class="search-input-group">
-                                <i class="bx bx-search"></i>
-                                <input class="form-control" name="Search" value="@Model.Query.Search" placeholder="Nhập tên sản phẩm..." />
-                            </div>
-                        </div>
-                        <div class="col-lg-3 col-md-6">
-                            <label class="form-label text-muted fw-semibold small">DANH MỤC</label>
-                            <select class="form-select custom-select" name="CategoryId">
-                                <option value="">Tất cả danh mục</option>
-                                @foreach (var c in Model.CategoryOptions)
-                                {
-                                    <option value="@c.Value" selected="@(Model.Query.CategoryId == c.Value)">@c.Label</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-lg-3 col-md-6">
-                            <label class="form-label text-muted fw-semibold small">TRẠNG THÁI</label>
-                            <select class="form-select custom-select" name="Status">
-                                <option value="">Tất cả trạng thái</option>
-                                <option value="Active" selected="@(Model.Query.Status == "Active")">Đang bán</option>
-                                <option value="Hidden" selected="@(Model.Query.Status == "Hidden")">Tạm ẩn</option>
-                                <option value="Draft" selected="@(Model.Query.Status == "Draft")">Bản nháp</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-2 col-md-12 d-flex gap-2">
-                            <button class="btn btn-primary w-100" type="submit" style="border-radius: 10px;">
-                                <i class="bx bx-filter-alt me-1"></i>Lọc
-                            </button>
-                            <a class="btn btn-light" asp-area="Admin" asp-controller="Products" asp-action="Index" data-bs-toggle="tooltip" title="Làm mới bộ lọc" style="border-radius: 10px;">
-                                <i class="bx bx-refresh fs-5"></i>
-                            </a>
-                        </div>
-                        <input type="hidden" name="Page" value="1" />
-                        <input type="hidden" name="PageSize" value="@Model.Query.PageSize" />
-                    </form>
+<!-- 2. EXECUTIVE KPI CARDS -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <a href="@BuildUrl(1, "", "", true)" class="pi-kpi-card">
+            <div>
+                <div class="pi-kpi-label">Tổng sản phẩm</div>
+                <div class="pi-kpi-value">@Model.AllProductsCount.ToString("N0")</div>
+                <div class="pi-kpi-meta">Gồm <strong class="text-dark">@Model.TotalVariantsAll.ToString("N0")</strong> phân loại SKU</div>
+            </div>
+            <div class="pi-kpi-icon" style="background: rgba(11, 92, 86, 0.1); color: #0b5c56;">
+                <i class="bx bx-cube-alt"></i>
+            </div>
+        </a>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <a href="@BuildUrl(1, "Active", "")" class="pi-kpi-card">
+            <div>
+                <div class="pi-kpi-label">Đang mở bán</div>
+                <div class="pi-kpi-value text-success">@Model.ActiveProductsCount.ToString("N0")</div>
+                <div class="pi-kpi-meta">@Model.HiddenProductsCount tạm ẩn • @Model.DraftProductsCount bản nháp</div>
+            </div>
+            <div class="pi-kpi-icon" style="background: #ecfdf5; color: #059669;">
+                <i class="bx bx-check-shield"></i>
+            </div>
+        </a>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <a href="@BuildUrl(1, "", "InStock")" class="pi-kpi-card">
+            <div>
+                <div class="pi-kpi-label">Tồn kho khả dụng</div>
+                <div class="pi-kpi-value" style="color: #0b5c56;">@Model.TotalAvailableStockAll.ToString("N0")</div>
+                <div class="pi-kpi-meta">Tổng đơn vị sẵn sàng giao ngay</div>
+            </div>
+            <div class="pi-kpi-icon" style="background: #eff6ff; color: #2563eb;">
+                <i class="bx bx-layer"></i>
+            </div>
+        </a>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <a href="@BuildUrl(1, "", Model.OutOfStockProductsCount > 0 ? "OutOfStock" : "LowStock")" class="pi-kpi-card">
+            <div>
+                <div class="pi-kpi-label">Cảnh báo tồn kho</div>
+                <div class="pi-kpi-value @(Model.OutOfStockProductsCount > 0 ? "text-danger" : (Model.LowStockProductsCount > 0 ? "text-warning" : "text-success"))">
+                    @((Model.LowStockProductsCount + Model.OutOfStockProductsCount).ToString("N0"))
                 </div>
+                <div class="pi-kpi-meta">
+                    <span class="text-warning fw-semibold">@Model.LowStockProductsCount sắp hết</span> •
+                    <span class="text-danger fw-semibold">@Model.OutOfStockProductsCount hết hàng</span>
+                </div>
+            </div>
+            <div class="pi-kpi-icon" style="background: @(Model.OutOfStockProductsCount > 0 ? "#fef2f2" : "#fffbeb"); color: @(Model.OutOfStockProductsCount > 0 ? "#dc2626" : "#d97706");">
+                <i class="bx bx-error-circle"></i>
+            </div>
+        </a>
+    </div>
+</div>
 
-                <!-- Table Section -->
-                @if (Model.Products.Count == 0)
-                {
-                    <div class="text-center py-5">
-                        <img src="~/admin/assets/images/illustrator/empty-cart.svg" alt="Empty" style="width: 150px; opacity: 0.5;" class="mb-4">
-                        <h5 class="text-muted fw-bold">Không tìm thấy sản phẩm nào</h5>
-                        <p class="text-muted mb-4">Thử thay đổi bộ lọc hoặc thêm một sản phẩm mới vào hệ thống.</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-prod table-nowrap align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th style="width: 80px;" class="text-center">Hình ảnh</th>
-                                    <th>Thông tin sản phẩm</th>
-                                    <th>Phân loại</th>
-                                    <th>Trạng thái</th>
-                                    <th class="text-end">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var p in Model.Products)
-                                {
-                                    var statusUi = ResolveStatusUi(p.Status);
-                                    <tr>
-                                        <td class="text-center">
-                                            <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">
-                                                @if (!string.IsNullOrWhiteSpace(p.PrimaryImageUrl))
-                                                {
-                                                    <img src="@p.PrimaryImageUrl" alt="@p.Name" class="prod-img" onerror="this.src='/admin/assets/images/users/avatar-1.jpg'" />
-                                                }
-                                                else
-                                                {
-                                                    <div class="prod-img-placeholder">
-                                                        <i class="bx bx-image"></i>
-                                                    </div>
-                                                }
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="text-dark fw-bold mb-1 d-block text-decoration-none" style="font-size: 1.05rem;">
-                                                @p.Name
-                                            </a>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <span class="badge badge-soft-secondary">Mã: #@p.Id</span>
-                                                <span class="text-muted small"><i class="bx bx-time-five me-1"></i>@p.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="fw-semibold text-muted mb-1">@(p.CategoryName ?? "Chưa phân loại")</div>
-                                            <span class="badge badge-soft-info">
-                                                <i class="bx bx-layer me-1"></i>@p.VariantCount biến thể
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="badge-soft @statusUi.BadgeClass">
-                                                <i class="@statusUi.Icon fs-6"></i> @statusUi.Label
-                                            </span>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="d-inline-flex gap-2">
-                                                <a class="btn-action view" asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" data-bs-toggle="tooltip" title="Xem chi tiết">
-                                                    <i class="bx bx-show-alt"></i>
-                                                </a>
-                                                <a class="btn-action edit" asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@p.Id" data-bs-toggle="tooltip" title="Chỉnh sửa">
-                                                    <i class="bx bx-edit-alt"></i>
-                                                </a>
-                                                <a class="btn-action reviews" asp-area="Admin" asp-controller="Products" asp-action="Reviews" asp-route-id="@p.Id" data-bs-toggle="tooltip" title="Đánh giá khách hàng">
-                                                    <i class="bx bx-message-square-dots"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+<!-- 3. MAIN PANEL -->
+<div class="pi-main-card">
+    <!-- Quick Status / Stock Tabs -->
+    <div class="pi-tabs">
+        <a href="@BuildUrl(1, "", "")" class="pi-tab @(isTabAll ? "active" : "")">
+            <span>Tất cả</span>
+            <span class="pi-tab-badge">@Model.AllProductsCount</span>
+        </a>
+        <a href="@BuildUrl(1, "Active", "")" class="pi-tab @(isTabActive ? "active" : "")">
+            <span>Đang bán</span>
+            <span class="pi-tab-badge">@Model.ActiveProductsCount</span>
+        </a>
+        <a href="@BuildUrl(1, "Hidden", "")" class="pi-tab @(isTabHidden ? "active" : "")">
+            <span>Tạm ẩn</span>
+            <span class="pi-tab-badge">@Model.HiddenProductsCount</span>
+        </a>
+        <a href="@BuildUrl(1, "Draft", "")" class="pi-tab @(isTabDraft ? "active" : "")">
+            <span>Bản nháp</span>
+            <span class="pi-tab-badge">@Model.DraftProductsCount</span>
+        </a>
+        <a href="@BuildUrl(1, "", "LowStock")" class="pi-tab @(isTabLow ? "active" : "")">
+            <i class="bx bx-trending-down text-warning"></i>
+            <span>Sắp hết hàng</span>
+            <span class="pi-tab-badge pi-tab-badge-warn">@Model.LowStockProductsCount</span>
+        </a>
+        <a href="@BuildUrl(1, "", "OutOfStock")" class="pi-tab @(isTabOut ? "active" : "")">
+            <i class="bx bx-x-circle text-danger"></i>
+            <span>Hết hàng</span>
+            <span class="pi-tab-badge pi-tab-badge-danger">@Model.OutOfStockProductsCount</span>
+        </a>
+    </div>
 
-                    <!-- Pagination -->
-                    @if (Model.TotalPages > 1)
+    <!-- Filter Bar -->
+    <div class="pi-filter-bar">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-xl-4 col-lg-4 col-md-12">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size: 0.72rem;">TÌM KIẾM (TÊN, ID HOẶC MÃ SKU)</label>
+                <div class="pi-search-wrap">
+                    <i class="bx bx-search"></i>
+                    <input class="form-control" name="Search" value="@Model.Query.Search" placeholder="VD: iPhone 16, #451 hoặc TW-IP16PM..." />
+                </div>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-4">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size: 0.72rem;">DANH MỤC</label>
+                <select class="form-select pi-select" name="CategoryId">
+                    <option value="">Tất cả danh mục</option>
+                    @foreach (var c in Model.CategoryOptions)
                     {
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4 pt-3 border-top">
-                            <div class="text-muted fw-medium">
-                                Hiển thị trang <span class="text-primary fw-bold">@Model.Query.Page</span> trên tổng số <span class="fw-bold">@Model.TotalPages</span>
-                            </div>
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination mb-0 pagination-rounded">
-                                    @{
-                                        string BuildUrl(int page)
-                                        {
-                                            return Url.Action("Index", "Products", new
-                                            {
-                                                area = "Admin",
-                                                Search = Model.Query.Search,
-                                                CategoryId = Model.Query.CategoryId,
-                                                Status = Model.Query.Status,
-                                                Page = page,
-                                                PageSize = Model.Query.PageSize
-                                            }) ?? "#";
-                                        }
-                                    }
-
-                                    <li class="page-item @(Model.Query.Page <= 1 ? "disabled" : "")">
-                                        <a class="page-link" href="@BuildUrl(Model.Query.Page - 1)"><i class="bx bx-chevron-left"></i></a>
-                                    </li>
-
-                                    @for (var i = 1; i <= Model.TotalPages; i++)
-                                    {
-                                        <li class="page-item @(i == Model.Query.Page ? "active" : "")">
-                                            <a class="page-link" href="@BuildUrl(i)">@i</a>
-                                        </li>
-                                    }
-
-                                    <li class="page-item @(Model.Query.Page >= Model.TotalPages ? "disabled" : "")">
-                                        <a class="page-link" href="@BuildUrl(Model.Query.Page + 1)"><i class="bx bx-chevron-right"></i></a>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
+                        <option value="@c.Value" selected="@(Model.Query.CategoryId == c.Value)">@c.Label</option>
                     }
-                }
+                </select>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-4">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size: 0.72rem;">TÌNH TRẠNG KHO</label>
+                <select class="form-select pi-select" name="StockFilter">
+                    <option value="">Tất cả kho</option>
+                    <option value="InStock" selected="@(Model.Query.StockFilter == "InStock")">An toàn (≥ 10)</option>
+                    <option value="LowStock" selected="@(Model.Query.StockFilter == "LowStock")">Sắp hết (&lt; 10)</option>
+                    <option value="OutOfStock" selected="@(Model.Query.StockFilter == "OutOfStock")">Hết hàng (0)</option>
+                </select>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-4">
+                <label class="form-label text-muted fw-bold mb-1" style="font-size: 0.72rem;">SẮP XẾP</label>
+                <select class="form-select pi-select" name="SortBy">
+                    <option value="newest" selected="@(string.IsNullOrEmpty(Model.Query.SortBy) || Model.Query.SortBy == "newest")">Mới nhất</option>
+                    <option value="stock_asc" selected="@(Model.Query.SortBy == "stock_asc")">Tồn kho: Thấp → Cao</option>
+                    <option value="stock_desc" selected="@(Model.Query.SortBy == "stock_desc")">Tồn kho: Cao → Thấp</option>
+                    <option value="price_asc" selected="@(Model.Query.SortBy == "price_asc")">Giá bán: Thấp → Cao</option>
+                    <option value="price_desc" selected="@(Model.Query.SortBy == "price_desc")">Giá bán: Cao → Thấp</option>
+                </select>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-12 d-flex gap-2">
+                <input type="hidden" name="Status" value="@Model.Query.Status" />
+                <input type="hidden" name="Page" value="1" />
+                <input type="hidden" name="PageSize" value="@Model.Query.PageSize" />
+                <button class="pi-btn-filter flex-grow-1" type="submit">
+                    <i class="bx bx-filter-alt me-1"></i>Lọc
+                </button>
+                <a class="btn btn-light d-inline-flex align-items-center justify-content-center"
+                   asp-area="Admin" asp-controller="Products" asp-action="Index"
+                   data-bs-toggle="tooltip" title="Xóa bộ lọc"
+                   style="border-radius: 10px; height: 40px; width: 42px; border: 1px solid #e2e8f0;">
+                    <i class="bx bx-refresh fs-5 text-muted"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Content -->
+    @if (Model.Products.Count == 0)
+    {
+        <div class="text-center py-5 px-3">
+            <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-radius: 20px; background: #f1f5f9; color: #94a3b8; font-size: 2rem;">
+                <i class="bx bx-package"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">Không tìm thấy sản phẩm phù hợp</h5>
+            <p class="text-muted small mb-4">Thử thay đổi từ khóa tìm kiếm, bộ lọc trạng thái kho hoặc thêm sản phẩm mới.</p>
+            <div class="d-inline-flex gap-2">
+                <a asp-area="Admin" asp-controller="Products" asp-action="Index" class="btn btn-outline-secondary btn-sm px-3" style="border-radius: 9px;">
+                    <i class="bx bx-reset me-1"></i>Xem tất cả
+                </a>
+                <a asp-area="Admin" asp-controller="Products" asp-action="Create" class="btn btn-sm px-3 text-white" style="background: #0b5c56; border-radius: 9px;">
+                    <i class="bx bx-plus me-1"></i>Thêm sản phẩm
+                </a>
             </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table pi-table align-middle">
+                <thead>
+                    <tr>
+                        <th style="min-width: 310px;">Sản phẩm &amp; Phân loại</th>
+                        <th style="min-width: 155px;">Khoảng giá bán</th>
+                        <th style="min-width: 185px;">Tồn kho &amp; Cảnh báo</th>
+                        <th class="text-center" style="width: 95px;">Đã bán</th>
+                        <th style="width: 120px;">Trạng thái</th>
+                        <th class="text-end" style="width: 165px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Products)
+                    {
+                        var statusUi = ResolveStatusUi(p.Status);
+                        var stockPct = p.AvailableStock <= 0 ? 0 : Math.Min(100, (int)Math.Round(p.AvailableStock / 50.0 * 100));
+                        var stockBarColor = p.AvailableStock <= 0 ? "#dc2626" : (p.AvailableStock < 10 || p.LowStockVariantCount > 0 ? "#f59e0b" : "#10b981");
+                        var drawerId = $"variant-drawer-{p.Id}";
+
+                        <tr class="pi-prod-row">
+                            <!-- Product Info -->
+                            <td>
+                                <div class="d-flex align-items-start gap-3">
+                                    <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">
+                                        @if (!string.IsNullOrWhiteSpace(p.PrimaryImageUrl))
+                                        {
+                                            <img src="@p.PrimaryImageUrl" alt="@p.Name" class="pi-prod-thumb" onerror="this.src='/images/no-image.png'" />
+                                        }
+                                        else
+                                        {
+                                            <div class="pi-prod-thumb-empty"><i class="bx bx-image"></i></div>
+                                        }
+                                    </a>
+                                    <div class="min-w-0">
+                                        <a asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="pi-prod-name">
+                                            @p.Name
+                                        </a>
+                                        <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                                            <span class="pi-chip">#@p.Id</span>
+                                            @if (!string.IsNullOrWhiteSpace(p.CategoryName))
+                                            {
+                                                <span class="pi-chip"><i class="bx bx-folder-open"></i>@p.CategoryName</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(p.BrandName))
+                                            {
+                                                <span class="pi-chip" style="background: #eff6ff; color: #1d4ed8;">@p.BrandName</span>
+                                            }
+                                            <span class="text-muted" style="font-size: 0.72rem;">• @p.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                        </div>
+
+                                        @if (p.Variants.Count > 0)
+                                        {
+                                            <button type="button" class="pi-variant-toggle" data-target="@drawerId">
+                                                <i class="bx bx-layer"></i>
+                                                <span>@p.VariantCount phân loại</span>
+                                                @if (p.OutOfStockVariantCount > 0)
+                                                {
+                                                    <span class="badge rounded-pill bg-danger" style="font-size: 0.65rem;">@p.OutOfStockVariantCount hết</span>
+                                                }
+                                                else if (p.LowStockVariantCount > 0)
+                                                {
+                                                    <span class="badge rounded-pill bg-warning text-dark" style="font-size: 0.65rem;">@p.LowStockVariantCount sắp hết</span>
+                                                }
+                                                <i class="bx bx-chevron-down fs-6"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Price Range -->
+                            <td>
+                                @if (p.MinPrice == p.MaxPrice)
+                                {
+                                    <div class="fw-bold text-dark" style="font-size: 0.96rem;">@p.MinPrice.ToString("N0") ₫</div>
+                                }
+                                else
+                                {
+                                    <div class="fw-bold text-dark" style="font-size: 0.92rem;">@p.MinPrice.ToString("N0") ₫</div>
+                                    <div class="text-muted small">đến @p.MaxPrice.ToString("N0") ₫</div>
+                                }
+                            </td>
+
+                            <!-- Stock & Alerts -->
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="pi-stock-num @(p.AvailableStock <= 0 ? "text-danger" : (p.AvailableStock < 10 ? "text-warning" : "text-dark"))">
+                                        @p.AvailableStock.ToString("N0")
+                                    </span>
+                                    @if (p.AvailableStock <= 0)
+                                    {
+                                        <span class="pi-stock-pill pi-stock-out"><i class="bx bx-x-circle"></i>Hết hàng</span>
+                                    }
+                                    else if (p.AvailableStock < 10 || p.OutOfStockVariantCount > 0 || p.LowStockVariantCount > 0)
+                                    {
+                                        <span class="pi-stock-pill pi-stock-low"><i class="bx bx-error"></i>Cần nhập</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="pi-stock-pill pi-stock-ok"><i class="bx bx-check"></i>Sẵn hàng</span>
+                                    }
+                                </div>
+                                <div class="pi-stock-bar">
+                                    <div class="pi-stock-bar-fill" style="width: @(stockPct)%; background: @stockBarColor;"></div>
+                                </div>
+                                <div class="text-muted mt-1" style="font-size: 0.72rem;">
+                                    Tổng kho: <strong>@p.TotalStock</strong>
+                                    @if (p.ReservedStock > 0)
+                                    {
+                                        <span class="ms-1 text-primary">• Giữ đơn: <strong>@p.ReservedStock</strong></span>
+                                    }
+                                </div>
+                            </td>
+
+                            <!-- Sold -->
+                            <td class="text-center">
+                                <div class="fw-bold text-dark" style="font-size: 0.95rem;">@p.SoldQuantity.ToString("N0")</div>
+                                <div class="text-muted" style="font-size: 0.7rem;">đã bán</div>
+                            </td>
+
+                            <!-- Status -->
+                            <td>
+                                <span class="pi-status-badge @statusUi.BadgeClass">
+                                    <span class="pi-dot @statusUi.DotClass"></span>
+                                    @statusUi.Label
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <a class="pi-act-btn pi-act-view"
+                                       asp-area="Admin" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id"
+                                       data-bs-toggle="tooltip" title="Xem chi tiết & Kho biến thể">
+                                        <i class="bx bx-show-alt"></i>
+                                    </a>
+                                    <a class="pi-act-btn pi-act-edit"
+                                       asp-area="Admin" asp-controller="Products" asp-action="Edit" asp-route-id="@p.Id"
+                                       data-bs-toggle="tooltip" title="Chỉnh sửa sản phẩm">
+                                        <i class="bx bx-edit-alt"></i>
+                                    </a>
+                                    <a class="pi-act-btn pi-act-reviews"
+                                       asp-area="Admin" asp-controller="Products" asp-action="Reviews" asp-route-id="@p.Id"
+                                       data-bs-toggle="tooltip" title="Đánh giá khách hàng">
+                                        <i class="bx bx-star"></i>
+                                    </a>
+                                    @if (string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <a class="pi-act-btn pi-act-store"
+                                           href="/Products/Details/@p.Id" target="_blank"
+                                           data-bs-toggle="tooltip" title="Xem trên trang bán hàng">
+                                            <i class="bx bx-link-external"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Expandable Per-Variant Sub-Table Row -->
+                        @if (p.Variants.Count > 0)
+                        {
+                            <tr class="pi-variant-drawer-row" id="@drawerId">
+                                <td colspan="6" class="pi-variant-drawer-cell">
+                                    <div class="pi-subtable-wrap">
+                                        <table class="pi-subtable">
+                                            <thead>
+                                                <tr>
+                                                    <th style="min-width: 220px;">Biến thể / Phân loại</th>
+                                                    <th style="min-width: 130px;">Mã SKU</th>
+                                                    <th class="text-end">Giá bán</th>
+                                                    <th class="text-end">Giá vốn / Biên lãi</th>
+                                                    <th class="text-center">Khả dụng</th>
+                                                    <th class="text-center">Giữ đơn</th>
+                                                    <th class="text-center">Đã bán</th>
+                                                    <th class="text-end">Tình trạng</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var v in p.Variants)
+                                                {
+                                                    var marginPct = v.Price > 0 && v.CostPrice > 0
+                                                        ? Math.Round((v.Price - v.CostPrice) / v.Price * 100m, 1)
+                                                        : (decimal?)null;
+
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                @if (!string.IsNullOrWhiteSpace(v.ImageUrl))
+                                                                {
+                                                                    <img src="@v.ImageUrl" alt="@v.Label" class="pi-v-thumb" onerror="this.style.display='none'" />
+                                                                }
+                                                                <span class="fw-semibold text-dark">@v.Label</span>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <code class="px-2 py-1 rounded" style="background: #f1f5f9; color: #334155; font-size: 0.76rem;">
+                                                                @(string.IsNullOrWhiteSpace(v.Sku) ? "—" : v.Sku)
+                                                            </code>
+                                                        </td>
+                                                        <td class="text-end fw-bold text-dark">@v.Price.ToString("N0") ₫</td>
+                                                        <td class="text-end">
+                                                            @if (v.CostPrice > 0)
+                                                            {
+                                                                <span class="text-muted">@v.CostPrice.ToString("N0") ₫</span>
+                                                                @if (marginPct.HasValue)
+                                                                {
+                                                                    <span class="badge ms-1 @(marginPct >= 20 ? "bg-success-subtle text-success" : (marginPct > 0 ? "bg-warning-subtle text-warning" : "bg-danger-subtle text-danger"))" style="font-size: 0.68rem;">
+                                                                        @marginPct.Value.ToString("0.#")%
+                                                                    </span>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-muted small">Chưa nhập</span>
+                                                            }
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span class="fw-bold @(v.AvailableStock <= 0 ? "text-danger" : (v.AvailableStock < 10 ? "text-warning" : "text-success"))">
+                                                                @v.AvailableStock
+                                                            </span>
+                                                            <span class="text-muted" style="font-size: 0.72rem;">/ @v.StockQuantity</span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            @if (v.ReservedStock > 0)
+                                                            {
+                                                                <span class="badge bg-primary-subtle text-primary">@v.ReservedStock</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-muted">0</span>
+                                                            }
+                                                        </td>
+                                                        <td class="text-center fw-semibold text-dark">@v.SoldQuantity</td>
+                                                        <td class="text-end">
+                                                            @if (!v.IsActive)
+                                                            {
+                                                                <span class="pi-stock-pill" style="background: #f1f5f9; color: #64748b;">Tạm ngưng</span>
+                                                            }
+                                                            else if (v.AvailableStock <= 0)
+                                                            {
+                                                                <span class="pi-stock-pill pi-stock-out">Hết hàng</span>
+                                                            }
+                                                            else if (v.AvailableStock < 10)
+                                                            {
+                                                                <span class="pi-stock-pill pi-stock-low">Sắp hết</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="pi-stock-pill pi-stock-ok">An toàn</span>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 px-4 py-3 border-top bg-light bg-opacity-50">
+            <div class="text-muted small">
+                Hiển thị <strong>@Model.Products.Count</strong> trên tổng <strong>@Model.TotalItems</strong> sản phẩm phù hợp
+                @if (Model.TotalPages > 1)
+                {
+                    <span>(Trang <strong class="text-dark">@Model.Query.Page</strong> / <strong>@Model.TotalPages</strong>)</span>
+                }
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation">
+                    <ul class="pagination mb-0 pi-pagination">
+                        <li class="page-item @(Model.Query.Page <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="@BuildUrl(Model.Query.Page - 1)"><i class="bx bx-chevron-left"></i></a>
+                        </li>
+
+                        @for (var i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.Query.Page ? "active" : "")">
+                                <a class="page-link" href="@BuildUrl(i)">@i</a>
+                            </li>
+                        }
+
+                        <li class="page-item @(Model.Query.Page >= Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@BuildUrl(Model.Query.Page + 1)"><i class="bx bx-chevron-right"></i></a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    }
 </div>
 
 @section Scripts {
     <script>
-        $(document).ready(function() {
-            // Khởi tạo tooltips cho các nút icon
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl)
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Bootstrap tooltips
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                new bootstrap.Tooltip(el);
             });
+
+            // Toggle individual product variant drawer
+            document.querySelectorAll('.pi-variant-toggle').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var targetId = this.getAttribute('data-target');
+                    var row = document.getElementById(targetId);
+                    if (!row) return;
+                    var isOpen = row.classList.toggle('open');
+                    this.classList.toggle('expanded', isOpen);
+                });
+            });
+
+            // Toggle all variant drawers
+            var toggleAllBtn = document.getElementById('btnToggleAllVariants');
+            var allExpanded = false;
+            if (toggleAllBtn) {
+                toggleAllBtn.addEventListener('click', function () {
+                    allExpanded = !allExpanded;
+                    document.querySelectorAll('.pi-variant-drawer-row').forEach(function (row) {
+                        row.classList.toggle('open', allExpanded);
+                    });
+                    document.querySelectorAll('.pi-variant-toggle').forEach(function (btn) {
+                        btn.classList.toggle('expanded', allExpanded);
+                    });
+                    var label = this.querySelector('span');
+                    if (label) {
+                        label.textContent = allExpanded ? 'Thu gọn tất cả biến thể' : 'Mở rộng tất cả biến thể';
+                    }
+                });
+            }
         });
     </script>
 }

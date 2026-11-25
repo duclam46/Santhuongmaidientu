@@ -10,6 +10,12 @@ public class QuickViewVm
 
     public string? CategoryName { get; set; }
 
+    public string? BrandName { get; set; }
+
+    public string Option1Label { get; set; } = "Màu sắc";
+
+    public string Option2Label { get; set; } = "Kích cỡ";
+
     public decimal Price { get; set; }
 
     public string? DefaultColor { get; set; }
@@ -45,6 +51,8 @@ public class QuickViewSizeVm
 
 public class QuickViewVariantVm
 {
+    public int VariantId { get; set; }
+
     public string? Color { get; set; }
 
     public string? Size { get; set; }

@@ -1,110 +1,225 @@
 @model IEnumerable<DOAN_BANHANG.Models.SystemSetting>
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Cấu hình tài chính hệ thống";
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+
+    var settingsList = Model.ToList();
+    var taxSettings = settingsList.Where(s => s.Id.StartsWith("Tax_", StringComparison.OrdinalIgnoreCase)).ToList();
+    var feeSettings = settingsList.Where(s => !s.Id.StartsWith("Tax_", StringComparison.OrdinalIgnoreCase)).ToList();
+    var rootCategories = ViewBag.RootCategories as List<DOAN_BANHANG.Models.Category> ?? new List<DOAN_BANHANG.Models.Category>();
+
+    decimal ParsePercent(string id, decimal fallback)
+    {
+        var item = settingsList.FirstOrDefault(s => s.Id == id);
+        if (item != null && decimal.TryParse(item.Value.Replace(",", "."), NumberStyles.Any, CultureInfo.InvariantCulture, out var v))
+            return v;
+        return fallback;
+    }
+
+    var defaultComm = ParsePercent("Fee_Commission_Default", 10m);
+    var mallSurcharge = ParsePercent("Fee_Mall_Surcharge", 2m);
+    var sellerTaxRate = ParsePercent("Tax_Seller_Rate", 1.5m);
+    var vatRate = ParsePercent("Tax_VAT_Default", 8m);
 }
 
 @section Styles {
     <style>
+        .fin-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .fin-hero-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+            border-radius: 999px;
+            padding: 5px 13px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .fin-hero-pill.is-gold {
+            background: rgba(255, 235, 105, 0.18);
+            border-color: rgba(255, 235, 105, 0.35);
+            color: #FFEB69;
+        }
+        .fin-section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .fin-section-title h5 {
+            font-size: 15.5px;
+            font-weight: 800;
+            color: #161C24;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .setting-card {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 1.25rem;
-            transition: all 0.2s ease;
+            background: #ffffff;
+            border: 1px solid #E5E7EB;
+            border-radius: 18px;
+            padding: 20px;
+            transition: all 0.22s ease;
             height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         .setting-card:hover {
-            border-color: #556ee6;
-            box-shadow: 0 4px 15px rgba(85, 110, 230, 0.12);
+            border-color: #088178;
+            box-shadow: 0 12px 26px -12px rgba(8, 129, 120, 0.18);
+            transform: translateY(-2px);
+        }
+        .setting-card.is-mall-card {
+            background: linear-gradient(145deg, #FFFDF5 0%, #FFFBEB 100%);
+            border-color: #FDE68A;
         }
         .setting-icon {
-            width: 42px; height: 42px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.25rem; color: #fff;
+            width: 44px;
+            height: 44px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
         }
-        .setting-icon.percent { background: linear-gradient(135deg, #556ee6, #34c38f); }
-        .setting-icon.money   { background: linear-gradient(135deg, #f1b44c, #f46a6a); }
+        .setting-icon.tax { background: #E6F4F3; color: #088178; }
+        .setting-icon.money { background: #E0E7FF; color: #4338CA; }
+        .setting-icon.fee { background: #ECFDF5; color: #059669; }
+        .setting-icon.mall { background: #FEF3C7; color: #B45309; }
         .setting-label {
-            font-size: 0.82rem; font-weight: 600; color: #495057;
-            margin-bottom: 0.35rem;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #161C24;
+            line-height: 1.4;
+            margin-bottom: 3px;
         }
         .setting-key {
-            font-size: 0.7rem; color: #a0aec0;
+            font-size: 11.5px;
+            color: #64748B;
         }
         .input-unit {
-            min-width: 44px; font-weight: 700; font-size: 0.9rem;
-            background: #f8f9fa; border-left: 0;
+            min-width: 46px;
+            font-weight: 800;
+            font-size: 14px;
+            background: #F8FAFC;
+            color: #088178;
+            justify-content: center;
         }
-        .summary-row {
-            background: linear-gradient(135deg, #f8f9fc, #eef1f8);
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1.5rem;
+        .fin-sim-box {
+            border-radius: 18px;
+            padding: 18px 20px;
+            height: 100%;
         }
-        .summary-badge {
-            display: inline-flex; align-items: center; gap: 0.35rem;
-            padding: 0.35rem 0.85rem;
-            border-radius: 100px; font-size: 0.78rem; font-weight: 600;
+        .fin-sim-std {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+        }
+        .fin-sim-mall {
+            background: linear-gradient(145deg, #00262A 0%, #04464C 100%);
+            color: #ffffff;
+            border: 1px solid #088178;
+        }
+        .fin-note-box {
+            font-size: 13.5px;
+            line-height: 1.55;
+            color: #334155;
+        }
+        .fin-note-box .fin-note-title {
+            font-size: 14.5px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .fin-note-box .fin-note-muted {
+            color: #475569;
+        }
+        .fin-section-note {
+            font-size: 13px;
+            color: #475569;
+        }
+        .fin-formula-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 14px;
+            background: #ffffff;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            padding: 10px 14px;
+        }
+        .fin-formula-label {
+            font-weight: 700;
+            color: #1E293B;
+            min-width: 215px;
         }
     </style>
 }
 
-<div class="row">
-    <div class="col-12">
-        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18">Cấu hình Thuế và Phí</h4>
-            <div class="page-title-right">
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a href="javascript: void(0);">Hệ thống</a></li>
-                    <li class="breadcrumb-item active">Cấu hình Tài chính</li>
-                </ol>
+<!-- HERO HEADER -->
+<div class="fin-hero">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <span class="fin-hero-pill is-gold"><i class="bx bxs-badge-check"></i> Sàn Đa Ngành • 10 Ngành hàng</span>
+                <span class="fin-hero-pill"><i class="bx bx-transfer-alt"></i> Shop Thường &amp; Sellzy Mall</span>
+                <span class="fin-hero-pill"><i class="bx bx-receipt"></i> Thuế VAT &amp; Khấu trừ </span>
             </div>
+            <h4 class="text-white fw-bold mb-1">Cấu hình Tài chính, Thuế &amp; Biểu phí Sàn</h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Quản lý tập trung thuế GTGT (VAT), thuế khấu trừ tại nguồn cho Shop Thường, phụ phí cố định Sellzy Mall (+@mallSurcharge%) và đối chiếu biểu phí 10 ngành hàng.
+            </p>
+        </div>
+        <div class="text-end">
+            <a asp-area="Admin" asp-controller="Categories" asp-action="Index" class="btn btn-sm rounded-pill px-3 fw-bold" style="background: #FFEB69; color: #161C24;">
+                <i class="bx bx-category me-1"></i>Chỉnh phí theo Ngành hàng
+            </a>
         </div>
     </div>
 </div>
 
-<!-- Summary -->
-<div class="summary-row d-flex flex-wrap gap-2 align-items-center">
-    <span class="badge bg-primary bg-soft text-primary font-size-13 px-3 py-2 rounded-pill">
-        <i class="bx bx-calendar me-1"></i> Năm 2026
-    </span>
-    <span class="badge bg-success bg-soft text-success font-size-13 px-3 py-2 rounded-pill">
-        <i class="bx bx-check-shield me-1"></i> Theo Nghị định giảm VAT
-    </span>
-    <span class="badge bg-warning bg-soft text-warning font-size-13 px-3 py-2 rounded-pill">
-        <i class="bx bx-store me-1"></i> Thời trang & Mỹ phẩm
-    </span>
-    <span class="ms-auto text-muted font-size-12">
-        <i class="bx bx-info-circle"></i> Giá trị % nhập trực tiếp (VD: 8 = 8%). Tiền VNĐ nhập số nguyên.
-    </span>
-</div>
-
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="mdi mdi-check-all me-2"></i>
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+        <i class="bx bx-check-circle me-1 fs-5 align-middle"></i>
         @TempData["SuccessMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 
 <form asp-action="Update" method="post" id="settingsForm">
-    <div class="row g-3">
-        @foreach (var setting in Model)
+    @Html.AntiForgeryToken()
+
+    <!-- NHÓM 1: CHÍNH SÁCH THUẾ -->
+    <div class="fin-section-title">
+        <h5><i class="bx bx-shield-quarter text-primary"></i>1. Chính sách Thuế GTGT (VAT) &amp; Khấu trừ tại nguồn</h5>
+        <span class="fin-section-note"><i class="bx bx-info-circle me-1"></i>Sellzy Mall (Doanh nghiệp) tự kê khai VAT nên miễn khấu trừ thuế cá nhân (0%)</span>
+    </div>
+    <div class="row g-3 mb-4">
+        @foreach (var setting in taxSettings)
         {
-            var isPercent = setting.Type == "percent";
             var isMoney = setting.Type == "money";
-            var iconClass = isPercent ? "percent" : "money";
-            var iconChar = isPercent ? "bx bx-trending-up" : "bx bx-wallet";
-            var unitLabel = isPercent ? "%" : "₫";
+            var unitLabel = isMoney ? "₫" : "%";
+            var iconCls = isMoney ? "money" : "tax";
+            var iconChar = isMoney ? "bx bx-wallet" : "bx bx-receipt";
 
             <div class="col-md-6 col-xl-4">
                 <div class="setting-card">
                     <div class="d-flex align-items-start gap-3 mb-3">
-                        <div class="setting-icon @iconClass">
+                        <div class="setting-icon @iconCls">
                             <i class="@iconChar"></i>
                         </div>
                         <div>
@@ -116,15 +231,13 @@
                     <div class="input-group">
                         @if (isMoney)
                         {
-                            <!-- Money: text input with JS formatting -->
                             <input type="text"
-                                   class="form-control money-input"
+                                   class="form-control fw-bold money-input"
                                    id="@setting.Id"
                                    data-raw-name="settings[@setting.Id]"
                                    value="@setting.Value"
                                    required
                                    autocomplete="off" />
-                            <!-- Hidden field sends the raw number -->
                             <input type="hidden" name="settings[@setting.Id]" value="@setting.Value" />
                         }
                         else
@@ -132,7 +245,7 @@
                             <input type="number"
                                    step="any"
                                    min="0"
-                                   class="form-control"
+                                   class="form-control fw-bold sim-trigger"
                                    id="@setting.Id"
                                    name="settings[@setting.Id]"
                                    value="@setting.Value"
@@ -145,41 +258,344 @@
         }
     </div>
 
-    <div class="d-flex flex-wrap gap-2 mt-4 mb-3">
-        <button type="submit" class="btn btn-primary waves-effect waves-light px-4">
-            <i class="bx bx-save me-1"></i> Lưu thay đổi
-        </button>
-        <button type="reset" class="btn btn-outline-secondary waves-effect waves-light" id="btnReset">
-            <i class="bx bx-reset me-1"></i> Khôi phục
-        </button>
+    <!-- NHÓM 2: BIỂU PHÍ SÀN, SELLZY MALL & MARKETING -->
+    <div class="fin-section-title">
+        <h5><i class="bx bx-coins text-warning"></i>2. Biểu phí Chiết khấu Sàn, Sellzy Mall &amp; Marketing</h5>
+        <span class="fin-section-note">Áp dụng tự động lúc tạo đơn hàng và đối soát Ví Sellzy</span>
+    </div>
+    <div class="row g-3 mb-4">
+        @foreach (var setting in feeSettings)
+        {
+            var isMallKey = setting.Id == "Fee_Mall_Surcharge";
+            var isMoney = setting.Type == "money";
+            var unitLabel = isMoney ? "₫" : "%";
+            var iconCls = isMallKey ? "mall" : "fee";
+            var iconChar = isMallKey ? "bx bxs-badge-check" : (setting.Id == "Fee_Marketing" ? "bx bx-bullhorn" : "bx bx-trending-up");
+
+            <div class="col-md-6 col-xl-4">
+                <div class="setting-card @(isMallKey ? "is-mall-card" : "")">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <div class="setting-icon @iconCls">
+                            <i class="@iconChar"></i>
+                        </div>
+                        <div>
+                            <div class="setting-label">
+                                @setting.Description
+                            </div>
+                            <div class="setting-key"><code>@setting.Id</code></div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        @if (isMoney)
+                        {
+                            <input type="text"
+                                   class="form-control fw-bold money-input"
+                                   id="@setting.Id"
+                                   data-raw-name="settings[@setting.Id]"
+                                   value="@setting.Value"
+                                   required
+                                   autocomplete="off" />
+                            <input type="hidden" name="settings[@setting.Id]" value="@setting.Value" />
+                        }
+                        else
+                        {
+                            <input type="number"
+                                   step="any"
+                                   min="0"
+                                   class="form-control fw-bold sim-trigger"
+                                   id="@setting.Id"
+                                   name="settings[@setting.Id]"
+                                   value="@setting.Value"
+                                   required />
+                        }
+                        <span class="input-group-text input-unit">@unitLabel</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 pb-2">
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                <i class="bx bx-save me-1"></i> Lưu cấu hình tài chính
+            </button>
+            <button type="reset" class="btn btn-outline-secondary rounded-pill px-3" id="btnReset">
+                <i class="bx bx-reset me-1"></i> Khôi phục
+            </button>
+        </div>
+        <div class="fin-section-note">
+            <i class="bx bx-info-circle me-1"></i> Giá trị <code>%</code> nhập trực tiếp (VD: <code>8</code> = 8%). Tiền VNĐ nhập số nguyên.
+        </div>
     </div>
 </form>
+
+<!-- NHÓM 3: MÔ PHỎNG ĐỐI SOÁT ĐƠN HÀNG 1.000.000₫ (SHOP THƯỜNG vs SELLZY MALL) -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-white border-bottom py-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <h5 class="mb-0 fw-bold"><i class="bx bx-calculator text-primary me-1"></i>3. Mô phỏng Đối soát Đơn hàng 1.000.000₫ (Cập nhật trực tiếp)</h5>
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1.5">Tính theo phí mặc định &amp; phụ phí Mall ở trên</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="fin-sim-box fin-sim-std">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-bold text-dark"><i class="bx bx-store text-primary me-1"></i>Shop Thường (Cá nhân / Hộ KD)</span>
+                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill">Phí chuẩn</span>
+                    </div>
+                    <div class="small d-flex justify-content-between py-1 border-bottom">
+                        <span class="text-muted">Tổng tiền hàng</span>
+                        <span class="fw-bold">1.000.000 ₫</span>
+                    </div>
+                    <div class="small d-flex justify-content-between py-1 border-bottom">
+                        <span class="text-muted">Chiết khấu sàn (<span id="sim-std-rate">@defaultComm</span>%)</span>
+                        <span class="text-danger fw-semibold" id="sim-std-comm">-@((1000000m * defaultComm / 100m).ToString("N0")) ₫</span>
+                    </div>
+                    <div class="small d-flex justify-content-between py-1 border-bottom">
+                        <span class="text-muted">Thuế khấu trừ cá nhân (<span id="sim-std-tax-rate">@sellerTaxRate</span>%)</span>
+                        <span class="text-danger fw-semibold" id="sim-std-tax">-@((1000000m * sellerTaxRate / 100m).ToString("N0")) ₫</span>
+                    </div>
+                    <div class="d-flex justify-content-between pt-2">
+                        <span class="fw-bold text-dark">Tiền thực nhận về Ví gian hàng</span>
+                        <span class="fw-bold text-success fs-6" id="sim-std-payout">@((1000000m - (1000000m * (defaultComm + sellerTaxRate) / 100m)).ToString("N0")) ₫</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="fin-sim-box fin-sim-mall">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-bold text-white"><i class="bx bxs-badge-check text-warning me-1"></i>Sellzy Mall (Doanh nghiệp Chính hãng)</span>
+                        <span class="badge rounded-pill" style="background: #FFEB69; color: #161C24;">+<span id="sim-mall-sur">@mallSurcharge</span>% Phí Mall</span>
+                    </div>
+                    <div class="small d-flex justify-content-between py-1" style="border-bottom: 1px solid rgba(255,255,255,0.14);">
+                        <span style="color: rgba(255,255,255,0.78);">Tổng tiền hàng</span>
+                        <span class="fw-bold text-white">1.000.000 ₫</span>
+                    </div>
+                    <div class="small d-flex justify-content-between py-1" style="border-bottom: 1px solid rgba(255,255,255,0.14);">
+                        <span style="color: rgba(255,255,255,0.78);">Chiết khấu Mall (<span id="sim-mall-rate">@(defaultComm + mallSurcharge)</span>%)</span>
+                        <span style="color: #FCA5A5;" class="fw-semibold" id="sim-mall-comm">-@((1000000m * (defaultComm + mallSurcharge) / 100m).ToString("N0")) ₫</span>
+                    </div>
+                    <div class="small d-flex justify-content-between py-1" style="border-bottom: 1px solid rgba(255,255,255,0.14);">
+                        <span style="color: rgba(255,255,255,0.78);">Thuế khấu trừ cá nhân (Doanh nghiệp tự khai VAT)</span>
+                        <span style="color: #86EFAC;" class="fw-semibold">0 ₫ (0%)</span>
+                    </div>
+                    <div class="d-flex justify-content-between pt-2">
+                        <span class="fw-bold text-white">Tiền thực nhận về Ví gian hàng</span>
+                        <span class="fw-bold fs-6" style="color: #FFEB69;" id="sim-mall-payout">@((1000000m - (1000000m * (defaultComm + mallSurcharge) / 100m)).ToString("N0")) ₫</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NHÓM 4: BẢNG BIỂU PHÍ CHIẾT KHẤU 10 NGÀNH HÀNG -->
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h5 class="mb-0 fw-bold"><i class="bx bx-category text-primary me-1"></i>4. Bảng Biểu Phí Chiết Khấu Theo 10 Ngành Hàng</h5>
+            <div class="fin-section-note">Mức chiết khấu áp dụng riêng cho từng nhóm ngành hàng (kế thừa xuống các danh mục con)</div>
+        </div>
+        <a asp-area="Admin" asp-controller="Categories" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+            <i class="bx bx-edit-alt me-1"></i>Quản lý Ngành hàng
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Ngành hàng gốc</th>
+                        <th class="text-center">Phí Shop Thường</th>
+                        <th class="text-center">Phí Sellzy Mall (+@mallSurcharge%)</th>
+                        <th class="text-end">Trần phí tối đa / SP</th>
+                        <th class="text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (rootCategories.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Chưa có dữ liệu ngành hàng.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var cat in rootCategories)
+                        {
+                            var baseRate = cat.CommissionRate ?? defaultComm;
+                            var mallRate = baseRate + mallSurcharge;
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">@cat.Name</td>
+                                <td class="text-center">
+                                    <span class="badge bg-info-subtle text-info-emphasis rounded-pill px-3 py-1.5 fw-bold">@baseRate.ToString("0.##")%</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill px-3 py-1.5 fw-bold" style="background: #00262A; color: #FFEB69;">@mallRate.ToString("0.##")%</span>
+                                </td>
+                                <td class="text-end fw-semibold text-muted">
+                                    @(cat.MaxCommissionAmount.HasValue && cat.MaxCommissionAmount.Value > 0
+                                        ? $"{cat.MaxCommissionAmount.Value:N0} ₫"
+                                        : "Không giới hạn trần")
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a asp-area="Admin" asp-controller="Categories" asp-action="Edit" asp-route-id="@cat.Id" class="btn btn-sm btn-light border rounded-pill px-3">
+                                        <i class="bx bx-slider-alt me-1"></i>Điều chỉnh
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- NHÓM 5: CHÚ THÍCH CÁCH TÍNH THUẾ, PHÍ & LƯU Ý QUAN TRỌNG -->
+<div class="card border-0 shadow-sm rounded-4 mt-4 mb-2">
+    <div class="card-header bg-white border-bottom py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h5 class="mb-0 fw-bold"><i class="bx bx-book-open text-primary me-1"></i>5. Chú thích Cách tính Thuế, Phí Chiết khấu &amp; Lưu ý quan trọng</h5>
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1.5" style="font-size: 12.5px;">
+            <i class="bx bx-info-circle me-1"></i>Tài liệu quy tắc tính phí của hệ thống
+        </span>
+    </div>
+    <div class="card-body p-4 d-flex flex-column gap-3">
+        <!-- Hàng 1: Quy tắc ưu tiên 3 tầng -->
+        <div class="p-3 rounded-3 border bg-light fin-note-box">
+            <div class="fin-note-title text-primary">
+                <i class="bx bx-layer me-1"></i>1. Thứ tự ưu tiên tính Phí Chiết khấu (Không cộng dồn)
+            </div>
+            <p class="fin-note-muted mb-2">
+                Mục <strong>Chiết khấu mặc định (@defaultComm%)</strong> và <strong>Bảng 10 Ngành hàng</strong> <u>không cộng dồn</u> mà áp dụng theo 3 tầng ưu tiên:
+            </p>
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <div class="bg-white border rounded-3 p-2.5 h-100">
+                        <strong class="text-dark">Tầng 1 (Danh mục con):</strong> Nếu danh mục con có cấu hình <code>%</code> riêng → dùng trực tiếp mức đó.
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white border rounded-3 p-2.5 h-100">
+                        <strong class="text-dark">Tầng 2 (10 Ngành hàng gốc - Mục 4):</strong> Nếu danh mục con để trống → kế thừa <code>%</code> phí &amp; <strong>Trần phí tối đa</strong> từ ngành hàng cha.
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white border rounded-3 p-2.5 h-100">
+                        <strong class="text-dark">Tầng 3 (Mức dự phòng mặc định):</strong> Chỉ áp dụng khi tạo danh mục mới chưa kịp cấu hình phí cho cả danh mục đó lẫn danh mục cha.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hàng 2: Shop Thường vs Sellzy Mall -->
+        <div class="p-3 rounded-3 border fin-note-box" style="background: #FFFDF5; border-color: #FDE68A !important;">
+            <div class="fin-note-title" style="color: #92400E;">
+                <i class="bx bxs-badge-check me-1"></i>2. Phân biệt Shop Thường &amp; Sellzy Mall
+            </div>
+            <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                    <div class="bg-white border rounded-3 p-2.5 h-100">
+                        <div class="fw-bold text-dark mb-1"><i class="bx bx-store text-primary me-1"></i>Shop Thường (Cá nhân / Hộ kinh doanh)</div>
+                        <div class="fin-note-muted">Phí sàn = <strong>Tỷ lệ phí ngành hàng</strong> (có áp trần tối đa) + Khấu trừ tại nguồn <strong>@sellerTaxRate%</strong> thuế cá nhân.</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="bg-white border rounded-3 p-2.5 h-100">
+                        <div class="fw-bold text-dark mb-1"><i class="bx bxs-badge-check text-warning me-1"></i>Sellzy Mall (Doanh nghiệp chính hãng)</div>
+                        <div class="fin-note-muted">Phí sàn = <strong>Tỷ lệ phí ngành hàng + @mallSurcharge%</strong> phụ phí cố định Mall (có áp trần tối đa). <strong>Miễn khấu trừ 0%</strong> thuế cá nhân tại nguồn do doanh nghiệp tự kê khai và xuất hóa đơn thuế giá trị gia tăng.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-3 py-2 rounded-3 bg-white border fin-note-muted">
+                <i class="bx bx-bulb text-warning me-1"></i><strong>Trần phí tối đa / sản phẩm:</strong> Nếu tiền chiết khấu trên 1 sản phẩm vượt quá mức trần (ví dụ: sản phẩm công nghệ giá trị cao), sàn chỉ thu tối đa đúng bằng mức trần đó.
+            </div>
+        </div>
+
+        <!-- Hàng 3: Công thức Đối soát & Lưu ý Thuế (Nằm ngang trên 1 hàng) -->
+        <div class="p-3 rounded-3 border bg-light fin-note-box">
+            <div class="fin-note-title text-success">
+                <i class="bx bx-calculator me-1"></i>3. Công thức Đối soát Ví &amp; Lưu ý Thuế giá trị gia tăng
+            </div>
+            <div class="d-flex flex-column gap-2 mb-2">
+                <div class="fin-formula-row">
+                    <span class="fin-formula-label"><i class="bx bx-wallet text-primary me-1"></i>Tiền thực nhận về Ví gian hàng:</span>
+                    <span class="fw-semibold text-primary">
+                        Tiền thực nhận = Tổng tiền hàng &minus; Phí chiết khấu sàn &minus; Thuế khấu trừ cá nhân (nếu là Shop Thường)
+                    </span>
+                </div>
+                <div class="fin-formula-row">
+                    <span class="fin-formula-label"><i class="bx bx-line-chart text-success me-1"></i>Lợi nhuận ròng của gian hàng:</span>
+                    <span class="fw-semibold text-success">
+                        Lợi nhuận ròng = Tiền thực nhận &minus; Tổng giá vốn nhập hàng &minus; Chi phí quảng cáo / khuyến mãi (nếu có)
+                    </span>
+                </div>
+            </div>
+            <div class="px-1 fin-note-muted mb-0">
+                <i class="bx bx-receipt text-primary me-1"></i><strong>Thuế giá trị gia tăng (VAT @vatRate%):</strong> Dùng làm căn cứ tách riêng tiền thuế khi xuất <strong>Hóa đơn điện tử</strong> cho khách hàng doanh nghiệp và lập báo cáo tài chính tổng hợp.
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script>
         $(function () {
-            // Format a number string with dots: 500000000 -> 500.000.000
             function formatMoney(val) {
                 val = (val + '').replace(/[^\d]/g, '');
                 if (!val) return '';
                 return val.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
             }
 
-            // Init: format all money inputs on load
+            function formatVnd(num) {
+                return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ₫';
+            }
+
+            function updateSimulator() {
+                var comm = parseFloat(($('#Fee_Commission_Default').val() || '10').replace(',', '.')) || 0;
+                var mallSur = parseFloat(($('#Fee_Mall_Surcharge').val() || '2').replace(',', '.')) || 0;
+                var sellerTax = parseFloat(($('#Tax_Seller_Rate').val() || '1.5').replace(',', '.')) || 0;
+
+                var orderVal = 1000000;
+                var stdComm = orderVal * (comm / 100);
+                var stdTax = orderVal * (sellerTax / 100);
+                var stdPayout = orderVal - stdComm - stdTax;
+
+                var mallRate = comm + mallSur;
+                var mallComm = orderVal * (mallRate / 100);
+                var mallPayout = orderVal - mallComm;
+
+                $('#sim-std-rate').text(comm);
+                $('#sim-std-comm').text('-' + formatVnd(stdComm));
+                $('#sim-std-tax-rate').text(sellerTax);
+                $('#sim-std-tax').text('-' + formatVnd(stdTax));
+                $('#sim-std-payout').text(formatVnd(stdPayout));
+
+                $('#sim-mall-sur').text(mallSur);
+                $('#sim-mall-rate').text(mallRate);
+                $('#sim-mall-comm').text('-' + formatVnd(mallComm));
+                $('#sim-mall-payout').text(formatVnd(mallPayout));
+            }
+
             $('.money-input').each(function () {
                 var raw = $(this).val().replace(/[^\d]/g, '');
                 $(this).val(formatMoney(raw));
                 $(this).siblings('input[type=hidden]').val(raw);
             });
 
-            // On typing, reformat and sync hidden field
             $('.money-input').on('input', function () {
                 var raw = $(this).val().replace(/[^\d]/g, '');
                 $(this).val(formatMoney(raw));
                 $(this).siblings('input[type=hidden]').val(raw);
             });
 
-            // On form reset, re-apply formatting
+            $('.sim-trigger').on('input change', updateSimulator);
+
             $('#btnReset').on('click', function () {
                 setTimeout(function () {
                     $('.money-input').each(function () {
@@ -187,6 +603,7 @@
                         $(this).val(formatMoney(raw));
                         $(this).siblings('input[type=hidden]').val(raw);
                     });
+                    updateSimulator();
                 }, 50);
             });
         });

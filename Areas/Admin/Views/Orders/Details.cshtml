@@ -1,7 +1,7 @@
 @model DOAN_BANHANG.ViewModels.AdminOrderDetailsVm
 @inject DOAN_BANHANG.Models.DataContext _db
 @{
-    ViewData["Title"] = "Chi tiết đơn hàng";
+    ViewData["Title"] = "Chi tiết đơn hàng " + Model.OrderCode;
 
     var isSignedIn = User?.Identity?.IsAuthenticated ?? false;
     var isAdmin = User?.IsInRole("Admin") ?? false;
@@ -9,86 +9,158 @@
 
     var statusRaw = (Model.OrderStatus ?? string.Empty).Trim();
     var statusNorm = statusRaw.Replace(" ", string.Empty).ToLowerInvariant();
-
     var isCancelled = statusNorm is "cancelled" or "canceled";
 
-    var (statusLabel, badgeClass, statusIcon) = statusNorm switch
+    var (statusLabel, statusPillStyle, statusIcon) = statusNorm switch
     {
-        "pending" => (
-            "Chờ xác nhận",
-            "badge bg-warning-subtle text-warning-emphasis border border-warning-subtle",
-            "bx bx-time-five"
-        ),
-        "confirmed" => (
-            "Đã xác nhận",
-            "badge bg-success-subtle text-success-emphasis border border-success-subtle",
-            "bx bx-check-circle"
-        ),
-        "rejected" => (
-            "Đã từ chối",
-            "badge bg-danger-subtle text-danger-emphasis border border-danger-subtle",
-            "bx bx-x-circle"
-        ),
-        "cancelled" or "canceled" => (
-            "Đã hủy",
-            "badge bg-danger-subtle text-danger-emphasis border border-danger-subtle",
-            "bx bx-x-circle"
-        ),
-        "returnrequest" => (
-            "Yêu cầu trả hàng",
-            "badge bg-warning-subtle text-warning-emphasis border border-warning-subtle",
-            "bx bx-subdirectory-left"
-        ),
-        "returning" => (
-            "Đang hoàn hàng",
-            "badge bg-info-subtle text-info-emphasis border border-info-subtle",
-            "bx bx-package"
-        ),
-        "returned" => (
-            "Đã trả hàng",
-            "badge bg-success-subtle text-success-emphasis border border-success-subtle",
-            "bx bx-check-double"
-        ),
-        _ => (
-            string.IsNullOrWhiteSpace(statusRaw) ? "(không rõ)" : statusRaw,
-            "badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle",
-            "bx bx-info-circle"
-        )
+        "pending" => ("Chờ xác nhận", "background: rgba(245,158,11,0.24); color: #fde68a;", "bx bx-time-five"),
+        "confirmed" => ("Đã xác nhận", "background: rgba(16,185,129,0.24); color: #a7f3d0;", "bx bx-check-circle"),
+        "rejected" => ("Đã từ chối", "background: rgba(239,68,68,0.28); color: #fecaca;", "bx bx-x-circle"),
+        "cancelled" or "canceled" => ("Đã hủy", "background: rgba(239,68,68,0.28); color: #fecaca;", "bx bx-x-circle"),
+        "returnrequest" => ("Yêu cầu trả hàng", "background: rgba(245,158,11,0.24); color: #fde68a;", "bx bx-subdirectory-left"),
+        "returning" => ("Đang hoàn hàng", "background: rgba(59,130,246,0.25); color: #bfdbfe;", "bx bx-package"),
+        "returned" => ("Đã trả hàng", "background: rgba(16,185,129,0.24); color: #a7f3d0;", "bx bx-check-double"),
+        _ => (string.IsNullOrWhiteSpace(statusRaw) ? "(không rõ)" : statusRaw, "background: rgba(255,255,255,0.16); color: #e2e8f0;", "bx bx-info-circle")
     };
 
     var paymentRaw = (Model.PaymentStatus ?? string.Empty).Trim();
     var paymentNorm = paymentRaw.Replace(" ", string.Empty).ToLowerInvariant();
-    var paymentBadgeClass = paymentNorm switch
+    var (paymentLabel, paymentBadgeClass) = paymentNorm switch
     {
-        "paid" or "success" or "completed" => "badge bg-success-subtle text-success-emphasis border border-success-subtle",
-        "pending" or "unpaid" => "badge bg-warning-subtle text-warning-emphasis border border-warning-subtle",
-        "failed" or "cancelled" or "canceled" => "badge bg-danger-subtle text-danger-emphasis border border-danger-subtle",
-        _ => "badge bg-light text-dark border"
+        "paid" or "success" or "completed" => ("Đã thanh toán", "od-pill od-pill-ok"),
+        "pending" => ("Đang xử lý", "od-pill od-pill-warn"),
+        "unpaid" => ("Chưa thanh toán", "od-pill od-pill-warn"),
+        "failed" or "cancelled" or "canceled" => ("Thất bại / Hủy", "od-pill od-pill-danger"),
+        _ => (string.IsNullOrWhiteSpace(paymentRaw) ? "—" : paymentRaw, "od-pill od-pill-muted")
     };
 
     var hasGhn = !string.IsNullOrWhiteSpace(Model.TrackingCode);
-
-    var statusHeaderClass = statusNorm switch
-    {
-        "pending" => "bg-warning-subtle border-warning-subtle",
-        "confirmed" => "bg-success-subtle border-success-subtle",
-        "rejected" => "bg-danger-subtle border-danger-subtle",
-        "cancelled" or "canceled" => "bg-danger-subtle border-danger-subtle",
-        "returnrequest" => "bg-warning-subtle border-warning-subtle",
-        "returning" => "bg-info-subtle border-info-subtle",
-        "returned" => "bg-success-subtle border-success-subtle",
-        _ => "bg-secondary-subtle border-secondary-subtle"
-    };
-
     string FormatVnd(decimal amount) => string.Format("{0:n0}", amount);
-
     var returnReq = _db.ReturnRequests.FirstOrDefault(r => r.OrderId == Model.Id);
 }
+
+<style>
+    :root {
+        --od-teal: #0b5c56;
+        --od-teal-dark: #063532;
+        --od-border: #e2e8f0;
+    }
+
+    .od-hero {
+        background: linear-gradient(135deg, #063532 0%, #0b5c56 58%, #0f766e 100%);
+        border-radius: 18px;
+        padding: 22px 26px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 26px rgba(6, 53, 50, 0.16);
+        margin-bottom: 20px;
+    }
+    .od-hero::before {
+        content: '';
+        position: absolute;
+        top: -60px;
+        right: -30px;
+        width: 240px;
+        height: 240px;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.28) 0%, rgba(16, 185, 129, 0) 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .od-btn-ghost {
+        background: rgba(255,255,255,0.14);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 10px;
+        padding: 9px 15px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .od-btn-ghost:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
+    .od-card {
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid var(--od-border);
+        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.035);
+        overflow: hidden;
+    }
+    .od-card-head {
+        padding: 15px 20px;
+        background: #fafcff;
+        border-bottom: 1px solid var(--od-border);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .od-card-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        flex-shrink: 0;
+    }
+
+    .od-info-box {
+        background: #f8fafc;
+        border: 1px solid var(--od-border);
+        border-radius: 12px;
+        padding: 14px 16px;
+    }
+    .od-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px dashed #e2e8f0;
+    }
+    .od-info-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .od-info-row:first-child { padding-top: 0; }
+
+    .od-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+    .od-pill-ok { background: #ecfdf5; color: #047857; }
+    .od-pill-warn { background: #fffbeb; color: #b45309; }
+    .od-pill-danger { background: #fef2f2; color: #dc2626; }
+    .od-pill-muted { background: #f1f5f9; color: #475569; }
+
+    .od-table thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 11px 12px;
+        border-bottom: 1.5px solid var(--od-border);
+    }
+    .od-table tbody td {
+        padding: 12px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+</style>
 
 @section AdminTopNotice {
     @if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
     {
-        <div class="alert alert-info d-flex align-items-start gap-2 rounded-3" role="alert">
+        <div class="alert alert-info d-flex align-items-start gap-2 rounded-3 shadow-sm" role="alert">
             <i class="bx bx-info-circle mt-1"></i>
             <div>@toast</div>
         </div>
@@ -109,26 +181,20 @@
             : returnReq.Status == "Rejected" ? "Đã từ chối trả hàng"
             : "Đang chờ duyệt trả hàng";
 
-        <div class="alert @alertBg border border-start border-4 @alertBorder d-flex align-items-start gap-3 rounded-3 mb-3" role="alert">
+        <div class="alert @alertBg border border-start border-4 @alertBorder d-flex align-items-start gap-3 rounded-3 mb-3 shadow-sm" role="alert">
             <div class="flex-shrink-0">
-                <div class="avatar-xs">
-                    <span class="avatar-title rounded-circle bg-warning text-dark">
-                        <i class="bx bx-subdirectory-left"></i>
-                    </span>
-                </div>
+                <span class="badge rounded-circle bg-warning text-dark p-2"><i class="bx bx-subdirectory-left fs-5"></i></span>
             </div>
             <div class="w-100">
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="fw-semibold fs-5">Yêu cầu trả hàng cho đơn này</div>
+                    <div class="fw-bold fs-6">Yêu cầu trả hàng cho đơn này</div>
                     <span class="badge @alertBadge px-3 py-1">@statusLabelText</span>
                 </div>
-                <div class="mt-2">
-                    <strong>Lý do từ khách hàng:</strong> @returnReq.Reason
-                </div>
+                <div class="mt-2 small"><strong>Lý do từ khách hàng:</strong> @returnReq.Reason</div>
                 @if (returnReq.Status == "Approved" && !string.IsNullOrWhiteSpace(returnReq.ReturnTrackingCode))
                 {
-                    <div class="mt-1 text-success-emphasis fw-semibold">
-                        📦 Mã đơn hoàn GHN: @returnReq.ReturnTrackingCode
+                    <div class="mt-1 text-success-emphasis fw-semibold small">
+                        <i class="bx bx-package me-1"></i>Mã đơn hoàn GHN: @returnReq.ReturnTrackingCode
                         @if (!string.IsNullOrWhiteSpace(returnReq.EstimatedPickupTime))
                         {
                             <span> | Ca lấy: @returnReq.EstimatedPickupTime</span>
@@ -137,13 +203,13 @@
                 }
                 @if (returnReq.Status == "Rejected" && !string.IsNullOrWhiteSpace(returnReq.RejectionNote))
                 {
-                    <div class="mt-1 text-danger-emphasis fw-semibold">
-                        ❌ Lý do từ chối của Shop: @returnReq.RejectionNote
+                    <div class="mt-1 text-danger-emphasis fw-semibold small">
+                        <i class="bx bx-x-circle me-1"></i>Lý do từ chối của Shop: @returnReq.RejectionNote
                     </div>
                 }
                 <div class="mt-3">
-                    <a href="@Url.Action("Details", "ReturnRequests", new { area = "Admin", id = returnReq.Id })" class="btn btn-sm btn-primary">
-                        ➡️ Đi tới chi tiết Yêu cầu trả hàng
+                    <a href="@Url.Action("Details", "ReturnRequests", new { area = "Admin", id = returnReq.Id })" class="btn btn-sm btn-dark rounded-pill px-3">
+                        <i class="bx bx-right-arrow-alt me-1"></i>Đi tới chi tiết Yêu cầu trả hàng
                     </a>
                 </div>
             </div>
@@ -152,361 +218,337 @@
 
     @if (isCancelled)
     {
-        <div class="alert bg-danger-subtle border border-danger-subtle border-start border-4 border-danger text-danger-emphasis d-flex align-items-start gap-3 rounded-3" role="alert">
-            <div class="flex-shrink-0">
-                <div class="avatar-xs">
-                    <span class="avatar-title rounded-circle bg-danger text-white">
-                        <i class="bx bx-x"></i>
-                    </span>
-                </div>
-            </div>
+        <div class="alert bg-danger-subtle border border-danger-subtle border-start border-4 border-danger text-danger-emphasis d-flex align-items-start gap-3 rounded-3 shadow-sm" role="alert">
+            <span class="badge rounded-circle bg-danger text-white p-2"><i class="bx bx-x fs-5"></i></span>
             <div class="w-100">
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="fw-semibold">Đơn hàng đã bị khách hàng hủy</div>
+                    <div class="fw-bold">Đơn hàng đã bị khách hàng hủy</div>
                     <span class="badge bg-danger rounded-pill">Dừng chuẩn bị</span>
                 </div>
-                <div class="mt-1">Shop không cần chuẩn bị hàng nữa.</div>
-                <div class="small mt-2 text-danger-emphasis">
-                    <span class="fw-semibold">Ghi chú:</span>
-                    @(string.IsNullOrWhiteSpace(Model.CancellationNote) ? "Người mua hủy đơn hàng" : Model.CancellationNote)
+                <div class="small mt-1">Shop không cần chuẩn bị hàng nữa.</div>
+                <div class="small mt-1">
+                    <strong>Ghi chú:</strong> @(string.IsNullOrWhiteSpace(Model.CancellationNote) ? "Người mua hủy đơn hàng" : Model.CancellationNote)
                 </div>
             </div>
         </div>
     }
 }
 
-<div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-3">
-    <div class="card-header @statusHeaderClass border-0 border-start border-4">
-        <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
-            <div class="min-w-0">
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <h4 class="mb-0 text-truncate">@Model.OrderCode</h4>
-
-                    <span class="@badgeClass rounded-pill px-3 py-2">
-                        <i class="@statusIcon me-1"></i>
-                        @statusLabel
-                    </span>
-                    <span class="@paymentBadgeClass rounded-pill px-3 py-2">
-                        <i class="bx bx-wallet me-1"></i>
-                        @paymentRaw
-                    </span>
-                    @if (hasGhn)
-                    {
-                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-3 py-2">
-                            <i class="bx bx-package me-1"></i>
-                            GHN
-                        </span>
-                    }
-                </div>
-
-                <div class="text-muted small mt-2">
-                    <i class="bx bx-calendar me-1"></i>
-                    Tạo lúc @Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                    @if (Model.UpdatedAt > Model.CreatedAt)
-                    {
-                        <span>• Cập nhật @Model.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
-                    }
-                </div>
-            </div>
-
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-dark-subtle text-dark border border-dark-subtle rounded-pill px-3 py-2 d-none d-sm-inline-flex">
-                    <i class="bx bx-money me-1"></i>
-                    @FormatVnd(Model.FinalAmount)đ
+<!-- 1. HERO HEADER -->
+<div class="od-hero d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div style="position: relative; z-index: 2;">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+            <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="@statusPillStyle font-size: 0.74rem;">
+                <i class="@statusIcon me-1"></i>@statusLabel
+            </span>
+            @if (hasGhn)
+            {
+                <span class="badge rounded-pill" style="background: rgba(59,130,246,0.25); color: #bfdbfe; font-size: 0.73rem;">
+                    <i class="bx bx-package me-1"></i>GHN Express
                 </span>
-                <a class="btn btn-outline-secondary" asp-area="Admin" asp-controller="Orders" asp-action="Index">
-                    <i class="bx bx-left-arrow-alt me-1"></i>
-                    Quay lại
-                </a>
-            </div>
+            }
+            @if (Model.IsDigitalOrder)
+            {
+                <span class="badge rounded-pill" style="background: rgba(168,85,247,0.28); color: #e9d5ff; font-size: 0.73rem;">
+                    <i class="bx bx-cloud-download me-1"></i>Sản phẩm số / E-Voucher
+                </span>
+            }
+            @if (Model.RequiresVatInvoice)
+            {
+                <span class="badge rounded-pill" style="background: rgba(239,68,68,0.3); color: #fecaca; font-size: 0.73rem;">
+                    <i class="bx bx-receipt me-1"></i>Xuất Hóa đơn VAT
+                </span>
+            }
         </div>
+        <h3 class="mb-1 fw-bold text-white" style="font-size: 1.4rem;">Đơn hàng @Model.OrderCode</h3>
+        <div class="small" style="color: rgba(255,255,255,0.8);">
+            <i class="bx bx-calendar me-1"></i>Đặt lúc @Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+            @if (Model.UpdatedAt > Model.CreatedAt)
+            {
+                <span class="ms-2">• Cập nhật @Model.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+            }
+        </div>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2" style="position: relative; z-index: 2;">
+        <div class="px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.2);">
+            <div style="font-size: 0.68rem; color: rgba(255,255,255,0.75); text-transform: uppercase; font-weight: 700;">Tổng thanh toán</div>
+            <div class="fw-bold fs-5 text-white">@FormatVnd(Model.FinalAmount)₫</div>
+        </div>
+        <a class="od-btn-ghost" asp-area="Admin" asp-controller="Orders" asp-action="Index">
+            <i class="bx bx-arrow-back"></i>Danh sách đơn
+        </a>
     </div>
 </div>
 
-<div class="row g-3">
+<!-- 2. TWO-COLUMN CONTENT -->
+<div class="row g-4">
+    <!-- Left Column: Shipping, VAT, Pending Action -->
     <div class="col-12 col-lg-6">
-        <div class="vstack gap-3">
-        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-            <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary rounded-top-3">
-                <div class="d-flex align-items-center justify-content-between gap-3">
+        <div class="vstack gap-4">
+            <!-- Shipping & GHN Card -->
+            <div class="od-card">
+                <div class="od-card-head">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="avatar-xs">
-                            <span class="avatar-title rounded-circle bg-primary text-white">
-                                <i class="bx bx-map"></i>
-                            </span>
-                        </div>
+                        <span class="od-card-icon" style="background: rgba(11,92,86,0.1); color: #0b5c56;">
+                            <i class="bx bx-map"></i>
+                        </span>
                         <div>
-                            <h5 class="mb-0">Giao hàng</h5>
-                            <div class="text-muted small">Thông tin người nhận & vận chuyển</div>
+                            <h6 class="mb-0 fw-bold text-dark">Thông tin Giao hàng &amp; Vận chuyển</h6>
+                            <div class="text-muted small">Địa chỉ nhận hàng và in vận đơn</div>
                         </div>
                     </div>
-                    @if (hasGhn)
-                    {
-                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-3 py-2">
-                            <i class="bx bx-package me-1"></i>
-                            GHN
-                        </span>
-                    }
                 </div>
-            </div>
-
-            <div class="card-body">
-                <div class="border rounded-3 bg-light border-start border-4 border-primary overflow-hidden">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item bg-transparent py-3">
-                            <div class="text-muted small"><i class="bx bx-user me-1"></i>Người nhận</div>
-                            <div class="fw-semibold text-truncate">@Model.RecipientName</div>
+                <div class="p-4">
+                    <div class="od-info-box mb-3">
+                        <div class="od-info-row">
+                            <span class="text-muted small"><i class="bx bx-user me-1"></i>Người nhận</span>
+                            <span class="fw-bold text-dark text-end">@Model.RecipientName</span>
                         </div>
-                        <div class="list-group-item bg-transparent py-3">
-                            <div class="text-muted small"><i class="bx bx-phone-call me-1"></i>Số điện thoại</div>
-                            <div class="fw-semibold text-truncate">@Model.RecipientPhone</div>
+                        <div class="od-info-row">
+                            <span class="text-muted small"><i class="bx bx-phone-call me-1"></i>Điện thoại</span>
+                            <span class="fw-bold text-dark text-end">@Model.RecipientPhone</span>
                         </div>
-                        <div class="list-group-item bg-transparent py-3">
-                            <div class="text-muted small"><i class="bx bx-home me-1"></i>Địa chỉ</div>
-                            <div class="fw-semibold text-wrap">@Model.ShippingAddress</div>
+                        <div class="od-info-row">
+                            <span class="text-muted small"><i class="bx bx-home me-1"></i>Địa chỉ</span>
+                            <span class="fw-semibold text-dark text-end" style="max-width: 70%;">@Model.ShippingAddress</span>
                         </div>
                         @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
                         {
-                            <div class="list-group-item bg-transparent py-3">
-                                <div class="text-muted small"><i class="bx bx-envelope me-1"></i>Email khách</div>
-                                <div class="fw-semibold text-break">@Model.CustomerEmail</div>
+                            <div class="od-info-row">
+                                <span class="text-muted small"><i class="bx bx-envelope me-1"></i>Email khách</span>
+                                <span class="fw-semibold text-dark text-end text-break">@Model.CustomerEmail</span>
                             </div>
                         }
                     </div>
-                </div>
 
-                <div class="border rounded-3 bg-light border-start border-4 border-info overflow-hidden mt-3">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item bg-transparent py-3">
-                            <div class="text-muted small"><i class="bx bx-package me-1"></i>Vận chuyển GHN</div>
-                            <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
-                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-3 py-2">
-                                    <i class="bx bx-barcode-reader me-1"></i>
-                                    @(string.IsNullOrWhiteSpace(Model.TrackingCode) ? "Chưa có mã" : Model.TrackingCode)
+                    <div class="od-info-box" style="background: #f0fdfa; border-color: #99f6e4;">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                            <div class="fw-bold small text-dark"><i class="bx bx-package text-success me-1"></i>Vận đơn GHN</div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge rounded-pill bg-white text-dark border px-2.5 py-1">
+                                    <i class="bx bx-barcode-reader text-primary me-1"></i>@(string.IsNullOrWhiteSpace(Model.TrackingCode) ? "Chưa có mã" : Model.TrackingCode)
                                 </span>
-                                <span class="badge bg-light text-dark border rounded-pill px-3 py-2">
-                                    <i class="bx bx-time me-1"></i>
-                                    @(string.IsNullOrWhiteSpace(Model.PickupShiftTitle) ? "Chưa có ca lấy" : Model.PickupShiftTitle)
+                                <span class="badge rounded-pill bg-white text-dark border px-2.5 py-1">
+                                    <i class="bx bx-time text-warning me-1"></i>@(string.IsNullOrWhiteSpace(Model.PickupShiftTitle) ? "Chưa có ca lấy" : Model.PickupShiftTitle)
                                 </span>
                             </div>
+                        </div>
 
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-sm fw-bold text-white" style="background: #0b5c56; border-radius: 9px;" target="_blank"
+                               asp-area="Admin" asp-controller="Orders" asp-action="PrintPackingSlip"
+                               asp-route-id="@Model.Id">
+                                <i class="bx bx-barcode-reader me-1"></i>In Phiếu Gửi Hàng (A6)
+                            </a>
                             @if (!string.IsNullOrWhiteSpace(Model.TrackingCode))
                             {
-                                <div class="d-flex flex-wrap gap-2 mt-3">
-                                    <a class="btn btn-sm btn-primary" target="_blank"
-                                       asp-area="Admin" asp-controller="Orders" asp-action="PrintLabel"
-                                       asp-route-id="@Model.Id" asp-route-format="A5">
-                                        <i class="bx bx-printer me-1"></i>
-                                        A5
-                                    </a>
-                                    <a class="btn btn-sm btn-outline-primary" target="_blank"
-                                       asp-area="Admin" asp-controller="Orders" asp-action="PrintLabel"
-                                       asp-route-id="@Model.Id" asp-route-format="80x80">
-                                        <i class="bx bx-printer me-1"></i>
-                                        80x80
-                                    </a>
-                                    <a class="btn btn-sm btn-outline-primary" target="_blank"
-                                       asp-area="Admin" asp-controller="Orders" asp-action="PrintLabel"
-                                       asp-route-id="@Model.Id" asp-route-format="52x70">
-                                        <i class="bx bx-printer me-1"></i>
-                                        52x70
-                                    </a>
-                                </div>
-                                <div class="text-muted small mt-2">
-                                    <i class="bx bx-info-circle me-1"></i>
-                                    Phiếu in GHN có hiệu lực ~30 phút sau khi sinh token.
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="text-muted small mt-2">
-                                    <i class="bx bx-info-circle me-1"></i>
-                                    Chưa tạo vận đơn GHN cho đơn này.
-                                </div>
+                                <a class="btn btn-sm btn-primary" style="border-radius: 9px;" target="_blank"
+                                   asp-area="Admin" asp-controller="Orders" asp-action="PrintLabel"
+                                   asp-route-id="@Model.Id" asp-route-format="A5">
+                                    <i class="bx bx-printer me-1"></i>GHN A5
+                                </a>
+                                <a class="btn btn-sm btn-outline-primary bg-white" style="border-radius: 9px;" target="_blank"
+                                   asp-area="Admin" asp-controller="Orders" asp-action="PrintLabel"
+                                   asp-route-id="@Model.Id" asp-route-format="80x80">
+                                    <i class="bx bx-printer me-1"></i>80x80
+                                </a>
+                                <a class="btn btn-sm btn-outline-primary bg-white" style="border-radius: 9px;" target="_blank"
+                                   asp-area="Admin" asp-controller="Orders" asp-action="PrintLabel"
+                                   asp-route-id="@Model.Id" asp-route-format="52x70">
+                                    <i class="bx bx-printer me-1"></i>52x70
+                                </a>
                             }
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        @if (isSignedIn && (isAdmin || isShop) && Model.OrderStatus == "Pending")
-        {
-            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-                <div class="card-header bg-warning-subtle border-0 border-start border-4 border-warning rounded-top-3">
-                    <div class="d-flex align-items-center justify-content-between gap-3">
+            <!-- VAT Invoice Info -->
+            @if (Model.RequiresVatInvoice)
+            {
+                <div class="od-card" style="border-color: #fecaca;">
+                    <div class="od-card-head" style="background: #fef2f2; border-bottom-color: #fecaca;">
                         <div class="d-flex align-items-center gap-2">
-                            <div class="avatar-xs">
-                                <span class="avatar-title rounded-circle bg-warning text-dark">
-                                    <i class="bx bx-bolt-circle"></i>
-                                </span>
-                            </div>
+                            <span class="od-card-icon" style="background: #dc2626; color: #fff;">
+                                <i class="bx bx-receipt"></i>
+                            </span>
                             <div>
-                                <h5 class="mb-0">Xử lý đơn</h5>
-                                <div class="text-muted small">Chỉ xử lý được khi đơn đang Pending</div>
+                                <h6 class="mb-0 fw-bold text-danger">Thông tin xuất Hóa đơn GTGT (VAT)</h6>
+                                <div class="text-muted small">Khách hàng yêu cầu hóa đơn điện tử công ty</div>
                             </div>
                         </div>
-                        <span class="badge bg-warning text-dark rounded-pill px-3 py-2">Pending</span>
+                        <a class="btn btn-sm btn-danger fw-bold" style="border-radius: 9px;" target="_blank"
+                           asp-area="Admin" asp-controller="Orders" asp-action="PrintVatInvoice" asp-route-id="@Model.Id">
+                            <i class="bx bx-printer me-1"></i>In hóa đơn GTGT
+                        </a>
+                    </div>
+                    <div class="p-4">
+                        <div class="od-info-box">
+                            <div class="od-info-row">
+                                <span class="text-muted small">Tên công ty / Đơn vị</span>
+                                <span class="fw-bold text-dark text-end">@(!string.IsNullOrWhiteSpace(Model.CompanyName) ? Model.CompanyName : "(Chưa cung cấp)")</span>
+                            </div>
+                            <div class="od-info-row">
+                                <span class="text-muted small">Mã số thuế (MST)</span>
+                                <span class="fw-bold text-danger text-end">@(!string.IsNullOrWhiteSpace(Model.TaxCode) ? Model.TaxCode : "(Chưa cung cấp)")</span>
+                            </div>
+                            <div class="od-info-row">
+                                <span class="text-muted small">Địa chỉ ĐKKD</span>
+                                <span class="fw-semibold text-dark text-end" style="max-width: 70%;">@(!string.IsNullOrWhiteSpace(Model.CompanyAddress) ? Model.CompanyAddress : "(Chưa cung cấp)")</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            }
 
-                <div class="card-body">
-                    <form method="post" class="row g-2">
-                        @Html.AntiForgeryToken()
-                        <div class="col-12">
-                            <label class="form-label">Ghi chú (tuỳ chọn)</label>
-                            <textarea class="form-control" name="Note" rows="2" placeholder="VD: Đã kiểm tra tồn kho"></textarea>
-                            <input type="hidden" name="Id" value="@Model.Id" />
+            <!-- Pending Action Card -->
+            @if (isSignedIn && (isAdmin || isShop) && Model.OrderStatus == "Pending")
+            {
+                <div class="od-card" style="border-color: #fde68a;">
+                    <div class="od-card-head" style="background: #fffbeb; border-bottom-color: #fde68a;">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="od-card-icon" style="background: #f59e0b; color: #fff;">
+                                <i class="bx bx-bolt-circle"></i>
+                            </span>
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark">Xử lý đơn hàng</h6>
+                                <div class="text-muted small">Xác nhận để chuẩn bị giao hàng hoặc từ chối đơn</div>
+                            </div>
                         </div>
-                        <div class="col-12 d-flex gap-2">
-                            <button type="submit" class="btn btn-success" formaction="@Url.Action("Confirm", "Orders", new { area = "Admin" })">
-                                <i class="bx bx-check me-1"></i>
-                                Xác nhận
-                            </button>
-                            <button type="submit" class="btn btn-danger" formaction="@Url.Action("Reject", "Orders", new { area = "Admin" })" onclick="return confirm('Bạn chắc chắn muốn từ chối đơn hàng này?');">
-                                <i class="bx bx-x me-1"></i>
-                                Từ chối
-                            </button>
-                        </div>
-                    </form>
+                        <span class="badge rounded-pill bg-warning text-dark">Chờ xác nhận</span>
+                    </div>
+                    <div class="p-4">
+                        <form method="post" class="row g-3">
+                            @Html.AntiForgeryToken()
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Ghi chú xử lý (tùy chọn)</label>
+                                <textarea class="form-control" style="border-radius: 10px;" name="Note" rows="2" placeholder="VD: Đã kiểm tra tồn kho, sẵn sàng bàn giao GHN..."></textarea>
+                                <input type="hidden" name="Id" value="@Model.Id" />
+                            </div>
+                            <div class="col-12 d-flex gap-2">
+                                <button type="submit" class="btn fw-bold text-white px-4" style="background: #10b981; border-radius: 10px;"
+                                        formaction="@Url.Action("Confirm", "Orders", new { area = "Admin" })">
+                                    <i class="bx bx-check me-1"></i>Xác nhận đơn
+                                </button>
+                                <button type="submit" class="btn btn-outline-danger fw-semibold px-3" style="border-radius: 10px;"
+                                        formaction="@Url.Action("Reject", "Orders", new { area = "Admin" })"
+                                        onclick="return confirm('Bạn chắc chắn muốn từ chối đơn hàng này?');">
+                                    <i class="bx bx-x me-1"></i>Từ chối
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </div>
-        }
+            }
         </div>
     </div>
 
+    <!-- Right Column: Items & Payment Breakdown -->
     <div class="col-12 col-lg-6">
-        <div class="vstack gap-3">
-        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-            <div class="card-header bg-info-subtle border-0 border-start border-4 border-info rounded-top-3">
-                <div class="d-flex align-items-center justify-content-between gap-3">
+        <div class="vstack gap-4">
+            <!-- Order Items Card -->
+            <div class="od-card">
+                <div class="od-card-head">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="avatar-xs">
-                            <span class="avatar-title rounded-circle bg-info text-white">
-                                <i class="bx bx-cart"></i>
-                            </span>
-                        </div>
+                        <span class="od-card-icon" style="background: #eff6ff; color: #2563eb;">
+                            <i class="bx bx-cart"></i>
+                        </span>
                         <div>
-                            <h5 class="mb-0">Sản phẩm</h5>
-                            <div class="text-muted small">Danh sách sản phẩm trong đơn</div>
+                            <h6 class="mb-0 fw-bold text-dark">Sản phẩm trong đơn</h6>
+                            <div class="text-muted small">Chi tiết phân loại, đơn giá và số lượng</div>
                         </div>
                     </div>
-                    <span class="badge bg-dark-subtle text-dark border border-dark-subtle rounded-pill px-3 py-2">
-                        <i class="bx bx-receipt me-1"></i>
-                        @Model.Items.Count sp
+                    <span class="badge rounded-pill px-3 py-1.5" style="background: rgba(11,92,86,0.1); color: #0b5c56; font-weight: 700;">
+                        @Model.Items.Count sản phẩm
                     </span>
                 </div>
-            </div>
-
-            <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-sm table-striped table-hover align-middle mt-2 table-nowrap">
+                    <table class="table od-table align-middle mb-0">
                         <thead>
                             <tr>
-                                <th class="bg-light">Sản phẩm</th>
-                                <th class="bg-light">Màu</th>
-                                <th class="bg-light">Size</th>
-                                <th class="bg-light text-end">Đơn giá</th>
-                                <th class="bg-light text-end">SL</th>
-                                <th class="bg-light text-end">Thành tiền</th>
+                                <th>Sản phẩm</th>
+                                <th>Phân loại</th>
+                                <th class="text-end">Đơn giá</th>
+                                <th class="text-center">SL</th>
+                                <th class="text-end">Thành tiền</th>
                             </tr>
                         </thead>
                         <tbody>
                         @foreach (var i in Model.Items)
                         {
+                            var varText = !string.IsNullOrWhiteSpace(i.VariantDescription)
+                                ? i.VariantDescription
+                                : string.Join(" - ", new[] { i.ColorName, i.SizeName }.Where(x => !string.IsNullOrWhiteSpace(x)));
                             <tr>
-                                <td class="fw-semibold text-wrap">@i.ProductName</td>
+                                <td class="fw-bold text-dark">@i.ProductName</td>
                                 <td>
-                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">@((string.IsNullOrWhiteSpace(i.ColorName) ? "-" : i.ColorName))</span>
+                                    <span class="badge rounded-pill bg-light text-dark border">@(string.IsNullOrWhiteSpace(varText) ? "Tiêu chuẩn" : varText)</span>
                                 </td>
-                                <td>
-                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">@((string.IsNullOrWhiteSpace(i.SizeName) ? "-" : i.SizeName))</span>
+                                <td class="text-end text-muted">@FormatVnd(i.UnitPrice)₫</td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill" style="background: rgba(11,92,86,0.12); color: #0b5c56; font-weight: 700;">x@(i.Quantity)</span>
                                 </td>
-                                <td class="text-end">@FormatVnd(i.UnitPrice)đ</td>
-                                <td class="text-end">
-                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-3 py-2">@i.Quantity</span>
-                                </td>
-                                <td class="text-end fw-semibold">@FormatVnd(i.LineTotal)đ</td>
+                                <td class="text-end fw-bold text-dark">@FormatVnd(i.LineTotal)₫</td>
                             </tr>
                         }
                         </tbody>
                     </table>
                 </div>
-
-                <div class="text-muted small mt-3">
-                    <i class="bx bx-info-circle me-1"></i>
-                    Tổng tiền đã được hiển thị trong mục <span class="fw-semibold">Thanh toán</span>.
-                </div>
             </div>
-        </div>
 
-        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-            <div class="card-header bg-success-subtle border-0 border-start border-4 border-success rounded-top-3">
-                <div class="d-flex align-items-center justify-content-between gap-3">
+            <!-- Payment Breakdown Card -->
+            <div class="od-card">
+                <div class="od-card-head">
                     <div class="d-flex align-items-center gap-2">
-                        <div class="avatar-xs">
-                            <span class="avatar-title rounded-circle bg-success text-white">
-                                <i class="bx bx-credit-card"></i>
-                            </span>
-                        </div>
+                        <span class="od-card-icon" style="background: #ecfdf5; color: #059669;">
+                            <i class="bx bx-credit-card"></i>
+                        </span>
                         <div>
-                            <h5 class="mb-0">Thanh toán</h5>
-                            <div class="text-muted small">Phương thức & tổng tiền</div>
+                            <h6 class="mb-0 fw-bold text-dark">Chi tiết Thanh toán</h6>
+                            <div class="text-muted small">Phương thức và bảng tính giá trị đơn hàng</div>
                         </div>
                     </div>
-                    <span class="@paymentBadgeClass rounded-pill px-3 py-2">
-                        <i class="bx bx-wallet me-1"></i>
-                        @Model.PaymentStatus
+                    <span class="@paymentBadgeClass">
+                        <i class="bx bx-wallet"></i>@paymentLabel
                     </span>
                 </div>
-            </div>
-
-            <div class="card-body">
-                <div class="border rounded-3 p-3 bg-light border-start border-4 border-success">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-borderless mb-0 align-middle">
-                            <tbody>
-                                <tr>
-                                    <td class="text-muted"><i class="bx bx-receipt me-1"></i>Phương thức</td>
-                                    <td class="text-end fw-semibold">@Model.PaymentMethod</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted"><i class="bx bx-purchase-tag-alt me-1"></i>Tạm tính</td>
-                                    <td class="text-end fw-semibold">@FormatVnd(Model.SubTotal)đ</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted"><i class="bx bx-car me-1"></i>Phí vận chuyển</td>
-                                    <td class="text-end fw-semibold">@FormatVnd(Model.ShippingFee)đ</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted"><i class="bx bx-discount me-1"></i>Giảm giá</td>
-                                    <td class="text-end fw-semibold">-@FormatVnd(Model.DiscountAmount)đ</td>
-                                </tr>
-                                @{
-                                    var calcVat = Model.FinalAmount - Model.SubTotal - Model.ShippingFee + Model.DiscountAmount;
-                                    if (calcVat < 0) calcVat = 0m;
-                                    var calcVatRate = Model.SubTotal > 0 ? Math.Round(calcVat / Model.SubTotal * 100) : 0;
-                                }
-                                @if (calcVat > 0)
-                                {
-                                    <tr>
-                                        <td class="text-muted"><i class="bx bx-receipt me-1"></i>VAT (@(calcVatRate)%)</td>
-                                        <td class="text-end fw-semibold">@FormatVnd(calcVat)đ</td>
-                                    </tr>
-                                }
-                                <tr>
-                                    <td colspan="2"><hr class="my-2" /></td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-semibold">Thành tiền</td>
-                                    <td class="text-end fw-bold fs-5">@FormatVnd(Model.FinalAmount)đ</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <div class="p-4">
+                    <div class="od-info-box">
+                        <div class="od-info-row">
+                            <span class="text-muted small"><i class="bx bx-receipt me-1"></i>Phương thức thanh toán</span>
+                            <span class="fw-bold text-dark">@Model.PaymentMethod</span>
+                        </div>
+                        <div class="od-info-row">
+                            <span class="text-muted small"><i class="bx bx-purchase-tag-alt me-1"></i>Tạm tính tiền hàng</span>
+                            <span class="fw-semibold text-dark">@FormatVnd(Model.SubTotal)₫</span>
+                        </div>
+                        <div class="od-info-row">
+                            <span class="text-muted small"><i class="bx bx-car me-1"></i>Phí vận chuyển</span>
+                            <span class="fw-semibold text-dark">@FormatVnd(Model.ShippingFee)₫</span>
+                        </div>
+                        <div class="od-info-row">
+                            <span class="text-muted small"><i class="bx bx-discount me-1"></i>Giảm giá / Voucher</span>
+                            <span class="fw-semibold text-success">-@FormatVnd(Model.DiscountAmount)₫</span>
+                        </div>
+                        @{
+                            var calcVat = Model.FinalAmount - Model.SubTotal - Model.ShippingFee + Model.DiscountAmount;
+                            if (calcVat < 0) calcVat = 0m;
+                            var calcVatRate = Model.SubTotal > 0 ? Math.Round(calcVat / Model.SubTotal * 100) : 0;
+                        }
+                        @if (calcVat > 0)
+                        {
+                            <div class="od-info-row">
+                                <span class="text-muted small"><i class="bx bx-receipt me-1"></i>Thuế GTGT (VAT @(calcVatRate)%)</span>
+                                <span class="fw-semibold text-dark">@FormatVnd(calcVat)₫</span>
+                            </div>
+                        }
+                        <div class="d-flex justify-content-between align-items-center pt-3 mt-2 border-top" style="border-color: #cbd5e1 !important;">
+                            <span class="fw-bold text-dark fs-6">Tổng cộng thành tiền</span>
+                            <span class="fw-bold fs-4" style="color: #0b5c56;">@FormatVnd(Model.FinalAmount)₫</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         </div>
     </div>
 </div>

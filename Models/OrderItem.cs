@@ -29,6 +29,15 @@ public class OrderItem
     [MaxLength(50)]
     public string? SizeName { get; set; }
 
+    [MaxLength(255)]
+    public string? VariantDescription { get; set; }
+
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal CommissionAmount { get; set; } = 0m;
+
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal UnitCostPrice { get; set; } = 0m;
+
     [Column(TypeName = "decimal(18,2)")]
     public decimal UnitPrice { get; set; }
 
@@ -37,4 +46,16 @@ public class OrderItem
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal LineTotal { get; set; }
+
+    [NotMapped]
+    public string EffectiveVariantText
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(VariantDescription))
+                return VariantDescription;
+            var parts = new[] { ColorName, SizeName }.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+            return parts.Count > 0 ? string.Join(" - ", parts) : string.Empty;
+        }
+    }
 }

@@ -1,0 +1,162 @@
+@model DOAN_BANHANG.ViewModels.CreateDisputeVm
+@{
+    ViewData["Title"] = $"Gửi khiếu nại đơn hàng #{Model.OrderCode}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .cd-wrap { max-width: 980px; margin: 28px auto 60px; padding: 0 16px; }
+    .cd-hero {
+        background: linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+        border-radius: 20px; padding: 24px 28px; color: #fff; margin-bottom: 24px;
+    }
+    .cd-card {
+        background: #fff; border: 1px solid #E2E8F0; border-radius: 18px;
+        padding: 24px; box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.08);
+    }
+    .cd-cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    @@media (max-width: 640px) { .cd-cat-grid { grid-template-columns: 1fr; } }
+    .cd-cat-opt { cursor: pointer; display: block; }
+    .cd-cat-opt input { display: none; }
+    .cd-cat-box {
+        border: 2px solid #E2E8F0; border-radius: 14px; padding: 14px 12px; text-align: center;
+        background: #F8FAFC; transition: all 0.2s;
+    }
+    .cd-cat-opt input:checked + .cd-cat-box {
+        border-color: #088178; background: #E6F4F3; color: #00262A;
+    }
+    .cd-input, .cd-select, .cd-textarea {
+        width: 100%; border: 1px solid #CBD5E1; border-radius: 10px; padding: 10px 14px;
+        font-size: 14px; color: #1E293B; background: #fff;
+    }
+    .cd-label { display: block; font-size: 13.5px; font-weight: 700; color: #1E293B; margin-bottom: 6px; }
+    .cd-btn-primary {
+        background: #088178; color: #fff; border: none; padding: 12px 24px; border-radius: 12px;
+        font-size: 14.5px; font-weight: 700; cursor: pointer;
+    }
+</style>
+
+<div class="cd-wrap">
+    <div class="cd-hero">
+        <a href="/my-orders/@Model.OrderId" style="color:#FFEB69; font-size:13px; font-weight:700; text-decoration:none;">← Quay lại chi tiết đơn hàng #@Model.OrderCode</a>
+        <h2 style="margin:8px 0 4px; font-size:22px; font-weight:800; color:#fff;">Gửi Khiếu nại Sản phẩm / Vận chuyển (Chuẩn bảo vệ Shopee)</h2>
+        <p style="margin:0; font-size:13.5px; color:rgba(255,255,255,0.82);">
+            Gian hàng: <strong>@Model.ShopName</strong> @(Model.IsShopMall ? "(Sellzy Mall Chính hãng)" : "") • Tổng thanh toán: <strong>@Model.OrderFinalAmount.ToString("N0")₫</strong>
+            @if (!string.IsNullOrWhiteSpace(Model.TrackingCode))
+            {
+                <span> • Mã vận đơn GHN: <strong>@Model.TrackingCode</strong></span>
+            }
+        </p>
+    </div>
+
+    <div class="cd-card">
+        <form method="post" action="/my-disputes/create/@Model.OrderId" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" style="color:#DC2626; font-size:13.5px; margin-bottom:14px;"></div>
+
+            <div style="margin-bottom:18px;">
+                <label class="cd-label">1. Chọn nhóm vấn đề bạn gặp phải *</label>
+                <div class="cd-cat-grid">
+                    <label class="cd-cat-opt">
+                        <input type="radio" name="Category" value="Product" checked onchange="syncReasons('Product')" />
+                        <div class="cd-cat-box">
+                            <div style="font-size:22px; margin-bottom:4px;">📦</div>
+                            <div style="font-weight:700; font-size:14px;">Khiếu nại Sản phẩm</div>
+                            <div style="font-size:12px; color:#64748B;">Hàng lỗi, sai mẫu, thiếu hàng, nghi hàng giả</div>
+                        </div>
+                    </label>
+                    <label class="cd-cat-opt">
+                        <input type="radio" name="Category" value="Shipping" onchange="syncReasons('Shipping')" />
+                        <div class="cd-cat-box">
+                            <div style="font-size:22px; margin-bottom:4px;">🚚</div>
+                            <div style="font-weight:700; font-size:14px;">Khiếu nại Vận chuyển GHN</div>
+                            <div style="font-size:12px; color:#64748B;">Bể vỡ khi giao, giao trễ, chưa nhận được hàng</div>
+                        </div>
+                    </label>
+                    <label class="cd-cat-opt">
+                        <input type="radio" name="Category" value="Service" onchange="syncReasons('Service')" />
+                        <div class="cd-cat-box">
+                            <div style="font-size:22px; margin-bottom:4px;">🏪</div>
+                            <div style="font-weight:700; font-size:14px;">Khiếu nại Gian hàng</div>
+                            <div style="font-size:12px; color:#64748B;">Shop từ chối trả hàng, thái độ không hợp tác</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-bottom:16px;">
+                <div>
+                    <label class="cd-label">2. Lý do chi tiết *</label>
+                    <select name="ReasonTitle" id="reasonSelect" class="cd-select" required></select>
+                </div>
+                <div>
+                    <label class="cd-label">3. Phương án giải quyết mong muốn *</label>
+                    <select name="RequestedResolution" class="cd-select" required>
+                        <option value="ReturnAndRefund">Trả hàng &amp; Hoàn tiền 100% về Ví Sellzy</option>
+                        <option value="RefundOnly">Hoàn tiền ngay không cần trả hàng (Hàng bể vỡ / Thiếu hàng / Thực phẩm)</option>
+                        <option value="PartialRefund">Hoàn tiền một phần (Giữ lại sản phẩm)</option>
+                        <option value="ShippingInvestigation">Tra soát vận đơn GHN &amp; Bồi thường sự cố giao hàng</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label class="cd-label">4. Số tiền đề nghị hoàn về Ví Sellzy (Tối đa @Model.OrderFinalAmount.ToString("N0")₫)</label>
+                <input type="number" name="RequestedAmount" class="cd-input" value="@Model.OrderFinalAmount.ToString("0", System.Globalization.CultureInfo.InvariantCulture)"
+                       min="0" max="@Model.OrderFinalAmount.ToString("0", System.Globalization.CultureInfo.InvariantCulture)" step="1000" required />
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label class="cd-label">5. Mô tả cụ thể tình trạng hàng hóa / vận chuyển *</label>
+                <textarea name="Description" rows="4" class="cd-textarea" required placeholder="Mô tả rõ tình trạng hộp hàng, sản phẩm bị lỗi ở vị trí nào hoặc vấn đề với nhân viên giao hàng..."></textarea>
+            </div>
+
+            <div style="margin-bottom:22px;">
+                <label class="cd-label">6. Tải lên ảnh / video bằng chứng (Tối đa 5 tệp — Giúp AI &amp; Trọng tài Sàn duyệt nhanh hơn)</label>
+                <input type="file" name="evidenceFiles" class="cd-input" multiple accept="image/*,video/*" />
+                <div style="font-size:12px; color:#64748B; margin-top:4px;">Khuyến nghị tải ảnh chụp tem vận đơn GHN, tình trạng kiện hàng và video mở hộp.</div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #F1F5F9; padding-top:16px;">
+                <a href="/my-orders/@Model.OrderId" style="padding:11px 20px; border-radius:12px; border:1px solid #CBD5E1; color:#475569; text-decoration:none; font-weight:600; font-size:14px;">Hủy bỏ</a>
+                <button type="submit" class="cd-btn-primary">Gửi hồ sơ Khiếu nại ngay</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const reasonsMap = {
+        Product: [
+            "Sản phẩm bị lỗi kỹ thuật / không hoạt động",
+            "Giao sai mẫu mã, màu sắc hoặc kích cỡ đã đặt",
+            "Giao thiếu sản phẩm hoặc thiếu phụ kiện đi kèm",
+            "Sản phẩm khác xa mô tả / hình ảnh quảng cáo",
+            "Nghi ngờ hàng giả, hàng nhái (Vi phạm cam kết chính hãng)",
+            "Sản phẩm hết hạn sử dụng hoặc hư hỏng chất lượng"
+        ],
+        Shipping: [
+            "Bưu kiện bị móp méo, ướt hỏng hoặc bể vỡ do vận chuyển GHN",
+            "Hệ thống báo đã giao thành công nhưng tôi chưa nhận được hàng",
+            "Giao hàng chậm trễ quá thời gian cam kết",
+            "Thái độ nhân viên giao hàng không đúng chuẩn mực"
+        ],
+        Service: [
+            "Gian hàng từ chối yêu cầu trả hàng không thỏa đáng",
+            "Gian hàng không phản hồi hỗ trợ bảo hành / đổi trả",
+            "Nghi vấn gian lận hoặc xuất hóa đơn không đúng"
+        ]
+    };
+
+    function syncReasons(cat) {
+        const sel = document.getElementById('reasonSelect');
+        sel.innerHTML = '';
+        (reasonsMap[cat] || reasonsMap.Product).forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r;
+            opt.textContent = r;
+            sel.appendChild(opt);
+        });
+    }
+    syncReasons('Product');
+</script>

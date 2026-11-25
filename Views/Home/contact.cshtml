@@ -1,404 +1,454 @@
 @{
-  ViewData["Title"] = "Liên hệ";
+    ViewData["Title"] = "Liên hệ";
 }
-    <!-- ========== Breadcrumb Section Start ========== -->
-    <div class="py-12">
-      <div class="container">
-        <div class="breadcrumb">
-          <ul>
-            <li>
-              <a href="@Url.Action("Index", "Home")">
-                <span>
-                  <i class="hgi hgi-stroke hgi-home-01 text-[20px]"></i>
-                </span>
-                Trang chủ
-              </a>
-            </li>
-            <li class="text-light-disabled-text">&#8226;</li>
-            <li><span>Liên hệ</span></li>
-          </ul>
+
+@section Styles {
+  <style>
+    .ct-hero {
+      background: linear-gradient(125deg, #EFF8F7 0%, #FFFFFF 55%, #FFFBEB 100%);
+      border: 1px solid rgba(8, 129, 120, 0.12);
+      border-radius: 26px;
+      padding: 28px 34px;
+      margin-bottom: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    @@media (max-width: 767px) {
+      .ct-hero { padding: 22px 18px; border-radius: 20px; }
+    }
+    .ct-crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748B;
+      margin-bottom: 8px;
+    }
+    .ct-crumb a { color: #475569; transition: color 0.2s; }
+    .ct-crumb a:hover { color: #088178; }
+
+    .ct-info-card {
+      background-color: #ffffff;
+      border: 1px solid #EAECEF;
+      border-radius: 22px;
+      padding: 24px 20px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .ct-info-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(8, 129, 120, 0.4);
+      box-shadow: 0 14px 28px -10px rgba(22, 28, 36, 0.08);
+    }
+    .ct-info-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 14px;
+    }
+
+    .ct-form-shell {
+      background-color: #ffffff;
+      border: 1px solid #EAECEF;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px -16px rgba(22, 28, 36, 0.10);
+    }
+    .ct-side-panel {
+      background: radial-gradient(circle at 85% 15%, rgba(255, 235, 105, 0.16) 0%, transparent 45%),
+                  linear-gradient(135deg, #00262A 0%, #055258 100%);
+      color: #ffffff;
+      padding: 36px 30px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ct-side-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .ct-side-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #FFEB69;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+    }
+  </style>
+}
+
+<!-- ========== Top Hero Banner Start ========== -->
+<div class="container pt-6">
+  <div class="ct-hero">
+    <div>
+      <nav class="ct-crumb">
+        <a href="@Url.Action("Index", "Home")"><i class="hgi hgi-stroke hgi-home-01 mr-1"></i>Trang chủ</a>
+        <span>/</span>
+        <span class="font-semibold text-primary">Liên hệ</span>
+      </nav>
+      <h1 class="text-2xl md:text-3xl font-extrabold text-light-primary-text mb-1">
+        Chúng Tôi Luôn Sẵn Sàng Hỗ Trợ Bạn
+      </h1>
+      <p class="text-sm text-light-secondary-text m-0 max-w-xl">
+        Đội ngũ chăm sóc khách hàng Sellzy luôn đồng hành và giải đáp mọi thắc mắc của bạn nhanh chóng, tận tâm.
+      </p>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm">
+      <span class="size-10 rounded-xl bg-[#E6F4F3] text-primary inline-flex items-center justify-center">
+        <i class="hgi hgi-stroke hgi-customer-support text-xl"></i>
+      </span>
+      <div>
+        <div class="text-base font-extrabold text-light-primary-text leading-tight">Hotline 1900 6868</div>
+        <div class="text-xs text-light-secondary-text">Hỗ trợ 08:00 – 22:00 mỗi ngày</div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ========== Top Hero Banner End ========== -->
+
+<!-- ========== 4 Contact Info Cards Start ========== -->
+<section class="pb-[60px]">
+  <div class="container">
+    <div class="grid grid-cols-12 gap-5 items-stretch">
+      <div class="xl:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+        <div class="ct-info-card">
+          <span class="ct-info-icon" style="background-color: #E6F4F3; color: #088178;">
+            <i class="hgi hgi-stroke hgi-mail-02"></i>
+          </span>
+          <h6 class="text-base font-bold text-light-primary-text mb-1">Email hỗ trợ</h6>
+          <p class="text-sm text-light-secondary-text mb-1">Phản hồi trong vòng 2 giờ</p>
+          <a href="mailto:support@sellzy.vn" class="text-sm font-bold text-primary hover:underline mt-auto">support@sellzy.vn</a>
+        </div>
+      </div>
+
+      <div class="xl:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".25s">
+        <div class="ct-info-card">
+          <span class="ct-info-icon" style="background-color: #FFF7CC; color: #B76E00;">
+            <i class="hgi hgi-stroke hgi-customer-support"></i>
+          </span>
+          <h6 class="text-base font-bold text-light-primary-text mb-1">Tổng đài 24/7</h6>
+          <p class="text-sm text-light-secondary-text mb-1">Tư vấn đơn hàng &amp; đổi trả</p>
+          <a href="tel:19006868" class="text-sm font-bold text-primary hover:underline mt-auto">1900 6868</a>
+        </div>
+      </div>
+
+      <div class="xl:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".35s">
+        <div class="ct-info-card">
+          <span class="ct-info-icon" style="background-color: #ECFDF5; color: #059669;">
+            <i class="hgi hgi-stroke hgi-location-06"></i>
+          </span>
+          <h6 class="text-base font-bold text-light-primary-text mb-1">Trụ sở chính</h6>
+          <p class="text-sm text-light-secondary-text m-0 mt-auto leading-relaxed">
+            182 Lê Duẩn, Bến Thủy, TP. Vinh, Nghệ An, Việt Nam
+          </p>
+        </div>
+      </div>
+
+      <div class="xl:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".45s">
+        <div class="ct-info-card">
+          <span class="ct-info-icon" style="background-color: #EFF6FF; color: #2563EB;">
+            <i class="hgi hgi-stroke hgi-internet"></i>
+          </span>
+          <h6 class="text-base font-bold text-light-primary-text mb-1">Website chính thức</h6>
+          <p class="text-sm text-light-secondary-text mb-1">Mua sắm trực tuyến 24/7</p>
+          <a href="@Url.Action("Index", "Home")" class="text-sm font-bold text-primary hover:underline mt-auto">www.sellzy.vn</a>
         </div>
       </div>
     </div>
-    <!-- ========== Breadcrumb Section End ========== -->
+  </div>
+</section>
+<!-- ========== 4 Contact Info Cards End ========== -->
 
-    <!-- ========== Happy To Assist Section Start ========== -->
-    <section class="pb-[70px]">
-      <div class="container">
-        <div class="text-center">
-          <h3
-            class="pb-3 wow animate__animated animate__fadeInUp"
-            data-wow-delay=".2s"
-          >
-            Chúng tôi luôn sẵn sàng hỗ trợ bạn
-          </h3>
-          <p
-            class="pb-10 wow animate__animated animate__fadeInUp"
-            data-wow-delay=".2s"
-          >
-            Luôn đồng hành cùng bạn mọi lúc, mọi nơi khi bạn cần.
-          </p>
+<!-- ========== Contact Form Section Start ========== -->
+<section class="pb-[70px]">
+  <div class="container">
+    <div class="ct-form-shell wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+      <div class="grid grid-cols-12">
+        <!-- Left Info Panel -->
+        <div class="col-span-12 lg:col-span-5">
+          <div class="ct-side-panel">
+            <div>
+              <span class="inline-block text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-4" style="background: rgba(255,235,105,0.16); color: #FFEB69;">
+                Kết nối trực tiếp
+              </span>
+              <h3 class="text-2xl font-extrabold text-white mb-3">
+                Gửi Lời Nhắn Cho Sellzy
+              </h3>
+              <p class="text-sm leading-relaxed mb-8" style="color: rgba(255,255,255,0.78);">
+                Bạn cần hỗ trợ về đơn hàng, chính sách bảo hành, hợp tác thương hiệu hay góp ý dịch vụ? Hãy để lại thông tin, chúng tôi sẽ phản hồi ngay.
+              </p>
+
+              <div class="ct-side-item">
+                <span class="ct-side-icon"><i class="hgi hgi-stroke hgi-clock-01"></i></span>
+                <div>
+                  <div class="text-sm font-bold text-white">Giờ làm việc</div>
+                  <div class="text-xs mt-0.5" style="color: rgba(255,255,255,0.75);">Thứ 2 – Chủ Nhật: 08:00 – 22:00</div>
+                </div>
+              </div>
+              <div class="ct-side-item">
+                <span class="ct-side-icon"><i class="hgi hgi-stroke hgi-chatting-01"></i></span>
+                <div>
+                  <div class="text-sm font-bold text-white">Nhắn tin trực tuyến</div>
+                  <div class="text-xs mt-0.5" style="color: rgba(255,255,255,0.75);">Trò chuyện trực tiếp với cửa hàng hoặc trợ lý AI</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-6 border-t border-white/15 flex items-center gap-3">
+              <a href="@Url.Action("Index", "Chat")" class="btn rounded-full px-5 py-2.5 text-xs font-bold" style="background-color: #FFEB69; color: #161C24;">
+                Mở hộp thư hỗ trợ
+              </a>
+              <a href="@Url.Action("Index", "Partners")" class="text-xs font-semibold text-white hover:underline">
+                Đăng ký đối tác →
+              </a>
+            </div>
+          </div>
         </div>
-        <div class="grid grid-cols-12 gap-6">
-          <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 border-gray-300 border p-6 rounded-2xl wow animate__animated animate__fadeInUp"
-            data-wow-delay=".2s"
-          >
-            <div>
-              <span
-                class="inline-flex items-center justify-center size-12 bg-[#919EAB14] rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-mail-02 text-2xl text-light-primary-text"
-                ></i>
-              </span>
-              <p class="pt-4 pb-0.5 font-semibold text-light-primary-text">
-                Email
-              </p>
-              <p>support@example.com</p>
-            </div>
+
+        <!-- Right Form -->
+        <div class="col-span-12 lg:col-span-7 p-6 md:p-10">
+          <div id="contact-success-alert" class="hidden mb-5 p-4 rounded-2xl bg-[#E6F4F3] text-primary text-sm font-semibold">
+            Cảm ơn bạn đã liên hệ! Tin nhắn của bạn đã được ghi nhận, bộ phận CSKH sẽ phản hồi trong thời gian sớm nhất.
           </div>
-          <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 p-6 border-gray-300 border rounded-2xl wow animate__animated animate__fadeInUp"
-            data-wow-delay=".3s"
-          >
-            <div>
-              <span
-                class="inline-flex items-center justify-center size-12 bg-[#919EAB14] rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-customer-support text-2xl text-light-primary-text"
-                ></i>
-              </span>
-              <p class="pt-4 pb-0.5 font-semibold text-light-primary-text">
-                Điện thoại
-              </p>
-              <p>+1 (555) 123-4567</p>
+
+          <form id="sellzy-contact-form" class="flex flex-col gap-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="relative w-full">
+                <input
+                  type="text"
+                  id="first_name"
+                  required
+                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                  placeholder="Tên"
+                />
+                <label
+                  for="first_name"
+                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
+                >
+                  Tên *
+                </label>
+              </div>
+              <div class="relative w-full">
+                <input
+                  type="text"
+                  id="last_name"
+                  required
+                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                  placeholder="Họ"
+                />
+                <label
+                  for="last_name"
+                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
+                >
+                  Họ *
+                </label>
+              </div>
             </div>
-          </div>
-          <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 p-6 border-gray-300 border rounded-2xl wow animate__animated animate__fadeInUp"
-            data-wow-delay=".4s"
-          >
-            <div>
-              <span
-                class="inline-flex items-center justify-center size-12 bg-[#919EAB14] rounded-full"
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="relative w-full">
+                <input
+                  type="tel"
+                  id="phone"
+                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                  placeholder="Số điện thoại"
+                />
+                <label
+                  for="phone"
+                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
+                >
+                  Số điện thoại
+                </label>
+              </div>
+              <div class="relative w-full">
+                <input
+                  type="email"
+                  id="email"
+                  required
+                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                  placeholder="Địa chỉ Email"
+                />
+                <label
+                  for="email"
+                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
+                >
+                  Địa chỉ Email *
+                </label>
+              </div>
+            </div>
+
+            <div class="relative w-full">
+              <input
+                type="text"
+                id="subject"
+                required
+                class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                placeholder="Tiêu đề"
+              />
+              <label
+                for="subject"
+                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
               >
-                <i
-                  class="hgi hgi-stroke hgi-location-06 text-2xl text-light-primary-text"
-                ></i>
-              </span>
-              <p class="pt-4 pb-0.5 font-semibold text-light-primary-text">
-                Địa chỉ
-              </p>
+                Tiêu đề liên hệ *
+              </label>
+            </div>
+
+            <div class="input-group medium rounded-[20px] px-3.5 resize-none">
+              <textarea
+                id="message"
+                rows="4"
+                required
+                class="peer form-control placeholder-transparent focus:placeholder-transparent"
+                placeholder="Nhập tin nhắn của bạn"
+              ></textarea>
+              <label
+                for="message"
+                class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-6 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
+              >
+                Nội dung tin nhắn *
+              </label>
+            </div>
+
+            <div class="flex justify-end">
+              <button type="submit" class="btn btn-large btn-primary rounded-[100px] px-8 py-3 text-white font-bold">
+                Gửi tin nhắn
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== Contact Form Section End ========== -->
+
+<!-- ========== FAQ Section Start ========== -->
+<section class="mb-[70px]">
+  <div class="container">
+    <div class="text-center max-w-2xl mx-auto mb-10">
+      <span class="inline-block text-xs font-bold uppercase tracking-wider text-primary bg-[#E6F4F3] px-3.5 py-1 rounded-full mb-2">
+        Giải đáp nhanh
+      </span>
+      <h3 class="text-2xl md:text-3xl font-extrabold text-light-primary-text mb-2 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+        Câu Hỏi Thường Gặp
+      </h3>
+      <p class="text-sm text-light-secondary-text m-0 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+        Tìm câu trả lời nhanh chóng cho các câu hỏi phổ biến nhất khi mua sắm tại Sellzy.
+      </p>
+    </div>
+    <div class="grid grid-cols-12">
+      <div class="lg:col-start-2 md:col-start-2 col-start-1 xl:col-end-12 md:col-end-12 col-end-13">
+        <div class="accordion">
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header active">
+              <h6>1. Cửa hàng chấp nhận những phương thức thanh toán nào?</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
               <p>
-                182 Lê Duẩn, Bến Thủy, Thành phố Vinh, Nghệ An, Việt Nam
+                Chúng tôi chấp nhận nhiều phương thức thanh toán linh hoạt bao gồm chuyển khoản ngân hàng trực tiếp, thanh toán qua VNPay QR, Ví điện tử Sellzy và thanh toán khi nhận hàng (COD) cực kỳ tiện lợi.
               </p>
             </div>
           </div>
-          <div
-            class="md:col-span-6 col-span-12 xl:col-span-3 p-6 border-gray-300 border rounded-2xl wow animate__animated animate__fadeInUp"
-            data-wow-delay=".5s"
-          >
-            <div>
-              <span
-                class="inline-flex items-center justify-center size-12 bg-[#919EAB14] rounded-full"
-              >
-                <i
-                  class="hgi hgi-stroke hgi-internet text-2xl text-light-primary-text"
-                ></i>
-              </span>
-              <p class="pt-4 pb-0.5 font-semibold text-light-primary-text">
-                Website
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header">
+              <h6>2. Làm thế nào để tôi có thể theo dõi đơn hàng của mình?</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
+              <p>
+                Sau khi đơn hàng được gửi đi thành công, hệ thống sẽ cung cấp mã vận đơn chi tiết. Bạn có thể kiểm tra trực tiếp tại mục "Theo dõi đơn hàng" hoặc trong trang Tài khoản cá nhân theo thời gian thực.
               </p>
-              <p>www.createuiux.com</p>
+            </div>
+          </div>
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header">
+              <h6>3. Mất bao lâu để tôi có thể nhận được hàng?</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
+              <p>
+                Thông thường thời gian vận chuyển dao động từ 2–4 ngày làm việc tùy thuộc vào địa chỉ giao hàng của bạn. Với các đơn hàng nội thành, chúng tôi hỗ trợ giao nhanh chỉ trong 24 giờ.
+              </p>
+            </div>
+          </div>
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header">
+              <h6>4. Sellzy có hỗ trợ đổi trả sản phẩm không?</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
+              <p>
+                Bạn hoàn toàn có thể yêu cầu đổi size, đổi sản phẩm hoặc hoàn tiền minh bạch trong vòng 30 ngày kể từ khi nhận hàng nếu sản phẩm còn nguyên tem mác và chưa qua sử dụng.
+              </p>
+            </div>
+          </div>
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header">
+              <h6>5. Tôi có thể hủy hoặc thay đổi thông tin đơn hàng không?</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
+              <p>
+                Bạn có thể hủy hoặc điều chỉnh thông tin đơn hàng bất cứ lúc nào trước khi đơn hàng chuyển sang trạng thái "Đang giao hàng". Hãy liên hệ hotline 1900 6868 sớm nhất có thể để được hỗ trợ kịp thời.
+              </p>
+            </div>
+          </div>
+          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+            <div class="accordion-header">
+              <h6>6. Tôi có bắt buộc phải đăng ký tài khoản để mua sắm không?</h6>
+              <i class="hgi hgi-stroke hgi-minus-sign"></i>
+              <i class="hgi hgi-stroke hgi-plus-sign"></i>
+            </div>
+            <div class="accordion-body">
+              <p>
+                Việc tạo tài khoản giúp bạn dễ dàng lưu trữ giỏ hàng, sử dụng Ví Sellzy, tích lũy ưu đãi thành viên và theo dõi lịch sử đơn hàng thuận tiện hơn.
+              </p>
             </div>
           </div>
         </div>
       </div>
-    </section>
-    <!-- ========== Happy To Assist Section End ========== -->
+    </div>
+  </div>
+</section>
+<!-- ========== FAQ Section End ========== -->
 
-    <!-- ========== Contact Form Section Start ========== -->
-    <section class="mb-[70px]">
-      <div
-        class="lg:bg-white bg-[#9EE872] py-12 lg:pt-0 lg:pb-[23px] text-center lg:max-w-[704px] mx-auto lg:rounded-[164px] lg:-mb-[103px] relative z-10 lg:before:bg-[#9EE872] lg:after:bg-[#9EE872] lg:before:absolute lg:before:bottom-0 lg:before:left-0 lg:before:h-full lg:before:w-[145px] lg:before:bg-[url('images/slider-left-shape.html')] lg:before:bg-no-repeat lg:before:z-11 lg:after:absolute lg:after:bottom-0 lg:after:right-0 lg:after:h-full lg:after:w-[145px] lg:after:bg-[url('images/slider-right-shape.png')] lg:after:bg-no-repeat lg:after:z-11"
-      >
-        <h3
-          class="mb-2 wow animate__animated animate__fadeInUp"
-          data-wow-delay=".2s"
-        >
-          Liên hệ với chúng tôi
-        </h3>
-        <p class="wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-          Chúng tôi rất muốn lắng nghe ý kiến của bạn!
-        </p>
-      </div>
-      <div
-        class="xl:max-w-[1728px] w-full mx-auto relative bg-[#9EE872] xl:rounded-5xl pb-12 lg:pt-[172px]"
-      >
-        <div class="container">
-          <div class="grid grid-cols-12 gap-6">
-            <div
-              class="lg:col-start-2 md:col-start-2 col-start-1 xl:col-end-12 md:col-end-12 col-end-13 bg-white rounded-2xl gap-y-6 wow animate__animated animate__fadeInUp"
-              data-wow-delay=".2s"
-            >
-              <div class="lg:p-10 p-5">
-                <div class="md:flex gap-x-4 pb-6">
-                  <div
-                    class="md:w-1/2 w-full wow animate__animated animate__fadeInUp"
-                    data-wow-delay=".2s"
-                  >
-                    <div class="relative w-full">
-                      <input
-                        type="text"
-                        id="first_name"
-                        class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                        placeholder="Tên"
-                      />
+@section Scripts {
+  <script>
+    (function () {
+      const form = document.getElementById('sellzy-contact-form');
+      const alertBox = document.getElementById('contact-success-alert');
+      if (!form || !alertBox) return;
 
-                      <label
-                        for="first_name"
-                        class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                      >
-                        Tên
-                      </label>
-                    </div>
-                  </div>
-                  <div
-                    class="md:w-1/2 w-full pt-6 md:pt-0 wow animate__animated animate__fadeInUp"
-                    data-wow-delay=".3s"
-                  >
-                    <div class="relative w-full">
-                      <input
-                        type="text"
-                        id="last_name"
-                        class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                        placeholder="Họ"
-                      />
-
-                      <label
-                        for="last_name"
-                        class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                      >
-                        Họ
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  class="md:flex gap-x-4 pb-6 wow animate__animated animate__fadeInUp"
-                  data-wow-delay=".2s"
-                >
-                  <div class="md:w-1/2 w-full">
-                    <div class="relative w-full">
-                      <input
-                        type="tel"
-                        id="phone"
-                        class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                        placeholder="Số điện thoại"
-                      />
-
-                      <label
-                        for="phone"
-                        class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                      >
-                        Số điện thoại
-                      </label>
-                    </div>
-                  </div>
-                  <div class="md:w-1/2 w-full pt-6 md:pt-0">
-                    <div class="relative w-full">
-                      <input
-                        type="email"
-                        id="email"
-                        class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                        placeholder="Địa chỉ Email"
-                      />
-
-                      <label
-                        for="email"
-                        class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                      >
-                        Địa chỉ Email
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  class="w-full pb-6 wow animate__animated animate__fadeInUp"
-                  data-wow-delay=".2s"
-                >
-                  <div class="relative w-full">
-                    <input
-                      type="text"
-                      id="subject"
-                      class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                      placeholder="Tiêu đề"
-                    />
-
-                    <label
-                      for="subject"
-                      class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                    >
-                      Tiêu đề
-                    </label>
-                  </div>
-                </div>
-                <div
-                  class="w-full pb-10 wow animate__animated animate__fadeInUp"
-                  data-wow-delay=".2s"
-                >
-                  <div
-                    class="input-group medium rounded-[20px] px-3.5 resize-none"
-                  >
-                    <textarea
-                      id="message"
-                      rows="4"
-                      class="peer form-control placeholder-transparent focus:placeholder-transparent"
-                      placeholder="Nhập tin nhắn của bạn"
-                    ></textarea>
-                    <label
-                      for="message"
-                      class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-6 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                    >
-                      Nhập tin nhắn của bạn
-                    </label>
-                  </div>
-                </div>
-                <div
-                  class="flex justify-end wow animate__animated animate__fadeInUp"
-                  data-wow-delay=".2s"
-                >
-                  <div
-                    class="btn btn-large btn-primary rounded-[100px] px-[35px] py-[11px]"
-                  >
-                    <a href="#">Gửi tin nhắn</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- ========== Contact Form Section End ========== -->
-
-    <!-- ========== FAQ Section Start ========== -->
-    <section class="mb-[70px]">
-      <div class="container">
-        <div class="text-center">
-          <h3
-            class="pb-3 wow animate__animated animate__fadeInUp"
-            data-wow-delay=".2s"
-          >
-            Câu Hỏi Thường Gặp
-          </h3>
-          <p
-            class="pb-12 wow animate__animated animate__fadeInUp"
-            data-wow-delay=".2s"
-          >
-            Tìm câu trả lời nhanh chóng cho các câu hỏi phổ biến nhất.
-          </p>
-        </div>
-        <div class="grid grid-cols-12">
-          <div
-            class="lg:col-start-2 md:col-start-2 col-start-1 xl:col-end-12 md:col-end-12 col-end-13"
-          >
-            <div class="accordion">
-              <div
-                class="accordion-item wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              >
-                <div class="accordion-header active">
-                  <h6>1. Cửa hàng chấp nhận những phương thức thanh toán nào?</h6>
-                  <i class="hgi hgi-stroke hgi-minus-sign"></i>
-                  <i class="hgi hgi-stroke hgi-plus-sign"></i>
-                </div>
-                <div class="accordion-body">
-                  <p>
-                    Chúng tôi chấp nhận nhiều phương thức thanh toán linh hoạt bao gồm chuyển khoản ngân hàng trực tiếp, thanh toán qua các ví điện tử phổ biến (Momo, VNPay) và thanh toán khi nhận hàng (COD) cực kỳ tiện lợi.
-                  </p>
-                </div>
-              </div>
-              <div
-                class="accordion-item wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              >
-                <div class="accordion-header">
-                  <h6>2. Làm thế nào để tôi có thể theo dõi đơn hàng của mình?</h6>
-                  <i class="hgi hgi-stroke hgi-minus-sign"></i>
-                  <i class="hgi hgi-stroke hgi-plus-sign"></i>
-                </div>
-                <div class="accordion-body">
-                  <p>
-                    Sau khi đơn hàng được gửi đi thành công, hệ thống sẽ gửi cho bạn một mã vận đơn chi tiết. Bạn có thể sử dụng mã vận đơn này trực tiếp trên trang "Tra cứu đơn hàng" trên website để theo dõi hành trình đơn hàng theo thời gian thực.
-                  </p>
-                </div>
-              </div>
-              <div
-                class="accordion-item wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              >
-                <div class="accordion-header">
-                  <h6>3. Mất bao lâu để tôi có thể nhận được hàng?</h6>
-                  <i class="hgi hgi-stroke hgi-minus-sign"></i>
-                  <i class="hgi hgi-stroke hgi-plus-sign"></i>
-                </div>
-                <div class="accordion-body">
-                  <p>
-                    Thông thường thời gian vận chuyển sẽ dao động từ 2-4 ngày làm việc tùy thuộc vào địa chỉ giao hàng của bạn. Đối với các đơn hàng nội thành hoặc đơn giao nhanh, chúng tôi hỗ trợ giao ngay chỉ trong 24 giờ.
-                  </p>
-                </div>
-              </div>
-              <div
-                class="accordion-item wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              >
-                <div class="accordion-header">
-                  <h6>4. Cửa hàng có hỗ trợ giao hàng quốc tế không?</h6>
-                  <i class="hgi hgi-stroke hgi-minus-sign"></i>
-                  <i class="hgi hgi-stroke hgi-plus-sign"></i>
-                </div>
-                <div class="accordion-body">
-                  <p>
-                    Hiện tại hệ thống hỗ trợ giao hàng trên khắp 63 tỉnh thành Việt Nam. Đối với nhu cầu vận chuyển đi nước ngoài, xin vui lòng liên hệ trực tiếp với bộ phận chăm sóc khách hàng của chúng tôi để được tư vấn chính sách cụ thể nhất.
-                  </p>
-                </div>
-              </div>
-              <div
-                class="accordion-item wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              >
-                <div class="accordion-header">
-                  <h6>5. Tôi có thể hủy hoặc thay đổi thông tin đơn hàng không?</h6>
-                  <i class="hgi hgi-stroke hgi-minus-sign"></i>
-                  <i class="hgi hgi-stroke hgi-plus-sign"></i>
-                </div>
-                <div class="accordion-body">
-                  <p>
-                    Bạn có thể hủy hoặc điều chỉnh thông tin đơn hàng bất cứ lúc nào trước khi đơn hàng chuyển sang trạng thái "Đang giao hàng". Hãy liên hệ hotline hỗ trợ sớm nhất có thể để chúng tôi kịp thời xử lý cho bạn.
-                  </p>
-                </div>
-              </div>
-              <div
-                class="accordion-item wow animate__animated animate__fadeInUp"
-                data-wow-delay=".2s"
-              >
-                <div class="accordion-header">
-                  <h6>6. Tôi có bắt buộc phải đăng ký tài khoản để mua sắm không?</h6>
-                  <i class="hgi hgi-stroke hgi-minus-sign"></i>
-                  <i class="hgi hgi-stroke hgi-plus-sign"></i>
-                </div>
-                <div class="accordion-body">
-                  <p>
-                    Bạn có thể đặt hàng nhanh chóng dưới tư cách khách vãng lai mà không cần đăng ký. Tuy nhiên, việc tạo tài khoản sẽ giúp bạn dễ dàng lưu trữ giỏ hàng, tích lũy điểm thưởng thành viên và nhận các chương trình ưu đãi độc quyền.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- ========== FAQ Section End ========== -->
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        alertBox.classList.remove('hidden');
+        form.reset();
+        alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    })();
+  </script>
+}

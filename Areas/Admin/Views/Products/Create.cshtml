@@ -15,8 +15,8 @@
                             <i class="bx bx-plus-circle font-size-18"></i>
                         </span>
                         <div>
-                            <h4 class="mb-0">Thêm sản phẩm mới</h4>
-                            <div class="text-muted small">Nhập thông tin, phân loại, hình ảnh và tồn kho</div>
+                            <h4 class="mb-0">Thêm sản phẩm mới (Đa ngành hàng)</h4>
+                            <div class="text-muted small">Thiết lập thông tin, thương hiệu, thông số kỹ thuật EAV, phân loại biến thể 2 tầng và đóng gói GHN</div>
                         </div>
                     </div>
 
@@ -34,10 +34,12 @@
 
 <form id="admin-product-create-form" asp-area="Admin" asp-controller="Products" asp-action="Create" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="UseDynamicOptions" id="UseDynamicOptionsInput" value="true" />
+    <input type="hidden" asp-for="HasSizeGuide" id="HasSizeGuideInput" />
 
     <div class="row">
         <div class="col-lg-3">
-            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card shadow-sm border-0 rounded-3 overflow-hidden sticky-top" style="top: 20px; z-index: 100;">
                 <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
                     <div class="d-flex align-items-center gap-2">
                         <span class="avatar-xs">
@@ -56,12 +58,12 @@
                         <button type="button" data-tab="info" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2 active" role="tab" aria-selected="true">
                             <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle">1</span>
                             <i class="bx bx-info-circle"></i>
-                            <span>Thông tin</span>
+                            <span>Thông tin cơ bản</span>
                         </button>
                         <button type="button" data-tab="classify" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2" role="tab" aria-selected="false">
                             <span class="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle">2</span>
                             <i class="bx bx-category-alt"></i>
-                            <span>Phân loại</span>
+                            <span>Danh mục & Thông số</span>
                         </button>
                         <button type="button" data-tab="images" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2" role="tab" aria-selected="false">
                             <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle">3</span>
@@ -71,19 +73,19 @@
                         <button type="button" data-tab="variants" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2" role="tab" aria-selected="false">
                             <span class="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">4</span>
                             <i class="bx bx-layer"></i>
-                            <span>Biến thể & tồn kho</span>
+                            <span>Biến thể & Giao vận</span>
                         </button>
-                        <button type="button" data-tab="specs" class="nav-link text-start waves-effect fw-semibold d-flex align-items-center gap-2" role="tab" aria-selected="false">
+                        <button type="button" data-tab="specs" id="tabBtnSizeGuide" class="nav-link text-start waves-effect fw-semibold align-items-center gap-2 @(Model.HasSizeGuide ? "d-flex" : "d-none")" role="tab" aria-selected="false">
                             <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">5</span>
                             <i class="bx bx-ruler"></i>
-                            <span>Size guide</span>
+                            <span>Bảng Size Guide</span>
                         </button>
                     </div>
 
                     <hr class="my-4" />
 
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-soft-primary">
+                        <button type="submit" class="btn btn-primary fw-semibold py-2 shadow-sm">
                             <i class="bx bx-check-circle me-1"></i>Tạo sản phẩm
                         </button>
                         <a class="btn btn-soft-secondary" asp-area="Admin" asp-controller="Products" asp-action="Index">
@@ -96,490 +98,525 @@
 
         <div class="col-lg-9">
             <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-                <div class="card-header bg-white border-bottom">
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="avatar-xs">
-                                <span class="avatar-title rounded-circle bg-light text-primary border border-primary-subtle">
-                                    <i class="bx bx-edit-alt"></i>
-                                </span>
-                            </span>
-                            <div class="fw-semibold">Nhập dữ liệu</div>
-                        </div>
-                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill">Tạo mới</span>
-                    </div>
-                </div>
                 <div class="card-body p-4">
-                            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <div asp-validation-summary="All" class="alert alert-danger mb-3" style="display: @(ViewData.ModelState.IsValid ? "none" : "block")"></div>
 
-                            <div class="admin-product-create-pane" data-pane="info">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-primary-subtle border border-primary-subtle rounded-3 p-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="avatar-xs">
-                                            <span class="avatar-title rounded-circle bg-primary text-white">
-                                                <i class="bx bx-info-circle"></i>
-                                            </span>
-                                        </span>
-                                        <div>
-                                            <h4 class="card-title mb-0 fs-4">Thông tin sản phẩm</h4>
-                                            <div class="text-muted small">Tên, slug và mô tả</div>
-                                        </div>
-                                    </div>
+                    <!-- TAB 1: THÔNG TIN CƠ BẢN -->
+                    <div class="admin-product-create-pane" data-pane="info">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-primary-subtle border border-primary-subtle rounded-3 p-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="avatar-xs">
+                                    <span class="avatar-title rounded-circle bg-primary text-white">
+                                        <i class="bx bx-info-circle"></i>
+                                    </span>
+                                </span>
+                                <div>
+                                    <h4 class="card-title mb-0 fs-5">Thông tin cơ bản & Chính sách</h4>
+                                    <div class="text-muted small">Tên sản phẩm, thương hiệu, giá bán, bảo hành và chính sách đổi trả</div>
                                 </div>
+                            </div>
+                        </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label">Tên sản phẩm</label>
-                                    <input asp-for="Name" class="form-control" placeholder="Ví dụ: Áo thun nam..." />
-                                    <span asp-validation-for="Name" class="text-danger"></span>
-                                </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control form-control-lg fw-semibold" placeholder="Ví dụ: Điện thoại iPhone 16 Pro Max 256GB / Áo thun Polo nam..." />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
 
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <label class="form-label">Slug</label>
-                                        <input asp-for="Slug" class="form-control" placeholder="(Tự tạo nếu bỏ trống)" />
-                                        <span asp-validation-for="Slug" class="text-danger"></span>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label class="form-label">Giá bán (₫)</label>
-                                        <input asp-for="Price" class="form-control vn-money-input" type="text" placeholder="Ví dụ: 250.000" />
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Slug (URL)</label>
+                                <input asp-for="Slug" class="form-control" placeholder="(Tự tạo nếu bỏ trống)" />
+                                <span asp-validation-for="Slug" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <!-- HIỂN THỊ KHI LÀ SẢN PHẨM ĐƠN (1 BIẾN THỂ) -->
+                                <div id="tab1SinglePriceWrap" class="row g-2 @(Model.HasSizeVariants ? "d-none" : "")">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Giá niêm yết (₫) <span class="text-danger">*</span></label>
+                                        <input asp-for="Price" id="BasePriceInput" class="form-control vn-money-input fw-bold" type="text" placeholder="Ví dụ: 250.000" />
                                         <span asp-validation-for="Price" class="text-danger"></span>
                                     </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label class="form-label">Giá giảm (₫)</label>
-                                        <input asp-for="SalePrice" class="form-control vn-money-input" type="text" placeholder="Ví dụ: 199.000" />
+                                    <div class="col-md-4">
+                                        <label class="form-label">Giá vốn nhập kho (₫)</label>
+                                        <input asp-for="SingleCostPrice" id="BaseCostPriceInput" class="form-control vn-money-input text-primary fw-bold" type="text" placeholder="Ví dụ: 150.000" />
+                                        <span asp-validation-for="SingleCostPrice" class="text-danger"></span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Giá khuyến mãi (₫)</label>
+                                        <input asp-for="SalePrice" id="BaseSalePriceInput" class="form-control vn-money-input text-danger fw-bold" type="text" placeholder="Ví dụ: 199.000" />
                                         <span asp-validation-for="SalePrice" class="text-danger"></span>
                                     </div>
                                 </div>
 
-                                <div class="mb-0">
-                                    <label class="form-label">Mô tả</label>
-                                    <textarea asp-for="Description" class="form-control" rows="6" placeholder="Mô tả chi tiết..."></textarea>
-                                </div>
-                            </div>
-
-                            <div class="admin-product-create-pane d-none" data-pane="classify">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-info-subtle border border-info-subtle rounded-3 p-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="avatar-xs">
-                                            <span class="avatar-title rounded-circle bg-info text-white">
-                                                <i class="bx bx-category-alt"></i>
-                                            </span>
-                                        </span>
-                                        <div>
-                                            <h4 class="card-title mb-0 fs-4">Phân loại & trạng thái</h4>
-                                            <div class="text-muted small">Danh mục và trạng thái hiển thị</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label class="form-label">Phân loại danh mục</label>
-                                    <input type="hidden" asp-for="CategoryId" id="finalCategoryId" />
-                                    <div id="categoryCascader" class="d-flex flex-wrap gap-2">
-                                        <!-- Selects will be generated here -->
-                                    </div>
-                                    <span asp-validation-for="CategoryId" class="text-danger"></span>
-                                    <div class="mt-2 text-muted small" id="categoryBreadcrumb"></div>
-                                </div>
-
-                                <div class="mb-0">
-                                    <label class="form-label">Trạng thái</label>
-                                    <select asp-for="Status" class="form-select">
-                                        @foreach (var s in Model.StatusOptions)
-                                        {
-                                            if (!string.IsNullOrWhiteSpace(s.ValueString))
-                                            {
-                                                <option value="@s.ValueString" selected="@(Model.Status == s.ValueString)">@s.Label</option>
-                                            }
-                                        }
-                                    </select>
-                                    <span asp-validation-for="Status" class="text-danger"></span>
-                                </div>
-                            </div>
-
-                            <div class="admin-product-create-pane d-none" data-pane="images">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-warning-subtle border border-warning-subtle rounded-3 p-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="avatar-xs">
-                                            <span class="avatar-title rounded-circle bg-warning text-dark">
-                                                <i class="bx bx-image"></i>
-                                            </span>
-                                        </span>
-                                        <div>
-                                            <h4 class="card-title mb-0 fs-4">Hình ảnh</h4>
-                                            <div class="text-muted small">Ảnh chính và gallery</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label class="form-label">Ảnh chính</label>
-                                    <div class="row">
-                                        <div class="col-md-7 col-lg-6 mx-auto">
-                                            <input class="d-none" type="file" name="PrimaryImage" id="primaryImageInput" accept="image/*" />
-
-                                            <div class="admin-image-box" id="primaryImageBox" role="button" tabindex="0" aria-label="Chọn ảnh chính">
-                                                <div class="admin-image-box__empty" id="primaryImageEmpty">
-                                                    <div class="fw-semibold">Chọn ảnh</div>
-                                                    <div class="text-muted small">Ảnh đại diện sản phẩm</div>
-                                                    <button type="button" class="btn btn-sm btn-soft-primary mt-2" id="primaryChooseBtn">Chọn ảnh</button>
+                                <!-- HIỂN THỊ KHI LÀ SẢN PHẨM NHIỀU BIẾN THỂ -->
+                                <div id="tab1MultiPriceSummaryWrap" class="card border-success bg-success-subtle bg-opacity-25 shadow-none mb-0 @(!Model.HasSizeVariants ? "d-none" : "")">
+                                    <div class="card-body py-2.5 px-3">
+                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                            <div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-success text-white"><i class="bx bx-git-branch me-1"></i>Đang bật Nhiều biến thể</span>
+                                                    <span class="small fw-bold text-dark" id="tab1SummaryCountText">@Model.Variants.Count biến thể</span>
                                                 </div>
-                                                <img id="primaryImagePreviewImg" class="admin-image-box__img d-none" alt="Primary preview" />
-
-                                                <div class="admin-image-box__overlay" id="primaryImageOverlay">
-                                                    <button type="button" class="btn btn-sm btn-soft-light" id="primaryOverlayChangeBtn">Đổi</button>
-                                                    <button type="button" class="btn btn-sm btn-danger" id="primaryOverlayRemoveBtn">Xóa</button>
+                                                <div class="small text-muted mt-1">
+                                                    Giá bán: <strong class="text-danger" id="tab1SummaryPriceRange">—</strong>
+                                                    <span class="mx-1">•</span>
+                                                    Giá vốn: <strong class="text-primary" id="tab1SummaryCostRange">—</strong>
+                                                    <span class="mx-1">•</span>
+                                                    Tổng kho: <strong class="text-dark" id="tab1SummaryTotalStock">0</strong>
                                                 </div>
                                             </div>
-
-                                            <div class="form-text">Ảnh này hiển thị ở danh sách/thumbnail.</div>
+                                            <button type="button" class="btn btn-sm btn-success fw-semibold" id="btnJumpToVariantsTab">
+                                                <i class="bx bx-layer me-1"></i>Thiết lập giá từng biến thể (Mục 4)
+                                            </button>
                                         </div>
+                                        <div class="mt-2 pt-2 border-top border-success-subtle" id="tab1VariantMiniList" style="max-height: 155px; overflow-y: auto;"></div>
                                     </div>
                                 </div>
 
-                                <div class="mb-0">
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <label class="form-label mb-0">Ảnh phụ (gallery)</label>
-                                        <div class="d-flex gap-2">
-                                            <button type="button" class="btn btn-sm btn-soft-primary" id="contentAddManyBtn">Thêm nhiều ảnh</button>
+                                <partial name="_LivePricingEstimator" />
+                            </div>
+                        </div>
+
+                        <div class="row bg-light rounded-3 p-3 mb-3 border">
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label class="form-label"><i class="bx bx-award text-primary me-1"></i>Thương hiệu (Brand)</label>
+                                <select asp-for="BrandId" class="form-select">
+                                    <option value="">-- Không có thương hiệu (No Brand) --</option>
+                                    @foreach (var b in Model.BrandOptions)
+                                    {
+                                        <option value="@b.Value" selected="@(Model.BrandId == b.Value)">@b.Label</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label class="form-label"><i class="bx bx-shield-quarter text-success me-1"></i>Thời hạn bảo hành (Tháng)</label>
+                                <div class="input-group">
+                                    <input asp-for="WarrantyMonths" type="number" min="0" max="120" class="form-control" placeholder="0 = Không BH" />
+                                    <span class="input-group-text">tháng</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hình thức bảo hành</label>
+                                <input asp-for="WarrantyType" class="form-control" list="warrantyTypeSuggestions" placeholder="VD: Bảo hành điện tử chính hãng" />
+                                <datalist id="warrantyTypeSuggestions">
+                                    <option value="Bảo hành chính hãng"></option>
+                                    <option value="Bảo hành điện tử"></option>
+                                    <option value="Bảo hành tại Shop"></option>
+                                    <option value="Không bảo hành"></option>
+                                </datalist>
+                            </div>
+                            <div class="col-12 mt-3 pt-2 border-top d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="fw-semibold"><i class="bx bx-revision text-info me-1"></i>Chính sách Đổi trả / Hoàn tiền</div>
+                                    <div class="text-muted small">Tắt tùy chọn này đối với thực phẩm tươi sống, hàng đặt riêng hoặc ngành hàng không hỗ trợ đổi trả.</div>
+                                </div>
+                                <div class="form-check form-switch fs-5 mb-0">
+                                    <input asp-for="IsReturnable" class="form-check-input" type="checkbox" id="IsReturnableInput" />
+                                    <label class="form-check-label fs-6 fw-semibold" for="IsReturnableInput">Cho phép trả hàng</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KHỐI ĐA NGÀNH MỞ RỘNG: SẢN PHẨM SỐ (E-VOUCHER), HẠN SỬ DỤNG & ĐIỀU KIỆN VẬN CHUYỂN -->
+                        <div class="row bg-warning-subtle bg-opacity-25 rounded-3 p-3 mb-3 border border-warning-subtle">
+                            <div class="col-12 mb-2 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="fw-bold text-dark"><i class="bx bx-cloud-download text-primary me-1"></i>Sản phẩm số / E-Voucher / Dịch vụ (Không qua giao vận GHN)</div>
+                                    <div class="text-muted small">Khi bật: Miễn phí ship (0₫), chặn COD, tự động hoàn tất đơn & gửi Mã kích hoạt / Link tải cho khách ngay khi thanh toán Ví hoặc VNPay.</div>
+                                </div>
+                                <div class="form-check form-switch fs-5 mb-0">
+                                    <input asp-for="IsDigital" class="form-check-input" type="checkbox" id="IsDigitalInput" onchange="document.getElementById('digitalContentWrap').classList.toggle('d-none', !this.checked)" />
+                                    <label class="form-check-label fs-6 fw-semibold text-primary" for="IsDigitalInput">Là Sản phẩm số</label>
+                                </div>
+                            </div>
+                            <div class="col-12 mb-3 @(Model.IsDigital ? "" : "d-none")" id="digitalContentWrap">
+                                <label class="form-label text-primary fw-bold">Mã Code / Link tải / Nội dung E-Voucher bàn giao tự động</label>
+                                <input asp-for="DigitalContent" class="form-control border-primary" placeholder="VD: KEY-WIN11-PRO-XXXX hoặc https://drive.google.com/... (Tự động gửi vào Thông báo & Chi tiết đơn của khách)" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label"><i class="bx bx-package text-warning me-1"></i>Điều kiện vận chuyển GHN</label>
+                                <select asp-for="ShippingCondition" class="form-select">
+                                    <option value="Tiêu chuẩn">Tiêu chuẩn (Hàng thông thường)</option>
+                                    <option value="Hàng dễ vỡ">Hàng dễ vỡ (Tự động gắn nhãn GHN)</option>
+                                    <option value="Thực phẩm / Bảo quản mát">Thực phẩm khô / Bảo quản mát</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label"><i class="bx bx-calendar text-secondary me-1"></i>Ngày sản xuất (NSX - Tùy chọn)</label>
+                                <input asp-for="ManufacturingDate" type="date" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label"><i class="bx bx-time-five text-danger me-1"></i>Hạn sử dụng (HSD - Thực phẩm/Mỹ phẩm)</label>
+                                <input asp-for="ExpiryDate" type="date" class="form-control" />
+                                <div class="form-text small">Hệ thống sẽ cảnh báo xả kho Flash Sale trước 30 ngày.</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label">Mô tả chi tiết sản phẩm</label>
+                            <textarea asp-for="Description" class="form-control" rows="6" placeholder="Mô tả đặc điểm nổi bật, công dụng, hướng dẫn sử dụng..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: DANH MỤC & THÔNG SỐ KỸ THUẬT EAV -->
+                    <div class="admin-product-create-pane d-none" data-pane="classify">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-info-subtle border border-info-subtle rounded-3 p-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="avatar-xs">
+                                    <span class="avatar-title rounded-circle bg-info text-white">
+                                        <i class="bx bx-category-alt"></i>
+                                    </span>
+                                </span>
+                                <div>
+                                    <h4 class="card-title mb-0 fs-5">Danh mục Ngành hàng & Thông số kỹ thuật</h4>
+                                    <div class="text-muted small">Chọn danh mục để hệ thống tự động tải bộ thuộc tính kỹ thuật của ngành</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Phân loại danh mục <span class="text-danger">*</span></label>
+                            <input type="hidden" asp-for="CategoryId" id="finalCategoryId" />
+                            <div id="categoryCascader" class="d-flex flex-wrap gap-2"></div>
+                            <span asp-validation-for="CategoryId" class="text-danger"></span>
+                            <div class="mt-2 text-muted small" id="categoryBreadcrumb"></div>
+                        </div>
+
+                        <!-- BẢNG THÔNG SỐ KỸ THUẬT ĐỘNG (EAV) -->
+                        <div class="card border shadow-none mb-4">
+                            <div class="card-header bg-light d-flex align-items-center justify-content-between py-2">
+                                <div class="fw-bold text-dark">
+                                    <i class="bx bx-list-check text-primary me-1"></i>Thông số kỹ thuật theo ngành (Category Attributes)
+                                </div>
+                                <span class="badge bg-info-subtle text-info-emphasis" id="eavAttributeCountBadge">0 thuộc tính</span>
+                            </div>
+                            <div class="card-body" id="eavAttributesContainer">
+                                <div class="text-muted small text-center py-3">
+                                    Hãy chọn danh mục ngành hàng ở trên để hiển thị các ô nhập thông số kỹ thuật tương ứng (VD: RAM, CPU, Xuất xứ, Hạn sử dụng...).
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label">Trạng thái hiển thị</label>
+                            <select asp-for="Status" class="form-select">
+                                @foreach (var s in Model.StatusOptions)
+                                {
+                                    if (!string.IsNullOrWhiteSpace(s.ValueString))
+                                    {
+                                        <option value="@s.ValueString" selected="@(Model.Status == s.ValueString)">@s.Label</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="Status" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: HÌNH ẢNH -->
+                    <div class="admin-product-create-pane d-none" data-pane="images">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-warning-subtle border border-warning-subtle rounded-3 p-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="avatar-xs">
+                                    <span class="avatar-title rounded-circle bg-warning text-dark">
+                                        <i class="bx bx-image"></i>
+                                    </span>
+                                </span>
+                                <div>
+                                    <h4 class="card-title mb-0 fs-5">Hình ảnh sản phẩm</h4>
+                                    <div class="text-muted small">Ảnh đại diện chính và bộ sưu tập ảnh</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Ảnh chính</label>
+                            <div class="row">
+                                <div class="col-md-7 col-lg-5 mx-auto">
+                                    <input class="d-none" type="file" name="PrimaryImage" id="primaryImageInput" accept="image/*" />
+                                    <div class="admin-image-box" id="primaryImageBox" role="button" tabindex="0">
+                                        <div class="admin-image-box__empty" id="primaryImageEmpty">
+                                            <div class="fw-semibold">Chọn ảnh đại diện</div>
+                                            <div class="text-muted small">Tỉ lệ khuyến nghị 1:1</div>
+                                            <button type="button" class="btn btn-sm btn-soft-primary mt-2" id="primaryChooseBtn">Chọn ảnh</button>
+                                        </div>
+                                        <img id="primaryImagePreviewImg" class="admin-image-box__img d-none" alt="Primary preview" />
+                                        <div class="admin-image-box__overlay" id="primaryImageOverlay">
+                                            <button type="button" class="btn btn-sm btn-soft-light" id="primaryOverlayChangeBtn">Đổi</button>
+                                            <button type="button" class="btn btn-sm btn-danger" id="primaryOverlayRemoveBtn">Xóa</button>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
 
-                                    <input class="d-none" type="file" name="ContentImages" id="contentImagesMaster" multiple accept="image/*" />
-                                    <input class="d-none" type="file" id="contentImagesPickerMany" multiple accept="image/*" />
-                                    <input class="d-none" type="file" id="contentImagesPickerSingle" accept="image/*" />
+                        <div class="mb-0">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <label class="form-label mb-0">Ảnh phụ (Gallery)</label>
+                                <button type="button" class="btn btn-sm btn-soft-primary" id="contentAddManyBtn">Thêm nhiều ảnh</button>
+                            </div>
+                            <input class="d-none" type="file" name="ContentImages" id="contentImagesMaster" multiple accept="image/*" />
+                            <input class="d-none" type="file" id="contentImagesPickerMany" multiple accept="image/*" />
+                            <input class="d-none" type="file" id="contentImagesPickerSingle" accept="image/*" />
+                            <div class="form-text mb-2">Bấm vào từng ô để thêm 1 ảnh, hoặc “Thêm nhiều ảnh” để chọn nhiều ảnh 1 lần.</div>
+                            <div class="admin-image-strip" id="contentSlots"></div>
+                        </div>
+                    </div>
 
-                                    <div class="form-text mb-2">Bấm vào từng ô để thêm 1 ảnh, hoặc “Thêm nhiều ảnh” để chọn nhiều ảnh 1 lần.</div>
+                    <!-- TAB 4: BIẾN THỂ ĐỘNG 2 TẦNG & ĐÓNG GÓI GHN -->
+                    <div class="admin-product-create-pane d-none" data-pane="variants">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-success-subtle border border-success-subtle rounded-3 p-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="avatar-xs">
+                                    <span class="avatar-title rounded-circle bg-success text-white">
+                                        <i class="bx bx-layer"></i>
+                                    </span>
+                                </span>
+                                <div>
+                                    <h4 class="card-title mb-0 fs-5">Phân loại Biến thể & Đóng gói Giao vận (GHN)</h4>
+                                    <div class="text-muted small">Hỗ trợ sản phẩm đơn hoặc phân loại động 2 tầng (Màu sắc, Dung lượng, Hương vị, Kích cỡ...)</div>
+                                </div>
+                            </div>
+                        </div>
 
-                                    <div class="admin-image-strip" id="contentSlots"></div>
+                        <div class="mb-4">
+                            <label class="form-label">Kiểu sản phẩm</label>
+                            <div class="btn-group admin-seg-toggle" role="group">
+                                <input class="btn-check" type="radio" asp-for="HasSizeVariants" id="HasSizeVariantsTrue" value="true" />
+                                <label class="btn btn-outline-primary admin-seg-btn" for="HasSizeVariantsTrue">
+                                    <i class="bx bx-git-branch me-1"></i>Nhiều biến thể (Phân loại 1 - 2 tầng)
+                                </label>
+
+                                <input class="btn-check" type="radio" asp-for="HasSizeVariants" id="HasSizeVariantsFalse" value="false" />
+                                <label class="btn btn-outline-primary admin-seg-btn" for="HasSizeVariantsFalse">
+                                    <i class="bx bx-cube me-1"></i>Một biến thể (Sản phẩm đơn)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- KHỐI SẢN PHẨM ĐƠN (1 BIẾN THỂ) -->
+                        <div id="singleStockWrap" class="card border bg-light-subtle mb-4 d-none">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3"><i class="bx bx-package text-primary me-1"></i>Tồn kho & Kích thước đóng gói (Sản phẩm đơn)</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Số lượng tồn kho</label>
+                                        <input asp-for="SingleStockQuantity" class="form-control fw-bold" type="number" min="0" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Cân nặng sau đóng gói (gram)</label>
+                                        <div class="input-group">
+                                            <input asp-for="SingleWeightGram" class="form-control" type="number" min="1" />
+                                            <span class="input-group-text">g</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Dài (cm)</label>
+                                        <input asp-for="SingleLengthCm" class="form-control" type="number" min="1" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Rộng (cm)</label>
+                                        <input asp-for="SingleWidthCm" class="form-control" type="number" min="1" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Cao (cm)</label>
+                                        <input asp-for="SingleHeightCm" class="form-control" type="number" min="1" />
+                                    </div>
+                                </div>
+                                <div class="form-text mt-2">
+                                    <i class="bx bx-info-circle me-1"></i>Cân nặng và kích thước thực tế được dùng để tính phí vận chuyển GHN tự động (Tự động chuyển sang GHN Hàng nặng nếu tổng đơn > 20kg).
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KHỐI NHIỀU BIẾN THỂ (2 TẦNG ĐỘNG) -->
+                        <div id="multiVariantBuilderWrap">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-sm btn-primary" id="btnAddOptionGroup">
+                                        <i class="bx bx-plus-circle me-1"></i>Thêm nhóm phân loại
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-soft-info" id="btnToggleFashionPreset">
+                                        <i class="bx bx-closet me-1"></i>Dùng mẫu Thời trang (Màu sắc & Kích cỡ)
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-soft-warning" id="btnFillTechPreset">
+                                        <i class="bx bx-mobile-alt me-1"></i>Mẫu Điện tử (Màu sắc & Dung lượng)
+                                    </button>
+                                </div>
+                                <span class="text-muted small">Tối đa 2 nhóm phân loại (Tự động nhân tổ hợp Cartesian)</span>
+                            </div>
+
+                            <!-- NHÓM PHÂN LOẠI 1 -->
+                            <div class="card border shadow-none mb-3" id="optionGroup1Card">
+                                <div class="card-header bg-light py-2 d-flex align-items-center justify-content-between">
+                                    <span class="fw-bold text-primary">Nhóm phân loại 1</span>
+                                    <span class="badge bg-primary-subtle text-primary">Bắt buộc khi có nhiều biến thể</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3 align-items-start">
+                                        <div class="col-md-4">
+                                            <label class="form-label small">Tên nhóm phân loại 1</label>
+                                            <input asp-for="Option1Name" id="Option1NameInput" class="form-control" placeholder="VD: Màu sắc, Hương vị, Phiên bản..." />
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label class="form-label small">Giá trị phân loại 1 (Nhập rồi nhấn Enter hoặc bấm Thêm)</label>
+                                            <div class="input-group mb-2">
+                                                <input type="text" id="opt1ValueInput" class="form-control" placeholder="VD: Titan Tự Nhiên, Đen, Vị Dâu..." />
+                                                <button type="button" class="btn btn-outline-primary" id="btnAddOpt1Val"><i class="bx bx-plus"></i> Thêm</button>
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-2" id="opt1TagsContainer"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="admin-product-create-pane d-none" data-pane="variants">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-success-subtle border border-success-subtle rounded-3 p-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="avatar-xs">
-                                            <span class="avatar-title rounded-circle bg-success text-white">
-                                                <i class="bx bx-layer"></i>
-                                            </span>
-                                        </span>
-                                        <div>
-                                            <h4 class="card-title mb-0 fs-4">Biến thể & tồn kho</h4>
-                                            <div class="text-muted small">Màu sắc, quy cách và số lượng</div>
+                            <!-- NHÓM PHÂN LOẠI 2 (TÙY CHỌN) -->
+                            <div class="card border shadow-none mb-3 d-none" id="optionGroup2Card">
+                                <div class="card-header bg-light py-2 d-flex align-items-center justify-content-between">
+                                    <span class="fw-bold text-info">Nhóm phân loại 2</span>
+                                    <button type="button" class="btn btn-xs btn-outline-danger" id="btnRemoveOptionGroup2">
+                                        <i class="bx bx-trash me-1"></i>Xóa nhóm 2
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3 align-items-start">
+                                        <div class="col-md-4">
+                                            <label class="form-label small">Tên nhóm phân loại 2</label>
+                                            <input asp-for="Option2Name" id="Option2NameInput" class="form-control" placeholder="VD: Dung lượng, Kích cỡ, Trọng lượng..." />
+                                        </div>
+                                        <div class="col-md-8">
+                                            <label class="form-label small">Giá trị phân loại 2 (Nhập rồi nhấn Enter hoặc bấm Thêm)</label>
+                                            <div class="input-group mb-2">
+                                                <input type="text" id="opt2ValueInput" class="form-control" placeholder="VD: 128GB, 256GB, Size M, Size L..." />
+                                                <button type="button" class="btn btn-outline-info" id="btnAddOpt2Val"><i class="bx bx-plus"></i> Thêm</button>
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-2" id="opt2TagsContainer"></div>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label">Màu sắc</label>
-
-                                    @if (Model.ColorOptions != null && Model.ColorOptions.Count > 0)
-                                    {
-                                        <div class="admin-color-grid" aria-label="Chọn màu sắc">
-                                            @foreach (var opt in Model.ColorOptions)
-                                            {
-                                                var checkedColor = Model.SelectedColorIds != null && Model.SelectedColorIds.Contains(opt.Value);
-                                                var hasIcon = ColorUi.TryGetColorIconUrl(opt.Label, out var iconUrl);
-                                                var hex = string.IsNullOrWhiteSpace(opt.Hex) ? "#D0D5DD" : opt.Hex;
-
-                                                <input class="btn-check" type="checkbox" name="SelectedColorIds" value="@opt.Value" id="color_@opt.Value" checked="@(checkedColor ? "checked" : null)" autocomplete="off" />
-                                                <label class="admin-color-tile" for="color_@opt.Value" title="@opt.Label" data-color-name="@opt.Label">
-                                                    @if (hasIcon)
-                                                    {
-                                                        <img src="@iconUrl" alt="@opt.Label" class="admin-color-icon" />
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="admin-color-swatch" style="--swatch:@hex" aria-hidden="true"></span>
-                                                    }
-                                                    <span class="admin-color-name">@opt.Label</span>
-                                                </label>
-                                            }
+                            <!-- THANH ÁP DỤNG HÀNG LOẠT CHO BIẾN THỂ ĐÃ CHỌN -->
+                            <div class="card bg-light border border-secondary-subtle mb-3">
+                                <div class="card-body py-2.5 px-3">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 pb-2 border-bottom">
+                                        <div class="d-flex flex-wrap align-items-center gap-1.5" id="bulkQuickFilterBar">
+                                            <span class="small fw-bold text-dark me-1"><i class="bx bx-check-shield text-primary me-1"></i>Chọn nhanh biến thể:</span>
                                         </div>
-                                        <div class="form-text">Nếu không chọn màu, hệ thống sẽ tạo biến thể không có màu (Màu -).</div>
-                                    }
-                                    else
-                                    {
-                                        <div class="text-muted">Chưa có màu. Hãy thêm dữ liệu vào bảng <span class="fw-semibold">Colors</span>.</div>
-                                    }
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Kiểu biến thể / tồn kho</label>
-                                    <div class="btn-group admin-seg-toggle" role="group" aria-label="Kiểu biến thể">
-                                        <input class="btn-check" type="radio" asp-for="HasSizeVariants" id="HasSizeVariantsTrue" value="true" />
-                                        <label class="btn btn-outline-primary admin-seg-btn" for="HasSizeVariantsTrue">Nhiều biến thể</label>
-
-                                        <input class="btn-check" type="radio" asp-for="HasSizeVariants" id="HasSizeVariantsFalse" value="false" />
-                                        <label class="btn btn-outline-primary admin-seg-btn" for="HasSizeVariantsFalse">Một biến thể</label>
-                                    </div>
-                                    <div class="form-text">SKU sẽ tự tạo theo dạng <span class="fw-semibold">ProductId-Option</span> (hoặc <span class="fw-semibold">ProductId</span> nếu 1 biến thể).</div>
-                                </div>
-
-                                <div class="mb-4" id="singleStockWrap">
-                                    <label class="form-label">Số lượng tồn kho</label>
-                                    <input asp-for="SingleStockQuantity" class="form-control" type="number" min="0" />
-                                    <span asp-validation-for="SingleStockQuantity" class="text-danger"></span>
-                                </div>
-
-                                <div class="mb-3" id="sizeSchemeWrap">
-                                    <label class="form-label">Quy cách (size / dung tích / khối lượng)</label>
-                                    <select asp-for="SizeScheme" class="form-select" id="sizeSchemeSelect">
-                                        <option value="clothing">Quần áo: size chữ (XS/S/M/L/XL...)</option>
-                                        <option value="shoe">Giày dép: size số (38/39/40...)</option>
-                                        <option value="volume">Mỹ phẩm dạng nước: ml (30ml/50ml...)</option>
-                                        <option value="weight">Dạng bột/khối: g/kg (100g/1kg...)</option>
-                                        <option value="all">Hiển thị tất cả</option>
-                                    </select>
-                                    <div class="form-text">Với quy cách <span class="fw-semibold">ml</span>, bạn có thể nhập theo từng dòng bên dưới (hệ thống sẽ tự tạo option nếu chưa có).</div>
-                                </div>
-
-                                <div class="mb-3 d-none" id="shoePickerWrap">
-                                    <label class="form-label">Chọn size giày</label>
-                                    <div class="d-flex flex-wrap gap-2" id="shoePickerGrid"></div>
-                                    <div class="form-text">Chọn size trước, sau đó nhập số lượng cho các size đã chọn.</div>
-                                </div>
-
-                                <div class="mb-4 d-none" id="volumeOptionsWrap">
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h5 class="mb-0" id="customOptionTitle">Tồn kho theo quy cách tùy chỉnh</h5>
-                                        <button type="button" class="btn btn-sm btn-outline-primary" id="volumeAddRowBtn">Thêm dòng</button>
-                                    </div>
-                                    <div class="text-muted mb-2">Nhập ví dụ: 50ml, 100ml, 1kg... (SKU tự tạo theo dạng ProductId-Option)</div>
-
-                                    <div class="mb-4" id="volumeSamples">
-                                        <div class="fw-semibold small text-primary mb-2"><i class="bx bx-droplet me-1"></i>Gợi ý dung tích:</div>
-                                        <div class="admin-size-grid mb-3">
-                                            <button type="button" class="admin-size-tile" data-sample="30ml">30ml</button>
-                                            <button type="button" class="admin-size-tile" data-sample="50ml">50ml</button>
-                                            <button type="button" class="admin-size-tile" data-sample="100ml">100ml</button>
-                                            <button type="button" class="admin-size-tile" data-sample="200ml">200ml</button>
-                                            <button type="button" class="admin-size-tile" data-sample="500ml">500ml</button>
-                                            <button type="button" class="admin-size-tile" data-sample="1L">1L</button>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" id="chkSyncImgByOpt1" checked />
+                                            <label class="form-check-label small fw-semibold text-primary" for="chkSyncImgByOpt1">
+                                                <i class="bx bx-images me-1"></i>Tự động đồng bộ ảnh cho biến thể cùng Nhóm 1
+                                            </label>
                                         </div>
                                     </div>
-
-                                    <div class="mb-4 d-none" id="weightSamples">
-                                        <div class="fw-semibold small text-success mb-2"><i class="bx bx-package me-1"></i>Gợi ý khối lượng:</div>
-                                        <div class="admin-size-grid mb-3">
-                                            <button type="button" class="admin-size-tile" data-sample="100g">100g</button>
-                                            <button type="button" class="admin-size-tile" data-sample="250g">250g</button>
-                                            <button type="button" class="admin-size-tile" data-sample="500g">500g</button>
-                                            <button type="button" class="admin-size-tile" data-sample="1kg">1kg</button>
-                                            <button type="button" class="admin-size-tile" data-sample="2kg">2kg</button>
-                                            <button type="button" class="admin-size-tile" data-sample="5kg">5kg</button>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-md-2">
+                                            <label class="form-label small mb-1">Giá bán (₫)</label>
+                                            <input type="text" id="bulkPrice" class="form-control form-control-sm vn-money-input" placeholder="Giá bán" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label small mb-1">Giá vốn (₫)</label>
+                                            <input type="text" id="bulkCostPrice" class="form-control form-control-sm vn-money-input" placeholder="Giá vốn" />
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label class="form-label small mb-1">Tồn kho</label>
+                                            <input type="number" id="bulkStock" class="form-control form-control-sm" min="0" placeholder="Kho" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label small mb-1">Cân nặng (g)</label>
+                                            <input type="number" id="bulkWeight" class="form-control form-control-sm" min="1" placeholder="VD: 300" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small mb-1">Dài x Rộng x Cao (cm)</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" id="bulkL" class="form-control" placeholder="D" min="1" />
+                                                <input type="number" id="bulkW" class="form-control" placeholder="R" min="1" />
+                                                <input type="number" id="bulkH" class="form-control" placeholder="C" min="1" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-sm btn-dark w-100 fw-semibold" id="btnApplyBulkVariants">
+                                                <i class="bx bx-check-double me-1"></i>Áp dụng (<span id="bulkSelectedCountBadge">0</span>)
+                                            </button>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
 
-                                    <div class="table-responsive">
-                                        <table class="table table-sm align-middle mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th style="width: 220px;">Dung tích</th>
-                                                    <th>SKU</th>
-                                                    <th style="width: 160px;">Số lượng</th>
-                                                    <th style="width: 60px;"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="volumeOptionsBody">
-                                                @if (Model.VolumeOptionStocks != null && Model.VolumeOptionStocks.Count > 0)
-                                                {
-                                                    for (var i = 0; i < Model.VolumeOptionStocks.Count; i++)
-                                                    {
-                                                        <tr data-volume-row>
-                                                            <td>
-                                                                <input asp-for="VolumeOptionStocks[i].OptionName" class="form-control form-control-sm" placeholder="VD: 50ml" />
-                                                            </td>
-                                                            <td>
-                                                                <span class="text-muted">Tự tạo: <span class="fw-semibold">ID-OPTION</span></span>
-                                                            </td>
-                                                            <td>
-                                                                <input asp-for="VolumeOptionStocks[i].StockQuantity" class="form-control form-control-sm" type="number" min="0" />
-                                                            </td>
-                                                            <td class="text-end">
-                                                                <button type="button" class="btn btn-sm btn-outline-danger" data-volume-remove>×</button>
-                                                            </td>
-                                                        </tr>
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    <tr data-volume-row>
-                                                        <td>
-                                                            <input name="VolumeOptionStocks[0].OptionName" class="form-control form-control-sm" placeholder="VD: 50ml" />
-                                                        </td>
-                                                        <td>
-                                                            <span class="text-muted">Tự tạo: <span class="fw-semibold">ID-OPTION</span></span>
-                                                        </td>
-                                                        <td>
-                                                            <input name="VolumeOptionStocks[0].StockQuantity" class="form-control form-control-sm" type="number" min="0" value="0" />
-                                                        </td>
-                                                        <td class="text-end">
-                                                            <button type="button" class="btn btn-sm btn-outline-danger" data-volume-remove>×</button>
-                                                        </td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    <template id="volumeOptionRowTemplate">
-                                        <tr data-volume-row>
-                                            <td>
-                                                <input class="form-control form-control-sm" name="VolumeOptionStocks[__index__].OptionName" placeholder="VD: 50ml" />
-                                            </td>
-                                            <td>
-                                                <span class="text-muted">Tự tạo: <span class="fw-semibold">ID-OPTION</span></span>
-                                            </td>
-                                            <td>
-                                                <input class="form-control form-control-sm" type="number" min="0" name="VolumeOptionStocks[__index__].StockQuantity" value="0" />
-                                            </td>
-                                            <td class="text-end">
-                                                <button type="button" class="btn btn-sm btn-outline-danger" data-volume-remove>×</button>
+                            <!-- BẢNG TỔ HỢP BIẾN THỂ CARTESIAN -->
+                            <div class="table-responsive border rounded-3">
+                                <table class="table table-sm table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3 text-center" style="width: 38px;">
+                                                <input type="checkbox" class="form-check-input" id="chkAllVariants" checked title="Chọn / Bỏ chọn tất cả" />
+                                            </th>
+                                            <th id="thOpt1">Phân loại 1</th>
+                                            <th id="thOpt2">Phân loại 2</th>
+                                            <th style="width: 110px;">SKU</th>
+                                            <th style="width: 125px;">Giá bán (₫)</th>
+                                            <th style="width: 120px;">Giá vốn (₫)</th>
+                                            <th style="width: 82px;">Tồn kho</th>
+                                            <th style="width: 85px;">Nặng (g)</th>
+                                            <th style="width: 150px;">D×R×C (cm)</th>
+                                            <th style="width: 145px;">Ảnh riêng</th>
+                                            <th class="text-center" style="width: 55px;">Bán</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dynamicVariantsBody">
+                                        <tr>
+                                            <td colspan="11" class="text-center text-muted py-4">
+                                                Hãy thêm giá trị ở Nhóm phân loại 1 (và Nhóm 2 nếu có) để sinh bảng tổ hợp biến thể.
                                             </td>
                                         </tr>
-                                    </template>
-
-                                    <span asp-validation-for="VolumeOptionStocks" class="text-danger"></span>
-                                </div>
-
-                                <div class="mb-4" id="sizeStocksWrap">
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h5 class="mb-0">Tồn kho theo quy cách</h5>
-                                    </div>
-                                    <div class="text-muted mb-2">Nhập số lượng theo quy cách (size số / size chữ / ml / g...). SKU tự tạo theo dạng ProductId-Option.</div>
-
-                                    <div class="mb-3" id="sizePickerWrap">
-                                        <label class="form-label mb-2">Chọn quy cách đang bán</label>
-                                        <div class="admin-size-grid" id="sizePickerGrid" aria-label="Chọn size/quy cách"></div>
-                                        <div class="form-text">Chọn size/quy cách trước, sau đó nhập số lượng ở bảng bên dưới.</div>
-                                    </div>
-
-                                    <div class="alert alert-info py-2 px-3 d-none" id="schemeEmptyAlert">
-                                        Không có quy cách phù hợp với lựa chọn hiện tại. Hãy thêm dữ liệu vào bảng <span class="fw-semibold">Size</span> (VD: 38, 39, 40 hoặc 50ml...).
-                                    </div>
-
-                                    <div class="table-responsive">
-                                        <table class="table table-sm align-middle mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>Màu sắc</th>
-                                                    <th>Kích cỡ</th>
-                                                    <th>SKU</th>
-                                                    <th style="width: 140px;">Số lượng</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="initialSizeStocksBody">
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    <div class="form-text">SKU tự tạo sau khi bạn bấm tạo sản phẩm.</div>
-                                    <span asp-validation-for="InitialSizeStocks" class="text-danger"></span>
-                                </div>
-
-                                <template id="initialSizeStockRowTemplate">
-                                    <tr data-size-row data-color-id="__colorId__" data-size-id="__sizeId__">
-                                        <td>
-                                            <input type="hidden" name="InitialSizeStocks[__index__].ColorId" value="__colorId__" />
-                                            <input type="hidden" name="InitialSizeStocks[__index__].ColorName" value="__colorName__" />
-                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle color-label">__colorName__</span>
-                                        </td>
-                                        <td>
-                                            <input type="hidden" name="InitialSizeStocks[__index__].SizeId" value="__sizeId__" />
-                                            <input type="hidden" name="InitialSizeStocks[__index__].SizeName" value="__sizeName__" />
-                                            <input type="hidden" name="InitialSizeStocks[__index__].IsSelected" value="__isSelected__" class="size-is-selected" />
-                                            <span class="fw-semibold size-name">__sizeName__</span>
-                                        </td>
-                                        <td>
-                                            <span class="text-muted small">SKU: <span class="fw-semibold">PROD-OPTION</span></span>
-                                        </td>
-                                        <td>
-                                            <input name="InitialSizeStocks[__index__].StockQuantity" class="form-control form-control-sm" type="number" min="0" value="__qty__" />
-                                        </td>
-                                    </tr>
-                                </template>
-
+                                    </tbody>
+                                </table>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="admin-product-create-pane d-none" data-pane="specs">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-secondary-subtle border border-secondary-subtle rounded-3 p-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="avatar-xs">
-                                            <span class="avatar-title rounded-circle bg-secondary text-white">
-                                                <i class="bx bx-ruler"></i>
-                                            </span>
-                                        </span>
-                                        <div>
-                                            <h4 class="card-title mb-0 fs-4">Size guide</h4>
-                                            <div class="text-muted small">Thông số theo size để khách dễ chọn</div>
-                                        </div>
-                                    </div>
+                    <!-- TAB 5: BẢNG SIZE GUIDE -->
+                    <div class="admin-product-create-pane d-none" data-pane="specs">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 bg-secondary-subtle border border-secondary-subtle rounded-3 p-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="avatar-xs">
+                                    <span class="avatar-title rounded-circle bg-secondary text-white">
+                                        <i class="bx bx-ruler"></i>
+                                    </span>
+                                </span>
+                                <div>
+                                    <h4 class="card-title mb-0 fs-5">Bảng quy đổi kích cỡ (Size Guide)</h4>
+                                    <div class="text-muted small">Chỉ hiển thị đối với các danh mục có bật cờ Áp dụng Size Guide (Thời trang, Giày dép...)</div>
                                 </div>
-
-                                <div class="d-flex align-items-center justify-content-between mb-3">
-                                    <div class="text-muted small">Thông số (cm) theo size đã chọn ở bước trước</div>
-                                    <select class="form-select form-select-sm" style="width: auto;" id="sizeGuideSchemeSelect">
-                                        <option value="ao">Áo (Shirt)</option>
-                                        <option value="quan">Quần (Pants)</option>
-                                        <option value="shoe">Giày / Dép</option>
-                                        <option value="all">Tất cả</option>
-                                    </select>
-                                </div>
-
-                                <div class="alert alert-info py-2 px-3 d-none" id="sizeGuideEmptyAlert">
-                                    Chưa có size nào được chọn. Hãy quay lại bước <span class="fw-semibold">Biến thể & tồn kho</span> và nhập số lượng.
-                                </div>
-
-                                <div class="table-responsive" id="sizeGuideTableWrap">
-                                    <table class="table table-sm align-middle mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th style="width: 110px;">Size</th>
-                                                <th class="sg-col-ao sg-col-quan sg-col-shared" style="width: 140px;">C.Cao người</th>
-                                                <th class="sg-col-ao sg-col-quan sg-col-shared" style="width: 140px;">C.Nặng người</th>
-
-                                                <th class="sg-col-ao" style="width: 100px;">Vai (cm)</th>
-                                                <th class="sg-col-ao" style="width: 110px;">Ngực (cm)</th>
-                                                <th class="sg-col-quan d-none" style="width: 110px;">Eo (cm)</th>
-                                                <th class="sg-col-quan d-none" style="width: 110px;">Mông (cm)</th>
-                                                <th class="sg-col-ao sg-col-quan sg-col-shared" style="width: 100px;">Dài (cm)</th>
-                                                <th class="sg-col-ao sg-col-quan sg-col-shared" style="width: 100px;">Rộng (cm)</th>
-
-                                                <th class="sg-col-shoe d-none" style="width: 160px;">Chiều dài chân (cm)</th>
-
-                                                <th>Ghi chú / Thông số</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="sizeGuideBody">
-                                            <!-- Generated by JS -->
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <template id="sizeGuideRowTemplate">
-                                    <tr data-size-guide-row data-size-label="__sizeLabel__">
-                                        <td>
-                                            <input type="hidden" name="SizeGuide[__index__].SizeLabel" value="__sizeLabel__" />
-                                            <span class="fw-semibold">__sizeLabel__</span>
-                                        </td>
-                                        <td class="sg-col-ao sg-col-quan sg-col-shared"><input class="form-control form-control-sm" name="SizeGuide[__index__].HeightRange" value="" placeholder="160-170" /></td>
-                                        <td class="sg-col-ao sg-col-quan sg-col-shared"><input class="form-control form-control-sm" name="SizeGuide[__index__].WeightRange" value="" placeholder="55-65" /></td>
-
-                                        <td class="sg-col-ao"><input class="form-control form-control-sm" name="SizeGuide[__index__].ShoulderWidth" value="" placeholder="Vai" /></td>
-                                        <td class="sg-col-ao"><input class="form-control form-control-sm" name="SizeGuide[__index__].Bust" value="" placeholder="Ngực" /></td>
-                                        <td class="sg-col-quan d-none"><input class="form-control form-control-sm" name="SizeGuide[__index__].Waist" value="" placeholder="Eo" /></td>
-                                        <td class="sg-col-quan d-none"><input class="form-control form-control-sm" name="SizeGuide[__index__].Hip" value="" placeholder="Mông" /></td>
-
-                                        <td class="sg-col-ao sg-col-quan sg-col-shared"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingLength" value="" placeholder="Dài" /></td>
-                                        <td class="sg-col-ao sg-col-quan sg-col-shared"><input class="form-control form-control-sm" name="SizeGuide[__index__].ClothingWidth" value="" placeholder="Rộng" /></td>
-
-                                        <td class="sg-col-shoe d-none"><input class="form-control form-control-sm" name="SizeGuide[__index__].ShoeLength" value="" placeholder="Dài chân" /></td>
-
-                                        <td><input class="form-control form-control-sm" name="SizeGuide[__index__].Note" value="" placeholder="..." /></td>
-                                    </tr>
-                                </template>
                             </div>
+                            <button type="button" class="btn btn-sm btn-primary" id="btnAddSizeGuideRow">
+                                <i class="bx bx-plus me-1"></i>Thêm dòng Size
+                            </button>
+                        </div>
+
+                        <div class="table-responsive" id="sizeGuideTableWrap">
+                            <table class="table table-sm align-middle mb-0 border">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 100px;">Size</th>
+                                        <th>Cao (cm)</th>
+                                        <th>Nặng (kg)</th>
+                                        <th>Vai (cm)</th>
+                                        <th>Ngực (cm)</th>
+                                        <th>Eo (cm)</th>
+                                        <th>Mông (cm)</th>
+                                        <th>Dài (cm)</th>
+                                        <th>Dài chân (cm)</th>
+                                        <th>Ghi chú</th>
+                                        <th style="width: 45px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sizeGuideBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
 
                 </div>
             </div>
@@ -591,262 +628,63 @@
     <partial name="_ValidationScriptsPartial" />
 
     <style>
-        #admin-product-create-form .form-label {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .admin-color-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-            gap: .75rem;
-        }
-
-        .admin-color-tile {
-            display: flex;
-            align-items: center;
-            gap: .6rem;
-            padding: .6rem .75rem;
-            border: 1px solid var(--bs-border-color);
-            border-radius: .75rem;
-            background: var(--bs-body-bg);
-            box-shadow: var(--bs-box-shadow-sm);
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .admin-color-tile:hover {
-            border-color: rgba(var(--bs-primary-rgb), .45);
-            box-shadow: var(--bs-box-shadow);
-        }
-
-        .btn-check:checked + .admin-color-tile {
-            border-color: rgba(var(--bs-primary-rgb), .85);
-            box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
-        }
-
-        .admin-color-swatch {
-            width: 28px;
-            height: 28px;
-            border-radius: 999px;
-            background: var(--swatch);
-            border: 1px solid rgba(var(--bs-body-color-rgb), .18);
-            flex: 0 0 auto;
-        }
-
-        .admin-color-icon {
-            width: 28px;
-            height: 28px;
-            flex: 0 0 auto;
-        }
-
-        .admin-color-name {
-            font-weight: 600;
-            text-transform: capitalize;
-            line-height: 1.2;
-        }
-
-        .admin-seg-toggle {
-            width: 100%;
-        }
-
-        #admin-product-create-form .admin-seg-toggle > .admin-seg-btn {
-            flex: 1 1 0;
-            padding: .6rem 1rem;
-            font-weight: 700;
-        }
-
-        #admin-product-create-form .admin-seg-toggle > .admin-seg-btn:first-of-type {
-            border-top-left-radius: .85rem !important;
-            border-bottom-left-radius: .85rem !important;
-        }
-
-        #admin-product-create-form .admin-seg-toggle > .admin-seg-btn:last-of-type {
-            border-top-right-radius: .85rem !important;
-            border-bottom-right-radius: .85rem !important;
-        }
-
-        .admin-size-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
-            gap: .5rem;
-        }
-
-        .admin-size-tile {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: .55rem .5rem;
-            border: 1px solid var(--bs-border-color);
-            border-radius: .75rem;
-            background: var(--bs-body-bg);
-            box-shadow: var(--bs-box-shadow-sm);
-            cursor: pointer;
-            user-select: none;
-            font-weight: 700;
-        }
-
-        .admin-size-tile:hover {
-            border-color: rgba(var(--bs-primary-rgb), .45);
-            box-shadow: var(--bs-box-shadow);
-        }
-
-        .btn-check:checked + .admin-size-tile {
-            border-color: rgba(var(--bs-primary-rgb), .85);
-            background: rgba(var(--bs-primary-rgb), .05);
-            box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .12);
-        }
-
-        button.admin-size-tile {
-            font-size: .85rem;
-            transition: all .2s ease;
-        }
-
-        button.admin-size-tile:active {
-            transform: scale(0.95);
-            background: rgba(var(--bs-primary-rgb), .1);
-        }
-
-        #shoePickerGrid .btn {
-            min-width: 3.25rem;
-        }
-
+        #admin-product-create-form .form-label { font-size: 0.92rem; font-weight: 600; }
+        .admin-seg-toggle { width: 100%; }
+        .admin-seg-toggle > .admin-seg-btn { flex: 1 1 0; padding: .6rem 1rem; font-weight: 700; }
         .admin-image-box {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            border: 2px dashed rgba(var(--bs-primary-rgb), .35);
-            border-radius: .75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background: linear-gradient(180deg, rgba(var(--bs-primary-rgb), .06), rgba(var(--bs-primary-rgb), .02));
-            cursor: pointer;
-            position: relative;
-            box-shadow: var(--bs-box-shadow-sm);
+            width: 100%; aspect-ratio: 1 / 1; border: 2px dashed rgba(var(--bs-primary-rgb), .35);
+            border-radius: .75rem; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; background: linear-gradient(180deg, rgba(var(--bs-primary-rgb), .06), rgba(var(--bs-primary-rgb), .02));
+            cursor: pointer; position: relative;
         }
-
-        .admin-image-box:hover,
-        .admin-image-box:focus-within {
-            border-color: rgba(var(--bs-primary-rgb), .65);
-            box-shadow: var(--bs-box-shadow);
-        }
-
-        .admin-image-box__empty {
-            text-align: center;
-            padding: 1rem;
-        }
-
-        .admin-image-box__img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            object-position: center;
-            background: var(--bs-body-bg);
-        }
-
+        .admin-image-box__empty { text-align: center; padding: 1rem; }
+        .admin-image-box__img { width: 100%; height: 100%; object-fit: contain; background: var(--bs-body-bg); }
         .admin-image-box__overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: .5rem;
-            background: rgba(var(--bs-body-color-rgb), .10);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity .15s ease-in-out;
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            gap: .5rem; background: rgba(0,0,0,.15); opacity: 0; pointer-events: none; transition: opacity .15s;
         }
-
-        .admin-image-box.has-image:hover .admin-image-box__overlay,
-        .admin-image-box.has-image:focus-within .admin-image-box__overlay {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .admin-image-box:not(.has-image) .admin-image-box__overlay {
-            display: none;
-        }
-
-        .admin-image-strip {
-            --slot-gap: .75rem;
-            --slot-size: calc((100% - (var(--slot-gap) * 3)) / 3.5);
-            display: flex;
-            gap: var(--slot-gap);
-            overflow-x: auto;
-            padding: .25rem;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-        }
-
+        .admin-image-box.has-image:hover .admin-image-box__overlay { opacity: 1; pointer-events: auto; }
+        .admin-image-box:not(.has-image) .admin-image-box__overlay { display: none; }
+        .admin-image-strip { display: flex; gap: .75rem; overflow-x: auto; padding: .25rem; }
         .admin-image-slot {
-            flex: 0 0 var(--slot-size);
-            max-width: var(--slot-size);
-            aspect-ratio: 1 / 1;
-            border: 1px solid var(--bs-border-color);
-            border-radius: .75rem;
-            overflow: hidden;
-            background: var(--bs-body-bg);
-            position: relative;
-            scroll-snap-align: start;
-            box-shadow: var(--bs-box-shadow-sm);
+            flex: 0 0 110px; height: 110px; border: 1px solid var(--bs-border-color);
+            border-radius: .75rem; overflow: hidden; background: var(--bs-body-bg); position: relative;
         }
-
-        .admin-image-slot:hover {
-            border-color: rgba(var(--bs-primary-rgb), .45);
-            box-shadow: var(--bs-box-shadow);
-        }
-
-        .admin-image-slot--empty,
-        .admin-image-slot--add {
+        .admin-image-slot--empty, .admin-image-slot--add {
             border: 2px dashed rgba(var(--bs-primary-rgb), .35);
-            background: linear-gradient(180deg, rgba(var(--bs-primary-rgb), .06), rgba(var(--bs-primary-rgb), .02));
+            background: rgba(var(--bs-primary-rgb), .03);
         }
-
-        .admin-image-slot button {
-            border: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            text-align: center;
-            cursor: pointer;
+        .admin-image-slot button { border: 0; padding: 0; width: 100%; height: 100%; background: transparent; cursor: pointer; }
+        .admin-image-slot__img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .admin-image-slot__remove { position: absolute; top: .25rem; right: .25rem; z-index: 2; }
+        .opt-chip {
+            display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+            border-radius: 50rem; font-weight: 600; font-size: 0.85rem;
+            background: var(--bs-primary-subtle); color: var(--bs-primary-emphasis);
+            border: 1px solid var(--bs-primary-border-subtle);
         }
-
-        .admin-image-slot__img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            object-position: center;
-            background: var(--bs-body-bg);
-            display: block;
+        .opt-chip-2 {
+            background: var(--bs-info-subtle); color: var(--bs-info-emphasis);
+            border: 1px solid var(--bs-info-border-subtle);
         }
-
-        .admin-image-slot__remove {
-            position: absolute;
-            top: .25rem;
-            right: .25rem;
-            z-index: 2;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity .12s ease-in-out;
-        }
-
-        .admin-image-slot:hover .admin-image-slot__remove {
-            opacity: 1;
-            pointer-events: auto;
+        .opt-chip button {
+            border: 0; background: transparent; padding: 0; line-height: 1;
+            font-size: 1rem; color: inherit; cursor: pointer;
         }
     </style>
 
-    <script id="js-all-sizes-data" type="application/json">
-        @Html.Raw(global::System.Text.Json.JsonSerializer.Serialize(Model.InitialSizeStocks ?? new List<DOAN_BANHANG.ViewModels.ProductAdminInitialSizeStockVm>(), new global::System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = global::System.Text.Json.JsonNamingPolicy.CamelCase }))
+    <script>
+        const initialOpt1Values = @Html.Raw(Json.Serialize(Model.Option1Values ?? new List<string>()));
+        const initialOpt2Values = @Html.Raw(Json.Serialize(Model.Option2Values ?? new List<string>()));
+        const initialVariants = @Html.Raw(Json.Serialize(Model.Variants ?? new List<DOAN_BANHANG.ViewModels.ProductAdminVariantRowVm>()));
+        const initialAttributes = @Html.Raw(Json.Serialize(Model.AttributeValues ?? new List<DOAN_BANHANG.ViewModels.ProductAdminAttributeInputVm>()));
+        const initialSizeGuide = @Html.Raw(Json.Serialize(Model.SizeGuide ?? new List<DOAN_BANHANG.ViewModels.ProductAdminSizeGuideRowVm>()));
     </script>
 
     <script>
         (() => {
+            // ── 1. Tab Navigation ──
             const menu = document.getElementById('admin-product-create-menu');
-            if (!menu) return;
-
             const buttons = Array.from(menu.querySelectorAll('button[data-tab]'));
             const panes = Array.from(document.querySelectorAll('.admin-product-create-pane[data-pane]'));
 
@@ -856,7 +694,6 @@
                     b.classList.toggle('active', isActive);
                     b.setAttribute('aria-selected', isActive ? 'true' : 'false');
                 });
-
                 panes.forEach(p => {
                     const isActive = p.getAttribute('data-pane') === key;
                     p.classList.toggle('d-none', !isActive);
@@ -864,51 +701,111 @@
             }
 
             menu.addEventListener('click', (e) => {
-                const t = e.target;
-                if (!(t instanceof HTMLElement)) return;
-                const btn = t.closest('button[data-tab]');
+                const btn = e.target.closest('button[data-tab]');
                 if (!btn) return;
-                const key = btn.getAttribute('data-tab') || '';
-                if (!key) return;
-                activate(key);
+                activate(btn.getAttribute('data-tab'));
             });
-
-            // Default open
             activate('info');
 
-            // If the server returned validation errors, jump to the pane that contains the first error.
-            const firstFieldError = Array.from(document.querySelectorAll('.field-validation-error'))
-                .find(el => (el?.textContent || '').trim().length > 0);
-            if (firstFieldError) {
-                const pane = firstFieldError.closest('.admin-product-create-pane[data-pane]');
-                const key = pane ? (pane.getAttribute('data-pane') || '') : '';
-                if (key) activate(key);
-            }
-        })();
-
-        // ── Category Cascade ──
-        (() => {
+            // ── 2. Category Cascader & AJAX EAV Attributes ──
             const categoryCascader = document.getElementById('categoryCascader');
             const finalCategoryId = document.getElementById('finalCategoryId');
             const categoryBreadcrumb = document.getElementById('categoryBreadcrumb');
+            const eavContainer = document.getElementById('eavAttributesContainer');
+            const eavBadge = document.getElementById('eavAttributeCountBadge');
+            const tabBtnSizeGuide = document.getElementById('tabBtnSizeGuide');
+            const hasSizeGuideInput = document.getElementById('HasSizeGuideInput');
+            const isReturnableInput = document.getElementById('IsReturnableInput');
+
             let allCats = [];
+            const savedAttrMap = new Map();
+            if (Array.isArray(initialAttributes)) {
+                initialAttributes.forEach(a => {
+                    const id = a.categoryAttributeId || a.CategoryAttributeId;
+                    const val = a.value || a.Value || '';
+                    if (id) savedAttrMap.set(Number(id), val);
+                });
+            }
+
+            async function loadCategoryConfig(catId, isUserChange) {
+                if (!catId || Number(catId) <= 0) {
+                    eavContainer.innerHTML = `<div class="text-muted small text-center py-3">Hãy chọn danh mục ngành hàng ở trên để hiển thị các ô nhập thông số kỹ thuật tương ứng.</div>`;
+                    eavBadge.textContent = '0 thuộc tính';
+                    return;
+                }
+
+                try {
+                    // Save currently typed attribute values before re-rendering
+                    eavContainer.querySelectorAll('input[data-attr-id]').forEach(inp => {
+                        savedAttrMap.set(Number(inp.dataset.attrId), inp.value);
+                    });
+
+                    const res = await fetch(`@Url.Action("GetCategoryConfig", "Products", new { area = "Admin" })?categoryId=${catId}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+
+                    const hasSg = !!data.hasSizeGuide;
+                    if (tabBtnSizeGuide) {
+                        tabBtnSizeGuide.classList.toggle('d-none', !hasSg);
+                        tabBtnSizeGuide.classList.toggle('d-flex', hasSg);
+                    }
+                    if (hasSizeGuideInput) hasSizeGuideInput.value = hasSg ? 'true' : 'false';
+
+                    if (isUserChange && isReturnableInput && data.isReturnableDefault !== undefined) {
+                        isReturnableInput.checked = !!data.isReturnableDefault;
+                    }
+
+                    const attrs = Array.isArray(data.attributes) ? data.attributes : [];
+                    eavBadge.textContent = `${attrs.length} thuộc tính`;
+
+                    if (attrs.length === 0) {
+                        eavContainer.innerHTML = `<div class="text-muted small text-center py-3">Danh mục này chưa cấu hình thuộc tính kỹ thuật riêng. (Admin có thể thêm trong mục Quản lý Danh mục).</div>`;
+                        return;
+                    }
+
+                    let html = '<div class="row g-3">';
+                    attrs.forEach((attr, idx) => {
+                        const attrId = attr.categoryAttributeId;
+                        const name = attr.attributeName || attr.name || '';
+                        const unit = attr.unit || '';
+                        const val = savedAttrMap.get(Number(attrId)) ?? (attr.value || '');
+
+                        html += `
+                            <div class="col-md-6">
+                                <input type="hidden" name="AttributeValues[${idx}].CategoryAttributeId" value="${attrId}" />
+                                <input type="hidden" name="AttributeValues[${idx}].AttributeName" value="${name.replace(/"/g, '&quot;')}" />
+                                <input type="hidden" name="AttributeValues[${idx}].Unit" value="${unit.replace(/"/g, '&quot;')}" />
+                                <label class="form-label small fw-semibold mb-1">${name}</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control" name="AttributeValues[${idx}].Value" data-attr-id="${attrId}" value="${val.replace(/"/g, '&quot;')}" placeholder="Nhập ${name.toLowerCase()}..." />
+                                    ${unit ? `<span class="input-group-text bg-light">${unit}</span>` : ''}
+                                </div>
+                            </div>`;
+                    });
+                    html += '</div>';
+                    eavContainer.innerHTML = html;
+                } catch (e) {
+                    console.error('Lỗi tải cấu hình danh mục:', e);
+                }
+            }
 
             async function initCategoryCascade() {
                 try {
                     const res = await fetch(`@Url.Action("AllCategories", "Products", new { area = "Admin" })`);
                     allCats = await res.json();
-                    
                     const catMap = new Map();
                     allCats.forEach(c => catMap.set(c.id, c));
-                    
+
                     let currentId = parseInt(finalCategoryId.value) || 0;
                     let path = [];
                     while (currentId > 0 && catMap.has(currentId)) {
                         path.unshift(currentId);
                         currentId = catMap.get(currentId).parentId || 0;
                     }
-                    
                     renderCascader(path);
+                    if (finalCategoryId.value) {
+                        await loadCategoryConfig(finalCategoryId.value, false);
+                    }
                 } catch (err) {
                     console.error("Lỗi khi tải danh mục", err);
                 }
@@ -916,35 +813,37 @@
 
             function renderCascader(path) {
                 categoryCascader.innerHTML = '';
-                
                 let parentId = null;
                 let currentLevel = 0;
-                
+
                 for (let i = 0; i < path.length; i++) {
                     const selectedId = path[i];
                     renderSelect(parentId, selectedId, currentLevel);
                     parentId = selectedId;
                     currentLevel++;
                 }
-                
+
                 const hasChildren = allCats.some(c => c.parentId === parentId);
                 if (hasChildren || path.length === 0) {
                     renderSelect(parentId, "", currentLevel);
                 }
-                
-                updateBreadcrumb(path);
+
+                if (path.length === 0) {
+                    categoryBreadcrumb.textContent = "Chưa chọn danh mục";
+                } else {
+                    const names = path.map(id => allCats.find(c => c.id === id)?.name || "");
+                    categoryBreadcrumb.innerHTML = "Đường dẫn: <b>" + names.join(" &rsaquo; ") + "</b>";
+                }
             }
 
             function renderSelect(parentId, selectedValue, level) {
                 const children = allCats.filter(c => c.parentId === parentId);
                 if (children.length === 0) return;
-                
+
                 const select = document.createElement('select');
                 select.className = 'form-select';
                 select.style.flex = "1";
                 select.style.minWidth = "180px";
-                select.dataset.level = level;
-                
                 select.innerHTML = `<option value="">-- Chọn danh mục cấp ${level + 1} --</option>`;
                 children.forEach(c => {
                     const opt = document.createElement('option');
@@ -953,7 +852,7 @@
                     if (c.id == selectedValue) opt.selected = true;
                     select.appendChild(opt);
                 });
-                
+
                 select.addEventListener('change', (e) => {
                     const newPath = [];
                     const selects = Array.from(categoryCascader.querySelectorAll('select'));
@@ -961,869 +860,773 @@
                         if (s.value) newPath.push(parseInt(s.value));
                         if (s === e.target) break;
                     }
-                    
-                    finalCategoryId.value = newPath.length > 0 ? newPath[newPath.length - 1] : '';
+                    const leafId = newPath.length > 0 ? newPath[newPath.length - 1] : '';
+                    finalCategoryId.value = leafId;
                     renderCascader(newPath);
-                    if (typeof window.autoDetectScheme === 'function') window.autoDetectScheme();
+                    loadCategoryConfig(leafId, true);
                 });
-                
+
                 categoryCascader.appendChild(select);
             }
 
-            function updateBreadcrumb(path) {
-                if (path.length === 0) {
-                    categoryBreadcrumb.textContent = "Chưa chọn danh mục";
-                    return;
-                }
-                const names = path.map(id => allCats.find(c => c.id === id)?.name || "");
-                categoryBreadcrumb.innerHTML = "Đường dẫn: <b>" + names.join(" &rsaquo; ") + "</b>";
-            }
+            initCategoryCascade();
 
-            initCategoryCascade().then(() => {
-                if (typeof window.autoDetectScheme === 'function') window.autoDetectScheme();
-            });
-        })();
-
-        // Image pickers (primary + gallery slots)
-        (() => {
-            // Primary
+            // ── 3. Images Picker ──
             const primaryInput = document.getElementById('primaryImageInput');
             const primaryBox = document.getElementById('primaryImageBox');
             const primaryEmpty = document.getElementById('primaryImageEmpty');
             const primaryImg = document.getElementById('primaryImagePreviewImg');
-            const primaryChooseBtn = document.getElementById('primaryChooseBtn');
-            const primaryOverlayChangeBtn = document.getElementById('primaryOverlayChangeBtn');
-            const primaryOverlayRemoveBtn = document.getElementById('primaryOverlayRemoveBtn');
 
-            function openPrimaryPicker() {
-                if (!primaryInput) return;
-                primaryInput.click();
-            }
-
-            function renderPrimary() {
+            primaryBox?.addEventListener('click', (e) => {
+                if (!e.target.closest('#primaryOverlayRemoveBtn')) primaryInput?.click();
+            });
+            primaryInput?.addEventListener('change', () => {
                 const file = primaryInput?.files?.[0];
-                if (!primaryImg || !primaryEmpty || !primaryBox) return;
-
-                if (!file) {
-                    primaryBox.classList.remove('has-image');
-                    primaryImg.removeAttribute('src');
-                    primaryImg.classList.add('d-none');
-                    primaryEmpty.classList.remove('d-none');
-                    return;
-                }
-
+                if (!file) return;
                 primaryImg.src = URL.createObjectURL(file);
                 primaryImg.classList.remove('d-none');
                 primaryEmpty.classList.add('d-none');
                 primaryBox.classList.add('has-image');
-            }
-
-            function clearPrimary() {
-                if (!primaryInput || !primaryImg || !primaryEmpty || !primaryBox) return;
+            });
+            document.getElementById('primaryOverlayRemoveBtn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
                 primaryInput.value = '';
                 primaryImg.removeAttribute('src');
                 primaryImg.classList.add('d-none');
                 primaryEmpty.classList.remove('d-none');
                 primaryBox.classList.remove('has-image');
-            }
-
-            if (primaryBox) {
-                primaryBox.addEventListener('click', openPrimaryPicker);
-                primaryBox.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') openPrimaryPicker();
-                });
-            }
-            primaryChooseBtn?.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openPrimaryPicker();
             });
-            primaryOverlayChangeBtn?.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openPrimaryPicker();
-            });
-            primaryOverlayRemoveBtn?.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                clearPrimary();
-            });
-            primaryInput?.addEventListener('change', renderPrimary);
 
-            // In case browser restores selected file on refresh
-            renderPrimary();
-
-            // Gallery
             const contentMaster = document.getElementById('contentImagesMaster');
             const contentPickerMany = document.getElementById('contentImagesPickerMany');
             const contentPickerSingle = document.getElementById('contentImagesPickerSingle');
             const contentSlots = document.getElementById('contentSlots');
-            const contentAddManyBtn = document.getElementById('contentAddManyBtn');
-
-            let slotCount = 3;
+            let slotCount = 4;
             let pendingSingleIndex = -1;
 
-            function getFiles() {
-                return contentMaster?.files ? Array.from(contentMaster.files) : [];
-            }
-
+            function getFiles() { return contentMaster?.files ? Array.from(contentMaster.files) : []; }
             function setFiles(files) {
-                if (!contentMaster) return;
                 const dt = new DataTransfer();
                 for (const f of files) dt.items.add(f);
                 contentMaster.files = dt.files;
             }
-
-            function addFiles(newFiles) {
-                const current = getFiles();
-                setFiles(current.concat(newFiles));
-            }
-
-            function removeAt(index) {
-                const current = getFiles();
-                if (index < 0 || index >= current.length) return;
-                current.splice(index, 1);
-                setFiles(current);
-            }
-
-            function ensureSlotsFor(filesCount) {
-                const minSlots = 3;
-                slotCount = Math.max(slotCount, filesCount, minSlots);
-            }
-
-            function openManyPicker() {
-                contentPickerMany?.click();
-            }
-
-            function openSinglePicker(slotIndex) {
-                pendingSingleIndex = slotIndex;
-                contentPickerSingle?.click();
-            }
-
             function renderSlots() {
                 if (!contentSlots) return;
                 const files = getFiles();
-                ensureSlotsFor(files.length);
-
+                slotCount = Math.max(slotCount, files.length, 4);
                 contentSlots.innerHTML = '';
-
-                function renderAddTile() {
-                    const addWrap = document.createElement('div');
-                    addWrap.className = 'admin-image-slot admin-image-slot--add';
-                    const addBtn = document.createElement('button');
-                    addBtn.type = 'button';
-                    addBtn.innerHTML = '<div class="fw-semibold">+</div><div class="text-muted small">Thêm ô</div>';
-                    addBtn.addEventListener('click', () => {
-                        slotCount += 1;
-                        renderSlots();
-                    });
-                    addWrap.appendChild(addBtn);
-                    contentSlots.appendChild(addWrap);
-                }
-
                 for (let i = 0; i < slotCount; i++) {
                     const wrap = document.createElement('div');
                     wrap.className = 'admin-image-slot';
-
                     if (i < files.length) {
                         const img = document.createElement('img');
                         img.className = 'admin-image-slot__img';
-                        img.alt = 'Preview';
                         img.src = URL.createObjectURL(files[i]);
                         wrap.appendChild(img);
-
-                        const removeBtn = document.createElement('button');
-                        removeBtn.type = 'button';
-                        removeBtn.className = 'btn btn-sm btn-danger admin-image-slot__remove';
-                        removeBtn.textContent = '×';
-                        removeBtn.addEventListener('click', (e) => {
-                            e.preventDefault();
+                        const rm = document.createElement('button');
+                        rm.type = 'button';
+                        rm.className = 'btn btn-xs btn-danger admin-image-slot__remove';
+                        rm.textContent = '×';
+                        rm.onclick = (e) => {
                             e.stopPropagation();
-                            removeAt(i);
+                            const cur = getFiles();
+                            cur.splice(i, 1);
+                            setFiles(cur);
                             renderSlots();
-                        });
-                        wrap.appendChild(removeBtn);
-
-                        const change = document.createElement('button');
-                        change.type = 'button';
-                        change.style.position = 'absolute';
-                        change.style.inset = '0';
-                        change.style.opacity = '0';
-                        change.addEventListener('click', () => openSinglePicker(i));
-                        wrap.appendChild(change);
+                        };
+                        wrap.appendChild(rm);
                     } else {
                         wrap.classList.add('admin-image-slot--empty');
                         const btn = document.createElement('button');
                         btn.type = 'button';
                         btn.innerHTML = '<div class="fw-semibold">+</div><div class="text-muted small">Thêm ảnh</div>';
-                        btn.addEventListener('click', () => openSinglePicker(i));
+                        btn.onclick = () => { pendingSingleIndex = i; contentPickerSingle?.click(); };
                         wrap.appendChild(btn);
                     }
-
                     contentSlots.appendChild(wrap);
                 }
-
-                // Add-slot tile (always at the end)
-                renderAddTile();
             }
-
-            contentAddManyBtn?.addEventListener('click', openManyPicker);
-
+            document.getElementById('contentAddManyBtn')?.addEventListener('click', () => contentPickerMany?.click());
             contentPickerMany?.addEventListener('change', () => {
-                const picked = contentPickerMany.files ? Array.from(contentPickerMany.files) : [];
-                if (picked.length === 0) return;
-                addFiles(picked);
-                contentPickerMany.value = '';
-                renderSlots();
+                const picked = Array.from(contentPickerMany.files || []);
+                if (picked.length) { setFiles(getFiles().concat(picked)); contentPickerMany.value = ''; renderSlots(); }
             });
-
             contentPickerSingle?.addEventListener('change', () => {
-                const picked = contentPickerSingle.files ? Array.from(contentPickerSingle.files) : [];
-                if (picked.length === 0) return;
-                const file = picked[0];
-                const current = getFiles();
-
-                if (pendingSingleIndex >= 0 && pendingSingleIndex < current.length) {
-                    current[pendingSingleIndex] = file;
-                    setFiles(current);
-                } else {
-                    addFiles([file]);
-                }
-
-                pendingSingleIndex = -1;
-                contentPickerSingle.value = '';
-                renderSlots();
+                const picked = Array.from(contentPickerSingle.files || []);
+                if (picked.length) { setFiles(getFiles().concat([picked[0]])); contentPickerSingle.value = ''; renderSlots(); }
             });
-
-            // Initial render
             renderSlots();
-        })();
 
-        // Variant mode + scheme UI (size table vs shoe picker vs volume rows)
-        (() => {
-            const multi = document.getElementById('HasSizeVariantsTrue');
-            const single = document.getElementById('HasSizeVariantsFalse');
+            // ── 4. Dynamic 2-Tier Variant Builder & Cartesian Product ──
+            const radioMulti = document.getElementById('HasSizeVariantsTrue');
+            const radioSingle = document.getElementById('HasSizeVariantsFalse');
+            const singleStockWrap = document.getElementById('singleStockWrap');
+            const multiVariantBuilderWrap = document.getElementById('multiVariantBuilderWrap');
 
-            const singleWrap = document.getElementById('singleStockWrap');
-            const schemeWrap = document.getElementById('sizeSchemeWrap');
-            const schemeSelect = document.getElementById('sizeSchemeSelect');
+            const opt1NameInput = document.getElementById('Option1NameInput');
+            const opt2NameInput = document.getElementById('Option2NameInput');
+            const opt1ValueInput = document.getElementById('opt1ValueInput');
+            const opt2ValueInput = document.getElementById('opt2ValueInput');
+            const opt1TagsContainer = document.getElementById('opt1TagsContainer');
+            const opt2TagsContainer = document.getElementById('opt2TagsContainer');
+            const optionGroup2Card = document.getElementById('optionGroup2Card');
+            const dynamicVariantsBody = document.getElementById('dynamicVariantsBody');
+            const thOpt1 = document.getElementById('thOpt1');
+            const thOpt2 = document.getElementById('thOpt2');
 
-            const sizeWrap = document.getElementById('sizeStocksWrap');
-            const emptyAlert = document.getElementById('schemeEmptyAlert');
+            let opt1Values = Array.isArray(initialOpt1Values) ? [...initialOpt1Values] : [];
+            let opt2Values = Array.isArray(initialOpt2Values) ? [...initialOpt2Values] : [];
+            let hasGroup2 = opt2Values.length > 0 || !!(opt2NameInput?.value || '').trim();
 
-            const sizePickerWrap = document.getElementById('sizePickerWrap');
-            const sizePickerGrid = document.getElementById('sizePickerGrid');
-
-            const volumeWrap = document.getElementById('volumeOptionsWrap');
-            const volumeBody = document.getElementById('volumeOptionsBody');
-            const volumeAddRowBtn = document.getElementById('volumeAddRowBtn');
-            const volumeTpl = document.getElementById('volumeOptionRowTemplate');
-
-            // Size guide sync
-            const sizeGuideBody = document.getElementById('sizeGuideBody');
-            const sizeGuideTpl = document.getElementById('sizeGuideRowTemplate');
-            const sizeGuideEmptyAlert = document.getElementById('sizeGuideEmptyAlert');
-            const sizeGuideTableWrap = document.getElementById('sizeGuideTableWrap');
-
-            if (!multi || !single || !singleWrap || !schemeWrap || !schemeSelect || !sizeWrap) return;
-
-            let allSizes = [];
-            try {
-                const dataEl = document.getElementById('js-all-sizes-data');
-                allSizes = JSON.parse(dataEl?.textContent || '[]');
-            } catch(e) {
-                console.error("Failed to parse sizes", e);
-            }
-
-            const selectedSizes = new Set();
-            const stockCache = new Map(); // key: "colorId-sizeId", value: qty
-            let lastPickerMode = null;
-
-            function classify(name) {
-                const s = (name || '').trim().toUpperCase();
-                if (!s) return 'other';
-
-                // volume
-                if (/(\d+)\s*ML\b/.test(s) || /\bML\b/.test(s)) return 'volume';
-                if (/(\d+(?:\.\d+)?)\s*L\b/.test(s)) return 'volume';
-
-                // weight
-                if (/(\d+)\s*G\b/.test(s) || /(\d+(?:\.\d+)?)\s*KG\b/.test(s)) return 'weight';
-
-                // shoe numeric sizes
-                if (/^\d+(?:\.\d+)?$/.test(s)) return 'shoe';
-                if (/\bEU\s*\d+/.test(s)) return 'shoe';
-                if (/\bSIZE\s*\d+/.test(s)) return 'shoe';
-                if (/\b\d{2}(?:\.\d+)?\b/.test(s)) return 'shoe';
-
-                // clothing alpha sizes
-                if (/\b(XXS|XS|S|M|L|XL|XXL|XXXL)\b/.test(s)) return 'clothing';
-
-                return 'other';
-            }
-
-            function parseShoeNumber(name) {
-                const raw = (name || '').trim().toUpperCase();
-                if (!raw) return Number.NaN;
-                const m = raw.match(/(\d+(?:\.\d+)?)/);
-                if (!m) return Number.NaN;
-                return parseFloat(m[1]);
-            }
-
-            function getAllSizeRows() {
-                return Array.from(sizeWrap.querySelectorAll('tbody tr[data-size-row]'));
-            }
-
-            function getRowSizeName(row) {
-                const hiddenName = row.querySelector('input[type="hidden"][name$=".SizeName"]');
-                if (hiddenName && hiddenName.value) return hiddenName.value;
-                const nameEl = row.querySelector('.size-name');
-                return nameEl ? (nameEl.textContent || '').trim() : '';
-            }
-
-            function getRowQtyInput(row) {
-                return row.querySelector('input[type="number"]');
-            }
-
-            function getRowsForMode(mode) {
-                // For the picker, we need a unique list of size names for that mode.
-                // We'll use the 'allSizes' data instead of the DOM rows.
-                const result = [];
-                const seen = new Set();
-
-                for (const s of allSizes) {
-                    const sName = s.sizeName || s.SizeName;
-                    if (seen.has(sName)) continue;
-                    const kind = classify(sName);
-                    if (mode === 'all' || kind === mode) {
-                        result.push({ name: sName, kind });
-                        seen.add(sName);
-                    }
-                }
-                return result;
-            }
-
-            function seedSelectionFromQty(mode) {
-                // This is less relevant now as we regenerate the table, 
-                // but let's keep it to detect already selected sizes.
-                selectedSizes.clear();
-                const items = Array.from(sizeWrap.querySelectorAll('tbody tr[data-size-row]'));
-                for (const row of items) {
-                    const name = getRowSizeName(row);
-                    const qtyEl = getRowQtyInput(row);
-                    const qty = qtyEl ? parseInt(qtyEl.value || '0', 10) : 0;
-                    if (qty > 0 && name) selectedSizes.add(name);
-                }
-            }
-
-            function renderSizePicker(mode) {
-                if (!sizePickerWrap || !sizePickerGrid) return;
-
-                const items = getRowsForMode(mode);
-                sizePickerGrid.innerHTML = '';
-
-                for (let i = 0; i < items.length; i++) {
-                    const it = items[i];
-                    const id = `pick_size_${mode}_${i}`;
-
-                    const input = document.createElement('input');
-                    input.type = 'checkbox';
-                    input.className = 'btn-check';
-                    input.id = id;
-                    input.autocomplete = 'off';
-                    input.checked = selectedSizes.has(it.name);
-                    input.setAttribute('data-size-pick', '1');
-                    input.setAttribute('data-size-name', it.name);
-
-                    input.addEventListener('change', () => {
-                        if (input.checked) selectedSizes.add(it.name);
-                        else selectedSizes.delete(it.name);
-
-                        applySizeFiltering();
-                        syncSizeGuideRows();
+            // Cache for variant row values keyed by "v1||v2"
+            const variantCache = new Map();
+            if (Array.isArray(initialVariants)) {
+                initialVariants.forEach(v => {
+                    const o1 = v.option1Value || v.Option1Value || v.colorName || v.ColorName || '';
+                    const o2 = v.option2Value || v.Option2Value || v.sizeName || v.SizeName || '';
+                    if (o1 && !opt1Values.includes(o1)) opt1Values.push(o1);
+                    if (o2 && !opt2Values.includes(o2)) { opt2Values.push(o2); hasGroup2 = true; }
+                    variantCache.set(`${o1}||${o2}`, {
+                        sku: v.sku || v.Sku || '',
+                        price: v.price ?? v.Price ?? '',
+                        costPrice: v.costPrice ?? v.CostPrice ?? '',
+                        stock: v.stockQuantity ?? v.StockQuantity ?? 10,
+                        weight: v.weightGram ?? v.WeightGram ?? 300,
+                        length: v.lengthCm ?? v.LengthCm ?? 10,
+                        width: v.widthCm ?? v.WidthCm ?? 10,
+                        height: v.heightCm ?? v.HeightCm ?? 10,
+                        imageUrl: v.imageUrl || v.ImageUrl || v.option1ImageUrl || v.Option1ImageUrl || '',
+                        isActive: v.isActive !== undefined ? v.isActive : true,
+                        isChecked: true
                     });
-
-                    const label = document.createElement('label');
-                    label.className = 'admin-size-tile';
-                    label.setAttribute('for', id);
-                    label.textContent = it.name;
-
-                    sizePickerGrid.appendChild(input);
-                    sizePickerGrid.appendChild(label);
-                }
-            }
-
-            function syncPickerStates() {
-                if (!sizePickerGrid) return;
-                const inputs = Array.from(sizePickerGrid.querySelectorAll('input[data-size-pick="1"]'));
-                for (const el of inputs) {
-                    if (!(el instanceof HTMLInputElement)) continue;
-                    const name = el.getAttribute('data-size-name') || '';
-                    el.checked = !!name && selectedSizes.has(name);
-                }
-            }
-
-            function updateStockCache() {
-                const rows = Array.from(sizeWrap.querySelectorAll('#initialSizeStocksBody tr[data-size-row]'));
-                rows.forEach(r => {
-                    const cId = r.getAttribute('data-color-id') || "0";
-                    const sId = r.getAttribute('data-size-id');
-                    const qtyInput = r.querySelector('input[name$=".StockQuantity"]');
-                    if (qtyInput) {
-                        stockCache.set(`${cId}-${sId}`, qtyInput.value);
-                    }
                 });
             }
 
-            function getSelectedColors() {
-                const inputs = Array.from(document.querySelectorAll('input[name="SelectedColorIds"]:checked'));
-                return inputs.map(input => {
-                    const id = input.value;
-                    const label = document.querySelector(`label[for="${input.id}"]`);
-                    const name = label ? (label.getAttribute('data-color-name') || label.querySelector('.admin-color-name')?.textContent?.trim() || "N/A") : "N/A";
-                    return { id, name };
+            const tab1SinglePriceWrap = document.getElementById('tab1SinglePriceWrap');
+            const tab1MultiPriceSummaryWrap = document.getElementById('tab1MultiPriceSummaryWrap');
+            document.getElementById('btnJumpToVariantsTab')?.addEventListener('click', () => {
+                activate('variants');
+            });
+
+            function formatVndNum(n) {
+                if (!n || isNaN(n)) return '0₫';
+                return Number(n).toLocaleString('vi-VN') + '₫';
+            }
+
+            function refreshTab1VariantSummary() {
+                const isMulti = !!radioMulti?.checked;
+                tab1SinglePriceWrap?.classList.toggle('d-none', isMulti);
+                tab1MultiPriceSummaryWrap?.classList.toggle('d-none', !isMulti);
+                if (!isMulti) return;
+
+                const rows = Array.from(dynamicVariantsBody.querySelectorAll('tr[data-opt-key]'));
+                const countEl = document.getElementById('tab1SummaryCountText');
+                const priceRangeEl = document.getElementById('tab1SummaryPriceRange');
+                const costRangeEl = document.getElementById('tab1SummaryCostRange');
+                const stockEl = document.getElementById('tab1SummaryTotalStock');
+                const miniListEl = document.getElementById('tab1VariantMiniList');
+
+                if (rows.length === 0) {
+                    if (countEl) countEl.textContent = '0 biến thể';
+                    if (priceRangeEl) priceRangeEl.textContent = 'Chưa thiết lập';
+                    if (costRangeEl) costRangeEl.textContent = 'Chưa thiết lập';
+                    if (stockEl) stockEl.textContent = '0';
+                    if (miniListEl) miniListEl.innerHTML = '<div class="small text-muted">Chưa có biến thể nào. Hãy bấm sang Mục 4 để thêm phân loại.</div>';
+                    return;
+                }
+
+                let prices = [];
+                let costs = [];
+                let totalStock = 0;
+                let badgesHtml = '<div class="d-flex flex-wrap gap-1.5">';
+
+                rows.forEach(tr => {
+                    const o1 = tr.dataset.opt1 || '';
+                    const o2 = tr.dataset.opt2 || '';
+                    const label = o2 ? `${o1} / ${o2}` : o1;
+                    const pRaw = Number((tr.querySelector('[data-field="price"]')?.value || '0').replace(/\./g, '').replace(/,/g, '.')) || 0;
+                    const cRaw = Number((tr.querySelector('[data-field="costPrice"]')?.value || '0').replace(/\./g, '').replace(/,/g, '.')) || 0;
+                    const sRaw = Number(tr.querySelector('[data-field="stock"]')?.value || '0') || 0;
+                    const imgVal = tr.querySelector('[data-field="imageUrl"]')?.value || '';
+
+                    if (pRaw > 0) prices.push(pRaw);
+                    if (cRaw > 0) costs.push(cRaw);
+                    totalStock += sRaw;
+
+                    const imgThumb = imgVal
+                        ? `<img src="${imgVal.replace(/"/g, '&quot;')}" style="width:18px;height:18px;object-fit:cover;border-radius:4px;" />`
+                        : '';
+                    badgesHtml += `
+                        <span class="badge bg-white text-dark border d-inline-flex align-items-center gap-1 px-2 py-1 fw-normal">
+                            ${imgThumb}
+                            <strong class="text-primary">${label}</strong>:
+                            <span class="text-danger fw-bold">${formatVndNum(pRaw)}</span>
+                            <span class="text-muted">(Vốn: ${formatVndNum(cRaw)} • Kho: ${sRaw})</span>
+                        </span>`;
                 });
+                badgesHtml += '</div>';
+
+                if (countEl) countEl.textContent = `${rows.length} biến thể`;
+                if (prices.length > 0) {
+                    const minP = Math.min(...prices), maxP = Math.max(...prices);
+                    if (priceRangeEl) priceRangeEl.textContent = minP === maxP ? formatVndNum(minP) : `${formatVndNum(minP)} – ${formatVndNum(maxP)}`;
+                    const basePriceInp = document.getElementById('BasePriceInput');
+                    if (basePriceInp) { basePriceInp.value = minP.toString(); basePriceInp.dataset.original = minP.toString(); }
+                } else if (priceRangeEl) {
+                    priceRangeEl.textContent = '0₫';
+                }
+
+                if (costs.length > 0) {
+                    const minC = Math.min(...costs), maxC = Math.max(...costs);
+                    if (costRangeEl) costRangeEl.textContent = minC === maxC ? formatVndNum(minC) : `${formatVndNum(minC)} – ${formatVndNum(maxC)}`;
+                    const baseCostInp = document.getElementById('BaseCostPriceInput');
+                    if (baseCostInp) { baseCostInp.value = minC.toString(); baseCostInp.dataset.original = minC.toString(); }
+                } else if (costRangeEl) {
+                    costRangeEl.textContent = '0₫';
+                }
+
+                if (stockEl) stockEl.textContent = `${totalStock.toLocaleString('vi-VN')} SP`;
+                if (miniListEl) miniListEl.innerHTML = badgesHtml;
             }
 
-            function applySizeFiltering() {
-                updateStockCache();
-                const mode = schemeSelect.value;
-                const colors = getSelectedColors();
-                
-                // If no colors are selected, we treat it as "Default" color (null)
-                const colorList = colors.length > 0 ? colors : [{ id: "0", name: "Mặc định" }];
+            function syncModeVisibility() {
+                const isMulti = !!radioMulti.checked;
+                singleStockWrap.classList.toggle('d-none', isMulti);
+                multiVariantBuilderWrap.classList.toggle('d-none', !isMulti);
+                refreshTab1VariantSummary();
+            }
+            radioMulti?.addEventListener('change', syncModeVisibility);
+            radioSingle?.addEventListener('change', syncModeVisibility);
 
-                const body = document.getElementById('initialSizeStocksBody');
-                const tpl = document.getElementById('initialSizeStockRowTemplate');
-                if (!body || !tpl) return;
-
-                body.innerHTML = '';
-                let index = 0;
-                let visible = 0;
-
-                for (const color of colorList) {
-                    for (const size of allSizes) {
-                        const sizeName = size.sizeName || size.SizeName;
-                        const sizeId = size.sizeId || size.SizeId;
-                        
-                        const kind = classify(sizeName);
-                        const inMode = (mode === 'all') || (kind === mode);
-                        if (!inMode) continue;
-                        
-                        const isSelectedInPicker = selectedSizes.has(sizeName);
-                        if (!isSelectedInPicker) continue;
-
-                        const qty = stockCache.get(`${color.id}-${sizeId}`) || "0";
-
-                        let html = tpl.innerHTML
-                            .replaceAll('__index__', index)
-                            .replaceAll('__colorId__', color.id)
-                            .replaceAll('__colorName__', color.name)
-                            .replaceAll('__sizeId__', sizeId)
-                            .replaceAll('__sizeName__', sizeName)
-                            .replaceAll('__isSelected__', "true")
-                            .replaceAll('__qty__', qty);
-
-                        const temp = document.createElement('tbody');
-                        temp.innerHTML = html.trim();
-                        const row = temp.firstElementChild;
-                        if (row) body.appendChild(row);
-
-                        index++;
-                        visible++;
-                    }
-                }
-
-                if (visible === 0) {
-                    body.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-3">Hãy chọn size ở bảng phía trên.</td></tr>';
-                }
-
-                if (emptyAlert) {
-                    const availableInMode = allSizes.filter(s => mode === 'all' || classify(s.SizeName) === mode).length;
-                    const shouldShowEmpty = (mode !== 'all') && (availableInMode === 0);
-                    emptyAlert.classList.toggle('d-none', !shouldShowEmpty);
-                }
+            function saveCurrentVariantRowsToCache() {
+                dynamicVariantsBody.querySelectorAll('tr[data-opt-key]').forEach(tr => {
+                    const key = tr.dataset.optKey;
+                    variantCache.set(key, {
+                        sku: tr.querySelector('[data-field="sku"]')?.value || '',
+                        price: tr.querySelector('[data-field="price"]')?.value || '',
+                        costPrice: tr.querySelector('[data-field="costPrice"]')?.value || '',
+                        stock: tr.querySelector('[data-field="stock"]')?.value || '0',
+                        weight: tr.querySelector('[data-field="weight"]')?.value || '300',
+                        length: tr.querySelector('[data-field="length"]')?.value || '10',
+                        width: tr.querySelector('[data-field="width"]')?.value || '10',
+                        height: tr.querySelector('[data-field="height"]')?.value || '10',
+                        imageUrl: tr.querySelector('[data-field="imageUrl"]')?.value || '',
+                        isActive: tr.querySelector('[data-field="isActive"]')?.checked ?? true,
+                        isChecked: tr.querySelector('.variant-row-chk')?.checked ?? true
+                    });
+                });
+                refreshTab1VariantSummary();
             }
 
-            function setVolumeInputsEnabled(enabled) {
-                if (!volumeWrap) return;
-                const inputs = Array.from(volumeWrap.querySelectorAll('input, select, textarea'));
-                for (const el of inputs) {
-                    if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
-                        el.disabled = !enabled;
-                    }
-                }
-            }
-
-            function readGuideRowData() {
-                const map = new Map();
-                if (!sizeGuideBody) return map;
-                const rows = Array.from(sizeGuideBody.querySelectorAll('tr[data-size-guide-row]'));
-                for (const r of rows) {
-                    const label = (r.getAttribute('data-size-label') || '').trim();
-                    if (!label) continue;
-
-                    const read = (suffix) => {
-                        const el = r.querySelector(`[name$=".${suffix}"]`);
-                        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
-                            return (el.value || '').trim();
-                        }
-                        return '';
+            function renderTags() {
+                opt1TagsContainer.innerHTML = '';
+                opt1Values.forEach((val, idx) => {
+                    const chip = document.createElement('span');
+                    chip.className = 'opt-chip';
+                    chip.innerHTML = `
+                        <input type="hidden" name="Option1Values[${idx}]" value="${val.replace(/"/g, '&quot;')}" />
+                        <span>${val}</span>
+                        <button type="button" title="Xóa">&times;</button>
+                    `;
+                    chip.querySelector('button').onclick = () => {
+                        saveCurrentVariantRowsToCache();
+                        opt1Values.splice(idx, 1);
+                        renderTags();
+                        renderCartesianTable();
                     };
-
-                    map.set(label, {
-                        HeightRange: read('HeightRange'),
-                        WeightRange: read('WeightRange'),
-                        ShoulderWidthCm: read('ShoulderWidthCm'),
-                        BustCm: read('BustCm'),
-                        WaistCm: read('WaistCm'),
-                        HipCm: read('HipCm'),
-                        ClothingLengthCm: read('ClothingLengthCm'),
-                        ClothingWidthCm: read('ClothingWidthCm'),
-                        ClothingHeightCm: read('ClothingHeightCm'),
-                        ShoeLengthCm: read('ShoeLengthCm'),
-                        Note: read('Note')
-                    });
-                }
-                return map;
-            }
-
-            function collectSelectedSizeLabels() {
-                const labels = [];
-                const mode = schemeSelect.value;
-                if (mode === 'volume' || mode === 'weight') {
-                    if (volumeBody) {
-                        const rows = Array.from(volumeBody.querySelectorAll('tr[data-volume-row]:not(.d-none)'));
-                        for (const r of rows) {
-                            const input = r.querySelector('input[name$=".OptionName"]');
-                            const val = (input?.value || '').trim();
-                            if (val) labels.push(val);
-                        }
-                    }
-                } else {
-                    // For size guide, we only want unique sizes regardless of color.
-                    for (const s of selectedSizes) {
-                        labels.push(s);
-                    }
-                }
-
-                // Deduplicate while preserving order
-                const seen = new Set();
-                const unique = [];
-                for (const l of labels) {
-                    if (seen.has(l)) continue;
-                    seen.add(l);
-                    unique.push(l);
-                }
-                return unique;
-            }
-
-            const sgSel = document.getElementById('sizeGuideSchemeSelect');
-
-            window.autoDetectScheme = function() {
-                if (!sgSel) return;
-                const cascader = document.getElementById('categoryCascader');
-                if (!cascader) return;
-
-                const selects = Array.from(cascader.querySelectorAll('select'));
-                const fullText = selects.map(s => s.options[s.selectedIndex]?.text || "").join(" ").toLowerCase();
-
-                if (fullText.includes("áo") || fullText.includes("shirt") || fullText.includes("top") || fullText.includes("sơ mi") || fullText.includes("phông")) {
-                    sgSel.value = "ao";
-                } else if (fullText.includes("quần") || fullText.includes("pants") || fullText.includes("jean") || fullText.includes("khaki") || fullText.includes("short")) {
-                    sgSel.value = "quan";
-                } else if (fullText.includes("giày") || fullText.includes("dép") || fullText.includes("shoe") || fullText.includes("sneaker")) {
-                    sgSel.value = "shoe";
-                } else {
-                    sgSel.value = "all";
-                }
-                updateSgColumns();
-            };
-
-            function updateSgColumns() {
-                if (!sgSel) return;
-                const mode = sgSel.value;
-                const allCols = document.querySelectorAll('[class*="sg-col-"]');
-                allCols.forEach(el => {
-                    if (mode === 'all') {
-                        el.classList.remove('d-none');
-                    } else {
-                        const isMatch = el.classList.contains('sg-col-' + mode) || el.classList.contains('sg-col-shared');
-                        el.classList.toggle('d-none', !isMatch);
-                    }
+                    opt1TagsContainer.appendChild(chip);
                 });
-            }
 
-            if (sgSel) sgSel.addEventListener('change', updateSgColumns);
-
-            function setSizeGuideSchemeColumns() {
-                updateSgColumns();
-            }
-
-            function syncSizeGuideRows() {
-                if (!sizeGuideBody || !sizeGuideTpl || !(sizeGuideTpl instanceof HTMLTemplateElement)) return;
-
-                const bySize = !!multi.checked;
-                const mode = schemeSelect.value;
-
-                // Only meaningful for clothing/shoe size variants.
-                const applicable = bySize && (mode === 'clothing' || mode === 'shoe' || mode === 'volume' || mode === 'weight' || mode === 'all');
-                if (sizeGuideTableWrap) sizeGuideTableWrap.classList.toggle('d-none', !applicable);
-                if (!applicable) {
-                    sizeGuideEmptyAlert?.classList.add('d-none');
-                    return;
-                }
-
-
-                const selected = collectSelectedSizeLabels();
-                const existing = readGuideRowData();
-
-                if (selected.length === 0) {
-                    sizeGuideBody.innerHTML = '';
-                    sizeGuideEmptyAlert?.classList.remove('d-none');
-                    return;
-                }
-
-                sizeGuideEmptyAlert?.classList.add('d-none');
-
-                const rowsHtml = [];
-                for (let i = 0; i < selected.length; i++) {
-                    const sizeLabel = selected[i];
-                    let html = sizeGuideTpl.innerHTML
-                        .replaceAll('__index__', String(i))
-                        .replaceAll('__sizeLabel__', String(sizeLabel));
-                    rowsHtml.push(html);
-                }
-
-                sizeGuideBody.innerHTML = rowsHtml.join('');
-
-                // Restore any typed values for sizes we kept.
-                const rows = Array.from(sizeGuideBody.querySelectorAll('tr[data-size-guide-row]'));
-                for (const r of rows) {
-                    const label = (r.getAttribute('data-size-label') || '').trim();
-                    if (!label) continue;
-                    const data = existing.get(label);
-                    if (!data) continue;
-
-                    const set = (suffix, value) => {
-                        const el = r.querySelector(`[name$=".${suffix}"]`);
-                        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
-                            el.value = value || '';
-                        }
-                    };
-
-                    set('HeightRange', data.HeightRange);
-                    set('WeightRange', data.WeightRange);
-                    set('ShoulderWidth', data.ShoulderWidth);
-                    set('Bust', data.Bust);
-                    set('Waist', data.Waist);
-                    set('Hip', data.Hip);
-                    set('ClothingLength', data.ClothingLength);
-                    set('ClothingWidth', data.ClothingWidth);
-                    set('ShoeLength', data.ShoeLength);
-                    set('Note', data.Note);
-                }
-
-                setSizeGuideSchemeColumns();
-            }
-
-            function wireVolumeRemoveButtons() {
-                if (!volumeBody) return;
-                const btns = Array.from(volumeBody.querySelectorAll('[data-volume-remove]'));
-                for (const b of btns) {
-                    if (b.getAttribute('data-wired') === '1') continue;
-                    b.setAttribute('data-wired', '1');
-                    b.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const row = (b instanceof HTMLElement) ? b.closest('tr[data-volume-row]') : null;
-                        if (!row) return;
-
-                        const nameInput = row.querySelector('input[name^="VolumeOptionStocks["][name$=".OptionName"]');
-                        const qtyInput = row.querySelector('input[name^="VolumeOptionStocks["][name$=".StockQuantity"]');
-                        if (nameInput instanceof HTMLInputElement) nameInput.value = '';
-                        if (qtyInput instanceof HTMLInputElement) qtyInput.value = '0';
-                        row.classList.add('d-none');
-                        syncSizeGuideRows();
+                optionGroup2Card.classList.toggle('d-none', !hasGroup2);
+                opt2TagsContainer.innerHTML = '';
+                if (hasGroup2) {
+                    opt2Values.forEach((val, idx) => {
+                        const chip = document.createElement('span');
+                        chip.className = 'opt-chip opt-chip-2';
+                        chip.innerHTML = `
+                            <input type="hidden" name="Option2Values[${idx}]" value="${val.replace(/"/g, '&quot;')}" />
+                            <span>${val}</span>
+                            <button type="button" title="Xóa">&times;</button>
+                        `;
+                        chip.querySelector('button').onclick = () => {
+                            saveCurrentVariantRowsToCache();
+                            opt2Values.splice(idx, 1);
+                            renderTags();
+                            renderCartesianTable();
+                            syncSizeGuideFromOptions();
+                        };
+                        opt2TagsContainer.appendChild(chip);
                     });
                 }
             }
 
-            function addVolumeRow(initialValue = '') {
-                if (!volumeBody || !volumeTpl) return;
-                const tpl = volumeTpl;
-                if (!(tpl instanceof HTMLTemplateElement)) return;
-
-                const existingIndexes = Array.from(volumeBody.querySelectorAll('input[name^="VolumeOptionStocks["]'))
-                    .map(i => {
-                        const n = (i instanceof HTMLInputElement) ? i.name : '';
-                        const m = n.match(/^VolumeOptionStocks\[(\d+)\]/);
-                        return m ? parseInt(m[1], 10) : -1;
-                    })
-                    .filter(n => n >= 0);
-
-                const nextIndex = (existingIndexes.length ? Math.max(...existingIndexes) : -1) + 1;
-                const html = tpl.innerHTML.replaceAll('__index__', String(nextIndex));
-                const temp = document.createElement('tbody');
-                temp.innerHTML = html.trim();
-                const row = temp.querySelector('tr[data-volume-row]');
-                if (!row) return;
-
-                if (initialValue) {
-                    const nameInput = row.querySelector('input[name$=".OptionName"]');
-                    if (nameInput instanceof HTMLInputElement) nameInput.value = initialValue;
+            function updateBulkSelectedCount() {
+                const allChks = Array.from(dynamicVariantsBody.querySelectorAll('.variant-row-chk'));
+                const checkedCount = allChks.filter(c => c.checked).length;
+                const badge = document.getElementById('bulkSelectedCountBadge');
+                if (badge) badge.textContent = checkedCount.toString();
+                const chkAll = document.getElementById('chkAllVariants');
+                if (chkAll && allChks.length > 0) {
+                    chkAll.checked = checkedCount === allChks.length;
+                    chkAll.indeterminate = checkedCount > 0 && checkedCount < allChks.length;
                 }
-
-                volumeBody.appendChild(row);
-                wireVolumeRemoveButtons();
-                syncSizeGuideRows();
             }
 
-            function syncVariantModeVisibility() {
-                const bySize = !!multi.checked;
-                singleWrap.classList.toggle('d-none', bySize);
-                schemeWrap.classList.toggle('d-none', !bySize);
-            }
+            function renderBulkQuickFilterBar() {
+                const bar = document.getElementById('bulkQuickFilterBar');
+                if (!bar) return;
+                let html = `<span class="small fw-bold text-dark me-1"><i class="bx bx-check-shield text-primary me-1"></i>Chọn nhanh:</span>`;
+                html += `<button type="button" class="btn btn-xs btn-outline-dark rounded-pill px-2 py-0.5" data-bulk-select="all">Tất cả</button>`;
+                html += `<button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0.5" data-bulk-select="none">Bỏ chọn</button>`;
 
-            function apply() {
-                syncVariantModeVisibility();
-
-                const bySize = !!multi.checked;
-                if (!bySize) {
-                    volumeWrap?.classList.add('d-none');
-                    sizeWrap.classList.add('d-none');
-                    setVolumeInputsEnabled(false);
-
-                    selectedSizes.clear();
-                    lastPickerMode = null;
-                    if (sizePickerWrap) sizePickerWrap.classList.add('d-none');
-
-                    syncSizeGuideRows();
-                    return;
-                }
-
-                const mode = schemeSelect.value;
-                const isCustom = mode === 'volume' || mode === 'weight';
-
-                volumeWrap?.classList.toggle('d-none', !isCustom);
-                sizeWrap.classList.toggle('d-none', isCustom);
-
-                if (sizePickerWrap) sizePickerWrap.classList.toggle('d-none', isCustom);
-
-                setVolumeInputsEnabled(isCustom);
-
-                if (isCustom) {
-                    // Ensure size table stocks don't leak into custom mode.
-                    applySizeFiltering();
-                    
-                    const volSamples = document.getElementById('volumeSamples');
-                    const weightSamples = document.getElementById('weightSamples');
-                    volSamples?.classList.toggle('d-none', mode !== 'volume');
-                    weightSamples?.classList.toggle('d-none', mode !== 'weight');
-                } else {
-                    const mode = schemeSelect.value;
-                    if (lastPickerMode !== mode) {
-                        seedSelectionFromQty(mode);
-                        renderSizePicker(mode);
-                        lastPickerMode = mode;
-                    }
-                    syncPickerStates();
-                    applySizeFiltering();
-                }
-
-                syncSizeGuideRows();
-            }
-
-            // Events
-            multi.addEventListener('change', apply);
-            single.addEventListener('change', apply);
-            schemeSelect.addEventListener('change', apply);
-
-            // Keep size guide in sync while user types quantities.
-            sizeWrap.addEventListener('input', (e) => {
-                const t = e.target;
-                if (!(t instanceof HTMLElement)) return;
-                if (t.matches('input[type="number"]')) {
-                    const row = t.closest('tr[data-size-row]');
-                    const name = row ? getRowSizeName(row) : '';
-                    const qty = (t instanceof HTMLInputElement) ? parseInt(t.value || '0', 10) : 0;
-                    if (name && qty > 0) {
-                        selectedSizes.add(name);
-                        syncPickerStates();
-                    }
-                    syncSizeGuideRows();
-                }
-            });
-
-            volumeAddRowBtn?.addEventListener('click', (e) => {
-                e.preventDefault();
-                addVolumeRow();
-            });
-
-            wireVolumeRemoveButtons();
-
-            volumeWrap?.addEventListener('input', (e) => {
-                const t = e.target;
-                if (!(t instanceof HTMLElement)) return;
-                if (t.matches('input[name$=".OptionName"]')) {
-                    syncSizeGuideRows();
-                }
-            });
-
-            // Sample buttons
-            document.querySelectorAll('[data-sample]').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const val = btn.getAttribute('data-sample');
-                    if (val) addVolumeRow(val);
+                opt1Values.forEach(v1 => {
+                    html += `<button type="button" class="btn btn-xs btn-soft-primary rounded-pill px-2 py-0.5 fw-semibold" data-bulk-opt1="${v1.replace(/"/g, '&quot;')}">${v1}</button>`;
                 });
-            });
-
-            // Color selection changes
-            document.querySelectorAll('input[name="SelectedColorIds"]').forEach(input => {
-                input.addEventListener('change', () => {
-                    apply();
-                });
-            });
-
-            apply();
-
-            // Currency formatting logic
-            (function () {
-                const inputs = document.querySelectorAll('.vn-money-input');
-
-                function formatValue(val) {
-                    let n = val.replace(/\D/g, "");
-                    return n === "" ? "" : Number(n).toLocaleString("vi-VN");
-                }
-
-                inputs.forEach(input => {
-                    if (input.value) {
-                        input.value = formatValue(input.value);
-                    }
-
-                    input.addEventListener('input', function () {
-                        let originalValue = this.value;
-                        let formatted = formatValue(originalValue);
-                        
-                        if (formatted !== originalValue) {
-                            // Try to maintain cursor position
-                            let cursor = this.selectionStart;
-                            this.value = formatted;
-                            // Simple cursor adjustment (moves to end for simplicity in this case)
-                        }
+                if (hasGroup2) {
+                    opt2Values.forEach(v2 => {
+                        html += `<button type="button" class="btn btn-xs btn-soft-info rounded-pill px-2 py-0.5 fw-semibold" data-bulk-opt2="${v2.replace(/"/g, '&quot;')}">${v2}</button>`;
                     });
-                });
+                }
+                bar.innerHTML = html;
 
-                // Strip dots before submit
-                const form = document.getElementById('admin-product-create-form');
-                if (form) {
-                    form.addEventListener('submit', () => {
-                        inputs.forEach(input => {
-                            input.value = input.value.replace(/\./g, "").replace(/,/g, ""); // vi-VN uses dot for thousands and comma for decimal, but usually we handle integers for VND
+                bar.querySelectorAll('[data-bulk-select]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const check = btn.dataset.bulkSelect === 'all';
+                        dynamicVariantsBody.querySelectorAll('.variant-row-chk').forEach(c => {
+                            c.checked = check;
+                            c.closest('tr')?.classList.toggle('table-active', check);
                         });
+                        updateBulkSelectedCount();
                     });
+                });
+                bar.querySelectorAll('[data-bulk-opt1]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const target = btn.dataset.bulkOpt1;
+                        dynamicVariantsBody.querySelectorAll('tr[data-opt-key]').forEach(tr => {
+                            const match = tr.dataset.opt1 === target;
+                            const chk = tr.querySelector('.variant-row-chk');
+                            if (chk) chk.checked = match;
+                            tr.classList.toggle('table-active', match);
+                        });
+                        updateBulkSelectedCount();
+                    });
+                });
+                bar.querySelectorAll('[data-bulk-opt2]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const target = btn.dataset.bulkOpt2;
+                        dynamicVariantsBody.querySelectorAll('tr[data-opt-key]').forEach(tr => {
+                            const match = tr.dataset.opt2 === target;
+                            const chk = tr.querySelector('.variant-row-chk');
+                            if (chk) chk.checked = match;
+                            tr.classList.toggle('table-active', match);
+                        });
+                        updateBulkSelectedCount();
+                    });
+                });
+            }
+
+            async function uploadVariantFile(file) {
+                const fd = new FormData();
+                fd.append('file', file);
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                const res = await fetch('@Url.Action("UploadVariantImage", "Products", new { area = "Admin" })', {
+                    method: 'POST',
+                    headers: token ? { 'RequestVerificationToken': token } : {},
+                    body: fd
+                });
+                if (!res.ok) throw new Error('Upload thất bại');
+                return await res.json();
+            }
+
+            function setRowVariantImage(tr, url) {
+                const hiddenOpt1 = tr.querySelector('[data-field="option1ImageUrl"]');
+                const hiddenImg = tr.querySelector('[data-field="imageUrl"]');
+                const previewImg = tr.querySelector('.var-img-thumb');
+                const emptyIcon = tr.querySelector('.var-img-empty');
+                const clearBtn = tr.querySelector('.var-img-clear');
+
+                if (hiddenOpt1) hiddenOpt1.value = url || '';
+                if (hiddenImg) hiddenImg.value = url || '';
+
+                if (url) {
+                    if (previewImg) { previewImg.src = url; previewImg.classList.remove('d-none'); }
+                    if (emptyIcon) emptyIcon.classList.add('d-none');
+                    if (clearBtn) clearBtn.classList.remove('d-none');
+                } else {
+                    if (previewImg) { previewImg.src = ''; previewImg.classList.add('d-none'); }
+                    if (emptyIcon) emptyIcon.classList.remove('d-none');
+                    if (clearBtn) clearBtn.classList.add('d-none');
                 }
-            })();
+            }
+
+            function renderCartesianTable() {
+                thOpt1.textContent = (opt1NameInput.value || 'Phân loại 1').trim();
+                thOpt2.textContent = hasGroup2 ? (opt2NameInput.value || 'Phân loại 2').trim() : '—';
+                renderBulkQuickFilterBar();
+
+                if (opt1Values.length === 0) {
+                    dynamicVariantsBody.innerHTML = `<tr><td colspan="11" class="text-center text-muted py-4">Hãy thêm ít nhất 1 giá trị vào Nhóm phân loại 1 để tạo bảng biến thể.</td></tr>`;
+                    updateBulkSelectedCount();
+                    refreshTab1VariantSummary();
+                    return;
+                }
+
+                const basePrice = (document.getElementById('BasePriceInput')?.value || '0').replace(/\./g, '');
+                const baseCostPrice = (document.getElementById('BaseCostPriceInput')?.value || '0').replace(/\./g, '');
+                const list2 = (hasGroup2 && opt2Values.length > 0) ? opt2Values : [''];
+                let rowsHtml = '';
+                let idx = 0;
+
+                opt1Values.forEach(v1 => {
+                    list2.forEach(v2 => {
+                        const key = `${v1}||${v2}`;
+                        const cached = variantCache.get(key) || {};
+                        const priceVal = cached.price !== undefined && cached.price !== '' ? cached.price : basePrice;
+                        const costPriceVal = cached.costPrice !== undefined && cached.costPrice !== '' ? cached.costPrice : baseCostPrice;
+                        const stockVal = cached.stock !== undefined ? cached.stock : 10;
+                        const weightVal = cached.weight !== undefined ? cached.weight : 300;
+                        const lVal = cached.length !== undefined ? cached.length : 10;
+                        const wVal = cached.width !== undefined ? cached.width : 10;
+                        const hVal = cached.height !== undefined ? cached.height : 10;
+                        const skuVal = cached.sku || '';
+                        const imgVal = cached.imageUrl || '';
+                        const activeVal = cached.isActive !== undefined ? cached.isActive : true;
+                        const checkedVal = cached.isChecked !== undefined ? cached.isChecked : true;
+
+                        rowsHtml += `
+                            <tr data-opt-key="${key.replace(/"/g, '&quot;')}" data-opt1="${v1.replace(/"/g, '&quot;')}" data-opt2="${v2.replace(/"/g, '&quot;')}">
+                                <td class="ps-3 text-center">
+                                    <input type="checkbox" class="form-check-input variant-row-chk" ${checkedVal ? 'checked' : ''} />
+                                </td>
+                                <td class="fw-semibold text-primary">
+                                    <input type="hidden" name="Variants[${idx}].Option1Value" value="${v1.replace(/"/g, '&quot;')}" />
+                                    <input type="hidden" name="Variants[${idx}].Option2Value" value="${v2.replace(/"/g, '&quot;')}" />
+                                    ${v1}
+                                </td>
+                                <td class="fw-semibold text-info">${v2 || '<span class="text-muted">—</span>'}</td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm" name="Variants[${idx}].Sku" data-field="sku" value="${skuVal.replace(/"/g, '&quot;')}" placeholder="Tự tạo" />
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm vn-money-input fw-bold" name="Variants[${idx}].Price" data-field="price" value="${priceVal}" />
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm vn-money-input text-primary" name="Variants[${idx}].CostPrice" data-field="costPrice" value="${costPriceVal}" />
+                                </td>
+                                <td>
+                                    <input type="number" min="0" class="form-control form-control-sm text-center fw-bold" name="Variants[${idx}].StockQuantity" data-field="stock" value="${stockVal}" />
+                                </td>
+                                <td>
+                                    <input type="number" min="1" class="form-control form-control-sm" name="Variants[${idx}].WeightGram" data-field="weight" value="${weightVal}" />
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" min="1" class="form-control px-1 text-center" name="Variants[${idx}].LengthCm" data-field="length" value="${lVal}" title="Dài (cm)" />
+                                        <input type="number" min="1" class="form-control px-1 text-center" name="Variants[${idx}].WidthCm" data-field="width" value="${wVal}" title="Rộng (cm)" />
+                                        <input type="number" min="1" class="form-control px-1 text-center" name="Variants[${idx}].HeightCm" data-field="height" value="${hVal}" title="Cao (cm)" />
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <input type="hidden" name="Variants[${idx}].Option1ImageUrl" data-field="option1ImageUrl" value="${imgVal.replace(/"/g, '&quot;')}" />
+                                        <input type="hidden" name="Variants[${idx}].ImageUrl" data-field="imageUrl" value="${imgVal.replace(/"/g, '&quot;')}" />
+                                        <input type="file" accept="image/*" class="d-none var-img-file-input" />
+                                        <div class="position-relative d-inline-flex align-items-center justify-content-center border rounded bg-light var-img-trigger" role="button" title="Bấm để tải ảnh từ máy tính" style="width:38px;height:38px;flex-shrink:0;overflow:hidden;">
+                                            <img src="${imgVal.replace(/"/g, '&quot;')}" class="var-img-thumb ${imgVal ? '' : 'd-none'}" style="width:100%;height:100%;object-fit:cover;" />
+                                            <i class="bx bx-image-add text-muted fs-5 var-img-empty ${imgVal ? 'd-none' : ''}"></i>
+                                        </div>
+                                        <button type="button" class="btn btn-xs btn-soft-primary px-2 py-1 var-img-trigger" title="Chọn ảnh từ máy">
+                                            <i class="bx bx-upload"></i> Ảnh
+                                        </button>
+                                        <button type="button" class="btn btn-xs btn-soft-danger px-1.5 py-1 var-img-clear ${imgVal ? '' : 'd-none'}" title="Xóa ảnh">
+                                            &times;
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input" name="Variants[${idx}].IsActive" data-field="isActive" value="true" ${activeVal ? 'checked' : ''} />
+                                    <input type="hidden" name="Variants[${idx}].IsActive" value="false" />
+                                </td>
+                            </tr>`;
+                        idx++;
+                    });
+                });
+
+                dynamicVariantsBody.innerHTML = rowsHtml;
+                initMoneyInputs();
+                bindVariantTableEvents();
+                updateBulkSelectedCount();
+                refreshTab1VariantSummary();
+            }
+
+            function bindVariantTableEvents() {
+                dynamicVariantsBody.querySelectorAll('.variant-row-chk').forEach(chk => {
+                    chk.addEventListener('change', () => {
+                        chk.closest('tr')?.classList.toggle('table-active', chk.checked);
+                        updateBulkSelectedCount();
+                    });
+                });
+
+                dynamicVariantsBody.querySelectorAll('input[data-field]').forEach(inp => {
+                    inp.addEventListener('input', () => refreshTab1VariantSummary());
+                });
+
+                dynamicVariantsBody.querySelectorAll('tr[data-opt-key]').forEach(tr => {
+                    const fileInput = tr.querySelector('.var-img-file-input');
+                    const triggers = tr.querySelectorAll('.var-img-trigger');
+                    const clearBtn = tr.querySelector('.var-img-clear');
+
+                    triggers.forEach(t => t.addEventListener('click', () => fileInput?.click()));
+
+                    fileInput?.addEventListener('change', async () => {
+                        const file = fileInput.files?.[0];
+                        if (!file) return;
+                        try {
+                            const res = await uploadVariantFile(file);
+                            if (res && res.ok && res.url) {
+                                setRowVariantImage(tr, res.url);
+                                const syncSameOpt1 = document.getElementById('chkSyncImgByOpt1')?.checked;
+                                if (syncSameOpt1 && tr.dataset.opt1) {
+                                    dynamicVariantsBody.querySelectorAll('tr[data-opt-key]').forEach(otherTr => {
+                                        if (otherTr !== tr && otherTr.dataset.opt1 === tr.dataset.opt1) {
+                                            const curImg = otherTr.querySelector('[data-field="imageUrl"]')?.value;
+                                            if (!curImg) setRowVariantImage(otherTr, res.url);
+                                        }
+                                    });
+                                }
+                                saveCurrentVariantRowsToCache();
+                            }
+                        } catch (err) {
+                            alert('Không thể tải ảnh biến thể lên. Vui lòng thử lại.');
+                        } finally {
+                            fileInput.value = '';
+                        }
+                    });
+
+                    clearBtn?.addEventListener('click', () => {
+                        setRowVariantImage(tr, '');
+                        saveCurrentVariantRowsToCache();
+                    });
+                });
+            }
+
+            document.getElementById('chkAllVariants')?.addEventListener('change', function () {
+                const check = this.checked;
+                dynamicVariantsBody.querySelectorAll('.variant-row-chk').forEach(c => {
+                    c.checked = check;
+                    c.closest('tr')?.classList.toggle('table-active', check);
+                });
+                updateBulkSelectedCount();
+            });
+
+            function addOpt1Value(val) {
+                const v = (val || '').trim();
+                if (!v || opt1Values.includes(v)) return;
+                saveCurrentVariantRowsToCache();
+                opt1Values.push(v);
+                renderTags();
+                renderCartesianTable();
+            }
+
+            function addOpt2Value(val) {
+                const v = (val || '').trim();
+                if (!v) return;
+                hasGroup2 = true;
+                if (opt2Values.includes(v)) return;
+                saveCurrentVariantRowsToCache();
+                opt2Values.push(v);
+                renderTags();
+                renderCartesianTable();
+                syncSizeGuideFromOptions();
+            }
+
+            document.getElementById('btnAddOpt1Val')?.addEventListener('click', () => {
+                addOpt1Value(opt1ValueInput.value);
+                opt1ValueInput.value = '';
+                opt1ValueInput.focus();
+            });
+            opt1ValueInput?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); addOpt1Value(opt1ValueInput.value); opt1ValueInput.value = ''; }
+            });
+
+            document.getElementById('btnAddOpt2Val')?.addEventListener('click', () => {
+                addOpt2Value(opt2ValueInput.value);
+                opt2ValueInput.value = '';
+                opt2ValueInput.focus();
+            });
+            opt2ValueInput?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); addOpt2Value(opt2ValueInput.value); opt2ValueInput.value = ''; }
+            });
+
+            opt1NameInput?.addEventListener('input', () => { thOpt1.textContent = opt1NameInput.value || 'Phân loại 1'; });
+            opt2NameInput?.addEventListener('input', () => { thOpt2.textContent = opt2NameInput.value || 'Phân loại 2'; });
+
+            document.getElementById('btnAddOptionGroup')?.addEventListener('click', () => {
+                hasGroup2 = true;
+                if (!opt2NameInput.value) opt2NameInput.value = 'Kích cỡ / Dung lượng';
+                renderTags();
+                renderCartesianTable();
+            });
+
+            document.getElementById('btnRemoveOptionGroup2')?.addEventListener('click', () => {
+                saveCurrentVariantRowsToCache();
+                hasGroup2 = false;
+                opt2Values = [];
+                opt2NameInput.value = '';
+                renderTags();
+                renderCartesianTable();
+            });
+
+            // Presets: Fashion & Electronics
+            const fashionDrawer = document.getElementById('fashionPresetDrawer');
+            document.getElementById('btnToggleFashionPreset')?.addEventListener('click', () => {
+                opt1NameInput.value = 'Màu sắc';
+                opt2NameInput.value = 'Kích cỡ';
+                hasGroup2 = true;
+                fashionDrawer?.classList.remove('d-none');
+                renderTags();
+                renderCartesianTable();
+            });
+            document.getElementById('btnCloseFashionDrawer')?.addEventListener('click', () => fashionDrawer?.classList.add('d-none'));
+
+            document.querySelectorAll('.fashion-color-chip').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('active');
+                    addOpt1Value(btn.dataset.val);
+                });
+            });
+            document.querySelectorAll('.fashion-size-chip').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('active');
+                    addOpt2Value(btn.dataset.val);
+                });
+            });
+
+            document.getElementById('btnFillTechPreset')?.addEventListener('click', () => {
+                saveCurrentVariantRowsToCache();
+                opt1NameInput.value = 'Màu sắc';
+                opt2NameInput.value = 'Dung lượng';
+                hasGroup2 = true;
+                if (opt1Values.length === 0) opt1Values = ['Đen Titan', 'Trắng Titan'];
+                if (opt2Values.length === 0) opt2Values = ['128GB', '256GB', '512GB'];
+                renderTags();
+                renderCartesianTable();
+            });
+
+            // Bulk Apply
+            document.getElementById('btnApplyBulkVariants')?.addEventListener('click', () => {
+                const p = document.getElementById('bulkPrice')?.value;
+                const cp = document.getElementById('bulkCostPrice')?.value;
+                const s = document.getElementById('bulkStock')?.value;
+                const w = document.getElementById('bulkWeight')?.value;
+                const l = document.getElementById('bulkL')?.value;
+                const wi = document.getElementById('bulkW')?.value;
+                const h = document.getElementById('bulkH')?.value;
+
+                const allRows = Array.from(dynamicVariantsBody.querySelectorAll('tr[data-opt-key]'));
+                const selectedRows = allRows.filter(tr => tr.querySelector('.variant-row-chk')?.checked);
+                if (selectedRows.length === 0) {
+                    alert('Vui lòng tích chọn ít nhất 1 biến thể (hoặc bấm nút Chọn nhanh theo phân loại ở trên) để áp dụng giá!');
+                    return;
+                }
+
+                selectedRows.forEach(tr => {
+                    if (p) { const el = tr.querySelector('[data-field="price"]'); if (el) { el.value = p; el.dataset.original = p.replace(/\./g, ''); } }
+                    if (cp) { const el = tr.querySelector('[data-field="costPrice"]'); if (el) { el.value = cp; el.dataset.original = cp.replace(/\./g, ''); } }
+                    if (s !== '') { const el = tr.querySelector('[data-field="stock"]'); if (el) el.value = s; }
+                    if (w) { const el = tr.querySelector('[data-field="weight"]'); if (el) el.value = w; }
+                    if (l) { const el = tr.querySelector('[data-field="length"]'); if (el) el.value = l; }
+                    if (wi) { const el = tr.querySelector('[data-field="width"]'); if (el) el.value = wi; }
+                    if (h) { const el = tr.querySelector('[data-field="height"]'); if (el) el.value = h; }
+
+                    tr.classList.add('table-success');
+                    setTimeout(() => tr.classList.remove('table-success'), 750);
+                });
+                saveCurrentVariantRowsToCache();
+            });
+
+            // ── 5. Size Guide Table ──
+            const sizeGuideBody = document.getElementById('sizeGuideBody');
+            let sgRows = Array.isArray(initialSizeGuide) ? [...initialSizeGuide] : [];
+
+            function renderSizeGuide() {
+                if (!sizeGuideBody) return;
+                sizeGuideBody.innerHTML = '';
+                sgRows.forEach((r, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><input class="form-control form-control-sm fw-bold" name="SizeGuide[${idx}].SizeLabel" value="${(r.sizeLabel || r.SizeLabel || '').replace(/"/g, '&quot;')}" placeholder="S/M/L" /></td>
+                        <td><input class="form-control form-control-sm" name="SizeGuide[${idx}].HeightRange" value="${r.heightRange || r.HeightRange || ''}" placeholder="160-170" /></td>
+                        <td><input class="form-control form-control-sm" name="SizeGuide[${idx}].WeightRange" value="${r.weightRange || r.WeightRange || ''}" placeholder="50-60" /></td>
+                        <td><input class="form-control form-control-sm" name="SizeGuide[${idx}].ShoulderWidth" value="${r.shoulderWidth || r.ShoulderWidth || ''}" /></td>
+                        <td><input class="form-control form-control-sm" name="SizeGuide[${idx}].Bust" value="${r.bust || r.Bust || ''}" /></td>
+                        <td><input class="form-control form-control-sm" name="SizeGuide[${idx}].Waist" value="${r.waist || r.Waist || ''}" /></td>
+                        <td><input class="form-control form-control-sm" name="SizeGuide[${idx}].Hip" value="${r.hip || r.Hip || ''}" /></td>
+                        <td><input class="form-control form-control-sm" name="SizeGuide[${idx}].ClothingLength" value="${r.clothingLength || r.ClothingLength || ''}" /></td>
+                        <td><input class="form-control form-control-sm" name="SizeGuide[${idx}].ShoeLength" value="${r.shoeLength || r.ShoeLength || ''}" /></td>
+                        <td><input class="form-control form-control-sm" name="SizeGuide[${idx}].Note" value="${r.note || r.Note || ''}" /></td>
+                        <td><button type="button" class="btn btn-xs btn-outline-danger">&times;</button></td>
+                    `;
+                    tr.querySelector('button').onclick = () => {
+                        sgRows.splice(idx, 1);
+                        renderSizeGuide();
+                    };
+                    sizeGuideBody.appendChild(tr);
+                });
+            }
+
+            function syncSizeGuideFromOptions() {
+                const existingLabels = new Set(sgRows.map(x => (x.sizeLabel || x.SizeLabel || '').trim()));
+                const sourceList = opt2Values.length > 0 ? opt2Values : opt1Values;
+                sourceList.forEach(s => {
+                    if (s && !existingLabels.has(s)) {
+                        sgRows.push({ sizeLabel: s });
+                        existingLabels.add(s);
+                    }
+                });
+                renderSizeGuide();
+            }
+
+            document.getElementById('btnAddSizeGuideRow')?.addEventListener('click', () => {
+                sgRows.push({ sizeLabel: '' });
+                renderSizeGuide();
+            });
+
+            // ── 6. Money Formatting ──
+            function initMoneyInputs() {
+                const fmt = v => {
+                    if (!v) return "";
+                    let pts = v.toString().split('.');
+                    pts[0] = pts[0].replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                    return pts.length > 1 ? pts[0] + "," + pts[1] : pts[0];
+                };
+                document.querySelectorAll('.vn-money-input').forEach(i => {
+                    if (i.dataset.init) return;
+                    i.dataset.init = "1";
+                    if (i.value) {
+                        i.dataset.original = i.value.replace(/\./g, "").replace(/,/g, ".");
+                        i.value = fmt(i.dataset.original);
+                    }
+                    i.addEventListener('input', function () {
+                        let raw = this.value.replace(/\./g, "").replace(/,/g, ".");
+                        this.dataset.original = raw;
+                        this.value = fmt(raw);
+                    });
+                });
+            }
+
+            document.getElementById('admin-product-create-form')?.addEventListener('submit', () => {
+                document.querySelectorAll('.vn-money-input').forEach(i => {
+                    i.value = i.dataset.original || i.value.replace(/\./g, "").replace(/,/g, ".");
+                });
+            });
+
+            // Initial Render
+            syncModeVisibility();
+            renderTags();
+            renderCartesianTable();
+            renderSizeGuide();
+            initMoneyInputs();
         })();
     </script>
 }

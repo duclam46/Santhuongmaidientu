@@ -16,12 +16,14 @@ public class ReturnRequestsController : Controller
     private readonly DataContext _db;
     private readonly GhnClient _ghn;
     private readonly GhnOptions _ghnOptions;
+    private readonly WalletService _walletService;
 
-    public ReturnRequestsController(DataContext db, GhnClient ghn, IOptions<GhnOptions> ghnOptions)
+    public ReturnRequestsController(DataContext db, GhnClient ghn, IOptions<GhnOptions> ghnOptions, WalletService walletService)
     {
         _db = db;
         _ghn = ghn;
         _ghnOptions = ghnOptions.Value;
+        _walletService = walletService;
     }
 
     private bool TryGetSignedInAccount(out int accountId, out string? role)
@@ -46,6 +48,7 @@ public class ReturnRequestsController : Controller
             .FirstOrDefault();
 
     [HttpGet]
+    [HttpGet("/Admin/ReturnRequests")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         if (!TryGetSignedInAccount(out var accountId, out var role))
@@ -111,6 +114,7 @@ public class ReturnRequestsController : Controller
         var rr = await _db.ReturnRequests
             .Include(r => r.Order)
             .ThenInclude(o => o!.Items)
+            .ThenInclude(i => i.Variant)
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
         if (rr is null) return NotFound();
@@ -152,19 +156,31 @@ public class ReturnRequestsController : Controller
                     && order.ShippingDistrictId.HasValue && order.ShippingDistrictId > 0
                     && !string.IsNullOrWhiteSpace(order.ShippingWardCode))
                 {
-                    var totalQty = order.Items.Sum(i => i.Quantity);
-                    if (totalQty <= 0) totalQty = 1;
+                    var baseWeight = _ghnOptions.DefaultWeightGram <= 0 ? 300 : _ghnOptions.DefaultWeightGram;
+                    var totalWeight = order.Items.Sum(i =>
+                        (i.Variant != null && i.Variant.WeightGram > 0 ? i.Variant.WeightGram : baseWeight) * Math.Max(1, i.Quantity));
+                    var weight = Math.Min(50000, Math.Max(1, totalWeight));
 
-                    var baseWeight = _ghnOptions.DefaultWeightGram <= 0 ? 500 : _ghnOptions.DefaultWeightGram;
-                    var weight = Math.Min(50000, Math.Max(1, baseWeight * totalQty));
-                    var length = _ghnOptions.DefaultLengthCm <= 0 ? 20 : _ghnOptions.DefaultLengthCm;
-                    var width = _ghnOptions.DefaultWidthCm <= 0 ? 15 : _ghnOptions.DefaultWidthCm;
-                    var height = _ghnOptions.DefaultHeightCm <= 0 ? 10 : _ghnOptions.DefaultHeightCm;
+                    var defaultLen = _ghnOptions.DefaultLengthCm <= 0 ? 15 : _ghnOptions.DefaultLengthCm;
+                    var defaultWid = _ghnOptions.DefaultWidthCm <= 0 ? 15 : _ghnOptions.DefaultWidthCm;
+                    var defaultHei = _ghnOptions.DefaultHeightCm <= 0 ? 10 : _ghnOptions.DefaultHeightCm;
+
+                    var length = order.Items.Any(i => i.Variant != null && i.Variant.LengthCm > 0)
+                        ? Math.Min(150, order.Items.Max(i => i.Variant?.LengthCm ?? defaultLen))
+                        : defaultLen;
+                    var width = order.Items.Any(i => i.Variant != null && i.Variant.WidthCm > 0)
+                        ? Math.Min(150, order.Items.Max(i => i.Variant?.WidthCm ?? defaultWid))
+                        : defaultWid;
+                    var height = order.Items.Any(i => i.Variant != null && i.Variant.HeightCm > 0)
+                        ? Math.Min(150, order.Items.Sum(i => (i.Variant?.HeightCm ?? defaultHei) * Math.Max(1, i.Quantity)))
+                        : defaultHei;
+
+                    var serviceTypeId = weight >= 20000 ? 5 : (_ghnOptions.ServiceTypeId <= 0 ? 2 : _ghnOptions.ServiceTypeId);
 
                     // Return order: customer sends to shop
                     var returnReq = new GhnCreateOrderRequest
                     {
-                        ServiceTypeId = _ghnOptions.ServiceTypeId <= 0 ? 2 : _ghnOptions.ServiceTypeId,
+                        ServiceTypeId = serviceTypeId,
                         PaymentTypeId = 2, // shop pays
                         Note = $"Hoàn hàng đơn {order.OrderCode}",
                         RequiredNote = "KHONGCHOXEMHANG",
@@ -192,7 +208,11 @@ public class ReturnRequestsController : Controller
                             {
                                 Name = i.ProductName,
                                 Quantity = Math.Max(1, i.Quantity),
-                                Price = (int)Math.Max(0, Math.Round(i.UnitPrice, MidpointRounding.AwayFromZero))
+                                Price = (int)Math.Max(0, Math.Round(i.UnitPrice, MidpointRounding.AwayFromZero)),
+                                Weight = i.Variant != null && i.Variant.WeightGram > 0 ? i.Variant.WeightGram : baseWeight,
+                                Length = i.Variant != null && i.Variant.LengthCm > 0 ? i.Variant.LengthCm : defaultLen,
+                                Width = i.Variant != null && i.Variant.WidthCm > 0 ? i.Variant.WidthCm : defaultWid,
+                                Height = i.Variant != null && i.Variant.HeightCm > 0 ? i.Variant.HeightCm : defaultHei
                             })
                             .ToList()
                     };
@@ -244,6 +264,19 @@ public class ReturnRequestsController : Controller
                 ? "Shop đã duyệt yêu cầu trả hàng. GHN sẽ đến lấy hàng."
                 : $"Shop đã duyệt yêu cầu trả hàng. Mã đơn hoàn GHN: {returnTrackingCode}" +
                   (string.IsNullOrWhiteSpace(estimatedPickupTime) ? "" : $". Thời gian lấy: {estimatedPickupTime}"),
+            CreatedAt = DateTime.UtcNow
+        });
+
+        _db.SystemNotifications.Add(new SystemNotification
+        {
+            Title = $"Yêu cầu trả hàng đơn #{order.OrderCode} đã được duyệt",
+            Content = string.IsNullOrWhiteSpace(returnTrackingCode)
+                ? $"Gian hàng đã chấp nhận yêu cầu trả hàng cho đơn #{order.OrderCode}. Bưu tá GHN sẽ sớm liên hệ lấy hàng hoàn."
+                : $"Gian hàng đã chấp nhận yêu cầu trả hàng cho đơn #{order.OrderCode}. Mã vận đơn hoàn GHN: {returnTrackingCode}" +
+                  (string.IsNullOrWhiteSpace(estimatedPickupTime) ? "." : $" (Dự kiến lấy hàng: {estimatedPickupTime})."),
+            TargetType = "Account",
+            TargetAccountId = order.CustomerId,
+            SentByAdminId = accountId,
             CreatedAt = DateTime.UtcNow
         });
 
@@ -305,11 +338,106 @@ public class ReturnRequestsController : Controller
                 Note = $"Shop từ chối yêu cầu trả hàng. Lý do: {rr.RejectionNote}",
                 CreatedAt = DateTime.UtcNow
             });
+
+            _db.SystemNotifications.Add(new SystemNotification
+            {
+                Title = $"Yêu cầu trả hàng đơn #{order.OrderCode} bị từ chối",
+                Content = $"Gian hàng đã từ chối yêu cầu trả hàng cho đơn #{order.OrderCode}. Lý do: {rr.RejectionNote}. Nếu chưa đồng ý, bạn có thể gửi Khiếu nại lên Trọng tài Sàn Sellzy.",
+                TargetType = "Account",
+                TargetAccountId = order.CustomerId,
+                SentByAdminId = accountId,
+                CreatedAt = DateTime.UtcNow
+            });
         }
 
         await _db.SaveChangesAsync(cancellationToken);
 
         TempData["AdminToast"] = "Đã từ chối yêu cầu trả hàng.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CompleteRefund(int id, CancellationToken cancellationToken)
+    {
+        if (!TryGetSignedInAccount(out var accountId, out var role))
+        {
+            TempData["AdminToast"] = "Vui lòng đăng nhập.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var rr = await _db.ReturnRequests
+            .Include(r => r.Order)
+                .ThenInclude(o => o!.Items)
+                    .ThenInclude(i => i.Variant)
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
+        if (rr is null || rr.Order is null) return NotFound();
+
+        if (string.Equals(role, "Shop", StringComparison.OrdinalIgnoreCase)
+            && rr.Order.ShopId != accountId)
+        {
+            TempData["AdminToast"] = "Bạn không có quyền hoàn tiền cho yêu cầu này.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        if (rr.Status == "Completed")
+        {
+            TempData["AdminToast"] = "Yêu cầu này đã được hoàn tiền trước đó.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var order = rr.Order;
+        decimal refundAmount = Math.Max(0m, order.FinalAmount);
+
+        if (refundAmount > 0m)
+        {
+            await _walletService.RefundAsync(
+                order.CustomerId,
+                refundAmount,
+                order.OrderCode,
+                $"Hoàn tiền trả hàng đơn #{order.OrderCode} (Đã duyệt bởi {(string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) ? "Sàn Sellzy" : "Gian hàng")})",
+                cancellationToken);
+        }
+
+        // Hoàn lại tồn kho cho các biến thể trong đơn hàng
+        foreach (var item in order.Items)
+        {
+            if (item.Variant != null)
+            {
+                item.Variant.StockQuantity += Math.Max(0, item.Quantity);
+                item.Variant.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        rr.Status = "Completed";
+        rr.UpdatedAt = DateTime.UtcNow;
+
+        order.OrderStatus = "Returned";
+        order.PaymentStatus = "Refunded";
+        order.UpdatedAt = DateTime.UtcNow;
+
+        _db.OrderTrackingLogs.Add(new OrderTrackingLog
+        {
+            OrderId = order.Id,
+            Status = "Returned",
+            Note = $"Đã hoàn tất trả hàng và hoàn tiền +{refundAmount:N0}₫ trực tiếp vào Ví Sellzy của khách hàng.",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        _db.SystemNotifications.Add(new SystemNotification
+        {
+            Title = $"Hoàn tiền thành công +{refundAmount:N0}₫ đơn #{order.OrderCode}",
+            Content = $"Yêu cầu trả hàng/hoàn tiền cho đơn #{order.OrderCode} đã hoàn tất. Số tiền {refundAmount:N0}₫ đã được cộng trực tiếp vào Ví Sellzy của bạn.",
+            TargetType = "Account",
+            TargetAccountId = order.CustomerId,
+            SentByAdminId = accountId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        TempData["AdminToast"] = $"Đã hoàn tất trả hàng, nhập lại kho và hoàn +{refundAmount:N0}₫ vào Ví Sellzy của khách hàng!";
         return RedirectToAction(nameof(Details), new { id });
     }
 }

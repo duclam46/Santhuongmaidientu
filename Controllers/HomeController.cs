@@ -29,13 +29,14 @@ public class HomeController : Controller
                 CategoryId = c.Id,
                 Name = c.Name,
                 Slug = c.Slug,
+                IconUrl = c.IconUrl,
                 ProductCount = _context.Products.Count(p => p.Status == "Active" && 
                     (p.CategoryId == c.Id || 
                      (p.Category != null && p.Category.ParentId == c.Id) || 
                      (p.Category != null && p.Category.Parent != null && p.Category.Parent.ParentId == c.Id) || 
                      (p.Category != null && p.Category.Parent != null && p.Category.Parent.Parent != null && p.Category.Parent.Parent.ParentId == c.Id)))
             })
-            .Take(10)
+            .Take(12)
             .ToListAsync(cancellationToken);
 
         var latestRaw = await _context.Products
@@ -65,7 +66,7 @@ public class HomeController : Controller
                     .Select(i => i.ImageUrl)
                     .ToList(),
                 Price = p.Variants
-                    .Where(v => v.IsActive)
+                    .Where(v => v.IsActive && !v.IsDeleted)
                     .Select(v => (decimal?)((v.SalePrice.HasValue
                             && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
                             && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
@@ -73,7 +74,7 @@ public class HomeController : Controller
                         : v.Price))
                     .Min() ?? 0m,
                 OldPrice = p.Variants
-                    .Where(v => v.IsActive
+                    .Where(v => v.IsActive && !v.IsDeleted
                         && v.SalePrice.HasValue
                         && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
                         && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal)
@@ -81,14 +82,13 @@ public class HomeController : Controller
                     .Select(v => (decimal?)v.Price)
                     .Min(),
                 Sizes = p.Variants
-                    .Where(v => v.IsActive && !v.IsDeleted && v.SizeId != null && v.Size != null)
-                    .OrderBy(v => v.Size.SortOrder)
-                    .Select(v => v.Size.Name)
+                    .Where(v => v.IsActive && !v.IsDeleted && v.OptionValue2Id != null && v.OptionValue2 != null)
+                    .Select(v => v.OptionValue2!.Value)
                     .Distinct()
                     .ToList(),
                 Colors = p.Variants
-                    .Where(v => v.IsActive && !v.IsDeleted && v.ColorId != null && v.Color != null)
-                    .Select(v => new { v.Color.Name, v.Color.Code })
+                    .Where(v => v.IsActive && !v.IsDeleted && v.OptionValue1Id != null && v.OptionValue1 != null)
+                    .Select(v => v.OptionValue1!.Value)
                     .Distinct()
                     .ToList()
             })
@@ -115,7 +115,7 @@ public class HomeController : Controller
                     .Where(url => !string.IsNullOrEmpty(url))
                     .ToList(),
                 Sizes = p.Sizes,
-                Colors = p.Colors.Select(c => new ColorVm { Name = c.Name, Code = c.Code }).ToList()
+                Colors = p.Colors.Select(c => new ColorVm { Name = c, Code = null }).ToList()
             })
             .ToList();
 
@@ -147,7 +147,7 @@ public class HomeController : Controller
                     .Select(i => i.ImageUrl)
                     .ToList(),
                 Price = p.Variants
-                    .Where(v => v.IsActive)
+                    .Where(v => v.IsActive && !v.IsDeleted)
                     .Select(v => (decimal?)((v.SalePrice.HasValue
                             && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
                             && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
@@ -155,7 +155,7 @@ public class HomeController : Controller
                         : v.Price))
                     .Min() ?? 0m,
                 OldPrice = p.Variants
-                    .Where(v => v.IsActive
+                    .Where(v => v.IsActive && !v.IsDeleted
                         && v.SalePrice.HasValue
                         && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
                         && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal)
@@ -163,14 +163,13 @@ public class HomeController : Controller
                     .Select(v => (decimal?)v.Price)
                     .Min(),
                 Sizes = p.Variants
-                    .Where(v => v.IsActive && !v.IsDeleted && v.SizeId != null && v.Size != null)
-                    .OrderBy(v => v.Size.SortOrder)
-                    .Select(v => v.Size.Name)
+                    .Where(v => v.IsActive && !v.IsDeleted && v.OptionValue2Id != null && v.OptionValue2 != null)
+                    .Select(v => v.OptionValue2!.Value)
                     .Distinct()
                     .ToList(),
                 Colors = p.Variants
-                    .Where(v => v.IsActive && !v.IsDeleted && v.ColorId != null && v.Color != null)
-                    .Select(v => new { v.Color.Name, v.Color.Code })
+                    .Where(v => v.IsActive && !v.IsDeleted && v.OptionValue1Id != null && v.OptionValue1 != null)
+                    .Select(v => v.OptionValue1!.Value)
                     .Distinct()
                     .ToList()
             })
@@ -197,7 +196,7 @@ public class HomeController : Controller
                     .Where(url => !string.IsNullOrEmpty(url))
                     .ToList(),
                 Sizes = p.Sizes,
-                Colors = p.Colors.Select(c => new ColorVm { Name = c.Name, Code = c.Code }).ToList()
+                Colors = p.Colors.Select(c => new ColorVm { Name = c, Code = null }).ToList()
             })
             .ToList();
 
@@ -230,7 +229,7 @@ public class HomeController : Controller
                     .Select(i => i.ImageUrl)
                     .ToList(),
                 Price = p.Variants
-                    .Where(v => v.IsActive)
+                    .Where(v => v.IsActive && !v.IsDeleted)
                     .Select(v => (decimal?)((v.SalePrice.HasValue
                             && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
                             && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
@@ -238,7 +237,7 @@ public class HomeController : Controller
                         : v.Price))
                     .Min() ?? 0m,
                 OldPrice = p.Variants
-                    .Where(v => v.IsActive
+                    .Where(v => v.IsActive && !v.IsDeleted
                         && v.SalePrice.HasValue
                         && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
                         && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal)
@@ -246,14 +245,13 @@ public class HomeController : Controller
                     .Select(v => (decimal?)v.Price)
                     .Min(),
                 Sizes = p.Variants
-                    .Where(v => v.IsActive && !v.IsDeleted && v.SizeId != null && v.Size != null)
-                    .OrderBy(v => v.Size.SortOrder)
-                    .Select(v => v.Size.Name)
+                    .Where(v => v.IsActive && !v.IsDeleted && v.OptionValue2Id != null && v.OptionValue2 != null)
+                    .Select(v => v.OptionValue2!.Value)
                     .Distinct()
                     .ToList(),
                 Colors = p.Variants
-                    .Where(v => v.IsActive && !v.IsDeleted && v.ColorId != null && v.Color != null)
-                    .Select(v => new { v.Color.Name, v.Color.Code })
+                    .Where(v => v.IsActive && !v.IsDeleted && v.OptionValue1Id != null && v.OptionValue1 != null)
+                    .Select(v => v.OptionValue1!.Value)
                     .Distinct()
                     .ToList()
             })
@@ -280,7 +278,7 @@ public class HomeController : Controller
                     .Where(url => !string.IsNullOrEmpty(url))
                     .ToList(),
                 Sizes = p.Sizes,
-                Colors = p.Colors.Select(c => new ColorVm { Name = c.Name, Code = c.Code }).ToList()
+                Colors = p.Colors.Select(c => new ColorVm { Name = c, Code = null }).ToList()
             })
             .ToList();
 
@@ -309,7 +307,7 @@ public class HomeController : Controller
                     .Select(i => i.ImageUrl)
                     .FirstOrDefault(),
                 Price = p.Variants
-                    .Where(v => v.IsActive)
+                    .Where(v => v.IsActive && !v.IsDeleted)
                     .Select(v => (decimal?)((v.SalePrice.HasValue
                             && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
                             && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal))
@@ -317,7 +315,7 @@ public class HomeController : Controller
                         : v.Price))
                     .Min() ?? 0m,
                 OldPrice = p.Variants
-                    .Where(v => v.IsActive
+                    .Where(v => v.IsActive && !v.IsDeleted
                         && v.SalePrice.HasValue
                         && (!v.SaleStartDate.HasValue || v.SaleStartDate <= nowLocal)
                         && (!v.SaleEndDate.HasValue || v.SaleEndDate >= nowLocal)
@@ -325,8 +323,8 @@ public class HomeController : Controller
                     .Select(v => (decimal?)v.Price)
                     .Min(),
                 Colors = p.Variants
-                    .Where(v => v.IsActive && !v.IsDeleted && v.ColorId != null && v.Color != null)
-                    .Select(v => new { v.Color.Name, v.Color.Code })
+                    .Where(v => v.IsActive && !v.IsDeleted && v.OptionValue1Id != null && v.OptionValue1 != null)
+                    .Select(v => v.OptionValue1!.Value)
                     .Distinct()
                     .ToList()
             })
@@ -347,7 +345,7 @@ public class HomeController : Controller
                 ? (int)Math.Round((p.OldPrice.Value - p.Price) * 100m / p.OldPrice.Value)
                 : 0,
             PrimaryImageUrl = ImageUrlHelper.NormalizeStaticFileUrl(p.PrimaryImageUrl),
-            Colors = p.Colors.Select(c => new ColorVm { Name = c.Name, Code = c.Code }).ToList()
+            Colors = p.Colors.Select(c => new ColorVm { Name = c, Code = null }).ToList()
         }).ToList();
 
         var categoryDeals = new Dictionary<string, List<ProductCardVm>>();
@@ -366,6 +364,64 @@ public class HomeController : Controller
             categoryDeals[rootCat.Slug] = rootDeals;
         }
 
+        var dynamicBanners = await _context.HomeBanners
+            .AsNoTracking()
+            .Where(b => b.IsActive)
+            .OrderBy(b => b.SortOrder)
+            .ThenByDescending(b => b.Id)
+            .Take(6)
+            .ToListAsync(cancellationToken);
+
+        var activeCampaigns = await _context.PlatformCampaigns
+            .AsNoTracking()
+            .Where(c => c.IsActive && c.EndDate >= DateTime.UtcNow)
+            .OrderBy(c => c.StartDate)
+            .Take(3)
+            .ToListAsync(cancellationToken);
+
+        int viewerId = 0;
+        if (User?.Identity?.IsAuthenticated == true)
+        {
+            var rawId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            int.TryParse(rawId, out viewerId);
+        }
+
+        var savedVoucherIds = viewerId > 0
+            ? (await _context.SavedVouchers
+                .AsNoTracking()
+                .Where(s => s.AccountId == viewerId)
+                .Select(s => s.VoucherId)
+                .ToListAsync(cancellationToken)).ToHashSet()
+            : new HashSet<int>();
+
+        var hotRawVouchers = await _context.Vouchers
+            .AsNoTracking()
+            .Where(v => v.IsActive
+                     && v.StartDate <= nowLocal
+                     && v.EndDate >= nowLocal
+                     && v.TargetAudience != "PrivateChatOnly"
+                     && (v.UsageLimit == 0 || v.UsedCount < v.UsageLimit))
+            .OrderByDescending(v => v.DiscountType == "FreeShipping")
+            .ThenByDescending(v => v.ShopId == null)
+            .ThenByDescending(v => v.DiscountValue)
+            .Take(4)
+            .ToListAsync(cancellationToken);
+
+        var hotVouchers = hotRawVouchers.Select(v => new StorefrontVoucherVm
+        {
+            Id = v.Id,
+            Code = v.Code,
+            DiscountType = v.DiscountType,
+            DiscountValue = v.DiscountValue,
+            MinOrderValue = v.MinOrderValue,
+            MaxDiscountValue = v.MaxDiscountValue,
+            EndDate = v.EndDate,
+            IsShopVoucher = v.ShopId.HasValue,
+            SponsorBadge = v.DiscountType == "FreeShipping" ? "Freeship" : (v.ShopId.HasValue ? "Voucher Shop" : "Voucher Sàn"),
+            ScopeBadge = v.ScopeType == "MallOnly" ? "Sellzy Mall" : (v.ShopId.HasValue ? "Gian hàng" : "Toàn Sàn"),
+            IsSaved = savedVoucherIds.Contains(v.Id)
+        }).ToList();
+
         var vm = new HomeIndexVm
         {
             TopCategories = topCategories,
@@ -373,7 +429,10 @@ public class HomeController : Controller
             FeaturedProducts = featuredProducts,
             TopSellers = topSellers,
             MostWanted = featuredProducts,
-            CategoryDeals = categoryDeals
+            CategoryDeals = categoryDeals,
+            DynamicBanners = dynamicBanners,
+            ActiveCampaigns = activeCampaigns,
+            HotVouchers = hotVouchers
         };
 
         return View(vm);

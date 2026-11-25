@@ -260,7 +260,259 @@ public static class DbSeeder
                     CREATE INDEX IX_ReturnRequests_Status ON ReturnRequests(Status);
                 END
 
+                -- ==========================================================
+                -- ORDER DISPUTES & 3-PARTY ARBITRATION (SHOPEE-LIKE + AI)
+                -- ==========================================================
+                IF OBJECT_ID('dbo.OrderDisputes', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [dbo].[OrderDisputes] (
+                        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+                        [DisputeCode] NVARCHAR(40) NOT NULL UNIQUE,
+                        [OrderId] INT NOT NULL CONSTRAINT [FK_OrderDisputes_Orders] FOREIGN KEY REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE,
+                        [CustomerId] INT NOT NULL CONSTRAINT [FK_OrderDisputes_Customer] FOREIGN KEY REFERENCES [dbo].[Accounts]([Id]),
+                        [ShopId] INT NOT NULL CONSTRAINT [FK_OrderDisputes_Shop] FOREIGN KEY REFERENCES [dbo].[Accounts]([Id]),
+                        [Category] NVARCHAR(30) NOT NULL DEFAULT 'Product',
+                        [ReasonTitle] NVARCHAR(150) NOT NULL,
+                        [Description] NVARCHAR(2000) NOT NULL,
+                        [RequestedResolution] NVARCHAR(40) NOT NULL DEFAULT 'ReturnAndRefund',
+                        [RequestedAmount] DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        [ApprovedRefundAmount] DECIMAL(18,2) NOT NULL DEFAULT 0,
+                        [EvidenceUrlsJson] NVARCHAR(4000) NULL,
+                        [Status] NVARCHAR(40) NOT NULL DEFAULT 'Open',
+                        [ShopResponseNote] NVARCHAR(1500) NULL,
+                        [ShopEvidenceUrlsJson] NVARCHAR(4000) NULL,
+                        [ShopRespondedAt] DATETIME2 NULL,
+                        [AdminDecisionNote] NVARCHAR(1500) NULL,
+                        [ResolvedByAdminId] INT NULL,
+                        [ResolvedAt] DATETIME2 NULL,
+                        [IsRefundedToWallet] BIT NOT NULL DEFAULT 0,
+                        [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                        [UpdatedAt] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+                    );
+                    CREATE INDEX IX_OrderDisputes_OrderId ON [dbo].[OrderDisputes]([OrderId]);
+                    CREATE INDEX IX_OrderDisputes_CustomerId ON [dbo].[OrderDisputes]([CustomerId]);
+                    CREATE INDEX IX_OrderDisputes_ShopId ON [dbo].[OrderDisputes]([ShopId]);
+                    CREATE INDEX IX_OrderDisputes_Status ON [dbo].[OrderDisputes]([Status]);
+                END
+
+                IF OBJECT_ID('dbo.OrderDisputeMessages', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [dbo].[OrderDisputeMessages] (
+                        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+                        [DisputeId] INT NOT NULL CONSTRAINT [FK_OrderDisputeMessages_Dispute] FOREIGN KEY REFERENCES [dbo].[OrderDisputes]([Id]) ON DELETE CASCADE,
+                        [SenderAccountId] INT NOT NULL CONSTRAINT [FK_OrderDisputeMessages_Account] FOREIGN KEY REFERENCES [dbo].[Accounts]([Id]),
+                        [SenderRole] NVARCHAR(20) NOT NULL DEFAULT 'Customer',
+                        [Content] NVARCHAR(2000) NOT NULL,
+                        [AttachmentUrl] NVARCHAR(500) NULL,
+                        [CreatedAt] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+                    );
+                    CREATE INDEX IX_OrderDisputeMessages_DisputeId ON [dbo].[OrderDisputeMessages]([DisputeId]);
+                END
+
+                -- ==========================================================
+                -- MULTI-INDUSTRY E-COMMERCE SCHEMA UPGRADE
+                -- ==========================================================
+                -- 1. Categories columns
+                IF COL_LENGTH('dbo.Categories', 'CommissionRate') IS NULL
+                    ALTER TABLE [dbo].[Categories] ADD [CommissionRate] DECIMAL(5, 2) NULL;
+                IF COL_LENGTH('dbo.Categories', 'MaxCommissionAmount') IS NULL
+                    ALTER TABLE [dbo].[Categories] ADD [MaxCommissionAmount] DECIMAL(18, 2) NULL;
+                IF COL_LENGTH('dbo.Categories', 'IconUrl') IS NULL
+                    ALTER TABLE [dbo].[Categories] ADD [IconUrl] NVARCHAR(500) NULL;
+                IF COL_LENGTH('dbo.Categories', 'HasSizeGuide') IS NULL
+                    ALTER TABLE [dbo].[Categories] ADD [HasSizeGuide] BIT NOT NULL DEFAULT 0;
+                IF COL_LENGTH('dbo.Categories', 'IsReturnableDefault') IS NULL
+                    ALTER TABLE [dbo].[Categories] ADD [IsReturnableDefault] BIT NOT NULL DEFAULT 1;
+
+                -- 2. Brands table
+                IF OBJECT_ID('dbo.Brands', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [dbo].[Brands] (
+                        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+                        [Name] NVARCHAR(150) NOT NULL,
+                        [Slug] NVARCHAR(150) NOT NULL UNIQUE,
+                        [LogoUrl] NVARCHAR(500) NULL,
+                        [IsActive] BIT NOT NULL DEFAULT 1,
+                        [CreatedAt] DATETIME2(7) NOT NULL DEFAULT SYSUTCDATETIME()
+                    );
+                END
+
+                -- 3. Products columns
+                IF COL_LENGTH('dbo.Products', 'BrandId') IS NULL
+                    ALTER TABLE [dbo].[Products] ADD [BrandId] INT NULL CONSTRAINT [FK_Products_Brands] FOREIGN KEY REFERENCES [dbo].[Brands]([Id]);
+                IF COL_LENGTH('dbo.Products', 'WarrantyMonths') IS NULL
+                    ALTER TABLE [dbo].[Products] ADD [WarrantyMonths] INT NOT NULL DEFAULT 0;
+                IF COL_LENGTH('dbo.Products', 'WarrantyType') IS NULL
+                    ALTER TABLE [dbo].[Products] ADD [WarrantyType] NVARCHAR(100) NULL;
+                IF COL_LENGTH('dbo.Products', 'IsReturnable') IS NULL
+                    ALTER TABLE [dbo].[Products] ADD [IsReturnable] BIT NOT NULL DEFAULT 1;
+
+                -- 3b. Vouchers & Orders Multi-Scope / Settlement Upgrade
+                IF COL_LENGTH('dbo.Vouchers', 'ScopeType') IS NULL
+                    ALTER TABLE [dbo].[Vouchers] ADD [ScopeType] NVARCHAR(40) NOT NULL DEFAULT 'All';
+                IF COL_LENGTH('dbo.Vouchers', 'TargetCategoryIds') IS NULL
+                    ALTER TABLE [dbo].[Vouchers] ADD [TargetCategoryIds] NVARCHAR(1000) NULL;
+                IF COL_LENGTH('dbo.Vouchers', 'TargetProductIds') IS NULL
+                    ALTER TABLE [dbo].[Vouchers] ADD [TargetProductIds] NVARCHAR(2000) NULL;
+                IF COL_LENGTH('dbo.Vouchers', 'MaxUsagePerUser') IS NULL
+                    ALTER TABLE [dbo].[Vouchers] ADD [MaxUsagePerUser] INT NOT NULL DEFAULT 1;
+                IF COL_LENGTH('dbo.Vouchers', 'TargetAudience') IS NULL
+                    ALTER TABLE [dbo].[Vouchers] ADD [TargetAudience] NVARCHAR(30) NOT NULL DEFAULT 'Public';
+                IF COL_LENGTH('dbo.Vouchers', 'ExcludeFlashSaleItems') IS NULL
+                    ALTER TABLE [dbo].[Vouchers] ADD [ExcludeFlashSaleItems] BIT NOT NULL DEFAULT 0;
+
+                IF COL_LENGTH('dbo.Orders', 'ShopDiscountAmount') IS NULL
+                    ALTER TABLE [dbo].[Orders] ADD [ShopDiscountAmount] DECIMAL(18, 2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('dbo.Orders', 'PlatformDiscountAmount') IS NULL
+                    ALTER TABLE [dbo].[Orders] ADD [PlatformDiscountAmount] DECIMAL(18, 2) NOT NULL DEFAULT 0;
+
+                -- 3c. Self-heal orphaned SalePrice on multi-variant items without Flash Sale schedule & soft-deleted variants
+                IF OBJECT_ID('dbo.ProductVariants', 'U') IS NOT NULL
+                BEGIN
+                    UPDATE [dbo].[ProductVariants]
+                    SET [SalePrice] = NULL
+                    WHERE [SalePrice] IS NOT NULL
+                      AND ([SaleStartDate] IS NULL OR [SaleEndDate] IS NULL)
+                      AND ([OptionValue1Id] IS NOT NULL OR [OptionValue2Id] IS NOT NULL);
+
+                    UPDATE [dbo].[ProductVariants]
+                    SET [IsActive] = 0, [IsDefault] = 0
+                    WHERE [IsDeleted] = 1 AND ([IsActive] = 1 OR [IsDefault] = 1);
+                END
+
+                -- 4. ProductOptions & ProductOptionValues tables
+                IF OBJECT_ID('dbo.ProductOptions', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [dbo].[ProductOptions] (
+                        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+                        [ProductId] INT NOT NULL CONSTRAINT [FK_ProductOptions_Products] FOREIGN KEY REFERENCES [dbo].[Products]([Id]) ON DELETE CASCADE,
+                        [Name] NVARCHAR(100) NOT NULL,
+                        [SortOrder] INT NOT NULL DEFAULT 0
+                    );
+                END
+
+                IF OBJECT_ID('dbo.ProductOptionValues', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [dbo].[ProductOptionValues] (
+                        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+                        [ProductOptionId] INT NOT NULL CONSTRAINT [FK_ProductOptionValues_Options] FOREIGN KEY REFERENCES [dbo].[ProductOptions]([Id]) ON DELETE CASCADE,
+                        [Value] NVARCHAR(100) NOT NULL,
+                        [ImageUrl] NVARCHAR(500) NULL
+                    );
+                END
+
+                -- 5. ProductVariants columns
+                IF COL_LENGTH('dbo.ProductVariants', 'OptionValue1Id') IS NULL
+                    ALTER TABLE [dbo].[ProductVariants] ADD [OptionValue1Id] INT NULL CONSTRAINT [FK_Variants_OptVal1] FOREIGN KEY REFERENCES [dbo].[ProductOptionValues]([Id]);
+                IF COL_LENGTH('dbo.ProductVariants', 'OptionValue2Id') IS NULL
+                    ALTER TABLE [dbo].[ProductVariants] ADD [OptionValue2Id] INT NULL CONSTRAINT [FK_Variants_OptVal2] FOREIGN KEY REFERENCES [dbo].[ProductOptionValues]([Id]);
+                IF COL_LENGTH('dbo.ProductVariants', 'WeightGram') IS NULL
+                    ALTER TABLE [dbo].[ProductVariants] ADD [WeightGram] INT NOT NULL DEFAULT 300;
+                IF COL_LENGTH('dbo.ProductVariants', 'LengthCm') IS NULL
+                    ALTER TABLE [dbo].[ProductVariants] ADD [LengthCm] INT NOT NULL DEFAULT 10;
+                IF COL_LENGTH('dbo.ProductVariants', 'WidthCm') IS NULL
+                    ALTER TABLE [dbo].[ProductVariants] ADD [WidthCm] INT NOT NULL DEFAULT 10;
+                IF COL_LENGTH('dbo.ProductVariants', 'HeightCm') IS NULL
+                    ALTER TABLE [dbo].[ProductVariants] ADD [HeightCm] INT NOT NULL DEFAULT 10;
+
+                -- 6. CategoryAttributes & ProductAttributeValues tables
+                IF OBJECT_ID('dbo.CategoryAttributes', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [dbo].[CategoryAttributes] (
+                        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+                        [CategoryId] INT NOT NULL CONSTRAINT [FK_CatAttr_Categories] FOREIGN KEY REFERENCES [dbo].[Categories]([Id]) ON DELETE CASCADE,
+                        [Name] NVARCHAR(150) NOT NULL,
+                        [Unit] NVARCHAR(50) NULL,
+                        [IsFilterable] BIT NOT NULL DEFAULT 1,
+                        [SortOrder] INT NOT NULL DEFAULT 0
+                    );
+                END
+
+                IF OBJECT_ID('dbo.ProductAttributeValues', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [dbo].[ProductAttributeValues] (
+                        [Id] INT IDENTITY(1,1) PRIMARY KEY,
+                        [ProductId] INT NOT NULL CONSTRAINT [FK_ProdAttrVal_Products] FOREIGN KEY REFERENCES [dbo].[Products]([Id]) ON DELETE CASCADE,
+                        [CategoryAttributeId] INT NOT NULL CONSTRAINT [FK_ProdAttrVal_CatAttr] FOREIGN KEY REFERENCES [dbo].[CategoryAttributes]([Id]),
+                        [Value] NVARCHAR(255) NOT NULL
+                    );
+                END
+
+                -- 7. OrderItems columns
+                IF COL_LENGTH('dbo.OrderItems', 'VariantDescription') IS NULL
+                    ALTER TABLE [dbo].[OrderItems] ADD [VariantDescription] NVARCHAR(255) NULL;
+                IF COL_LENGTH('dbo.OrderItems', 'CommissionAmount') IS NULL
+                    ALTER TABLE [dbo].[OrderItems] ADD [CommissionAmount] DECIMAL(18, 2) NOT NULL DEFAULT 0;
+                IF COL_LENGTH('dbo.OrderItems', 'UnitCostPrice') IS NULL
+                    ALTER TABLE [dbo].[OrderItems] ADD [UnitCostPrice] DECIMAL(18, 2) NOT NULL DEFAULT 0;
+
+                -- 8. Products: IsDigital, DigitalContent, ManufacturingDate, ExpiryDate, ShippingCondition
+                IF COL_LENGTH('dbo.Products', 'IsDigital') IS NULL
+                    ALTER TABLE [dbo].[Products] ADD [IsDigital] BIT NOT NULL DEFAULT 0;
+                IF COL_LENGTH('dbo.Products', 'DigitalContent') IS NULL
+                    ALTER TABLE [dbo].[Products] ADD [DigitalContent] NVARCHAR(1000) NULL;
+                IF COL_LENGTH('dbo.Products', 'ManufacturingDate') IS NULL
+                    ALTER TABLE [dbo].[Products] ADD [ManufacturingDate] DATETIME2 NULL;
+                IF COL_LENGTH('dbo.Products', 'ExpiryDate') IS NULL
+                    ALTER TABLE [dbo].[Products] ADD [ExpiryDate] DATETIME2 NULL;
+                IF COL_LENGTH('dbo.Products', 'ShippingCondition') IS NULL
+                    ALTER TABLE [dbo].[Products] ADD [ShippingCondition] NVARCHAR(50) NULL DEFAULT N'Tiêu chuẩn';
+
+                -- 9. ProductVariants: CostPrice
+                IF COL_LENGTH('dbo.ProductVariants', 'CostPrice') IS NULL
+                    ALTER TABLE [dbo].[ProductVariants] ADD [CostPrice] DECIMAL(18, 2) NOT NULL DEFAULT 0;
+
+                -- 10. Orders: IsDigitalOrder, RequiresVatInvoice, CompanyName, TaxCode, CompanyAddress
+                IF COL_LENGTH('dbo.Orders', 'IsDigitalOrder') IS NULL
+                    ALTER TABLE [dbo].[Orders] ADD [IsDigitalOrder] BIT NOT NULL DEFAULT 0;
+                IF COL_LENGTH('dbo.Orders', 'RequiresVatInvoice') IS NULL
+                    ALTER TABLE [dbo].[Orders] ADD [RequiresVatInvoice] BIT NOT NULL DEFAULT 0;
+                IF COL_LENGTH('dbo.Orders', 'CompanyName') IS NULL
+                    ALTER TABLE [dbo].[Orders] ADD [CompanyName] NVARCHAR(255) NULL;
+                IF COL_LENGTH('dbo.Orders', 'TaxCode') IS NULL
+                    ALTER TABLE [dbo].[Orders] ADD [TaxCode] NVARCHAR(50) NULL;
+                IF COL_LENGTH('dbo.Orders', 'CompanyAddress') IS NULL
+                    ALTER TABLE [dbo].[Orders] ADD [CompanyAddress] NVARCHAR(500) NULL;
+
+                -- 11. UserProfiles: ShopTier, IsMall, MallStatus & Legal Docs
+                IF COL_LENGTH('dbo.UserProfiles', 'IsMall') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [IsMall] BIT NOT NULL DEFAULT 0;
+                IF COL_LENGTH('dbo.UserProfiles', 'ShopTier') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [ShopTier] NVARCHAR(30) NOT NULL DEFAULT N'Standard';
+                IF COL_LENGTH('dbo.UserProfiles', 'MallStatus') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [MallStatus] NVARCHAR(30) NOT NULL DEFAULT N'None';
+                IF COL_LENGTH('dbo.UserProfiles', 'BusinessName') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [BusinessName] NVARCHAR(255) NULL;
+                IF COL_LENGTH('dbo.UserProfiles', 'BusinessTaxCode') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [BusinessTaxCode] NVARCHAR(50) NULL;
+                IF COL_LENGTH('dbo.UserProfiles', 'BrandName') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [BrandName] NVARCHAR(200) NULL;
+                IF COL_LENGTH('dbo.UserProfiles', 'BusinessLicenseUrl') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [BusinessLicenseUrl] NVARCHAR(500) NULL;
+                IF COL_LENGTH('dbo.UserProfiles', 'BrandAuthorizationUrl') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [BrandAuthorizationUrl] NVARCHAR(500) NULL;
+                IF COL_LENGTH('dbo.UserProfiles', 'MallRejectionReason') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [MallRejectionReason] NVARCHAR(500) NULL;
+                IF COL_LENGTH('dbo.UserProfiles', 'MallApprovedAt') IS NULL
+                    ALTER TABLE [dbo].[UserProfiles] ADD [MallApprovedAt] DATETIME2 NULL;
+
+                -- 12. PartnerApplications: RequestedShopTier, ApplicationType & Legal Docs
+                IF COL_LENGTH('dbo.PartnerApplications', 'RequestedShopTier') IS NULL
+                    ALTER TABLE [dbo].[PartnerApplications] ADD [RequestedShopTier] NVARCHAR(30) NOT NULL DEFAULT N'Standard';
+                IF COL_LENGTH('dbo.PartnerApplications', 'ApplicationType') IS NULL
+                    ALTER TABLE [dbo].[PartnerApplications] ADD [ApplicationType] NVARCHAR(30) NOT NULL DEFAULT N'NewRegistration';
+                IF COL_LENGTH('dbo.PartnerApplications', 'BusinessName') IS NULL
+                    ALTER TABLE [dbo].[PartnerApplications] ADD [BusinessName] NVARCHAR(255) NULL;
+                IF COL_LENGTH('dbo.PartnerApplications', 'BusinessTaxCode') IS NULL
+                    ALTER TABLE [dbo].[PartnerApplications] ADD [BusinessTaxCode] NVARCHAR(50) NULL;
+                IF COL_LENGTH('dbo.PartnerApplications', 'BrandName') IS NULL
+                    ALTER TABLE [dbo].[PartnerApplications] ADD [BrandName] NVARCHAR(200) NULL;
+                IF COL_LENGTH('dbo.PartnerApplications', 'BusinessLicenseUrl') IS NULL
+                    ALTER TABLE [dbo].[PartnerApplications] ADD [BusinessLicenseUrl] NVARCHAR(500) NULL;
+                IF COL_LENGTH('dbo.PartnerApplications', 'BrandAuthorizationUrl') IS NULL
+                    ALTER TABLE [dbo].[PartnerApplications] ADD [BrandAuthorizationUrl] NVARCHAR(500) NULL;
             ", cancellationToken);
+
 
             // DIAGNOSTICS: Check column types again after repair
             var diagnosticsAfter = await context.Database.SqlQueryRaw<string>(@"
@@ -279,6 +531,30 @@ public static class DbSeeder
         {
             logger.LogWarning(ex, "Failed to ensure Blog tables exist via raw SQL.");
         }
+
+        // Ensure Category column exists on Sizes table
+        try
+        {
+            await context.Database.ExecuteSqlRawAsync("ALTER TABLE Sizes ADD Category NVARCHAR(50) NOT NULL DEFAULT N'Khác';", cancellationToken);
+            logger.LogInformation("Successfully added Category column to Sizes table.");
+        }
+        catch (Exception ex)
+        {
+            // If the column already exists (Error 2705: Column names in each table must be unique), we ignore the exception
+            if (ex.Message.Contains("unique") || ex.Message.Contains("already") || ex.Message.Contains("2705") || ex.Message.Contains("duplicate"))
+            {
+                logger.LogInformation("Category column already exists on Sizes table.");
+            }
+            else
+            {
+                logger.LogWarning(ex, "Failed to alter Sizes table to add Category column.");
+            }
+        }
+
+        // ---- ONE-TIME MULTI-INDUSTRY RESET & SEED (Keeps Accounts/Login data intact) ----
+        await EnsureMultiIndustryCatalogResetAndSeedAsync(context, logger, cancellationToken);
+        await EnsureDetailedCategoryHierarchyAsync(context, logger, cancellationToken);
+
 
         // ---- CLEANUP MODE (OPT-IN) ----
         // If the user explicitly wants a clean database, wipe data tables and exit early.
@@ -384,64 +660,6 @@ public static class DbSeeder
         }
 
         var nowUtc = DateTime.UtcNow;
-        var rng = new Random(12345);
-
-        // ---- Colors (upsert by Name) ----
-        // Some base colors have selector icons in wwwroot/assets/images/product-details/; others will render by hex swatch.
-        var colorSeeds = new (string Name, string Code)[]
-        {
-            ("green", "#088178"),
-            ("blue", "#3366FF"),
-            ("yellow", "#FFC107"),
-            ("red", "#CB0233"),
-
-            ("black", "#111827"),
-            ("white", "#FFFFFF"),
-            ("gray", "#6B7280"),
-            ("silver", "#C0C0C0"),
-
-            ("orange", "#F97316"),
-            ("purple", "#7C3AED"),
-            ("pink", "#EC4899"),
-            ("brown", "#8B5E3C"),
-
-            ("navy", "#1E3A8A"),
-            ("teal", "#14B8A6"),
-            ("cyan", "#06B6D4"),
-            ("lime", "#84CC16"),
-
-            ("beige", "#F5F5DC"),
-            ("cream", "#FFFDD0"),
-            ("maroon", "#800000"),
-            ("olive", "#808000"),
-        };
-
-        foreach (var (name, code) in colorSeeds)
-        {
-            var existing = await context.Colors.FirstOrDefaultAsync(c => c.Name == name, cancellationToken);
-            if (existing is null)
-            {
-                context.Colors.Add(new Color
-                {
-                    Name = name,
-                    Code = code,
-                    CreatedAt = nowUtc
-                });
-            }
-            else
-            {
-                existing.Code = code;
-            }
-        }
-
-        await context.SaveChangesAsync(cancellationToken);
-
-        var colorIdByName = await context.Colors
-            .AsNoTracking()
-            .ToDictionaryAsync(c => c.Name, c => c.Id, StringComparer.OrdinalIgnoreCase, cancellationToken);
-
-        // Keep seeded product variants stable by using only the original base colors.
-        var colorNames = new[] { "green", "blue", "yellow", "red" };
 
         // ---- Categories (upsert by Slug) ----
         // NOTE: Keep the category tree at 2 levels (root -> direct children).
@@ -526,9 +744,9 @@ public static class DbSeeder
 
         // Cleanup mode is handled earlier (before any seeding).
 
-        // ---- Admin + Customer Accounts (so we can seed carts/orders/reviews) ----
+        // ---- Admin Account (only seed fallback admin@local if no Admin account exists) ----
         var adminEmail = "admin@local";
-        if (await context.Accounts.AllAsync(a => a.Email != adminEmail, cancellationToken))
+        if (!await context.Accounts.AnyAsync(a => a.Role == "Admin" && !a.IsDeleted, cancellationToken))
         {
             context.Accounts.Add(new Account
             {
@@ -543,767 +761,7 @@ public static class DbSeeder
             await context.SaveChangesAsync(cancellationToken);
         }
 
-        // ---- Sizes (upsert by Name) ----
-        var clothingSizeLabels = new[] { "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL" };
-        var shoeSizeLabels = Enumerable.Range(35, 11).Select(x => x.ToString()).ToArray();
-        var volumeLabels = new[] { "10ml", "30ml", "50ml", "100ml", "150ml", "200ml", "250ml", "500ml", "1L" };
-        var weightLabels = new[] { "50g", "100g", "200g", "250g", "500g", "1kg", "2kg" };
-
-        foreach (var label in clothingSizeLabels
-            .Concat(shoeSizeLabels)
-            .Concat(volumeLabels)
-            .Concat(weightLabels)
-            .Select(x => (x ?? string.Empty).Trim())
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            var exists = await context.Sizes.FirstOrDefaultAsync(s => s.Name == label, cancellationToken);
-            if (exists is null)
-            {
-                context.Sizes.Add(new Size
-                {
-                    Name = label,
-                    CreatedAt = nowUtc
-                });
-            }
-        }
-        await context.SaveChangesAsync(cancellationToken);
-
-        // Bỏ qua tạo dữ liệu mẫu (mock data) theo yêu cầu của user
-        // Đã tạo xong dữ liệu cấu hình hệ thống (Colors, Categories, Sizes, Admin Account).
-        logger.LogInformation("System configuration data seeded (Colors, Categories, Sizes, Admin Account). Bypassing mock data generation as requested.");
-        return;
-#pragma warning disable CS0162
-        var sizeIdByLabel = new Dictionary<string, int>();
-
-        var customerSeeds = new (string Email, string FullName)[]
-        {
-            ("customer1@local", "Khách hàng 1"),
-            ("customer2@local", "Khách hàng 2"),
-            ("customer3@local", "Khách hàng 3"),
-            ("customer4@local", "Khách hàng 4"),
-            ("customer5@local", "Khách hàng 5"),
-        };
-
-        foreach (var (email, fullName) in customerSeeds)
-        {
-            var account = await context.Accounts.FirstOrDefaultAsync(a => a.Email == email, cancellationToken);
-            if (account is null)
-            {
-                account = new Account
-                {
-                    Email = email,
-                    PasswordHash = null,
-                    AuthProvider = null,
-                    AuthProviderUserId = null,
-                    Role = "Customer",
-                    Status = "Active",
-                    CreatedAt = nowUtc.AddDays(-rng.Next(0, 365))
-                };
-                context.Accounts.Add(account);
-                await context.SaveChangesAsync(cancellationToken);
-            }
-
-            var profile = await context.UserProfiles.FirstOrDefaultAsync(p => p.AccountId == account.Id, cancellationToken);
-            if (profile is null)
-            {
-                context.UserProfiles.Add(new UserProfile
-                {
-                    AccountId = account.Id,
-                    FullName = fullName,
-                    PhoneNumber = null,
-                    AvatarUrl = null,
-                    ShopName = null,
-                    ShopLogoUrl = null,
-                    ShopDescription = null,
-                    Address = null,
-                    CreatedAt = nowUtc.AddDays(-rng.Next(0, 365))
-                });
-            }
-        }
-
-        await context.SaveChangesAsync(cancellationToken);
-
-        // ---- Shop Accounts + UserProfiles (shops are Accounts with Role=Shop) ----
-        var shopSeeds = new (string Slug, string ShopName)[]
-        {
-            ("shop-a", "Shop A"),
-            ("shop-b", "Shop B"),
-            ("shop-c", "Shop C"),
-            ("shop-d", "Shop D"),
-            ("shop-e", "Shop E"),
-        };
-
-        foreach (var (slug, shopName) in shopSeeds)
-        {
-            var email = $"{slug}@shop.local";
-            var account = await context.Accounts.FirstOrDefaultAsync(a => a.Email == email, cancellationToken);
-            if (account is null)
-            {
-                account = new Account
-                {
-                    Email = email,
-                    PasswordHash = null,
-                    AuthProvider = null,
-                    AuthProviderUserId = null,
-                    Role = "Shop",
-                    Status = "Active",
-                    CreatedAt = nowUtc
-                };
-                context.Accounts.Add(account);
-                await context.SaveChangesAsync(cancellationToken);
-            }
-
-            var profile = await context.UserProfiles.FirstOrDefaultAsync(p => p.AccountId == account.Id, cancellationToken);
-            if (profile is null)
-            {
-                context.UserProfiles.Add(new UserProfile
-                {
-                    AccountId = account.Id,
-                    FullName = shopName,
-                    PhoneNumber = null,
-                    AvatarUrl = null,
-                    ShopName = shopName,
-                    ShopSlug = slug,
-                    ShopLogoUrl = null,
-                    ShopDescription = $"{shopName} - cửa hàng chính hãng và uy tín.",
-                    Address = null,
-                    CreatedAt = nowUtc,
-                    UpdatedAt = nowUtc
-                });
-            }
-        }
-
-        await context.SaveChangesAsync(cancellationToken);
-
-
-
-        var shopAccountIds = await context.Accounts
-            .AsNoTracking()
-            .Where(a => a.Role == "Shop")
-            .OrderBy(a => a.Id)
-            .Select(a => a.Id)
-            .ToListAsync(cancellationToken);
-
-        if (shopAccountIds.Count == 0)
-        {
-            logger.LogWarning("No shop accounts found; skipping product seed.");
-            return;
-        }
-
-        // ---- Products (upsert by Slug) ----
-        var productsSeed = new List<ProductSeed>
-        {
-            // Nam
-            new("ao-thun-basic-nam", "Áo thun basic nam", "ao-nam", 199000m, 80, "Áo thun basic chất liệu cotton, phù hợp mặc hằng ngày.", "Active"),
-            new("ao-thun-oversize-nam", "Áo thun oversize nam", "ao-nam", 229000m, 60, "Áo thun oversize phù hợp mặc đi học, đi chơi.", "Active"),
-            new("ao-polo-pique-nam", "Áo polo pique nam", "ao-nam", 289000m, 40, "Áo polo chất liệu pique thoáng mát, lịch sự.", "Active"),
-            new("ao-so-mi-oxford-nam", "Áo sơ mi Oxford nam", "ao-nam", 459000m, 35, "Áo sơ mi Oxford phù hợp đi làm và đi chơi.", "Active"),
-            new("ao-khoac-gio-nam", "Áo khoác gió nam", "ao-nam", 549000m, 25, "Áo khoác gió nhẹ, tiện lợi khi thời tiết se lạnh.", "Active"),
-            new("quan-jean-slimfit-nam", "Quần jean slimfit nam", "quan-nam", 399000m, 45, "Quần jean slimfit co giãn nhẹ, dễ vận động.", "Active"),
-            new("quan-kaki-nam", "Quần kaki nam", "quan-nam", 429000m, 30, "Quần kaki đứng form, phù hợp môi trường công sở.", "Active"),
-            new("quan-short-jean-nam", "Quần short jean nam", "quan-nam", 249000m, 55, "Quần short jean nam năng động cho ngày hè.", "Active"),
-            new("bo-do-the-thao-nam", "Bộ đồ thể thao nam", "do-the-thao-nam", 599000m, 20, "Bộ đồ thể thao thấm hút tốt, phù hợp tập gym/chạy bộ.", "Active"),
-
-            // Nữ
-            new("ao-thun-basic-nu", "Áo thun basic nữ", "ao-nu", 189000m, 70, "Áo thun basic nữ, chất vải mềm mịn.", "Active"),
-            new("ao-so-mi-trang-nu", "Áo sơ mi trắng nữ", "ao-nu", 359000m, 30, "Áo sơ mi trắng nữ phù hợp đi làm, đi họp.", "Active"),
-            new("ao-khoac-cardigan-nu", "Áo khoác cardigan nữ", "ao-nu", 319000m, 25, "Cardigan nhẹ, phối đồ mùa thu đông rất đẹp.", "Active"),
-            new("dam-cong-so-dang-om", "Đầm công sở dáng ôm", "vay-dam", 699000m, 15, "Đầm công sở dáng ôm thanh lịch, tôn dáng.", "Active"),
-            new("dam-xoe-hoa-nhi", "Đầm xòe hoa nhí", "vay-dam", 649000m, 18, "Đầm xòe họa tiết hoa nhí, phù hợp đi chơi.", "Active"),
-            new("chan-vay-chu-a", "Chân váy chữ A", "vay-dam", 299000m, 40, "Chân váy chữ A dễ phối với áo thun/sơ mi.", "Active"),
-            new("quan-jean-nu-ong-dung", "Quần jean nữ ống đứng", "quan-nu", 389000m, 35, "Quần jean nữ ống đứng dễ phối đồ.", "Active"),
-            new("quan-au-nu-cong-so", "Quần âu nữ công sở", "quan-nu", 419000m, 25, "Quần âu nữ phù hợp môi trường công sở.", "Active"),
-
-            // Giày dép
-            new("giay-the-thao-trang", "Giày thể thao trắng", "giay-the-thao", 899000m, 20, "Giày thể thao đế êm, phù hợp đi chơi và tập luyện.", "Active"),
-            new("giay-the-thao-den", "Giày thể thao đen", "giay-the-thao", 799000m, 18, "Giày thể thao màu đen dễ phối đồ.", "Active"),
-            new("dep-sandal-nu", "Dép sandal nữ", "dep-sandal", 249000m, 40, "Dép sandal êm chân, phù hợp đi dạo.", "Active"),
-            new("giay-cao-got-co-ban", "Giày cao gót cơ bản", "giay-cao-got", 499000m, 22, "Giày cao gót cơ bản, phù hợp đi làm.", "Active"),
-
-            // Phụ kiện
-            new("tui-deo-cheo-mini", "Túi đeo chéo mini", "tui-xach", 159000m, 80, "Túi đeo chéo mini phù hợp đi dạo, đi học.", "Active"),
-            new("mu-luoi-trai", "Mũ lưỡi trai", "non-mu", 99000m, 100, "Mũ lưỡi trai form chuẩn, che nắng tốt.", "Active"),
-            new("that-lung-da", "Thắt lưng da", "that-lung", 179000m, 60, "Thắt lưng da, dễ phối đồ.", "Active"),
-            new("dong-ho-toi-gian", "Đồng hồ tối giản", "dong-ho", 599000m, 15, "Đồng hồ thiết kế tối giản.", "Active"),
-            new("kinh-mat-thoi-trang", "Kính mắt thời trang", "kinh-mat", 199000m, 50, "Kính mắt thời trang, chống chói nhẹ.", "Active"),
-        };
-
-        var categoryIdBySlug2 = await context.Categories
-            .AsNoTracking()
-            .ToDictionaryAsync(c => c.Slug, c => c.Id, StringComparer.OrdinalIgnoreCase, cancellationToken);
-
-        var imagePool = new List<string>();
-        if (webHostEnv is not null && !string.IsNullOrWhiteSpace(webHostEnv.WebRootPath))
-        {
-            // Prefer product-related assets.
-            imagePool.AddRange(LoadImageUrls(
-                webHostEnv.WebRootPath,
-                "assets/images/product-details",
-                "assets/images/home-2"));
-        }
-
-        // Fallback (in case scanning fails for some reason).
-        if (imagePool.Count == 0)
-        {
-            imagePool.AddRange(new[]
-            {
-                "assets/images/product-details/product-details-slider-1.png",
-                "assets/images/product-details/product-details-slider-2.png",
-                "assets/images/product-details/product-details-slider-3.png",
-                "assets/images/product-details/product-details-slider-4.png",
-                "assets/images/product-details/product-details-slider-5.png",
-                "assets/images/product-details/product-details-slider-6.png",
-            });
-        }
-
-        var shopIndex = 0;
-
-        foreach (var seed in productsSeed)
-        {
-            if (!categoryIdBySlug2.TryGetValue(seed.CategorySlug, out var categoryId))
-            {
-                continue;
-            }
-
-            var existing = await context.Products
-                .Include(p => p.Variants)
-                    .ThenInclude(v => v.Images)
-                .Include(p => p.Images)
-                .FirstOrDefaultAsync(p => p.Slug == seed.Slug, cancellationToken);
-
-            if (existing is null)
-            {
-                var (avg, count) = GetSeedRating(seed.Slug);
-                var shopAccountId = shopAccountIds[shopIndex % shopAccountIds.Count];
-                shopIndex++;
-
-                existing = new Product
-                {
-                    Name = seed.Name,
-                    Slug = seed.Slug,
-                    CategoryId = categoryId,
-                    ShopId = shopAccountId,
-                    ShortDescription = seed.Desc.Length <= 200 ? seed.Desc : seed.Desc[..200],
-                    Description = seed.Desc,
-                    Status = seed.Status,
-                    AverageRating = avg,
-                    ReviewCount = count,
-                    CreatedAt = nowUtc.AddDays(-rng.Next(0, 180)),
-                    UpdatedAt = nowUtc,
-                };
-                context.Products.Add(existing);
-            }
-            else
-            {
-                existing.Name = seed.Name;
-                existing.ShortDescription = seed.Desc.Length <= 200 ? seed.Desc : seed.Desc[..200];
-                existing.Description = seed.Desc;
-                existing.Status = seed.Status;
-                existing.UpdatedAt = nowUtc;
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-
-            // Variants: guarantee at least 2 colors + 2 sizes per product.
-            var preferredSizeLabels = new[] { "S", "M", "L", "XL" };
-            var selectedSizes = preferredSizeLabels
-                .Where(sizeIdByLabel.ContainsKey)
-                .Take(2)
-                .ToList();
-
-            if (selectedSizes.Count < 2)
-            {
-                selectedSizes = sizeIdByLabel.Keys
-                    .OrderBy(x => x)
-                    .Take(2)
-                    .ToList();
-            }
-
-            var availableColorNames = colorNames.Length == 0
-                ? new[] { "primary", "info" }
-                : colorNames;
-
-            var firstColorIndex = availableColorNames.Length == 0
-                ? 0
-                : Math.Abs(StableHash(existing.Slug)) % availableColorNames.Length;
-
-            var secondColorIndex = availableColorNames.Length <= 1
-                ? firstColorIndex
-                : (firstColorIndex + 1 + (Math.Abs(StableHash(existing.Slug + "|c2")) % (availableColorNames.Length - 1))) % availableColorNames.Length;
-
-            var selectedColors = new[]
-            {
-                availableColorNames.Length == 0 ? "primary" : availableColorNames[firstColorIndex],
-                availableColorNames.Length <= 1 ? (availableColorNames.Length == 0 ? "info" : availableColorNames[firstColorIndex]) : availableColorNames[secondColorIndex]
-            }
-            .Select(x => (x ?? string.Empty).Trim())
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(2)
-            .ToList();
-
-            if (selectedColors.Count < 2)
-            {
-                // Ensure we always have 2 colors even with tiny pools.
-                selectedColors.Add(selectedColors.Count == 0 ? "primary" : "info");
-                selectedColors = selectedColors
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Take(2)
-                    .ToList();
-            }
-
-            var variantCountTarget = Math.Max(1, selectedSizes.Count * selectedColors.Count);
-            var perVariantStock = Math.Max(0, seed.Stock / variantCountTarget);
-
-            foreach (var sizeLabel in selectedSizes)
-            {
-                if (!sizeIdByLabel.TryGetValue(sizeLabel, out var sizeId)) continue;
-
-                foreach (var colorName in selectedColors)
-                {
-                    int? colorId = null;
-                    if (colorIdByName.TryGetValue(colorName, out var tmpColorId))
-                    {
-                        colorId = tmpColorId;
-                    }
-
-                    var v = existing.Variants.FirstOrDefault(x => x.SizeId == sizeId && x.ColorId == colorId);
-                    if (v is null)
-                    {
-                        var sku = $"{existing.Slug}-{colorName}-{sizeLabel}".ToUpperInvariant();
-                        if (sku.Length > 100) sku = sku[..100];
-
-                        existing.Variants.Add(new ProductVariant
-                        {
-                            ProductId = existing.Id,
-                            SizeId = sizeId,
-                            Price = seed.BasePrice,
-                            SalePrice = null,
-                            SaleStartDate = null,
-                            SaleEndDate = null,
-                            ColorId = colorId,
-                            Sku = sku,
-                            StockQuantity = perVariantStock,
-                            ReservedStock = 0,
-                            IsDefault = existing.Variants.All(x => !x.IsDefault),
-                            IsActive = true,
-                            CreatedAt = nowUtc,
-                            UpdatedAt = nowUtc
-                        });
-                    }
-                    else
-                    {
-                        v.Price = seed.BasePrice;
-                        v.ColorId ??= colorId;
-                        if (string.IsNullOrWhiteSpace(v.Sku))
-                        {
-                            var sku = $"{existing.Slug}-{colorName}-{sizeLabel}".ToUpperInvariant();
-                            if (sku.Length > 100) sku = sku[..100];
-                            v.Sku = sku;
-                        }
-                        if (v.StockQuantity <= 0) v.StockQuantity = perVariantStock;
-                        v.IsActive = true;
-                        v.UpdatedAt = nowUtc;
-                    }
-                }
-            }
-
-            // Images: ensure at least 2.
-            if (existing.Images.Count < 4)
-            {
-                var target = 4;
-
-                var start = imagePool.Count == 0
-                    ? 0
-                    : Math.Abs(StableHash(existing.Slug)) % imagePool.Count;
-
-                var safety = 0;
-                while (existing.Images.Count < target && safety < imagePool.Count + 10)
-                {
-                    safety++;
-                    var url = imagePool.Count == 0
-                        ? string.Empty
-                        : imagePool[(start + existing.Images.Count) % imagePool.Count];
-
-                    if (string.IsNullOrWhiteSpace(url))
-                    {
-                        url = imagePool[rng.Next(imagePool.Count)];
-                    }
-
-                    if (existing.Images.Any(x => string.Equals(x.ImageUrl, url, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        // Try another.
-                        url = imagePool[rng.Next(imagePool.Count)];
-                        if (existing.Images.Any(x => string.Equals(x.ImageUrl, url, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            continue;
-                        }
-                    }
-
-                    existing.Images.Add(new ProductImage
-                    {
-                        ProductId = existing.Id,
-                        ImageUrl = url,
-                        IsPrimary = existing.Images.Count == 0,
-                        SortOrder = existing.Images.Count,
-                        CreatedAt = nowUtc
-                    });
-                }
-
-                // Ensure at least one primary image.
-                if (existing.Images.All(i => !i.IsPrimary) && existing.Images.Count > 0)
-                {
-                    existing.Images.First().IsPrimary = true;
-                }
-            }
-
-            // Variant images: ensure at least 1 image per variant (so đổi màu/size vẫn có ảnh).
-            var variantImageFallback = existing.Images
-                .OrderByDescending(i => i.IsPrimary)
-                .ThenBy(i => i.SortOrder)
-                .Select(i => i.ImageUrl)
-                .Where(u => !string.IsNullOrWhiteSpace(u))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Take(2)
-                .ToList();
-
-            foreach (var v in existing.Variants.Where(v => v.IsActive))
-            {
-                if (v.Images.Count != 0) continue;
-
-                var urls = variantImageFallback;
-                if (urls.Count == 0)
-                {
-                    urls = imagePool
-                        .Where(u => !string.IsNullOrWhiteSpace(u))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .Take(2)
-                        .ToList();
-                }
-
-                for (var idx = 0; idx < urls.Count; idx++)
-                {
-                    var url = urls[idx];
-                    if (string.IsNullOrWhiteSpace(url)) continue;
-                    if (v.Images.Any(x => string.Equals(x.ImageUrl, url, StringComparison.OrdinalIgnoreCase))) continue;
-
-                    v.Images.Add(new VariantImage
-                    {
-                        ImageUrl = url,
-                        IsPrimary = idx == 0,
-                        SortOrder = idx,
-                        CreatedAt = nowUtc
-                    });
-                }
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-        }
-
-        // ---- Size guides ----
-        if (!await context.SizeGuides.AsNoTracking().AnyAsync(cancellationToken))
-        {
-            var products = await context.Products
-                .AsNoTracking()
-                .OrderBy(p => p.Id)
-                .Take(12)
-                .ToListAsync(cancellationToken);
-
-            var guideSizes = new[] { "S", "M", "L", "XL" };
-            var measurements = new[]
-            {
-                (Name: "Dài áo", Base: 64),
-                (Name: "Rộng vai", Base: 42),
-                (Name: "Vòng ngực", Base: 96)
-            };
-
-            foreach (var p in products)
-            {
-                var guideSort = 0;
-                foreach (var sz in guideSizes)
-                {
-                    var bump = sz switch
-                    {
-                        "S" => 0,
-                        "M" => 2,
-                        "L" => 4,
-                        "XL" => 6,
-                        _ => 0
-                    };
-
-                    var guide = new SizeGuide
-                    {
-                        ProductId = p.Id,
-                        SizeLabel = sz,
-                        Note = null,
-                        SortOrder = guideSort++,
-                        CreatedAt = nowUtc
-                    };
-
-                    var detailSort = 0;
-                    foreach (var m in measurements)
-                    {
-                        guide.Details.Add(new SizeGuideDetail
-                        {
-                            Name = m.Name,
-                            Value = (m.Base + bump).ToString(),
-                            Unit = "cm",
-                            SortOrder = detailSort++
-                        });
-                    }
-
-                    context.SizeGuides.Add(guide);
-                }
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-        }
-
-        // ---- Carts + cart items ----
-        var customerAccountIds = await context.Accounts
-            .AsNoTracking()
-            .Where(a => a.Role == "Customer")
-            .OrderBy(a => a.Id)
-            .Select(a => a.Id)
-            .ToListAsync(cancellationToken);
-
-        if (customerAccountIds.Count != 0 && !await context.Carts.AsNoTracking().AnyAsync(cancellationToken))
-        {
-            var allVariantIds = await context.ProductVariants
-                .AsNoTracking()
-                .OrderBy(v => v.Id)
-                .Select(v => v.Id)
-                .ToListAsync(cancellationToken);
-
-            foreach (var customerId in customerAccountIds)
-            {
-                var cart = new Cart
-                {
-                    AccountId = customerId,
-                    CreatedAt = nowUtc,
-                    UpdatedAt = nowUtc
-                };
-                context.Carts.Add(cart);
-                await context.SaveChangesAsync(cancellationToken);
-
-                if (allVariantIds.Count == 0) continue;
-
-                var itemsCount = rng.Next(1, 4);
-                var chosen = new HashSet<int>();
-                for (var i = 0; i < itemsCount; i++)
-                {
-                    var variantId = allVariantIds[rng.Next(allVariantIds.Count)];
-                    if (!chosen.Add(variantId)) continue;
-
-                    context.CartItems.Add(new CartItem
-                    {
-                        CartId = cart.Id,
-                        VariantId = variantId,
-                        Quantity = rng.Next(1, 4),
-                        CreatedAt = nowUtc,
-                        UpdatedAt = nowUtc
-                    });
-                }
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-        }
-
-        // ---- Orders + OrderItems ----
-        if (customerAccountIds.Count != 0 && !await context.Orders.AsNoTracking().AnyAsync(cancellationToken))
-        {
-            var variants = await context.ProductVariants
-                .AsNoTracking()
-                .Where(v => v.IsActive)
-                .Select(v => new
-                {
-                    v.Id,
-                    v.Price,
-                    ShopId = v.Product != null ? v.Product.ShopId : 0,
-                    ProductName = v.Product != null ? v.Product.Name : string.Empty,
-                    ColorName = v.Color != null ? v.Color.Name : null,
-                    SizeName = v.Size != null ? v.Size.Name : null
-                })
-                .Where(v => v.ShopId != 0 && v.ProductName != "")
-                .ToListAsync(cancellationToken);
-
-            var byShop = variants
-                .GroupBy(x => x.ShopId)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            if (byShop.Count != 0)
-            {
-                var orderCount = 12;
-                for (var i = 0; i < orderCount; i++)
-                {
-                    var customerId = customerAccountIds[rng.Next(customerAccountIds.Count)];
-                    var shopId = shopAccountIds[rng.Next(shopAccountIds.Count)];
-
-                    if (!byShop.TryGetValue(shopId, out var shopVariants) || shopVariants.Count == 0)
-                    {
-                        shopId = byShop.Keys.First();
-                        shopVariants = byShop[shopId];
-                    }
-
-                    var itemsToAdd = rng.Next(1, 4);
-                    var usedVariantIds = new HashSet<int>();
-
-                    var createdAt = nowUtc.AddDays(-rng.Next(0, 60));
-                    var order = new Order
-                    {
-                        CustomerId = customerId,
-                        ShopId = shopId,
-                        OrderCode = $"ORD-{nowUtc:yyyyMMdd}-{i + 1:0000}-{rng.Next(1000, 9999)}",
-                        OrderStatus = "Pending",
-                        PaymentMethod = "COD",
-                        PaymentStatus = "Pending",
-                        RecipientName = "Khách hàng",
-                        RecipientPhone = "0900000000",
-                        ShippingAddress = "TP.HCM",
-                        CreatedAt = createdAt,
-                        UpdatedAt = createdAt,
-                        SubTotal = 0m,
-                        ShippingFee = 0m,
-                        VoucherId = null,
-                        DiscountAmount = 0m,
-                        FinalAmount = 0m
-                    };
-
-                    context.Orders.Add(order);
-                    await context.SaveChangesAsync(cancellationToken);
-
-                    decimal total = 0m;
-                    for (var j = 0; j < itemsToAdd; j++)
-                    {
-                        var pick = shopVariants[rng.Next(shopVariants.Count)];
-                        if (!usedVariantIds.Add(pick.Id)) continue;
-
-                        var qty = rng.Next(1, 4);
-                        var lineTotal = pick.Price * qty;
-                        total += lineTotal;
-
-                        context.OrderItems.Add(new OrderItem
-                        {
-                            OrderId = order.Id,
-                            VariantId = pick.Id,
-                            ProductName = pick.ProductName,
-                            ColorName = pick.ColorName,
-                            SizeName = pick.SizeName,
-                            UnitPrice = pick.Price,
-                            Quantity = qty,
-                            LineTotal = lineTotal
-                        });
-                    }
-
-                    order.SubTotal = total;
-                    order.FinalAmount = order.SubTotal + order.ShippingFee - order.DiscountAmount;
-                    order.UpdatedAt = nowUtc;
-                    await context.SaveChangesAsync(cancellationToken);
-                }
-            }
-        }
-
-        // ---- Product reviews (then recompute rating aggregates) ----
-        if (customerAccountIds.Count != 0 && !await context.ProductReviews.AsNoTracking().AnyAsync(cancellationToken))
-        {
-            var products = await context.Products
-                .AsNoTracking()
-                .Where(p => p.Status == "Active")
-                .OrderBy(p => p.Id)
-                .ToListAsync(cancellationToken);
-
-            foreach (var p in products)
-            {
-                var reviewsForProduct = rng.Next(1, Math.Min(6, customerAccountIds.Count + 1));
-                var usedCustomers = new HashSet<int>();
-
-                for (var i = 0; i < reviewsForProduct; i++)
-                {
-                    var customerId = customerAccountIds[rng.Next(customerAccountIds.Count)];
-                    if (!usedCustomers.Add(customerId)) continue;
-
-                    var rating = rng.Next(3, 6); // 3..5
-                    context.ProductReviews.Add(new ProductReview
-                    {
-                        ProductId = p.Id,
-                        AccountId = customerId,
-                        Rating = rating,
-                        Comment = rating >= 5 ? "Sản phẩm rất tốt!" : "Sản phẩm ổn trong tầm giá.",
-                        CreatedAt = nowUtc.AddDays(-rng.Next(0, 120)),
-                        UpdatedAt = nowUtc
-                    });
-                }
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-        }
-
-        // Recompute aggregates based on actual reviews.
-        var ratingAgg = await context.ProductReviews
-            .AsNoTracking()
-            .GroupBy(r => r.ProductId)
-            .Select(g => new { ProductId = g.Key, Avg = g.Average(x => (decimal)x.Rating), Cnt = g.Count() })
-            .ToListAsync(cancellationToken);
-
-        if (ratingAgg.Count != 0)
-        {
-            var productIds = ratingAgg.Select(x => x.ProductId).ToList();
-            var productsToUpdate = await context.Products
-                .Where(p => productIds.Contains(p.Id))
-                .ToListAsync(cancellationToken);
-
-            var map = ratingAgg.ToDictionary(x => x.ProductId);
-            foreach (var p in productsToUpdate)
-            {
-                if (!map.TryGetValue(p.Id, out var agg)) continue;
-                p.AverageRating = decimal.Round(agg.Avg, 2);
-                p.ReviewCount = agg.Cnt;
-                p.UpdatedAt = nowUtc;
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-        }
-
-        var totalProducts = await context.Products.CountAsync(cancellationToken);
-        var totalCategories = await context.Categories.CountAsync(cancellationToken);
-        var totalSizes = await context.Sizes.CountAsync(cancellationToken);
-        var totalVariants = await context.ProductVariants.CountAsync(cancellationToken);
-        var totalProductImages = await context.ProductImages.CountAsync(cancellationToken);
-        var totalAccounts = await context.Accounts.CountAsync(cancellationToken);
-        var totalProfiles = await context.UserProfiles.CountAsync(cancellationToken);
-        var totalGuides = await context.SizeGuides.CountAsync(cancellationToken);
-        var totalReviews = await context.ProductReviews.CountAsync(cancellationToken);
-        var totalCarts = await context.Carts.CountAsync(cancellationToken);
-        var totalCartItems = await context.CartItems.CountAsync(cancellationToken);
-        var totalOrders = await context.Orders.CountAsync(cancellationToken);
-        var totalOrderItems = await context.OrderItems.CountAsync(cancellationToken);
-
-        logger.LogInformation(
-            "Seed complete: Products={Products}, Categories={Categories}, Sizes={Sizes}, Variants={Variants}, ProductImages={ProductImages}, Guides={Guides}, Reviews={Reviews}, Carts={Carts}, CartItems={CartItems}, Orders={Orders}, OrderItems={OrderItems}, Accounts={Accounts}, UserProfiles={UserProfiles}.",
-            totalProducts,
-            totalCategories,
-            totalSizes,
-            totalVariants,
-            totalProductImages,
-            totalGuides,
-            totalReviews,
-            totalCarts,
-            totalCartItems,
-            totalOrders,
-            totalOrderItems,
-            totalAccounts,
-            totalProfiles);
-
-        try
-        {
-            var markerPath2 = Path.Combine(Directory.GetCurrentDirectory(), ".db-seeded");
-            await File.WriteAllTextAsync(markerPath2, nowUtc.ToString("O"), cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Could not write .db-seeded marker file.");
-        }
+        logger.LogInformation("System configuration data seeded (Categories, Admin Account).");
     }
 
     private static async Task ApplyMigrationsSafelyAsync(
@@ -1313,15 +771,103 @@ public static class DbSeeder
     {
         try
         {
+            // Kiểm tra trước xem bảng Accounts đã tồn tại trong DB chưa.
+            // Nếu bảng đã có (ví dụ DB được restore hoặc tạo sẵn) nhưng __EFMigrationsHistory trống/thiếu,
+            // ta đồng bộ danh sách migration vào __EFMigrationsHistory trước để EF Core không chạy lại lệnh CREATE TABLE [Accounts] gây lỗi đỏ 2714.
+            var conn = context.Database.GetDbConnection();
+            var wasClosed = conn.State != System.Data.ConnectionState.Open;
+            if (wasClosed)
+            {
+                await conn.OpenAsync(cancellationToken);
+            }
+
+            bool accountsTableExists = false;
+            try
+            {
+                await using var checkCmd = conn.CreateCommand();
+                checkCmd.CommandText = "SELECT CASE WHEN OBJECT_ID(N'dbo.Accounts', N'U') IS NOT NULL THEN 1 ELSE 0 END;";
+                var scalar = await checkCmd.ExecuteScalarAsync(cancellationToken);
+                accountsTableExists = Convert.ToInt32(scalar) == 1;
+
+                if (accountsTableExists)
+                {
+                    var allMigrations = context.Database.GetMigrations().ToList();
+                    if (allMigrations.Count > 0)
+                    {
+                        await using var ensureHistoryCmd = conn.CreateCommand();
+                        ensureHistoryCmd.CommandTimeout = 60;
+                        ensureHistoryCmd.CommandText = @"
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END";
+                        await ensureHistoryCmd.ExecuteNonQueryAsync(cancellationToken);
+
+                        // Đọc 1 lần các MigrationId đã có (NOLOCK) để tránh khóa ghi không cần thiết mỗi lần khởi động
+                        var existingMigs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        await using (var readCmd = conn.CreateCommand())
+                        {
+                            readCmd.CommandTimeout = 30;
+                            readCmd.CommandText = "SELECT [MigrationId] FROM [__EFMigrationsHistory] WITH (NOLOCK);";
+                            await using var reader = await readCmd.ExecuteReaderAsync(cancellationToken);
+                            while (await reader.ReadAsync(cancellationToken))
+                            {
+                                existingMigs.Add(reader.GetString(0));
+                            }
+                        }
+
+                        var missingMigs = allMigrations.Where(m => !existingMigs.Contains(m)).ToList();
+                        foreach (var migId in missingMigs)
+                        {
+                            await using var insCmd = conn.CreateCommand();
+                            insCmd.CommandTimeout = 60;
+                            insCmd.CommandText = @"
+IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = @mId)
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (@mId, N'8.0.0');";
+                            var p = insCmd.CreateParameter();
+                            p.ParameterName = "@mId";
+                            p.Value = migId;
+                            insCmd.Parameters.Add(p);
+                            await insCmd.ExecuteNonQueryAsync(cancellationToken);
+                        }
+                    }
+                    // Các cột/bảng nâng cấp sẽ được EnsureMultiIndustrySchemaAsync kiểm tra và bổ sung an toàn ngay sau bước này
+                    return;
+                }
+            }
+            finally
+            {
+                if (wasClosed && conn.State == System.Data.ConnectionState.Open)
+                {
+                    await conn.CloseAsync();
+                }
+            }
+
             await context.Database.MigrateAsync(cancellationToken);
         }
         catch (SqlException ex) when (ex.Number == 1801)
         {
-            // SQL Server: "Database '<name>' already exists".
-            // This can happen due to a race between multiple app instances (or tool restarts)
-            // during EF Core's database existence check + create flow.
-            logger.LogWarning(ex, "Database already exists while applying migrations; falling back to idempotent migration script.");
-            await ApplyMigrationsByIdempotentScriptAsync(context, logger, cancellationToken);
+            logger.LogWarning("Database already exists while applying migrations; falling back to idempotent migration script.");
+            try
+            {
+                await ApplyMigrationsByIdempotentScriptAsync(context, logger, cancellationToken);
+            }
+            catch (SqlException innerEx) when (innerEx.Number == 2714)
+            {
+                logger.LogInformation("Tables already exist in database; continuing with EnsureMultiIndustrySchemaAsync.");
+            }
+        }
+        catch (SqlException ex) when (ex.Number == 2714)
+        {
+            logger.LogInformation("Schema objects already exist in database (2714); continuing with EnsureMultiIndustrySchemaAsync.");
+        }
+        catch (SqlException ex) when (ex.Number == -2)
+        {
+            logger.LogWarning("SQL command timed out while syncing __EFMigrationsHistory; continuing startup.");
         }
     }
 
@@ -1447,8 +993,477 @@ public static class DbSeeder
                 .ExecuteDeleteAsync(cancellationToken);
         }
 
-        await context.Colors.ExecuteDeleteAsync(cancellationToken);
-        await context.Sizes.ExecuteDeleteAsync(cancellationToken);
         await context.Vouchers.ExecuteDeleteAsync(cancellationToken);
+    }
+
+    private static async Task EnsureMultiIndustryCatalogResetAndSeedAsync(
+        DataContext context,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var markerPath = Path.Combine(Directory.GetCurrentDirectory(), ".multi-industry-migrated");
+        if (File.Exists(markerPath))
+        {
+            return;
+        }
+
+        logger.LogInformation("Running one-time Multi-Industry E-Commerce database cleanup (preserving Accounts/Login data) and seeding multi-industry catalog...");
+
+        try
+        {
+            // 1. Wipe old product, order, cart, review, category data while keeping Accounts, UserProfiles, UserAddresses, PartnerApplications, Wallets
+            await context.Database.ExecuteSqlRawAsync(@"
+                DELETE FROM [dbo].[ReturnRequests];
+                DELETE FROM [dbo].[InventoryTransactions];
+                DELETE FROM [dbo].[OrderTrackingLogs];
+                DELETE FROM [dbo].[OrderItems];
+                DELETE FROM [dbo].[Orders];
+                DELETE FROM [dbo].[CartItems];
+                DELETE FROM [dbo].[Carts];
+                DELETE FROM [dbo].[WishlistItems];
+                DELETE FROM [dbo].[BlogPostProducts];
+                DELETE FROM [dbo].[SizeGuideDetails];
+                DELETE FROM [dbo].[SizeGuides];
+                DELETE FROM [dbo].[VariantImages];
+                DELETE FROM [dbo].[ProductImages];
+                DELETE FROM [dbo].[ProductVariants];
+                DELETE FROM [dbo].[ProductOptionValues];
+                DELETE FROM [dbo].[ProductOptions];
+                DELETE FROM [dbo].[ProductAttributeValues];
+                DELETE FROM [dbo].[ProductReviews];
+                DELETE FROM [dbo].[Products];
+                DELETE FROM [dbo].[CategoryAttributes];
+                UPDATE [dbo].[Categories] SET [ParentId] = NULL;
+                DELETE FROM [dbo].[Categories];
+            ", cancellationToken);
+
+            // 2. Migrate SystemSettings: Replace Fee_Commission_Fashion & Fee_Commission_Cosmetics with Fee_Commission_Default
+            var oldCommSettings = await context.SystemSettings
+                .Where(s => s.Id == "Fee_Commission_Fashion" || s.Id == "Fee_Commission_Cosmetics" || s.Id == "Fee_Payment")
+                .ToListAsync(cancellationToken);
+            if (oldCommSettings.Count > 0)
+            {
+                context.SystemSettings.RemoveRange(oldCommSettings);
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
+            if (!await context.SystemSettings.AnyAsync(s => s.Id == "Fee_Commission_Default", cancellationToken))
+            {
+                context.SystemSettings.Add(new SystemSetting
+                {
+                    Id = "Fee_Commission_Default",
+                    Value = "10",
+                    Description = "Chiết khấu cố định mặc định (áp dụng khi danh mục chưa thiết lập riêng)",
+                    Type = "percent",
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+            if (!await context.SystemSettings.AnyAsync(s => s.Id == "Tax_VAT_Default", cancellationToken))
+            {
+                context.SystemSettings.Add(new SystemSetting { Id = "Tax_VAT_Default", Value = "8", Description = "Mức thuế VAT mặc định", Type = "percent", UpdatedAt = DateTime.UtcNow });
+            }
+            if (!await context.SystemSettings.AnyAsync(s => s.Id == "Tax_Seller_Threshold", cancellationToken))
+            {
+                context.SystemSettings.Add(new SystemSetting { Id = "Tax_Seller_Threshold", Value = "500000000", Description = "Ngưỡng doanh thu chịu thuế", Type = "money", UpdatedAt = DateTime.UtcNow });
+            }
+            if (!await context.SystemSettings.AnyAsync(s => s.Id == "Tax_Seller_Rate", cancellationToken))
+            {
+                context.SystemSettings.Add(new SystemSetting { Id = "Tax_Seller_Rate", Value = "1.5", Description = "Mức thuế áp dụng cho hộ KD > 500 triệu", Type = "percent", UpdatedAt = DateTime.UtcNow });
+            }
+            if (!await context.SystemSettings.AnyAsync(s => s.Id == "Fee_Marketing", cancellationToken))
+            {
+                context.SystemSettings.Add(new SystemSetting { Id = "Fee_Marketing", Value = "6", Description = "Phí Marketing chung (Freeship / Voucher Xtra)", Type = "percent", UpdatedAt = DateTime.UtcNow });
+            }
+            await context.SaveChangesAsync(cancellationToken);
+
+            // 3. Seed Multi-Industry Brands
+            var nowUtc = DateTime.UtcNow;
+            var brandSeeds = new (string Name, string Slug)[]
+            {
+                ("Apple", "apple"),
+                ("Samsung", "samsung"),
+                ("Xiaomi", "xiaomi"),
+                ("Sony", "sony"),
+                ("Asus", "asus"),
+                ("Dell", "dell"),
+                ("Logitech", "logitech"),
+                ("Philips", "philips"),
+                ("Panasonic", "panasonic"),
+                ("Sunhouse", "sunhouse"),
+                ("Lock&Lock", "lock-and-lock"),
+                ("Nike", "nike"),
+                ("Adidas", "adidas"),
+                ("Uniqlo", "uniqlo"),
+                ("L'Oréal", "loreal"),
+                ("La Roche-Posay", "la-roche-posay"),
+                ("Unilever", "unilever"),
+                ("Vinamilk", "vinamilk"),
+                ("Nestlé", "nestle"),
+                ("Thiên Long", "thien-long"),
+                ("NXB Trẻ", "nxb-tre")
+            };
+
+            foreach (var (bName, bSlug) in brandSeeds)
+            {
+                if (!await context.Brands.AnyAsync(b => b.Slug == bSlug, cancellationToken))
+                {
+                    context.Brands.Add(new Brand
+                    {
+                        Name = bName,
+                        Slug = bSlug,
+                        IsActive = true,
+                        CreatedAt = nowUtc
+                    });
+                }
+            }
+            await context.SaveChangesAsync(cancellationToken);
+
+            // 4. Seed Multi-Industry Categories (Root & Children)
+            var rootCatSeeds = new (string Slug, string Name, decimal CommRate, decimal? MaxComm, string IconUrl, bool HasSizeGuide, bool IsReturnable, int Sort)[]
+            {
+                ("dien-thoai-phu-kien", "Điện thoại & Phụ kiện", 3.00m, 500000m, "bx-mobile-alt", false, true, 1),
+                ("may-tinh-laptop", "Máy tính & Laptop", 2.50m, 500000m, "bx-laptop", false, true, 2),
+                ("thiet-bi-dien-gia-dung", "Thiết bị Điện gia dụng", 5.00m, 300000m, "bx-fridge", false, true, 3),
+                ("thoi-trang-nam", "Thời trang Nam", 12.00m, null, "bx-closet", true, true, 4),
+                ("thoi-trang-nu", "Thời trang Nữ", 12.00m, null, "bx-shopping-bag", true, true, 5),
+                ("giay-dep-tui-xach", "Giày dép & Túi xách", 11.00m, null, "bx-walk", true, true, 6),
+                ("my-pham-sac-dep", "Mỹ phẩm & Sắc đẹp", 10.00m, null, "bx-spa", false, true, 7),
+                ("thuc-pham-do-uong", "Thực phẩm & Đồ uống", 8.00m, null, "bx-bowl-hot", false, false, 8),
+                ("nha-sach-van-phong-pham", "Nhà sách & Văn phòng phẩm", 7.00m, null, "bx-book-open", false, true, 9),
+                ("san-pham-so-evoucher", "Sản phẩm số & E-Voucher", 5.00m, null, "bx-barcode-reader", false, false, 10)
+            };
+
+            var catMap = new Dictionary<string, Category>(StringComparer.OrdinalIgnoreCase);
+            foreach (var rc in rootCatSeeds)
+            {
+                var cat = new Category
+                {
+                    Name = rc.Name,
+                    Slug = rc.Slug,
+                    ParentId = null,
+                    CommissionRate = rc.CommRate,
+                    MaxCommissionAmount = rc.MaxComm,
+                    IconUrl = rc.IconUrl,
+                    HasSizeGuide = rc.HasSizeGuide,
+                    IsReturnableDefault = rc.IsReturnable,
+                    SortOrder = rc.Sort,
+                    IsActive = true,
+                    CreatedAt = nowUtc,
+                    UpdatedAt = nowUtc
+                };
+                context.Categories.Add(cat);
+                catMap[rc.Slug] = cat;
+            }
+            await context.SaveChangesAsync(cancellationToken);
+
+            var childCatSeeds = new (string Slug, string Name, string ParentSlug, decimal? CommRate, bool HasSizeGuide, bool IsReturnable, int Sort)[]
+            {
+                ("dien-thoai-thong-minh", "Điện thoại thông minh", "dien-thoai-phu-kien", null, false, true, 1),
+                ("may-tinh-bang", "Máy tính bảng", "dien-thoai-phu-kien", null, false, true, 2),
+                ("tai-nghe-loa-bluetooth", "Tai nghe & Loa Bluetooth", "dien-thoai-phu-kien", 6.00m, false, true, 3),
+                ("cap-sac-pin-du-phong", "Cáp sạc & Pin dự phòng", "dien-thoai-phu-kien", 8.00m, false, true, 4),
+
+                ("laptop-van-phong", "Laptop Văn phòng & Học tập", "may-tinh-laptop", null, false, true, 1),
+                ("laptop-gaming", "Laptop Gaming & Đồ họa", "may-tinh-laptop", null, false, true, 2),
+                ("linh-kien-man-hinh", "Màn hình & Linh kiện PC", "may-tinh-laptop", 4.00m, false, true, 3),
+
+                ("gia-dung-nha-bep", "Gia dụng Nhà bếp (Nồi chiên, Máy xay...)", "thiet-bi-dien-gia-dung", null, false, true, 1),
+                ("thiet-bi-lam-mat-loc-khi", "Quạt điều hòa & Lọc không khí", "thiet-bi-dien-gia-dung", null, false, true, 2),
+
+                ("ao-nam", "Áo Nam (Thun, Polo, Sơ mi)", "thoi-trang-nam", null, true, true, 1),
+                ("quan-nam", "Quần Nam (Jean, Kaki, Short)", "thoi-trang-nam", null, true, true, 2),
+
+                ("ao-nu", "Áo Nữ & Áo khoác", "thoi-trang-nu", null, true, true, 1),
+                ("vay-dam-nu", "Váy & Đầm Nữ", "thoi-trang-nu", null, true, true, 2),
+
+                ("giay-the-thao", "Giày Thể thao / Sneaker", "giay-dep-tui-xach", null, true, true, 1),
+                ("tui-xach-balo", "Túi xách & Balo", "giay-dep-tui-xach", null, false, true, 2),
+
+                ("cham-soc-da-mat", "Chăm sóc da mặt (Skincare)", "my-pham-sac-dep", null, false, true, 1),
+                ("trang-diem-nuoc-hoa", "Trang điểm & Nước hoa", "my-pham-sac-dep", null, false, true, 2),
+
+                ("do-an-vat-banh-keo", "Đồ ăn vặt & Bánh kẹo", "thuc-pham-do-uong", null, false, false, 1),
+                ("thuc-pham-tuoi-song", "Thực phẩm tươi sống & Đông lạnh", "thuc-pham-do-uong", 5.00m, false, false, 2),
+                ("ca-phe-tra-sua", "Cà phê, Trà & Sữa", "thuc-pham-do-uong", null, false, false, 3),
+
+                ("sach-van-hoc-kinh-te", "Sách Văn học & Kinh tế", "nha-sach-van-phong-pham", null, false, true, 1),
+                ("dung-cu-hoc-tap", "Dụng cụ học tập & Văn phòng", "nha-sach-van-phong-pham", null, false, true, 2)
+            };
+
+            foreach (var cc in childCatSeeds)
+            {
+                if (!catMap.TryGetValue(cc.ParentSlug, out var parent)) continue;
+                var child = new Category
+                {
+                    Name = cc.Name,
+                    Slug = cc.Slug,
+                    ParentId = parent.Id,
+                    CommissionRate = cc.CommRate, // null = inherit from parent
+                    MaxCommissionAmount = null,
+                    HasSizeGuide = cc.HasSizeGuide,
+                    IsReturnableDefault = cc.IsReturnable,
+                    SortOrder = cc.Sort,
+                    IsActive = true,
+                    CreatedAt = nowUtc,
+                    UpdatedAt = nowUtc
+                };
+                context.Categories.Add(child);
+                catMap[cc.Slug] = child;
+            }
+            await context.SaveChangesAsync(cancellationToken);
+
+            // 5. Seed CategoryAttributes (EAV technical specs per industry)
+            var attrSeeds = new (string CatSlug, string Name, string? Unit, bool IsFilterable, int Sort)[]
+            {
+                // Điện thoại & Phụ kiện
+                ("dien-thoai-phu-kien", "RAM", "GB", true, 1),
+                ("dien-thoai-phu-kien", "Bộ nhớ trong (ROM)", "GB", true, 2),
+                ("dien-thoai-phu-kien", "Kích thước màn hình", "inch", true, 3),
+                ("dien-thoai-phu-kien", "Dung lượng pin", "mAh", false, 4),
+                ("dien-thoai-phu-kien", "Chip xử lý (CPU)", null, true, 5),
+
+                // Máy tính & Laptop
+                ("may-tinh-laptop", "Vi xử lý (CPU)", null, true, 1),
+                ("may-tinh-laptop", "RAM", "GB", true, 2),
+                ("may-tinh-laptop", "Ổ cứng SSD", "GB", true, 3),
+                ("may-tinh-laptop", "Card đồ họa (GPU)", null, true, 4),
+                ("may-tinh-laptop", "Kích thước màn hình", "inch", true, 5),
+
+                // Thiết bị Điện gia dụng
+                ("thiet-bi-dien-gia-dung", "Công suất", "W", true, 1),
+                ("thiet-bi-dien-gia-dung", "Dung tích", "Lít", true, 2),
+                ("thiet-bi-dien-gia-dung", "Điện áp", "V", false, 3),
+                ("thiet-bi-dien-gia-dung", "Xuất xứ", null, true, 4),
+
+                // Thời trang Nam / Nữ / Giày dép
+                ("thoi-trang-nam", "Chất liệu", null, true, 1),
+                ("thoi-trang-nam", "Kiểu dáng (Form)", null, true, 2),
+                ("thoi-trang-nam", "Xuất xứ", null, true, 3),
+
+                ("thoi-trang-nu", "Chất liệu", null, true, 1),
+                ("thoi-trang-nu", "Phong cách", null, true, 2),
+                ("thoi-trang-nu", "Xuất xứ", null, true, 3),
+
+                ("giay-dep-tui-xach", "Chất liệu bề mặt", null, true, 1),
+                ("giay-dep-tui-xach", "Chất liệu đế", null, false, 2),
+                ("giay-dep-tui-xach", "Xuất xứ", null, true, 3),
+
+                // Mỹ phẩm & Sắc đẹp
+                ("my-pham-sac-dep", "Loại da phù hợp", null, true, 1),
+                ("my-pham-sac-dep", "Dung tích / Trọng lượng", "ml", true, 2),
+                ("my-pham-sac-dep", "Hạn sử dụng", "tháng", false, 3),
+                ("my-pham-sac-dep", "Xuất xứ", null, true, 4),
+
+                // Thực phẩm & Đồ uống
+                ("thuc-pham-do-uong", "Xuất xứ", null, true, 1),
+                ("thuc-pham-do-uong", "Hạn sử dụng", "tháng", true, 2),
+                ("thuc-pham-do-uong", "Hướng dẫn bảo quản", null, false, 3),
+                ("thuc-pham-do-uong", "Trọng lượng tịnh", "g", true, 4),
+
+                // Nhà sách & VPP
+                ("nha-sach-van-phong-pham", "Tác giả", null, true, 1),
+                ("nha-sach-van-phong-pham", "Nhà xuất bản", null, true, 2),
+                ("nha-sach-van-phong-pham", "Loại bìa", null, true, 3),
+                ("nha-sach-van-phong-pham", "Số trang", "trang", false, 4)
+            };
+
+            foreach (var a in attrSeeds)
+            {
+                if (!catMap.TryGetValue(a.CatSlug, out var cat)) continue;
+                context.CategoryAttributes.Add(new CategoryAttribute
+                {
+                    CategoryId = cat.Id,
+                    Name = a.Name,
+                    Unit = a.Unit,
+                    IsFilterable = a.IsFilterable,
+                    SortOrder = a.Sort
+                });
+            }
+            await context.SaveChangesAsync(cancellationToken);
+
+            // Write marker files so neither old fashion seeder nor this reset runs again
+            await File.WriteAllTextAsync(markerPath, nowUtc.ToString("O"), cancellationToken);
+            var legacySeededMarker = Path.Combine(Directory.GetCurrentDirectory(), ".db-seeded");
+            await File.WriteAllTextAsync(legacySeededMarker, nowUtc.ToString("O"), cancellationToken);
+
+            logger.LogInformation("Multi-Industry E-Commerce database upgrade and catalog seeding completed successfully!");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during Multi-Industry catalog reset and seed.");
+        }
+    }
+
+    private static async Task EnsureDetailedCategoryHierarchyAsync(
+        DataContext context,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var nowUtc = DateTime.UtcNow;
+            var allCategories = await context.Categories.ToListAsync(cancellationToken);
+            var catBySlug = allCategories
+                .Where(c => !string.IsNullOrWhiteSpace(c.Slug))
+                .ToDictionary(c => c.Slug, c => c, StringComparer.OrdinalIgnoreCase);
+
+            var rootCatSeeds = new (string Slug, string Name, decimal CommRate, decimal? MaxComm, string IconUrl, bool HasSizeGuide, bool IsReturnable, int Sort)[]
+            {
+                ("dien-thoai-phu-kien", "Điện thoại & Phụ kiện", 3.00m, 500000m, "bx-mobile-alt", false, true, 1),
+                ("may-tinh-laptop", "Máy tính & Laptop", 2.50m, 500000m, "bx-laptop", false, true, 2),
+                ("thiet-bi-dien-gia-dung", "Thiết bị Điện gia dụng", 5.00m, 300000m, "bx-fridge", false, true, 3),
+                ("thoi-trang-nam", "Thời trang Nam", 12.00m, null, "bx-closet", true, true, 4),
+                ("thoi-trang-nu", "Thời trang Nữ", 12.00m, null, "bx-shopping-bag", true, true, 5),
+                ("giay-dep-tui-xach", "Giày dép & Túi xách", 11.00m, null, "bx-walk", true, true, 6),
+                ("my-pham-sac-dep", "Mỹ phẩm & Sắc đẹp", 10.00m, null, "bx-spa", false, true, 7),
+                ("thuc-pham-do-uong", "Thực phẩm & Đồ uống", 8.00m, null, "bx-bowl-hot", false, false, 8),
+                ("nha-sach-van-phong-pham", "Nhà sách & Văn phòng phẩm", 7.00m, null, "bx-book-open", false, true, 9),
+                ("san-pham-so-evoucher", "Sản phẩm số & E-Voucher", 5.00m, null, "bx-barcode-reader", false, false, 10)
+            };
+
+            foreach (var rc in rootCatSeeds)
+            {
+                if (!catBySlug.TryGetValue(rc.Slug, out var rootCat))
+                {
+                    rootCat = new Category
+                    {
+                        Name = rc.Name,
+                        Slug = rc.Slug,
+                        ParentId = null,
+                        CommissionRate = rc.CommRate,
+                        MaxCommissionAmount = rc.MaxComm,
+                        IconUrl = rc.IconUrl,
+                        HasSizeGuide = rc.HasSizeGuide,
+                        IsReturnableDefault = rc.IsReturnable,
+                        SortOrder = rc.Sort,
+                        IsActive = true,
+                        CreatedAt = nowUtc,
+                        UpdatedAt = nowUtc
+                    };
+                    context.Categories.Add(rootCat);
+                    catBySlug[rc.Slug] = rootCat;
+                }
+                else
+                {
+                    rootCat.IconUrl = rc.IconUrl;
+                    rootCat.SortOrder = rc.Sort;
+                    rootCat.IsActive = true;
+                }
+            }
+            await context.SaveChangesAsync(cancellationToken);
+
+            var childCatSeeds = new (string Slug, string Name, string ParentSlug, decimal? CommRate, bool HasSizeGuide, bool IsReturnable, int Sort)[]
+            {
+                // 1. Điện thoại & Phụ kiện
+                ("dien-thoai-thong-minh", "Điện thoại thông minh", "dien-thoai-phu-kien", null, false, true, 1),
+                ("may-tinh-bang", "Máy tính bảng (Tablet)", "dien-thoai-phu-kien", null, false, true, 2),
+                ("dong-ho-thong-minh", "Đồng hồ thông minh (Smartwatch)", "dien-thoai-phu-kien", 4.00m, false, true, 3),
+                ("tai-nghe-loa-bluetooth", "Tai nghe & Loa Bluetooth", "dien-thoai-phu-kien", 6.00m, false, true, 4),
+                ("cap-sac-pin-du-phong", "Cáp sạc & Pin dự phòng", "dien-thoai-phu-kien", 8.00m, false, true, 5),
+                ("op-lung-kinh-cuong-luc", "Ốp lưng & Kính cường lực", "dien-thoai-phu-kien", 10.00m, false, true, 6),
+
+                // 2. Máy tính & Laptop
+                ("laptop-van-phong", "Laptop Văn phòng & Học tập", "may-tinh-laptop", null, false, true, 1),
+                ("laptop-gaming", "Laptop Gaming & Đồ họa", "may-tinh-laptop", null, false, true, 2),
+                ("pc-may-tinh-de-ban", "PC & Máy tính để bàn", "may-tinh-laptop", null, false, true, 3),
+                ("linh-kien-man-hinh", "Màn hình & Linh kiện PC", "may-tinh-laptop", 4.00m, false, true, 4),
+                ("ban-phim-chuot-gaming", "Bàn phím, Chuột & Gear", "may-tinh-laptop", 6.00m, false, true, 5),
+                ("thiet-bi-mang-luu-tru", "Thiết bị mạng & Ổ cứng lưu trữ", "may-tinh-laptop", 5.00m, false, true, 6),
+
+                // 3. Thiết bị Điện gia dụng
+                ("gia-dung-nha-bep", "Gia dụng Nhà bếp (Nồi chiên, Máy xay)", "thiet-bi-dien-gia-dung", null, false, true, 1),
+                ("thiet-bi-lam-mat-loc-khi", "Quạt điều hòa & Lọc không khí", "thiet-bi-dien-gia-dung", null, false, true, 2),
+                ("robot-hut-bui-ve-sinh", "Robot hút bụi & Máy vệ sinh", "thiet-bi-dien-gia-dung", null, false, true, 3),
+                ("tivi-am-thanh-gia-dinh", "Tivi & Thiết bị âm thanh", "thiet-bi-dien-gia-dung", 4.00m, false, true, 4),
+                ("cham-soc-ca-nhan-dien", "Bàn ủi, Máy sấy & Chăm sóc cá nhân", "thiet-bi-dien-gia-dung", 6.00m, false, true, 5),
+
+                // 4. Thời trang Nam
+                ("ao-nam", "Áo Thun & Áo Polo Nam", "thoi-trang-nam", null, true, true, 1),
+                ("ao-so-mi-nam", "Áo Sơ mi & Vest Nam", "thoi-trang-nam", null, true, true, 2),
+                ("ao-khoac-hoodie-nam", "Áo Khoác & Hoodie Nam", "thoi-trang-nam", null, true, true, 3),
+                ("quan-nam", "Quần Jean, Kaki & Quần Tây", "thoi-trang-nam", null, true, true, 4),
+                ("do-the-thao-do-mac-nha-nam", "Đồ Thể thao & Mặc nhà Nam", "thoi-trang-nam", null, true, true, 5),
+                ("phu-kien-nam", "Thắt lưng, Ví da & Phụ kiện Nam", "thoi-trang-nam", null, false, true, 6),
+
+                // 5. Thời trang Nữ
+                ("ao-nu", "Áo Thun, Sơ mi & Kiểu Nữ", "thoi-trang-nu", null, true, true, 1),
+                ("vay-dam-nu", "Váy Đầm Dự tiệc & Công sở", "thoi-trang-nu", null, true, true, 2),
+                ("chan-vay-quan-nu", "Chân váy, Quần Jean & Culottes", "thoi-trang-nu", null, true, true, 3),
+                ("ao-khoac-cardigan-nu", "Áo Khoác, Blazer & Cardigan", "thoi-trang-nu", null, true, true, 4),
+                ("do-ngu-mac-nha-nu", "Đồ ngủ, Đồ lót & Mặc nhà Nữ", "thoi-trang-nu", null, true, false, 5),
+
+                // 6. Giày dép & Túi xách
+                ("giay-the-thao", "Giày Thể thao & Sneaker", "giay-dep-tui-xach", null, true, true, 1),
+                ("giay-tay-giay-luoi-nam", "Giày Tây & Giày Lười Nam", "giay-dep-tui-xach", null, true, true, 2),
+                ("giay-cao-got-sandal-nu", "Giày Cao gót, Búp bê & Sandal Nữ", "giay-dep-tui-xach", null, true, true, 3),
+                ("tui-xach-vi-nu", "Túi xách & Ví thời trang Nữ", "giay-dep-tui-xach", null, false, true, 4),
+                ("tui-xach-balo", "Balo Laptop & Túi đeo chéo", "giay-dep-tui-xach", null, false, true, 5),
+                ("vali-tui-du-lich", "Vali & Túi du lịch", "giay-dep-tui-xach", null, false, true, 6),
+
+                // 7. Mỹ phẩm & Sắc đẹp
+                ("cham-soc-da-mat", "Chăm sóc da mặt (Skincare)", "my-pham-sac-dep", null, false, true, 1),
+                ("trang-diem-nuoc-hoa", "Trang điểm (Makeup)", "my-pham-sac-dep", null, false, true, 2),
+                ("nuoc-hoa-chinh-hang", "Nước hoa Nam & Nữ", "my-pham-sac-dep", null, false, true, 3),
+                ("cham-soc-toc-co-the", "Chăm sóc tóc & Cơ thể (Bodycare)", "my-pham-sac-dep", null, false, true, 4),
+                ("duoc-my-pham-thuc-pham-chuc-nang", "Dược mỹ phẩm & Vitamin làm đẹp", "my-pham-sac-dep", null, false, false, 5),
+
+                // 8. Thực phẩm & Đồ uống
+                ("do-an-vat-banh-keo", "Đồ ăn vặt, Bánh kẹo & Hạt dinh dưỡng", "thuc-pham-do-uong", null, false, false, 1),
+                ("ca-phe-tra-sua", "Cà phê, Trà, Sữa & Đồ uống", "thuc-pham-do-uong", null, false, false, 2),
+                ("thuc-pham-kho-gia-vi", "Thực phẩm khô, Mì & Gia vị nấu ăn", "thuc-pham-do-uong", null, false, false, 3),
+                ("thuc-pham-tuoi-song", "Thực phẩm tươi sống & Đông lạnh", "thuc-pham-do-uong", 5.00m, false, false, 4),
+                ("dac-san-qua-bieu", "Đặc sản vùng miền & Hộp quà biếu", "thuc-pham-do-uong", null, false, false, 5),
+
+                // 9. Nhà sách & Văn phòng phẩm
+                ("sach-van-hoc-kinh-te", "Sách Kinh tế, Kỹ năng & Khởi nghiệp", "nha-sach-van-phong-pham", null, false, true, 1),
+                ("sach-van-hoc-tieu-thuyet", "Sách Văn học, Tiểu thuyết & Truyện", "nha-sach-van-phong-pham", null, false, true, 2),
+                ("sach-ngoai-ngu-giao-khoa", "Sách Ngoại ngữ & Tham khảo", "nha-sach-van-phong-pham", null, false, true, 3),
+                ("dung-cu-hoc-tap", "Bút viết, Sổ tay & Dụng cụ học tập", "nha-sach-van-phong-pham", null, false, true, 4),
+                ("thiet-bi-van-phong-qua-luu-niem", "Văn phòng phẩm & Quà lưu niệm", "nha-sach-van-phong-pham", null, false, true, 5),
+
+                // 10. Sản phẩm số & E-Voucher
+                ("the-game-the-cao-vien-thong", "Thẻ Game & Thẻ cào viễn thông", "san-pham-so-evoucher", null, false, false, 1),
+                ("key-ban-quyen-phan-mem", "Key bản quyền Windows, Office & Phần mềm", "san-pham-so-evoucher", null, false, false, 2),
+                ("khoa-hoc-truc-tuyen-ebook", "Khóa học Online & E-Book", "san-pham-so-evoucher", null, false, false, 3),
+                ("evoucher-an-uong-du-lich-spa", "E-Voucher Ăn uống, Giải trí & Spa", "san-pham-so-evoucher", null, false, false, 4)
+            };
+
+            foreach (var cc in childCatSeeds)
+            {
+                if (!catBySlug.TryGetValue(cc.ParentSlug, out var parent)) continue;
+                if (!catBySlug.TryGetValue(cc.Slug, out var child))
+                {
+                    child = new Category
+                    {
+                        Name = cc.Name,
+                        Slug = cc.Slug,
+                        ParentId = parent.Id,
+                        CommissionRate = cc.CommRate,
+                        MaxCommissionAmount = null,
+                        HasSizeGuide = cc.HasSizeGuide,
+                        IsReturnableDefault = cc.IsReturnable,
+                        SortOrder = cc.Sort,
+                        IsActive = true,
+                        CreatedAt = nowUtc,
+                        UpdatedAt = nowUtc
+                    };
+                    context.Categories.Add(child);
+                    catBySlug[cc.Slug] = child;
+                }
+                else
+                {
+                    child.Name = cc.Name;
+                    child.ParentId = parent.Id;
+                    child.SortOrder = cc.Sort;
+                    child.IsActive = true;
+                }
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not sync detailed category hierarchy.");
+        }
     }
 }

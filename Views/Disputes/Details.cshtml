@@ -1,0 +1,167 @@
+@model DOAN_BANHANG.ViewModels.DisputeDetailsVm
+@{
+    var d = Model.Dispute;
+    ViewData["Title"] = $"Theo dõi Khiếu nại {d.DisputeCode}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var isResolved = d.Status.StartsWith("Resolved") || d.Status == "Closed";
+
+    int currentStep = d.Status switch
+    {
+        "Open" => 1,
+        "ShopResponded" => 2,
+        "EscalatedToAdmin" => 3,
+        _ => 4
+    };
+}
+
+<style>
+    .cdet-wrap { max-width: 1120px; margin: 28px auto 60px; padding: 0 16px; }
+    .cdet-hero {
+        background: linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+        border-radius: 20px; padding: 24px 28px; color: #fff; margin-bottom: 22px;
+    }
+    .cdet-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px; }
+    @@media (max-width: 767px) { .cdet-steps { grid-template-columns: repeat(2, 1fr); } }
+    .cdet-step {
+        background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 12px 14px; text-align: center; font-size: 13px; color: #64748B;
+    }
+    .cdet-step.is-done { border-color: #088178; background: #ECFDF5; color: #065F46; font-weight: 700; }
+    .cdet-grid { display: grid; grid-template-columns: 1.55fr 1fr; gap: 20px; }
+    @@media (max-width: 900px) { .cdet-grid { grid-template-columns: 1fr; } }
+    .cdet-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+    .cdet-msg { border-radius: 12px; padding: 12px 14px; border: 1px solid #E2E8F0; background: #F8FAFC; margin-bottom: 10px; }
+    .cdet-msg.is-admin { background: #FFFDF5; border-color: #FDE68A; }
+    .cdet-msg.is-shop { background: #ECFDF5; border-color: #A7F3D0; }
+    .cdet-thumb { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; border: 1px solid #E2E8F0; }
+</style>
+
+<div class="cdet-wrap">
+    <div class="cdet-hero">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+            <div>
+                <a href="/my-disputes" style="color:#FFEB69; font-size:13px; font-weight:700; text-decoration:none;">← Danh sách khiếu nại của tôi</a>
+                <h2 style="margin:6px 0 4px; font-size:21px; font-weight:800; color:#fff;">Hồ sơ @d.DisputeCode — Đơn #@d.Order?.OrderCode</h2>
+                <div style="font-size:13px; color:rgba(255,255,255,0.82);">
+                    Gian hàng: <strong>@Model.ShopName</strong> • Số tiền yêu cầu hoàn: <strong style="color:#FFEB69;">@d.RequestedAmount.ToString("N0")₫</strong>
+                </div>
+            </div>
+            @if (!isResolved && d.Status != "EscalatedToAdmin")
+            {
+                <form method="post" action="/my-disputes/escalate" onsubmit="return confirm('Chuyển hồ sơ này lên Bộ phận Trọng tài Sàn Sellzy để phân xử trực tiếp?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="disputeId" value="@d.Id" />
+                    <button type="submit" style="background:#FFEB69; color:#161C24; border:none; padding:10px 18px; border-radius:999px; font-weight:800; font-size:13px; cursor:pointer;">
+                        ⚖️ Yêu cầu Sàn Sellzy phân xử
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (TempData["DisputeToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+    {
+        <div style="background:#ECFDF5; border:1px solid #A7F3D0; color:#065F46; padding:12px 16px; border-radius:12px; margin-bottom:16px; font-size:14px; font-weight:600;">
+            ✓ @toast
+        </div>
+    }
+
+    <!-- TIẾN TRÌNH 4 BƯỚC -->
+    <div class="cdet-steps">
+        <div class="cdet-step @(currentStep >= 1 ? "is-done" : "")">1. Đã gửi Khiếu nại</div>
+        <div class="cdet-step @(currentStep >= 2 ? "is-done" : "")">2. Gian hàng phản hồi</div>
+        <div class="cdet-step @(currentStep >= 3 ? "is-done" : "")">3. Sàn Sellzy phân xử</div>
+        <div class="cdet-step @(currentStep >= 4 ? "is-done" : "")">4. Kết quả &amp; Hoàn tiền Ví</div>
+    </div>
+
+    <div class="cdet-grid">
+        <div>
+            <div class="cdet-card">
+                <h4 style="margin:0 0 12px; font-size:16px; font-weight:800; color:#0F172A;">Chi tiết nội dung khiếu nại</h4>
+                <div style="font-size:14px; font-weight:700; color:#088178; margin-bottom:6px;">@d.ReasonTitle</div>
+                <div style="font-size:14px; color:#334155; white-space:pre-line; background:#F8FAFC; padding:12px; border-radius:10px; border:1px solid #E2E8F0;">@d.Description</div>
+
+                @if (Model.CustomerEvidenceUrls.Any())
+                {
+                    <div style="margin-top:14px;">
+                        <div style="font-size:13px; font-weight:700; color:#1E293B; margin-bottom:8px;">Bằng chứng bạn đã tải lên:</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                            @foreach (var url in Model.CustomerEvidenceUrls)
+                            {
+                                <a href="@url" target="_blank"><img src="@url" class="cdet-thumb" alt="Bằng chứng" /></a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="cdet-card">
+                <h4 style="margin:0 0 14px; font-size:16px; font-weight:800; color:#0F172A;">Trao đổi 3 bên (Bạn ⇄ Gian hàng ⇄ Sàn Sellzy)</h4>
+                @foreach (var msg in d.Messages)
+                {
+                    var cls = msg.SenderRole == "Admin" ? "is-admin" : (msg.SenderRole == "Shop" ? "is-shop" : "");
+                    var roleName = msg.SenderRole == "Admin" ? "⚖️ Trọng tài Sàn Sellzy" : (msg.SenderRole == "Shop" ? "🏪 Gian hàng đối tác" : "👤 Bạn");
+                    <div class="cdet-msg @cls">
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+                            <strong>@roleName</strong>
+                            <span style="color:#64748B;">@msg.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</span>
+                        </div>
+                        <div style="font-size:13.5px; color:#1E293B; white-space:pre-line;">@msg.Content</div>
+                        @if (!string.IsNullOrWhiteSpace(msg.AttachmentUrl))
+                        {
+                            <div style="margin-top:8px;">
+                                <a href="@msg.AttachmentUrl" target="_blank"><img src="@msg.AttachmentUrl" class="cdet-thumb" alt="Đính kèm" /></a>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (!isResolved)
+                {
+                    <form method="post" action="/my-disputes/message" enctype="multipart/form-data" style="margin-top:14px; padding-top:14px; border-top:1px solid #F1F5F9;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="disputeId" value="@d.Id" />
+                        <textarea name="content" rows="2" required placeholder="Gửi thêm thông tin hoặc ảnh bằng chứng cho Gian hàng và Sàn Sellzy..." style="width:100%; border:1px solid #CBD5E1; border-radius:10px; padding:10px; font-size:13.5px; margin-bottom:10px;"></textarea>
+                        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;">
+                            <input type="file" name="attachment" accept="image/*" style="font-size:12.5px;" />
+                            <button type="submit" style="background:#088178; color:#fff; border:none; padding:9px 18px; border-radius:999px; font-weight:700; font-size:13px; cursor:pointer;">Gửi tin nhắn</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div>
+            @if (isResolved)
+            {
+                <div class="cdet-card" style="background:#ECFDF5; border-color:#A7F3D0;">
+                    <h4 style="margin:0 0 8px; font-size:15.5px; font-weight:800; color:#065F46;">Kết quả giải quyết khiếu nại</h4>
+                    @if (d.ApprovedRefundAmount > 0)
+                    {
+                        <div style="font-size:14px; color:#065F46; margin-bottom:6px;">
+                            Số tiền đã hoàn: <strong>@d.ApprovedRefundAmount.ToString("N0")₫</strong> @(d.IsRefundedToWallet ? "(Đã cộng vào Ví Sellzy của bạn)" : "")
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(d.AdminDecisionNote))
+                    {
+                        <div style="font-size:13px; color:#334155;">Ghi chú từ Trọng tài Sàn: @d.AdminDecisionNote</div>
+                    }
+                    <a href="/my-wallet" style="display:inline-block; margin-top:10px; background:#088178; color:#fff; padding:8px 14px; border-radius:999px; font-size:12.5px; font-weight:700; text-decoration:none;">Kiểm tra số dư Ví Sellzy →</a>
+                </div>
+            }
+            else
+            {
+                <div class="cdet-card">
+                    <h4 style="margin:0 0 8px; font-size:15px; font-weight:800; color:#0F172A;">Hành động khác</h4>
+                    <p style="font-size:13px; color:#64748B; margin:0 0 12px;">Nếu vấn đề đã được giải quyết ổn thỏa với gian hàng, bạn có thể chủ động rút lại khiếu nại này.</p>
+                    <form method="post" action="/my-disputes/close" onsubmit="return confirm('Xác nhận rút khiếu nại này?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="disputeId" value="@d.Id" />
+                        <button type="submit" style="width:100%; background:#fff; color:#DC2626; border:1px solid #FCA5A5; padding:9px 14px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer;">
+                            Rút khiếu nại này
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+</div>

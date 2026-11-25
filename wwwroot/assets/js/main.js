@@ -258,20 +258,22 @@
   }
 
   /*------ Search Flow ----*/
-  $(".header-search-input").on("input.sellzy", function () {
-    const rawValue = $(this).val();
-    const searchValue = typeof rawValue === "string" ? rawValue.trim() : "";
-    // Basic input validation (prevents unexpected values)
-    if (searchValue.length > 0 && searchValue.length <= 200) {
-      $(this)
-        .closest(".search-input-container")
-        .find(".search-result-container")
-        .attr("data-state", "open");
-    } else {
-      $(this)
-        .closest(".search-input-container")
-        .find(".search-result-container")
-        .attr("data-state", "close");
+  $(".header-search-input").on("focus.sellzy input.sellzy", function () {
+    $(this)
+      .closest(".search-input-container")
+      .find(".search-result-container")
+      .attr("data-state", "open");
+  });
+
+  $doc.on("click.sellzy", ".recent-search-item, .recommended-search-item", function (e) {
+    if ($(e.target).closest("i.hgi-cancel-01").length) {
+      e.stopPropagation();
+      $(this).remove();
+      return;
+    }
+    const text = ($(this).find("p").first().text() || $(this).text() || "").trim();
+    if (text) {
+      window.location.href = "/search?q=" + encodeURIComponent(text);
     }
   });
 
@@ -350,6 +352,117 @@
     return { ok: res.ok, status: res.status, data };
   }
 
+  function showAuthSuccess($scope, message) {
+    const $ok = $scope.find(".auth-success");
+    if (!$ok.length) return;
+    if (!message) {
+      $ok.addClass("hidden").text("");
+      return;
+    }
+    $ok.removeClass("hidden").text(message);
+  }
+
+  function setAuthLoading($scope, isLoading, loadingText) {
+    const $btn = $scope.find(".auth-submit-btn");
+    if (!$btn.length) return;
+    if (isLoading) {
+      if (!$btn.data("orig-text")) $btn.data("orig-text", $btn.text());
+      $btn.prop("disabled", true).text(loadingText || "Đang xử lý...");
+    } else {
+      $btn.prop("disabled", false).text($btn.data("orig-text") || $btn.text());
+    }
+  }
+
+  // Show/Hide Password toggle
+  $(document).on("click.sellzy", ".auth-toggle-pwd", function () {
+    const targetSel = $(this).attr("data-target");
+    const $inp = $(targetSel);
+    if (!$inp.length) return;
+    const isPwd = $inp.attr("type") === "password";
+    $inp.attr("type", isPwd ? "text" : "password");
+    $(this).find(".icon-eye-show").toggleClass("hidden", isPwd);
+    $(this).find(".icon-eye-hide").toggleClass("hidden", !isPwd);
+  });
+
+  // Legal Policy Modal (Điều khoản dịch vụ & Chính sách bảo mật)
+  function openSellzyLegalModal(tab) {
+    const $modal = $("#sellzy-legal-modal");
+    if (!$modal.length) return;
+    const activeTab = tab === "privacy" ? "privacy" : "terms";
+    $("#sellzy-legal-title").text(
+      activeTab === "privacy" ? "Chính sách bảo mật Sellzy" : "Điều khoản dịch vụ Sellzy"
+    );
+    $(".sellzy-legal-tab-btn").removeClass("is-active");
+    $(`.sellzy-legal-tab-btn[data-legal-switch="${activeTab}"]`).addClass("is-active");
+    $("#sellzy-legal-content-terms").toggle(activeTab === "terms");
+    $("#sellzy-legal-content-privacy").toggle(activeTab === "privacy");
+    $modal.find(".sellzy-legal-body").scrollTop(0);
+    $modal.addClass("is-open");
+  }
+
+  function closeSellzyLegalModal() {
+    $("#sellzy-legal-modal").removeClass("is-open");
+  }
+
+  $(document).on("click.sellzy", ".sellzy-legal-trigger", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    openSellzyLegalModal($(this).attr("data-legal-tab"));
+  });
+
+  $(document).on("click.sellzy", ".sellzy-legal-tab-btn", function () {
+    openSellzyLegalModal($(this).attr("data-legal-switch"));
+  });
+
+  $(document).on("click.sellzy", "#sellzy-legal-close-x, #sellzy-legal-close-btn", function () {
+    closeSellzyLegalModal();
+  });
+
+  $(document).on("click.sellzy", "#sellzy-legal-agree-btn", function () {
+    $("#register-accept-terms").prop("checked", true);
+    closeSellzyLegalModal();
+  });
+
+  $(document).on("click.sellzy", "#sellzy-legal-modal", function (e) {
+    if (e.target === this) closeSellzyLegalModal();
+  });
+
+  $(document).on("keydown.sellzy", function (e) {
+    if (e.key === "Escape" && $("#sellzy-legal-modal").hasClass("is-open")) {
+      closeSellzyLegalModal();
+    }
+  });
+
+  // Live Password Strength Meter on Register
+  $("#register-password").on("input.sellzy", function () {
+    const val = String($(this).val() || "");
+    const $wrap = $("#register-pwd-strength");
+    const $lbl = $("#register-pwd-strength-label");
+    const $bar = $("#register-pwd-strength-bar");
+    if (!val) {
+      $wrap.hide();
+      return;
+    }
+    $wrap.show();
+    let score = 0;
+    if (val.length >= 6) score++;
+    if (val.length >= 10) score++;
+    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    if (score <= 2) {
+      $lbl.text("Yếu (cần tối thiểu 6 ký tự gồm chữ & số)").css("color", "#DC2626");
+      $bar.css({ width: "33%", background: "#EF4444" });
+    } else if (score === 3) {
+      $lbl.text("Trung bình").css("color", "#D97706");
+      $bar.css({ width: "66%", background: "#F59E0B" });
+    } else {
+      $lbl.text("Mạnh — An toàn cao").css("color", "#059669");
+      $bar.css({ width: "100%", background: "#10B981" });
+    }
+  });
+
   // Email/password login
   const $loginForm = $(".login-form form");
   if ($loginForm.length) {
@@ -357,19 +470,32 @@
       e.preventDefault();
       const $scope = $(this);
       showAuthError($scope, null);
+      showAuthSuccess($scope, null);
 
       const email = String($("#login-email").val() || "").trim();
       const password = String($("#login-password").val() || "");
+      const rememberMe = $("#login-remember-me").is(":checked");
 
-      const result = await postJson("/auth/login", { email, password });
+      if (!email || !password) {
+        showAuthError($scope, "Vui lòng nhập đầy đủ Email và Mật khẩu.");
+        return;
+      }
+
+      setAuthLoading($scope, true, "Đang đăng nhập...");
+      const result = await postJson("/auth/login", { email, password, rememberMe });
+      setAuthLoading($scope, false);
+
       if (result.ok) {
+        showAuthSuccess($scope, "Đăng nhập thành công! Đang chuyển hướng...");
         const params = new URLSearchParams(window.location.search || "");
         const returnUrl = params.get("returnUrl");
-        if (returnUrl && returnUrl.startsWith("/")) {
-          window.location.href = returnUrl;
-        } else {
-          window.location.reload();
-        }
+        setTimeout(function () {
+          if (returnUrl && returnUrl.startsWith("/")) {
+            window.location.href = returnUrl;
+          } else {
+            window.location.reload();
+          }
+        }, 450);
         return;
       }
       showAuthError($scope, (result.data && result.data.message) || "Đăng nhập thất bại.");
@@ -383,36 +509,241 @@
       e.preventDefault();
       const $scope = $(this);
       showAuthError($scope, null);
+      showAuthSuccess($scope, null);
 
       const firstName = String($("#first-name").val() || "").trim();
       const lastName = String($("#last-name").val() || "").trim();
       const email = String($("#register-email").val() || "").trim();
+      const phoneNumber = String($("#register-phone").val() || "").trim();
       const password = String($("#register-password").val() || "");
       const confirmPassword = String($("#confirm-password").val() || "");
+      const acceptTerms = $("#register-accept-terms").is(":checked");
 
+      if (!firstName && !lastName) {
+        showAuthError($scope, "Vui lòng nhập Họ và Tên của bạn.");
+        return;
+      }
+      if (!email) {
+        showAuthError($scope, "Vui lòng nhập địa chỉ Email.");
+        return;
+      }
+      if (password.length < 6 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+        showAuthError($scope, "Mật khẩu phải có ít nhất 6 ký tự, bao gồm cả chữ cái và chữ số.");
+        return;
+      }
       if (password !== confirmPassword) {
         showAuthError($scope, "Mật khẩu xác nhận không khớp.");
         return;
       }
+      if (!acceptTerms) {
+        showAuthError($scope, "Vui lòng đồng ý với Điều khoản dịch vụ & Chính sách bảo mật.");
+        return;
+      }
 
+      setAuthLoading($scope, true, "Đang tạo tài khoản...");
       const result = await postJson("/auth/register", {
         firstName,
         lastName,
+        phoneNumber,
         email,
         password,
         confirmPassword,
+        acceptTerms,
       });
+      setAuthLoading($scope, false);
+
       if (result.ok) {
+        showAuthSuccess($scope, "Tạo tài khoản thành công! Đang đăng nhập...");
         const params = new URLSearchParams(window.location.search || "");
         const returnUrl = params.get("returnUrl");
-        if (returnUrl && returnUrl.startsWith("/")) {
-          window.location.href = returnUrl;
-        } else {
-          window.location.reload();
-        }
+        setTimeout(function () {
+          if (returnUrl && returnUrl.startsWith("/")) {
+            window.location.href = returnUrl;
+          } else {
+            window.location.reload();
+          }
+        }, 500);
         return;
       }
       showAuthError($scope, (result.data && result.data.message) || "Đăng ký thất bại.");
+    });
+  }
+
+  // ── QUÊN MẬT KHẨU → OTP 6 SỐ → ĐẶT LẠI MẬT KHẨU ──
+  let recoveryEmail = "";
+  let recoveryResetToken = "";
+  let resendCountdownTimer = null;
+
+  function startOtpResendCountdown(seconds) {
+    const $btn = $("#btn-resend-otp");
+    if (!$btn.length) return;
+    if (resendCountdownTimer) clearInterval(resendCountdownTimer);
+    let left = seconds;
+    $btn.prop("disabled", true).text(`Gửi lại mã sau ${left}s`);
+    resendCountdownTimer = setInterval(function () {
+      left--;
+      if (left <= 0) {
+        clearInterval(resendCountdownTimer);
+        $btn.prop("disabled", false).text("Gửi lại mã OTP");
+      } else {
+        $btn.text(`Gửi lại mã sau ${left}s`);
+      }
+    }, 1000);
+  }
+
+  // OTP 6-digit auto-advance, backspace & paste
+  const $otpInputs = $(".otp-digit-input");
+  if ($otpInputs.length) {
+    $otpInputs.on("input.sellzy", function () {
+      const clean = String($(this).val() || "").replace(/\D/g, "").slice(0, 1);
+      $(this).val(clean);
+      if (clean) {
+        $(this).next(".otp-digit-input").focus();
+      }
+    });
+    $otpInputs.on("keydown.sellzy", function (e) {
+      if (e.key === "Backspace" && !$(this).val()) {
+        $(this).prev(".otp-digit-input").focus();
+      }
+    });
+    $otpInputs.on("paste.sellzy", function (e) {
+      const paste = (e.originalEvent.clipboardData || window.clipboardData).getData("text") || "";
+      const digits = paste.replace(/\D/g, "").slice(0, 6);
+      if (digits.length > 0) {
+        e.preventDefault();
+        $otpInputs.each(function (idx) {
+          $(this).val(digits[idx] || "");
+        });
+        $otpInputs.eq(Math.min(digits.length, 5)).focus();
+      }
+    });
+  }
+
+  // Step 1: Forgot password submit
+  const $forgotForm = $(".forgot-password-form form");
+  if ($forgotForm.length) {
+    $forgotForm.on("submit.sellzy", async function (e) {
+      e.preventDefault();
+      const $scope = $(this);
+      showAuthError($scope, null);
+      showAuthSuccess($scope, null);
+
+      const email = String($("#forgot-password-email").val() || "").trim();
+      if (!email) {
+        showAuthError($scope, "Vui lòng nhập địa chỉ Email đã đăng ký.");
+        return;
+      }
+
+      setAuthLoading($scope, true, "Đang gửi mã OTP...");
+      const result = await postJson("/auth/forgot-password", { email });
+      setAuthLoading($scope, false);
+
+      if (result.ok) {
+        recoveryEmail = (result.data && result.data.email) || email;
+        $("#otp-target-email").text(recoveryEmail);
+        $otpInputs.val("");
+        if (result.data && result.data.devOtp) {
+          $("#otp-dev-code").text(result.data.devOtp);
+          $("#otp-dev-banner").removeClass("hidden");
+        } else {
+          $("#otp-dev-banner").addClass("hidden");
+        }
+        startOtpResendCountdown(30);
+        showSidebar(".otp-verification-page-sidebar");
+        setTimeout(() => $otpInputs.first().focus(), 250);
+        return;
+      }
+      showAuthError($scope, (result.data && result.data.message) || "Không thể gửi mã OTP.");
+    });
+  }
+
+  // Resend OTP
+  $("#btn-resend-otp").on("click.sellzy", async function () {
+    if (!recoveryEmail) return;
+    const $scope = $(".otp-verification-form");
+    showAuthError($scope, null);
+    const result = await postJson("/auth/forgot-password", { email: recoveryEmail });
+    if (result.ok) {
+      if (result.data && result.data.devOtp) {
+        $("#otp-dev-code").text(result.data.devOtp);
+        $("#otp-dev-banner").removeClass("hidden");
+      }
+      startOtpResendCountdown(30);
+    } else {
+      showAuthError($scope, (result.data && result.data.message) || "Không thể gửi lại mã.");
+    }
+  });
+
+  // Step 2: Verify OTP submit
+  const $otpForm = $("form.otp-verification-form");
+  if ($otpForm.length) {
+    $otpForm.on("submit.sellzy", async function (e) {
+      e.preventDefault();
+      const $scope = $(this);
+      showAuthError($scope, null);
+
+      let otp = "";
+      $otpInputs.each(function () { otp += String($(this).val() || "").trim(); });
+      if (otp.length !== 6) {
+        showAuthError($scope, "Vui lòng nhập đủ 6 chữ số mã xác thực OTP.");
+        return;
+      }
+
+      setAuthLoading($scope, true, "Đang xác thực...");
+      const result = await postJson("/auth/verify-otp", { email: recoveryEmail, otp });
+      setAuthLoading($scope, false);
+
+      if (result.ok) {
+        recoveryResetToken = (result.data && result.data.resetToken) || "";
+        $("#reset-password, #reset-confirm-password").val("");
+        showSidebar(".reset-password-page-sidebar");
+        return;
+      }
+      showAuthError($scope, (result.data && result.data.message) || "Mã OTP không đúng.");
+    });
+  }
+
+  // Step 3: Reset Password submit
+  const $resetForm = $(".reset-password-form form");
+  if ($resetForm.length) {
+    $resetForm.on("submit.sellzy", async function (e) {
+      e.preventDefault();
+      const $scope = $(this);
+      showAuthError($scope, null);
+      showAuthSuccess($scope, null);
+
+      const newPassword = String($("#reset-password").val() || "");
+      const confirmPassword = String($("#reset-confirm-password").val() || "");
+
+      if (newPassword.length < 6 || !/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+        showAuthError($scope, "Mật khẩu mới phải có ít nhất 6 ký tự, gồm cả chữ cái và chữ số.");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        showAuthError($scope, "Mật khẩu xác nhận không khớp.");
+        return;
+      }
+
+      setAuthLoading($scope, true, "Đang cập nhật...");
+      const result = await postJson("/auth/reset-password", {
+        email: recoveryEmail,
+        resetToken: recoveryResetToken,
+        newPassword,
+        confirmPassword,
+      });
+      setAuthLoading($scope, false);
+
+      if (result.ok) {
+        showAuthSuccess($scope, "Đặt lại mật khẩu thành công! Đang chuyển về trang đăng nhập...");
+        setTimeout(function () {
+          $("#login-email").val(recoveryEmail);
+          $("#login-password").val("");
+          showSidebar(".login-page-sidebar");
+          showAuthSuccess($(".login-form form"), "Mật khẩu đã được cập nhật. Vui lòng đăng nhập bằng mật khẩu mới!");
+        }, 900);
+        return;
+      }
+      showAuthError($scope, (result.data && result.data.message) || "Không thể đặt lại mật khẩu.");
     });
   }
 
@@ -730,6 +1061,20 @@
     }
 
     const list = Array.isArray(items) ? items : [];
+    if (list.length === 0) {
+      const emptyEl = document.createElement("div");
+      emptyEl.dataset.cartRendered = "1";
+      emptyEl.className = "py-12 px-4 text-center flex flex-col items-center justify-center gap-3 text-light-secondary-text";
+      emptyEl.innerHTML =
+        '<div class="size-16 rounded-full bg-gray-100 flex items-center justify-center mb-1">' +
+        '<i class="hgi hgi-stroke hgi-shopping-bag-02 text-3xl text-gray-400"></i>' +
+        '</div>' +
+        '<p class="font-semibold text-base text-light-primary-text">Giỏ hàng của bạn đang trống</p>' +
+        '<p class="text-sm text-light-secondary-text">Hãy khám phá và thêm sản phẩm yêu thích vào giỏ nhé!</p>';
+      contentEl.appendChild(emptyEl);
+      return;
+    }
+
     for (const it of list) {
       const card = template.cloneNode(true);
       card.classList.remove("hidden");
@@ -747,9 +1092,9 @@
       const title = String(it.productName || "(N/A)");
       const color = it.color ? String(it.color) : null;
       const size = it.size ? String(it.size) : null;
-      const variantLine = [color ? `Color: ${color}` : null, size ? `Size: ${size}` : null]
+      const variantLine = [color ? `Màu: ${color}` : null, size ? `Size: ${size}` : null]
         .filter(Boolean)
-        .join(", ");
+        .join(" • ");
       const imageUrl = resolveAssetUrl(it.imageUrl);
       const qty = Number(it.quantity || 0) || 0;
       const unitPrice = Number(it.unitPrice || 0) || 0;
@@ -856,8 +1201,14 @@
     }
 
     for (const btn of cartButtons) {
-      const badgeEl = btn.querySelector("span.flex.flex-col span.text-base");
-      if (badgeEl) badgeEl.textContent = `${count}- Sản phẩm`;
+      const badgeEl = btn.querySelector("span.flex.flex-col span.text-base, .cart-label-count");
+      if (badgeEl) badgeEl.textContent = `${count} Sản phẩm`;
+      const numBadge = btn.querySelector(".cart-count-badge");
+      if (numBadge) {
+        numBadge.textContent = String(count);
+        if (count > 0) numBadge.classList.remove("hidden");
+        else numBadge.classList.add("hidden");
+      }
     }
 
     // Suggestions (best-effort)
@@ -2204,6 +2555,7 @@
 
     const variants = [];
     $content.find(".quick-view-variant").each(function () {
+      const variantId = Number(($(this).attr("data-variant-id") || "0").trim()) || 0;
       const color = ($(this).attr("data-color") || "").trim();
       const size = ($(this).attr("data-size") || "").trim();
       const priceStr = ($(this).attr("data-price") || "").trim();
@@ -2214,6 +2566,7 @@
       if (!Number.isFinite(price)) return;
 
       variants.push({
+        variantId,
         color: color || null,
         size: size || null,
         price,
@@ -2399,6 +2752,15 @@
           $stock.text(String(v.stock));
         }
       }
+
+      const $addBtn = $content.find("[data-add-to-cart]").first();
+      const $buyBtn = $content.find("[data-buy-now]").first();
+      if (v.variantId) {
+        if ($addBtn.length) $addBtn.attr("data-variant-id", String(v.variantId));
+        if ($buyBtn.length) $buyBtn.attr("data-variant-id", String(v.variantId));
+      }
+      setDisabled($addBtn, v.stock <= 0);
+      setDisabled($buyBtn, v.stock <= 0);
     }
 
     // Avoid duplicate bindings when content is re-injected.
@@ -2529,7 +2891,7 @@
     }
 
     if (contentEl) {
-      $(contentEl).html('<div class="w-full text-center py-6">Loading...</div>');
+      $(contentEl).html('<div class="w-full text-center py-12 text-light-secondary-text">Đang tải thông tin sản phẩm...</div>');
     }
 
     if (contentEl && requestUrl && requestUrl !== "#") {

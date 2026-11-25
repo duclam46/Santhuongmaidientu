@@ -1,0 +1,229 @@
+@inject DOAN_BANHANG.Models.DataContext _db
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@using System.Globalization
+@using System.Text.Json
+@using DOAN_BANHANG.Helpers
+@{
+    var inv = CultureInfo.InvariantCulture;
+    var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    int.TryParse(userIdStr, out int curShopId);
+
+    var shopProfile = curShopId > 0
+        ? await _db.UserProfiles.AsNoTracking().FirstOrDefaultAsync(p => p.AccountId == curShopId)
+        : null;
+    bool isMallShop = shopProfile?.IsMall ?? false;
+
+    var settings = await _db.SystemSettings.AsNoTracking().ToDictionaryAsync(s => s.Id, s => s.Value);
+    decimal GetPct(string key, decimal defVal)
+    {
+        if (settings.TryGetValue(key, out var raw) &&
+            decimal.TryParse(raw.Replace(",", "."), NumberStyles.Any, inv, out var parsed))
+        {
+            return parsed;
+        }
+        return defVal;
+    }
+
+    decimal defaultCommPct = GetPct("Fee_Commission_Default", 8m);
+    decimal sellerTaxPct = isMallShop ? 0m : GetPct("Tax_Seller_Rate", 1.5m);
+
+    var cats = await _db.Categories.AsNoTracking().Where(c => !c.IsDeleted).ToDictionaryAsync(c => c.Id);
+    var catPolicies = new Dictionary<int, object>();
+    foreach (var kv in cats)
+    {
+        var pol = CommissionHelper.ResolveCategoryPolicy(kv.Key, cats, defaultCommPct);
+        var effRate = CommissionHelper.GetEffectiveCommissionRate(pol.CommissionRatePercent, isMallShop);
+        catPolicies[kv.Key] = new
+        {
+            rate = effRate,
+            cap = pol.MaxCommissionAmount ?? 0m,
+            name = kv.Value.Name
+        };
+    }
+    var defaultEffRate = CommissionHelper.GetEffectiveCommissionRate(defaultCommPct, isMallShop);
+}
+
+<div class="mt-2.5 p-3 rounded-3 border" id="szLivePricingEstimator"
+     style="background: linear-gradient(120deg, #f0fdfa 0%, #ffffff 65%, #fffbeb 100%); border-color: #99f6e4 !important;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-pill" style="background: #065f5b; color: #fff;">
+                <i class="bx bx-calculator me-1"></i>Ước tính Thực nhận &amp; Lãi ròng
+            </span>
+            <span class="small text-muted" id="lpeCategoryRateNote">
+                Phí sàn: <strong class="text-danger" id="lpeCommRateText">@defaultEffRate.ToString("0.##", inv)%</strong>
+                • Thuế: <strong>@sellerTaxPct.ToString("0.##", inv)%</strong>
+                @(isMallShop ? "(Sellzy Mall)" : "")
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm py-0.5 px-2 fw-bold" id="btnLpeSuggest20"
+                    style="font-size: 11.5px; background: #ecfdf5; color: #047857; border: 1px dashed #10b981; border-radius: 6px;"
+                    title="Tự động tính và điền Giá niêm yết để đạt biên lãi ròng 20% trên Giá vốn">
+                <i class="bx bx-magic-wand me-1"></i>Gợi ý giá lãi 20%
+            </button>
+            <a asp-area="Admin" asp-controller="SystemStatistics" asp-action="ProfitCalculator" target="_blank"
+               class="small fw-semibold text-decoration-none" style="color: #008374; font-size: 11.5px;">
+                Kiểm soát toàn kho <i class="bx bx-link-external"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-2 text-center">
+        <div class="col-6 col-md-3">
+            <div class="p-2 rounded-2 bg-white border">
+                <div class="text-muted" style="font-size: 11px;">Giá tính toán</div>
+                <div class="fw-bold text-dark small" id="lpeBuyerPay">0 ₫</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="p-2 rounded-2 bg-white border">
+                <div class="text-muted" style="font-size: 11px;">Tổng Phí sàn + Thuế</div>
+                <div class="fw-bold text-danger small" id="lpeTotalFee">- 0 ₫</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="p-2 rounded-2 bg-white border">
+                <div class="text-muted" style="font-size: 11px;">Thực nhận về Ví Shop</div>
+                <div class="fw-bold text-primary small" id="lpePayout">0 ₫</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="p-2 rounded-2 bg-white border" id="lpeProfitCard">
+                <div class="text-muted" style="font-size: 11px;">Lãi ròng (trừ Giá vốn)</div>
+                <div class="fw-bold small text-success" id="lpeNetProfit">0 ₫ (0%)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const catPolicyMap = @Html.Raw(JsonSerializer.Serialize(catPolicies));
+    const defaultCommRate = @defaultEffRate.ToString(inv);
+    const sellerTaxRate = @sellerTaxPct.ToString(inv);
+    const fmt = new Intl.NumberFormat('vi-VN');
+
+    const priceEl = document.getElementById('BasePriceInput') || document.getElementById('Price');
+    const costEl = document.getElementById('BaseCostPriceInput') || document.getElementById('SingleCostPrice');
+    const saleEl = document.getElementById('BaseSalePriceInput') || document.getElementById('SalePrice');
+    const catIdEl = document.getElementById('finalCategoryId');
+    const singleWrap = document.getElementById('tab1SinglePriceWrap');
+
+    function parseVnMoney(el) {
+        if (!el) return 0;
+        const raw = (el.dataset.original || el.value || '').toString().replace(/\./g, '').replace(/,/g, '.').replace(/[^\d.]/g, '');
+        return parseFloat(raw) || 0;
+    }
+
+    function setVnMoney(el, amount) {
+        if (!el) return;
+        const rounded = Math.ceil(amount / 1000) * 1000;
+        el.dataset.original = rounded.toString();
+        el.value = fmt.format(rounded);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function getCurrentPolicy() {
+        const cid = parseInt(catIdEl?.value || '0');
+        if (cid > 0 && catPolicyMap[cid]) {
+            return catPolicyMap[cid];
+        }
+        return { rate: defaultCommRate, cap: 0, name: '' };
+    }
+
+    function readEffectiveInputs() {
+        const isMulti = singleWrap && singleWrap.classList.contains('d-none');
+        if (!isMulti) {
+            const p = parseVnMoney(priceEl);
+            const c = parseVnMoney(costEl);
+            const s = parseVnMoney(saleEl);
+            const effP = (s > 0 && s < p) ? s : p;
+            return { price: effP, listPrice: p, cost: c, isSale: (s > 0 && s < p), isMulti: false };
+        }
+        const firstVarPrice = document.querySelector('#dynamicVariantsBody [data-field="price"]');
+        const firstVarCost = document.querySelector('#dynamicVariantsBody [data-field="costPrice"]');
+        const p = parseVnMoney(firstVarPrice) || parseVnMoney(document.getElementById('bulkPrice'));
+        const c = parseVnMoney(firstVarCost) || parseVnMoney(document.getElementById('bulkCostPrice'));
+        return { price: p, listPrice: p, cost: c, isSale: false, isMulti: true };
+    }
+
+    function recalcEstimator() {
+        const pol = getCurrentPolicy();
+        const inp = readEffectiveInputs();
+
+        const commRateEl = document.getElementById('lpeCommRateText');
+        if (commRateEl) {
+            commRateEl.textContent = pol.rate + '%' + (pol.cap > 0 ? ` (Trần ${fmt.format(pol.cap)}₫)` : '');
+        }
+
+        let comm = Math.round(inp.price * (pol.rate / 100));
+        if (pol.cap > 0 && comm > pol.cap) comm = pol.cap;
+        const tax = Math.round(inp.price * (sellerTaxRate / 100));
+        const totalFee = comm + tax;
+        const payout = Math.max(0, inp.price - totalFee);
+        const net = payout - inp.cost;
+        const marginPct = inp.price > 0 ? (net / inp.price) * 100 : 0;
+
+        document.getElementById('lpeBuyerPay').textContent = fmt.format(inp.price) + ' ₫' + (inp.isSale ? ' (KM)' : (inp.isMulti ? ' (BT mẫu)' : ''));
+        document.getElementById('lpeTotalFee').textContent = '- ' + fmt.format(totalFee) + ' ₫';
+        document.getElementById('lpePayout').textContent = fmt.format(payout) + ' ₫';
+
+        const profitEl = document.getElementById('lpeNetProfit');
+        const profitCard = document.getElementById('lpeProfitCard');
+        if (inp.cost <= 0 && inp.price > 0) {
+            profitEl.className = 'fw-bold small text-muted';
+            profitEl.textContent = 'Nhập giá vốn để tính lãi';
+            profitCard.style.borderColor = '#e2e8f0';
+        } else if (net < 0) {
+            profitEl.className = 'fw-bold small text-danger';
+            profitEl.textContent = `${fmt.format(net)} ₫ (Lỗ ${marginPct.toFixed(1)}%)`;
+            profitCard.style.borderColor = '#fca5a5';
+        } else {
+            profitEl.className = 'fw-bold small ' + (marginPct < 12 ? 'text-warning' : 'text-success');
+            profitEl.textContent = `+${fmt.format(net)} ₫ (${marginPct.toFixed(1)}%)`;
+            profitCard.style.borderColor = marginPct < 12 ? '#fcd34d' : '#86efac';
+        }
+    }
+
+    document.getElementById('btnLpeSuggest20')?.addEventListener('click', function () {
+        const pol = getCurrentPolicy();
+        const inp = readEffectiveInputs();
+        if (inp.cost <= 0) {
+            alert('Vui lòng nhập Giá vốn nhập kho trước để hệ thống gợi ý Giá bán đạt 20% lãi ròng!');
+            costEl?.focus();
+            return;
+        }
+        const denom = 1 - (pol.rate / 100) - (sellerTaxRate / 100) - 0.20;
+        let suggested = denom > 0.05 ? (inp.cost / denom) : (inp.cost * 1.6);
+        if (pol.cap > 0 && (suggested * (pol.rate / 100)) > pol.cap) {
+            suggested = (inp.cost + pol.cap) / Math.max(0.05, 1 - (sellerTaxRate / 100) - 0.20);
+        }
+        if (!inp.isMulti && priceEl) {
+            setVnMoney(priceEl, suggested);
+        } else {
+            const bulkP = document.getElementById('bulkPrice');
+            if (bulkP) setVnMoney(bulkP, suggested);
+        }
+        recalcEstimator();
+    });
+
+    [priceEl, costEl, saleEl, document.getElementById('bulkPrice'), document.getElementById('bulkCostPrice')].forEach(el => {
+        el?.addEventListener('input', recalcEstimator);
+    });
+    document.getElementById('categoryCascader')?.addEventListener('change', () => setTimeout(recalcEstimator, 120));
+    document.getElementById('dynamicVariantsBody')?.addEventListener('input', recalcEstimator);
+
+    let lastCatVal = catIdEl?.value || '';
+    setInterval(() => {
+        const cur = catIdEl?.value || '';
+        if (cur !== lastCatVal) {
+            lastCatVal = cur;
+            recalcEstimator();
+        }
+    }, 600);
+
+    setTimeout(recalcEstimator, 200);
+});
+</script>

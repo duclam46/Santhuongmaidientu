@@ -24,12 +24,17 @@ public class FlashSalesController : Controller
 
     private static string BuildVariantLabel(ProductVariant v)
     {
-        var color = v.Color != null ? v.Color.Name : (v.ColorId.HasValue ? $"Màu #{v.ColorId.Value}" : "Màu -");
-        var size = v.Size != null ? v.Size.Name : (v.SizeId.HasValue ? $"Size #{v.SizeId.Value}" : "Size -");
-        return $"{color} / {size}";
+        var part1 = v.OptionValue1?.Value;
+        var part2 = v.OptionValue2?.Value;
+        var parts = new[] { part1, part2 }
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToArray();
+
+        return parts.Length > 0 ? string.Join(" - ", parts) : "Mặc định";
     }
 
     [HttpGet]
+    [HttpGet("/Admin/FlashSales")]
     public async Task<IActionResult> Index(string? search, CancellationToken cancellationToken)
     {
         var currentShopId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
@@ -175,9 +180,9 @@ public class FlashSalesController : Controller
         var product = await _context.Products
             .AsNoTracking()
             .Include(p => p.Variants)
-                .ThenInclude(v => v.Color)
+                .ThenInclude(v => v.OptionValue1)
             .Include(p => p.Variants)
-                .ThenInclude(v => v.Size)
+                .ThenInclude(v => v.OptionValue2)
             .Include(p => p.Images)
             .FirstOrDefaultAsync(p => !p.IsDeleted && p.Id == id, cancellationToken);
 
@@ -215,9 +220,9 @@ public class FlashSalesController : Controller
         var product = await _context.Products
             .AsNoTracking()
             .Include(p => p.Variants)
-                .ThenInclude(v => v.Color)
+                .ThenInclude(v => v.OptionValue1)
             .Include(p => p.Variants)
-                .ThenInclude(v => v.Size)
+                .ThenInclude(v => v.OptionValue2)
             .FirstOrDefaultAsync(p => !p.IsDeleted && p.Id == id, cancellationToken);
 
         if (product is null) return NotFound();
@@ -360,18 +365,22 @@ public class FlashSalesController : Controller
                 sku = v.Sku,
                 price = v.Price,
                 isActive = v.IsActive,
-                color = v.Color != null ? v.Color.Name : null,
-                size = v.Size != null ? v.Size.Name : null
+                color = v.OptionValue1 != null ? v.OptionValue1.Value : null,
+                size = v.OptionValue2 != null ? v.OptionValue2.Value : null
             })
             .ToListAsync(cancellationToken);
 
-        var shaped = items.Select(v => new
+        var shaped = items.Select(v =>
         {
-            v.id,
-            v.sku,
-            v.price,
-            v.isActive,
-            label = string.Join(" / ", new[] { v.color, v.size }.Where(x => !string.IsNullOrWhiteSpace(x)))
+            var parts = new[] { v.color, v.size }.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+            return new
+            {
+                v.id,
+                v.sku,
+                v.price,
+                v.isActive,
+                label = parts.Length > 0 ? string.Join(" - ", parts) : "Mặc định"
+            };
         });
 
         return Json(shaped);

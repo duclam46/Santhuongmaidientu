@@ -1,208 +1,331 @@
 @model IEnumerable<DOAN_BANHANG.Models.Category>
+@using DOAN_BANHANG.Helpers
 
 @{
-    ViewData["Title"] = "Cấu trúc Danh mục";
-    var rootCategories = Model.Where(c => c.ParentId == null).OrderBy(c => c.SortOrder).ToList();
+    ViewData["Title"] = "Ngành hàng & Thông số kỹ thuật";
+    var allCatsList = Model.ToList();
+    var catDict = allCatsList.ToDictionary(c => c.Id, c => c);
+    var rootCategories = allCatsList.Where(c => c.ParentId == null).OrderBy(c => c.SortOrder).ToList();
+
+    var totalCategories = allCatsList.Count;
+    var rootCount = rootCategories.Count;
+    var activeCount = allCatsList.Count(c => c.IsActive);
+    var totalAttributes = allCatsList.Sum(c => c.Attributes?.Count ?? 0);
 }
 
 @Html.AntiForgeryToken()
 
-<style>
-    :root {
-        --tree-line-color: #cbd5e0;
-        --lvl0-bg: #ffffff;
-        --lvl1-bg: #f8fafc;
-        --lvl2-bg: #f1f5f9;
-    }
+@section Styles {
+    <style>
+        .cat-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .cat-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+        @@media (max-width: 991px) {
+            .cat-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .cat-kpi-card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .cat-kpi-ic {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 235, 105, 0.18);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
 
-    .cat-tree-container {
-        max-width: 1000px;
-        margin: 0 auto;
-    }
+        .root-node {
+            margin-bottom: 14px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+            border: 1px solid #E2E8F0;
+            overflow: hidden;
+            transition: border-color 0.2s ease;
+        }
+        .root-node:hover {
+            border-color: #CBD5E1;
+        }
+        .node-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .node-header:hover {
+            background: #F8FAFC;
+        }
+        .node-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 260px;
+        }
+        .collapse-trigger {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748B;
+            background: #F1F5F9;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .collapse-trigger:hover {
+            background: #E2E8F0;
+            color: #088178;
+        }
+        .collapsed > .node-header .collapse-trigger,
+        .collapsed > .sub-node .collapse-trigger {
+            transform: rotate(-90deg);
+        }
+        .node-icon {
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.10);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .node-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .node-info h6 {
+            margin: 0;
+            font-weight: 700;
+            color: #1E293B;
+            font-size: 0.98rem;
+        }
+        .node-info .slug {
+            font-size: 0.76rem;
+            color: #94A3B8;
+            font-family: monospace;
+        }
+        .child-container {
+            padding-left: 1.4rem;
+            border-left: 2px solid #E2E8F0;
+            margin-left: 2.6rem;
+            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 16px;
+        }
+        .sub-node {
+            position: relative;
+            padding: 10px 16px;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .sub-node::before {
+            content: '';
+            position: absolute;
+            left: -1.4rem;
+            top: 50%;
+            width: 1.4rem;
+            border-top: 2px solid #E2E8F0;
+        }
+        .lvl-badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+        .action-btns {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .btn-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #E2E8F0;
+            transition: all 0.2s;
+            background: #ffffff;
+            color: #475569;
+        }
+        .btn-icon:hover {
+            background: #088178;
+            border-color: #088178;
+            color: #ffffff;
+        }
+        .btn-del-icon:hover {
+            background: #EF4444;
+            border-color: #EF4444;
+            color: #ffffff;
+        }
+        .drag-handle {
+            cursor: grab;
+            color: #94A3B8;
+            padding: 4px;
+            display: none;
+        }
+        .sorting-active .drag-handle {
+            display: block;
+        }
+        .sorting-active .node-header,
+        .sorting-active .sub-node {
+            border: 1px dashed #088178;
+        }
+        .sortable-ghost {
+            opacity: 0.35;
+            background: #E6F4F3 !important;
+        }
+    </style>
+}
 
-    /* Level 0 - Root Cards */
-    .root-node {
-        margin-bottom: 1.5rem;
-        background: var(--lvl0-bg);
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-        border: 1px solid #edf2f7;
-        overflow: hidden;
-    }
+<!-- HERO HEADER -->
+<div class="cat-hero">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-category-alt text-warning me-1"></i>Ngành hàng &amp; Thông số kỹ thuật
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Quản lý cây danh mục đa ngành, tỷ lệ chiết khấu kế thừa, trần phí tối đa và bộ thuộc tính kỹ thuật của từng ngành hàng.
+            </p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button id="toggleSortBtn" type="button" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);">
+                <i class="bx bx-sort me-1"></i>Sắp xếp thứ tự
+            </button>
+            <button id="saveOrderBtn" type="button" class="btn btn-sm btn-success rounded-pill px-3 py-2 fw-bold shadow-sm" style="display:none;">
+                <i class="bx bx-save me-1"></i>Lưu thứ tự mới
+            </button>
+            <a asp-action="Create" class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-sm" style="background: #FFEB69; color: #161C24;">
+                <i class="bx bx-plus-circle me-1"></i>Thêm ngành hàng
+            </a>
+        </div>
+    </div>
 
-    .node-header {
-        padding: 1.25rem 1.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        transition: background 0.2s;
-    }
-
-    .node-header:hover {
-        background: #fcfdfe;
-    }
-
-    .node-main {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        flex: 1;
-    }
-
-    .collapse-trigger {
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        color: #718096;
-        transition: transform 0.2s;
-    }
-
-    .collapsed .collapse-trigger {
-        transform: rotate(-90deg);
-    }
-
-    .node-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-        color: #fff;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    .node-info h6 {
-        margin: 0;
-        font-weight: 700;
-        color: #2d3748;
-        font-size: 1.05rem;
-    }
-
-    .node-info .slug {
-        font-size: 0.75rem;
-        color: #a0aec0;
-        font-family: monospace;
-    }
-
-    /* Sub-nodes / Children */
-    .child-container {
-        padding-left: 1.5rem;
-        border-left: 2px solid #edf2f7;
-        margin-left: 2.75rem;
-        margin-bottom: 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .sub-node {
-        position: relative;
-        padding: 0.75rem 1.25rem;
-        background: #fff;
-        border: 1px solid #f1f5f9;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .sub-node::before {
-        content: '';
-        position: absolute;
-        left: -1.5rem;
-        top: 50%;
-        width: 1.5rem;
-        border-top: 2px solid #edf2f7;
-    }
-
-    .lvl-badge {
-        font-size: 0.65rem;
-        font-weight: 800;
-        padding: 0.2rem 0.5rem;
-        border-radius: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* Action Buttons */
-    .action-btns {
-        display: flex;
-        gap: 0.5rem;
-        opacity: 0.6;
-        transition: opacity 0.2s;
-    }
-
-    .node-header:hover .action-btns, .sub-node:hover .action-btns {
-        opacity: 1;
-    }
-
-    .btn-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: none;
-        transition: all 0.2s;
-        background: #f8fafc;
-        color: #64748b;
-    }
-
-    .btn-icon:hover { background: #556ee6; color: #fff; }
-    .btn-del-icon:hover { background: #f46a6a; color: #fff; }
-
-    /* Drag and Drop */
-    .drag-handle {
-        cursor: grab;
-        color: #cbd5e0;
-        padding: 5px;
-        display: none;
-    }
-
-    .sorting-active .drag-handle {
-        display: block;
-    }
-
-    .sorting-active .node-header, .sorting-active .sub-node {
-        border: 1px dashed #556ee6;
-    }
-
-    .sortable-ghost {
-        opacity: 0.3;
-        background: #ebf4ff !important;
-    }
-</style>
-
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="d-flex align-items-center justify-content-between bg-white p-4 rounded-4 shadow-sm border">
+    <div class="cat-kpi-grid">
+        <div class="cat-kpi-card">
+            <span class="cat-kpi-ic"><i class="bx bx-folder-open"></i></span>
             <div>
-                <h4 class="fw-bold mb-1"><i class="bx bx-category-alt text-primary me-2"></i>Cấu trúc Ngành hàng</h4>
-                <p class="text-muted mb-0">Quản lý sơ đồ danh mục sản phẩm của cửa hàng</p>
+                <div class="fs-5 fw-bold text-white lh-1">@rootCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Ngành hàng gốc</div>
             </div>
-            <div class="d-flex gap-2">
-                <button id="toggleSortBtn" class="btn btn-soft-primary btn-rounded">
-                    <i class="bx bx-sort me-1"></i> Thay đổi thứ tự
-                </button>
-                <button id="saveOrderBtn" class="btn btn-success btn-rounded" style="display:none;">
-                    <i class="bx bx-save me-1"></i> Lưu cấu trúc mới
-                </button>
-                <a asp-action="Create" class="btn btn-primary btn-rounded px-4">
-                    <i class="bx bx-plus me-1"></i> Thêm danh mục
-                </a>
+        </div>
+        <div class="cat-kpi-card">
+            <span class="cat-kpi-ic"><i class="bx bx-git-branch"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@totalCategories</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Tổng số danh mục</div>
+            </div>
+        </div>
+        <div class="cat-kpi-card">
+            <span class="cat-kpi-ic"><i class="bx bx-slider-alt"></i></span>
+            <div>
+                <div class="fs-5 fw-bold lh-1" style="color: #FFEB69;">@totalAttributes</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Thông số kỹ thuật</div>
+            </div>
+        </div>
+        <div class="cat-kpi-card">
+            <span class="cat-kpi-ic" style="background: rgba(52,211,153,0.22); color: #6EE7B7;"><i class="bx bx-check-circle"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@activeCount / @totalCategories</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Đang hiển thị</div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="cat-tree-container sorting-inactive" id="masterContainer">
-    @{
+@if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+{
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 rounded-3 shadow-sm" role="alert">
+        <i class="bx bx-check-circle fs-5"></i>
+        <div>@toast</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["AdminError"] is string err && !string.IsNullOrWhiteSpace(err))
+{
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 rounded-3 shadow-sm" role="alert">
+        <i class="bx bx-error-circle fs-5"></i>
+        <div>@err</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- THANH CÔNG CỤ TÌM NHANH & MỞ RỘNG / THU GỌN -->
+<div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-body py-3 px-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" id="expandAllBtn" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                    <i class="bx bx-expand-vertical me-1"></i>Mở rộng tất cả
+                </button>
+                <button type="button" id="collapseAllBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold">
+                    <i class="bx bx-collapse-vertical me-1"></i>Thu gọn tất cả
+                </button>
+            </div>
+            <div class="input-group input-group-sm" style="max-width: 380px;">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bx bx-search"></i></span>
+                <input type="text" id="catSearchInput" class="form-control border-start-0 ps-0" placeholder="Tìm nhanh tên ngành hàng hoặc đường dẫn..." />
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CÂY DANH MỤC -->
+<div class="sorting-inactive" id="masterContainer">
+    @if (!rootCategories.Any())
+    {
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body text-center py-5">
+                <i class="bx bx-category display-5 text-muted d-block mb-2"></i>
+                <div class="fw-bold text-dark">Chưa có ngành hàng nào được tạo</div>
+                <div class="text-muted small mt-1">Bấm <strong>Thêm ngành hàng</strong> ở góc trên để khởi tạo cấu trúc danh mục đầu tiên.</div>
+            </div>
+        </div>
+    }
+    else
+    {
         foreach (var cat in rootCategories)
         {
             await RenderCategoryRecursive(cat, 0);
@@ -213,62 +336,116 @@
 @functions {
     async Task RenderCategoryRecursive(DOAN_BANHANG.Models.Category category, int level)
     {
-        string[] gradients = {
-            "linear-gradient(135deg, #556ee6 0%, #3b4cb8 100%)",
-            "linear-gradient(135deg, #34c38f 0%, #2ca579 100%)",
-            "linear-gradient(135deg, #f1b44c 0%, #e1a336 100%)",
-            "linear-gradient(135deg, #f46a6a 0%, #e85252 100%)",
-            "linear-gradient(135deg, #50a5f1 0%, #398cdb 100%)"
-        };
-        
-        string[] icons = { "bx-folder", "bx-category", "bx-layer", "bx-purchase-tag", "bx-bookmark" };
-        int colorIdx = level % gradients.Length;
-        var children = Model.Where(c => c.ParentId == category.Id).OrderBy(c => c.SortOrder).ToList();
-        bool isRoot = level == 0;
+        var allList = Model.ToList();
+        var map = allList.ToDictionary(x => x.Id, x => x);
+        var policy = CommissionHelper.ResolveCategoryPolicy(category.Id, map, 10m);
 
-        <div class="@(isRoot ? "root-node" : "node-item") @(children.Any() ? "collapsed" : "")" data-id="@category.Id">
+        string[] gradients = {
+            "linear-gradient(135deg, #088178 0%, #04464C 100%)",
+            "linear-gradient(135deg, #0D9488 0%, #115E59 100%)",
+            "linear-gradient(135deg, #D97706 0%, #B45309 100%)",
+            "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+            "linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)"
+        };
+
+        string[] defaultIcons = { "bx-folder", "bx-category", "bx-layer", "bx-purchase-tag", "bx-bookmark" };
+        int colorIdx = level % gradients.Length;
+        var children = allList.Where(c => c.ParentId == category.Id).OrderBy(c => c.SortOrder).ToList();
+        bool isRoot = level == 0;
+        var attrCount = category.Attributes?.Count ?? 0;
+
+        <div class="@(isRoot ? "root-node" : "node-item") @(children.Any() ? "collapsed" : "")" data-id="@category.Id" data-search="@($"{category.Name} {category.Slug}".ToLowerInvariant())">
             <div class="@(isRoot ? "node-header" : "sub-node")">
                 <div class="node-main">
-                    <div class="drag-handle">
+                    <div class="drag-handle" title="Kéo để sắp xếp lại thứ tự">
                         <i class="bx bx-grid-vertical fs-4"></i>
                     </div>
-                    
+
                     @if (children.Any())
                     {
-                        <div class="collapse-trigger" onclick="toggleCollapse(this, '@category.Id')">
-                            <i class="bx bx-chevron-down fs-4"></i>
+                        <div class="collapse-trigger" onclick="toggleCollapse(this, '@category.Id')" title="Mở rộng / Thu gọn">
+                            <i class="bx bx-chevron-down fs-5"></i>
                         </div>
                     }
                     else
                     {
-                        <div style="width: 24px;"></div>
+                        <div style="width: 28px; flex-shrink: 0;"></div>
                     }
 
-                    <div class="node-icon" style="background: @gradients[colorIdx]; width: @(isRoot ? "42px" : "32px"); height: @(isRoot ? "42px" : "32px"); font-size: @(isRoot ? "1.25rem" : "0.9rem");">
-                        <i class="bx @icons[colorIdx]"></i>
+                    <div class="node-icon" style="background: @gradients[colorIdx]; width: @(isRoot ? "42px" : "34px"); height: @(isRoot ? "42px" : "34px"); font-size: @(isRoot ? "1.25rem" : "0.95rem");">
+                        @if (!string.IsNullOrWhiteSpace(category.IconUrl))
+                        {
+                            if (category.IconUrl.StartsWith("bx-") || category.IconUrl.StartsWith("bxs-") || category.IconUrl.StartsWith("bxl-"))
+                            {
+                                <i class="bx @category.IconUrl"></i>
+                            }
+                            else
+                            {
+                                <img src="@category.IconUrl" alt="@category.Name" />
+                            }
+                        }
+                        else
+                        {
+                            <i class="bx @defaultIcons[colorIdx]"></i>
+                        }
                     </div>
-                    
+
                     <div class="node-info">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
                             <h6>@category.Name</h6>
-                            <span class="lvl-badge @(category.IsActive ? "bg-soft-success text-success" : "bg-soft-danger text-danger")">
-                                L@(level+1) @(category.IsActive ? "" : "• ẨN")
+                            <span class="lvl-badge @(category.IsActive ? "bg-success-subtle text-success-emphasis border border-success-subtle" : "bg-danger-subtle text-danger-emphasis border border-danger-subtle")">
+                                Cấp @(level + 1)@(category.IsActive ? "" : " • Đang ẩn")
                             </span>
+
+                            @if (category.CommissionRate.HasValue)
+                            {
+                                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill" title="Tỷ lệ chiết khấu riêng">
+                                    Chiết khấu: @category.CommissionRate.Value.ToString("0.##")%@(category.MaxCommissionAmount.HasValue ? $" (Trần {category.MaxCommissionAmount.Value:N0}₫)" : "")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-muted border rounded-pill" title="Kế thừa từ @(policy.InheritedFromCategoryName ?? "mặc định hệ thống")">
+                                    Kế thừa: @policy.CommissionRatePercent.ToString("0.##")%
+                                </span>
+                            }
+
+                            @if (category.HasSizeGuide)
+                            {
+                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill">
+                                    <i class="bx bx-ruler me-1"></i>Bảng kích cỡ
+                                </span>
+                            }
+
+                            @if (!category.IsReturnableDefault)
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">
+                                    Không hỗ trợ đổi trả
+                                </span>
+                            }
+
+                            @if (attrCount > 0)
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis border rounded-pill">
+                                    <i class="bx bx-slider-alt me-1"></i>@attrCount thông số
+                                </span>
+                            }
                         </div>
                         <span class="slug">/@category.Slug</span>
                     </div>
                 </div>
 
                 <div class="action-btns">
-                    @if (isRoot) {
-                        <span class="badge bg-light text-muted border me-2 align-self-center">@children.Count con</span>
+                    @if (isRoot)
+                    {
+                        <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 me-1">@children.Count nhánh con</span>
                     }
-                    <a asp-action="Edit" asp-route-id="@category.Id" class="btn-icon" title="Chỉnh sửa">
+                    <a asp-action="Edit" asp-route-id="@category.Id" class="btn-icon" title="Chỉnh sửa &amp; Cấu hình thông số kỹ thuật">
                         <i class="bx bx-edit-alt"></i>
                     </a>
-                    <form asp-action="Delete" asp-route-id="@category.Id" method="post" class="d-inline" onsubmit="return confirm('Xác nhận xóa danh mục này?');">
+                    <form asp-action="Delete" asp-route-id="@category.Id" method="post" class="d-inline" onsubmit="return confirm('Xác nhận xóa danh mục @category.Name?');">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-icon btn-del-icon" title="Xóa">
+                        <button type="submit" class="btn-icon btn-del-icon" title="Xóa danh mục">
                             <i class="bx bx-trash"></i>
                         </button>
                     </form>
@@ -299,16 +476,16 @@
             const node = btn.closest('.root-node, .node-item');
             if (container) {
                 if (container.style.display === 'none') {
-                    $(container).slideDown(200);
+                    $(container).slideDown(180);
                     node.classList.remove('collapsed');
                 } else {
-                    $(container).slideUp(200);
+                    $(container).slideUp(180);
                     node.classList.add('collapsed');
                 }
             }
         }
 
-        $(document).ready(function() {
+        $(document).ready(function () {
             let isSorting = false;
             let sortables = [];
 
@@ -325,35 +502,68 @@
                 if (masterContainer) {
                     sortables.push(new Sortable(masterContainer, config));
                 }
-                
-                $('.child-container').each(function() {
+
+                $('.child-container').each(function () {
                     sortables.push(new Sortable(this, config));
                 });
             }
 
             initSortables();
 
-            $('#toggleSortBtn').click(function() {
+            $('#expandAllBtn').on('click', function () {
+                $('.child-container').slideDown(180);
+                $('.root-node, .node-item').removeClass('collapsed');
+            });
+
+            $('#collapseAllBtn').on('click', function () {
+                $('.child-container').slideUp(180);
+                $('.root-node, .node-item').addClass('collapsed');
+            });
+
+            $('#catSearchInput').on('input', function () {
+                const q = ($(this).val() || '').trim().toLowerCase();
+                if (!q) {
+                    $('.root-node, .node-item').show();
+                    return;
+                }
+                $('.child-container').show();
+                $('.root-node, .node-item').removeClass('collapsed');
+                $('.root-node').each(function () {
+                    const $root = $(this);
+                    const rootMatch = ($root.data('search') || '').indexOf(q) !== -1;
+                    let anyChildMatch = false;
+                    $root.find('.node-item').each(function () {
+                        const $item = $(this);
+                        const match = ($item.data('search') || '').indexOf(q) !== -1;
+                        $item.toggle(match || rootMatch);
+                        if (match) anyChildMatch = true;
+                    });
+                    $root.toggle(rootMatch || anyChildMatch);
+                });
+            });
+
+            $('#toggleSortBtn').click(function () {
                 isSorting = !isSorting;
                 if (isSorting) {
-                    $(this).html('<i class="bx bx-x me-1"></i> Hủy sắp xếp').addClass('btn-danger').removeClass('btn-soft-primary');
+                    $(this).html('<i class="bx bx-x me-1"></i>Hủy sắp xếp').addClass('btn-danger').removeAttr('style');
                     $('#masterContainer').removeClass('sorting-inactive').addClass('sorting-active');
-                    $('.child-container').slideDown(); 
+                    $('.child-container').slideDown();
                     $('.root-node, .node-item').removeClass('collapsed');
                 } else {
-                    $(this).html('<i class="bx bx-sort me-1"></i> Thay đổi thứ tự').addClass('btn-soft-primary').removeClass('btn-danger');
+                    $(this).html('<i class="bx bx-sort me-1"></i>Sắp xếp thứ tự').removeClass('btn-danger')
+                        .attr('style', 'background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);');
                     $('#masterContainer').addClass('sorting-inactive').removeClass('sorting-active');
                     $('#saveOrderBtn').fadeOut();
                 }
             });
 
-            $('#saveOrderBtn').click(function() {
+            $('#saveOrderBtn').click(function () {
                 const btn = $(this);
-                btn.html('<i class="bx bx-loader bx-spin me-1"></i> Đang lưu...').prop('disabled', true);
+                btn.html('<i class="bx bx-loader bx-spin me-1"></i>Đang lưu...').prop('disabled', true);
 
                 let allIds = [];
                 function collectIds(container) {
-                    $(container).children('.root-node, .node-item').each(function() {
+                    $(container).children('.root-node, .node-item').each(function () {
                         allIds.push($(this).data('id'));
                         const sub = $(this).find('> .child-container');
                         if (sub.length) collectIds(sub);
@@ -367,13 +577,13 @@
                     contentType: 'application/json',
                     headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
                     data: JSON.stringify(allIds),
-                    success: function() {
-                        Swal.fire({ icon: 'success', title: 'Thành công', text: 'Cấu trúc đã được lưu!', timer: 1000, showConfirmButton: false })
+                    success: function () {
+                        Swal.fire({ icon: 'success', title: 'Thành công', text: 'Đã lưu thứ tự ngành hàng mới!', timer: 1000, showConfirmButton: false })
                             .then(() => location.reload());
                     },
                     error: () => {
-                        Swal.fire('Lỗi', 'Không thể lưu!', 'error');
-                        btn.html('<i class="bx bx-save me-1"></i> Lưu cấu trúc mới').prop('disabled', false);
+                        Swal.fire('Lỗi', 'Không thể lưu thứ tự mới!', 'error');
+                        btn.html('<i class="bx bx-save me-1"></i>Lưu thứ tự mới').prop('disabled', false);
                     }
                 });
             });

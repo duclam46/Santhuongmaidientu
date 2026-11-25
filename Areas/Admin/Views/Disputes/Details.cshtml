@@ -1,0 +1,457 @@
+@model DOAN_BANHANG.ViewModels.DisputeDetailsVm
+@{
+    var d = Model.Dispute;
+    var ai = Model.AiAssessment;
+    ViewData["Title"] = $"Hồ sơ Khiếu nại {d.DisputeCode}";
+    var isResolved = d.Status.StartsWith("Resolved") || d.Status == "Closed";
+
+    string StatusLabel(string s) => s switch
+    {
+        "Open" => "Mới gửi — Chờ Gian hàng phản hồi",
+        "ShopResponded" => "Gian hàng đã gửi giải trình",
+        "EscalatedToAdmin" => "Đang chờ Sàn Sellzy phân xử",
+        "ResolvedBuyerWinShopFault" => "Đã hoàn tiền cho Khách (Lỗi Gian hàng)",
+        "ResolvedBuyerWinShippingFault" => "Đã hoàn tiền cho Khách (Lỗi Vận chuyển GHN)",
+        "ResolvedShopWin" => "Đã đóng — Bác bỏ khiếu nại",
+        "Closed" => "Khách hàng đã rút khiếu nại",
+        _ => s
+    };
+
+    string ResolutionLabel(string r) => r switch
+    {
+        "ReturnAndRefund" => "Trả hàng & Hoàn tiền 100%",
+        "RefundOnly" => "Hoàn tiền ngay không cần trả hàng",
+        "PartialRefund" => "Hoàn tiền một phần",
+        "ShippingInvestigation" => "Tra soát & Bồi thường vận chuyển GHN",
+        _ => r
+    };
+}
+
+@section Styles {
+    <style>
+        .dpd-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 24px 28px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .ai-triage-card {
+            background: linear-gradient(145deg, #00262A 0%, #04464C 100%);
+            color: #ffffff;
+            border-radius: 18px;
+            padding: 20px 22px;
+            border: 1px solid #088178;
+            box-shadow: 0 12px 26px -12px rgba(0, 38, 42, 0.4);
+        }
+        .ai-score-ring {
+            width: 68px;
+            height: 68px;
+            border-radius: 16px;
+            background: rgba(255, 235, 105, 0.16);
+            border: 2px solid #FFEB69;
+            color: #FFEB69;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .dp-msg-bubble {
+            border-radius: 14px;
+            padding: 12px 15px;
+            border: 1px solid #E2E8F0;
+            background: #F8FAFC;
+        }
+        .dp-msg-bubble.is-admin {
+            background: #FFFDF5;
+            border-color: #FDE68A;
+        }
+        .dp-msg-bubble.is-shop {
+            background: #ECFDF5;
+            border-color: #A7F3D0;
+        }
+        .dp-ev-thumb {
+            width: 92px;
+            height: 92px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+        }
+    </style>
+}
+
+<!-- HERO HEADER -->
+<div class="dpd-hero">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <a asp-action="Index" class="btn btn-sm rounded-pill px-3" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);">
+                    <i class="bx bx-left-arrow-alt me-1"></i>Danh sách khiếu nại
+                </a>
+                <span class="badge rounded-pill px-3 py-1.5 fw-bold" style="background: #FFEB69; color: #00262A;">
+                    @(d.Category == "Shipping" ? "Khiếu nại Vận chuyển GHN" : (d.Category == "Service" ? "Khiếu nại Dịch vụ Gian hàng" : "Khiếu nại Sản phẩm"))
+                </span>
+                @if (Model.IsShopMall)
+                {
+                    <span class="badge rounded-pill px-3 py-1.5" style="background: rgba(255,255,255,0.18); color: #FFEB69;">
+                        <i class="bx bxs-badge-check me-1"></i>Gian hàng Sellzy Mall
+                    </span>
+                }
+            </div>
+            <h4 class="text-white fw-bold mb-1">Hồ sơ @d.DisputeCode — Đơn #@d.Order?.OrderCode</h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Khách hàng: <strong>@Model.CustomerName</strong> (@Model.CustomerEmail) • Gian hàng: <strong>@Model.ShopName</strong>
+            </p>
+        </div>
+        <div class="text-end">
+            <span class="badge @(isResolved ? "bg-success" : (d.Status == "EscalatedToAdmin" ? "bg-danger" : "bg-warning text-dark")) rounded-pill px-3 py-2 fw-bold">
+                @StatusLabel(d.Status)
+            </span>
+            <div class="small mt-1" style="color: rgba(255,255,255,0.78);">
+                Gửi lúc @d.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM/yyyy")
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+{
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 rounded-3 shadow-sm" role="alert">
+        <i class="bx bx-check-circle fs-5"></i>
+        <div>@toast</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <!-- CỘT TRÁI: THÔNG TIN KHIẾU NẠI, BẰNG CHỨNG & TRAO ĐỔI 3 BÊN -->
+    <div class="col-lg-7">
+        <!-- 1. CHI TIẾT SỰ CỐ & BẰNG CHỨNG -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-file-find text-primary me-2"></i>1. Nội dung Khiếu nại &amp; Bằng chứng</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light border h-100">
+                            <div class="small text-muted">Lý do khiếu nại</div>
+                            <div class="fw-bold text-dark">@d.ReasonTitle</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light border h-100">
+                            <div class="small text-muted">Phương án Khách yêu cầu</div>
+                            <div class="fw-bold text-primary">@ResolutionLabel(d.RequestedResolution)</div>
+                            <div class="small text-danger fw-bold mt-0.5">Số tiền yêu cầu hoàn: @d.RequestedAmount.ToString("N0")₫</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-3 bg-light border mb-3">
+                    <div class="small text-muted mb-1">Mô tả chi tiết từ Khách hàng:</div>
+                    <div class="text-dark" style="white-space: pre-line;">@d.Description</div>
+                </div>
+
+                @if (Model.CustomerEvidenceUrls.Any())
+                {
+                    <div class="mb-3">
+                        <div class="small fw-bold text-dark mb-2"><i class="bx bx-image text-primary me-1"></i>Bằng chứng Khách hàng cung cấp (@Model.CustomerEvidenceUrls.Count tệp):</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var url in Model.CustomerEvidenceUrls)
+                            {
+                                <a href="@url" target="_blank"><img src="@url" class="dp-ev-thumb" alt="Bằng chứng khách" /></a>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(d.ShopResponseNote))
+                {
+                    <div class="p-3 rounded-3 border mb-3" style="background: #ECFDF5; border-color: #A7F3D0 !important;">
+                        <div class="small fw-bold text-success mb-1"><i class="bx bx-store me-1"></i>Giải trình từ Gian hàng (@d.ShopRespondedAt?.ToLocalTime().ToString("HH:mm dd/MM/yyyy")):</div>
+                        <div class="text-dark small">@d.ShopResponseNote</div>
+                        @if (Model.ShopEvidenceUrls.Any())
+                        {
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                @foreach (var url in Model.ShopEvidenceUrls)
+                                {
+                                    <a href="@url" target="_blank"><img src="@url" class="dp-ev-thumb" alt="Bằng chứng shop" /></a>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- DANH SÁCH SẢN PHẨM TRONG ĐƠN -->
+                @if (d.Order?.Items?.Any() == true)
+                {
+                    <div class="border-top pt-3 mt-3">
+                        <div class="small fw-bold text-secondary mb-2">Sản phẩm thuộc đơn hàng #@d.Order.OrderCode (Tổng đơn: @d.Order.FinalAmount.ToString("N0")₫ • Mã vận đơn GHN: @(d.Order.TrackingCode ?? "Chưa có")):</div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sản phẩm</th>
+                                        <th class="text-center">SL</th>
+                                        <th class="text-end">Thành tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in d.Order.Items)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold text-dark">@item.ProductName</div>
+                                                @if (!string.IsNullOrWhiteSpace(item.VariantDescription))
+                                                {
+                                                    <div class="text-muted">@item.VariantDescription</div>
+                                                }
+                                            </td>
+                                            <td class="text-center">@item.Quantity</td>
+                                            <td class="text-end fw-semibold">@item.LineTotal.ToString("N0")₫</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- 2. KHUNG TRAO ĐỔI 3 BÊN (KHÁCH HÀNG ⇄ GIAN HÀNG ⇄ TRỌNG TÀI SÀN) -->
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-conversation text-primary me-2"></i>2. Trao đổi &amp; Đối chất 3 bên</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="d-flex flex-column gap-2.5 mb-4" style="max-height: 380px; overflow-y: auto;">
+                    @foreach (var msg in d.Messages)
+                    {
+                        var roleCls = msg.SenderRole == "Admin" ? "is-admin" : (msg.SenderRole == "Shop" ? "is-shop" : "");
+                        var roleBadge = msg.SenderRole switch
+                        {
+                            "Admin" => ("Trọng tài Sàn Sellzy", "bg-dark text-warning"),
+                            "Shop" => ("Gian hàng đối tác", "bg-success text-white"),
+                            _ => ("Khách hàng", "bg-primary text-white")
+                        };
+                        <div class="dp-msg-bubble @roleCls">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge rounded-pill @roleBadge.Item2">@roleBadge.Item1</span>
+                                <span class="small text-muted">@msg.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</span>
+                            </div>
+                            <div class="small text-dark" style="white-space: pre-line;">@msg.Content</div>
+                            @if (!string.IsNullOrWhiteSpace(msg.AttachmentUrl))
+                            {
+                                <div class="mt-2">
+                                    <a href="@msg.AttachmentUrl" target="_blank"><img src="@msg.AttachmentUrl" class="dp-ev-thumb" alt="Đính kèm" /></a>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @if (!isResolved)
+                {
+                    <form asp-action="PostMessage" method="post" enctype="multipart/form-data" class="border-top pt-3">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="disputeId" value="@d.Id" />
+                        <label class="form-label small fw-bold">Gửi tin nhắn trao đổi / yêu cầu bổ sung bằng chứng</label>
+                        <textarea name="content" class="form-control mb-2" rows="2" required placeholder="Nhập nội dung phản hồi..."></textarea>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <input type="file" name="attachment" class="form-control form-control-sm" style="max-width: 280px;" accept="image/*" />
+                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 fw-semibold">
+                                <i class="bx bx-send me-1"></i>Gửi phản hồi
+                            </button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI: AI DISPUTE TRIAGE + QUYẾT ĐỊNH PHÂN XỬ -->
+    <div class="col-lg-5">
+        <!-- THẺ AI ĐÁNH GIÁ RỦI RO & GỢI Ý PHÁN QUYẾT -->
+        <div class="ai-triage-card mb-4">
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                <div>
+                    <div class="small text-uppercase fw-bold" style="color: #FFEB69; letter-spacing: 0.6px;">
+                        <i class="bx bx-brain me-1"></i>Trợ lý AI Thẩm định Khiếu nại
+                    </div>
+                    <h5 class="text-white fw-bold mb-0 mt-1">Gợi ý Phán quyết Tự động</h5>
+                </div>
+                <div class="ai-score-ring">
+                    <span class="fs-4 fw-bold lh-1">@ai.ClaimValidityScore%</span>
+                    <span style="font-size: 10px;">Tin cậy</span>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3 text-center">
+                <div class="col-6">
+                    <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.10);">
+                        <div class="small" style="color: rgba(255,255,255,0.75);">Uy tín Khách hàng</div>
+                        <div class="fw-bold text-white">@ai.BuyerTrustScore / 100</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.10);">
+                        <div class="small" style="color: rgba(255,255,255,0.75);">Uy tín Gian hàng</div>
+                        <div class="fw-bold text-white">@ai.ShopTrustScore / 100</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 rounded-3 mb-3" style="background: rgba(255, 235, 105, 0.14); border: 1px solid rgba(255, 235, 105, 0.4);">
+                <div class="fw-bold small" style="color: #FFEB69;">@ai.RecommendedVerdictLabel</div>
+                @if (ai.RecommendedRefundAmount > 0)
+                {
+                    <div class="small text-white mt-1">Mức hoàn đề xuất: <strong>@ai.RecommendedRefundAmount.ToString("N0")₫</strong></div>
+                }
+            </div>
+
+            <div class="small fw-bold mb-1.5" style="color: rgba(255,255,255,0.85);">Cơ sở phân tích từ dữ liệu thực tế:</div>
+            <ul class="small ps-3 mb-0 d-flex flex-column gap-1" style="color: rgba(255,255,255,0.82);">
+                @foreach (var f in ai.Findings)
+                {
+                    <li>@f</li>
+                }
+            </ul>
+        </div>
+
+        <!-- KHỐI HÀNH ĐỘNG PHÂN XỬ / PHẢN HỒI -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4">
+            <div class="card-header bg-white border-bottom py-3 px-4">
+                <h5 class="mb-0 fw-bold text-dark">
+                    <i class="bx bx-gavel text-primary me-2"></i>@(Model.IsAdminView ? "Phán quyết Trọng tài của Admin Sàn" : "Phản hồi của Gian hàng")
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                @if (isResolved)
+                {
+                    <div class="alert alert-success rounded-3 mb-3">
+                        <div class="fw-bold mb-1"><i class="bx bx-check-circle me-1"></i>@StatusLabel(d.Status)</div>
+                        @if (d.ApprovedRefundAmount > 0)
+                        {
+                            <div class="small">Số tiền đã phê duyệt hoàn: <strong>@d.ApprovedRefundAmount.ToString("N0")₫</strong> @(d.IsRefundedToWallet ? "(Đã cộng vào Ví Sellzy của Khách)" : "")</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(d.AdminDecisionNote))
+                        {
+                            <div class="small mt-1">Ghi chú phán quyết: @d.AdminDecisionNote</div>
+                        }
+                    </div>
+                }
+                else if (Model.IsAdminView)
+                {
+                    <form asp-action="AdminResolve" method="post" onsubmit="return confirm('Xác nhận ban hành phán quyết cuối cùng cho hồ sơ khiếu nại này?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="disputeId" value="@d.Id" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Chọn hướng phán quyết cuối cùng <span class="text-danger">*</span></label>
+                            <select name="verdict" class="form-select" id="adminVerdictSelect">
+                                <option value="ResolvedBuyerWinShopFault" selected="@(ai.RecommendedVerdictCode == "ResolvedBuyerWinShopFault")">
+                                    1. Xử Khách thắng — Lỗi Gian hàng (Hoàn tiền vào Ví Khách)
+                                </option>
+                                <option value="ResolvedBuyerWinShippingFault" selected="@(ai.RecommendedVerdictCode == "ResolvedBuyerWinShippingFault")">
+                                    2. Xử Khách thắng — Lỗi Vận chuyển GHN (Bảo hiểm hoàn Khách, không trừ Shop)
+                                </option>
+                                <option value="ResolvedShopWin" selected="@(ai.RecommendedVerdictCode == "ResolvedShopWin")">
+                                    3. Xử Gian hàng thắng — Bác bỏ khiếu nại
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="refundAmountRow">
+                            <label class="form-label fw-semibold small">Số tiền hoàn vào Ví Sellzy của Khách (VNĐ)</label>
+                            <div class="input-group">
+                                <input type="number" name="refundAmount" class="form-control fw-bold text-danger"
+                                       value="@d.RequestedAmount.ToString("0", System.Globalization.CultureInfo.InvariantCulture)"
+                                       min="0" max="@((d.Order?.FinalAmount ?? d.RequestedAmount).ToString("0", System.Globalization.CultureInfo.InvariantCulture))" step="1000" />
+                                <span class="input-group-text">₫</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Lý do &amp; Căn cứ phán quyết</label>
+                            <textarea name="decisionNote" class="form-control" rows="3" placeholder="Nhập lý do phán quyết gửi thông báo cho cả Khách hàng và Gian hàng..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold shadow-sm">
+                            <i class="bx bx-gavel me-1"></i>Ban hành Phán quyết &amp; Thực thi Hoàn tiền
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <form asp-action="ShopRespond" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="disputeId" value="@d.Id" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Nội dung phản hồi / Giải trình đối chứng</label>
+                            <textarea name="responseNote" class="form-control" rows="3" required placeholder="Nhập giải trình của gian hàng hoặc xác nhận đồng ý hoàn tiền..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Đính kèm ảnh/video đóng gói đối chứng (nếu có)</label>
+                            <input type="file" name="shopEvidenceFiles" class="form-control form-control-sm" multiple accept="image/*,video/*" />
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="acceptRefund" value="true" class="btn btn-success fw-bold rounded-3"
+                                    onclick="return confirm('Xác nhận chấp thuận hoàn @d.RequestedAmount.ToString("N0")₫ vào Ví của khách hàng?');">
+                                <i class="bx bx-check-circle me-1"></i>Chấp thuận &amp; Hoàn @d.RequestedAmount.ToString("N0")₫ cho Khách
+                            </button>
+                            <button type="submit" name="acceptRefund" value="false" class="btn btn-outline-primary fw-semibold rounded-3">
+                                <i class="bx bx-message-square-detail me-1"></i>Gửi giải trình &amp; Bằng chứng đối chứng
+                            </button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <!-- HÀNH TRÌNH VẬN ĐƠN GHN -->
+        @if (Model.TrackingLogs.Any())
+        {
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bx bxs-truck text-primary me-1"></i>Nhật ký Vận đơn GHN (@Model.TrackingLogs.Count mốc)</h6>
+                </div>
+                <div class="card-body p-3">
+                    <ul class="list-unstyled mb-0 small d-flex flex-column gap-2">
+                        @foreach (var log in Model.TrackingLogs.Take(6))
+                        {
+                            <li class="p-2 rounded-3 bg-light border">
+                                <div class="d-flex justify-content-between">
+                                    <strong class="text-dark">@log.Status</strong>
+                                    <span class="text-muted">@log.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM")</span>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(log.Note))
+                                {
+                                    <div class="text-muted mt-0.5">@log.Note</div>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            function toggleRefundRow() {
+                var v = $('#adminVerdictSelect').val();
+                $('#refundAmountRow').toggle(v !== 'ResolvedShopWin');
+            }
+            $('#adminVerdictSelect').on('change', toggleRefundRow);
+            toggleRefundRow();
+        });
+    </script>
+}

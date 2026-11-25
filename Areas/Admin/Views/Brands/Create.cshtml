@@ -1,0 +1,183 @@
+@model DOAN_BANHANG.Models.Brand
+
+@{
+    ViewData["Title"] = "Thêm thương hiệu mới";
+}
+
+@section Styles {
+    <style>
+        .br-form-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 22px 28px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .br-preview-card {
+            background: #F8FAFC;
+            border: 1px dashed #CBD5E1;
+            border-radius: 18px;
+            padding: 24px 20px;
+            text-align: center;
+        }
+        .br-preview-logo {
+            width: 88px;
+            height: 88px;
+            border-radius: 18px;
+            margin: 0 auto 14px;
+            background: #ffffff;
+            border: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+        }
+        .br-preview-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 8px;
+        }
+        .br-preview-fallback {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #088178 0%, #04464C 100%);
+            color: #FFEB69;
+            font-size: 32px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+}
+
+<!-- HERO HEADER -->
+<div class="br-form-hero">
+    <a asp-action="Index" class="btn btn-sm rounded-pill px-3 mb-2" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);">
+        <i class="bx bx-left-arrow-alt me-1"></i>Danh sách thương hiệu
+    </a>
+    <h4 class="text-white fw-bold mb-1"><i class="bx bx-plus-circle text-warning me-1"></i>Thêm Thương hiệu mới</h4>
+    <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">Bổ sung thương hiệu chính hãng vào danh mục để đối tác gắn khi đăng sản phẩm.</p>
+</div>
+
+<form asp-action="Create" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div class="row g-4">
+        <!-- CỘT TRÁI: FORM -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-award text-primary me-2"></i>Thông tin thương hiệu</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label fw-semibold">Tên thương hiệu <span class="text-danger">*</span></label>
+                        <input asp-for="Name" id="brandNameInput" class="form-control" placeholder="Ví dụ: Apple, Samsung, Nike, Thiên Long..." required />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tải ảnh biểu trưng (Logo)</label>
+                        <input type="file" name="logoFile" id="logoFileInput" class="form-control" accept="image/*" />
+                        <div class="form-text">Hỗ trợ định dạng PNG, JPG, WEBP, SVG (khuyến nghị ảnh vuông nền trong suốt).</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="LogoUrl" class="form-label fw-semibold">Hoặc nhập đường dẫn ảnh biểu trưng</label>
+                        <input asp-for="LogoUrl" id="logoUrlInput" class="form-control" placeholder="https://... hoặc /uploads/brands/..." />
+                    </div>
+
+                    <div class="p-3 rounded-3 bg-light border mb-4">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" asp-for="IsActive" id="isActiveSwitch" checked />
+                            <label class="form-check-label fw-semibold" for="isActiveSwitch">Kích hoạt hiển thị cho nhà bán hàng &amp; bộ lọc khách hàng</label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-3 px-4 fw-semibold">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary rounded-3 px-4 fw-bold shadow-sm">
+                            <i class="bx bx-save me-1"></i>Lưu thương hiệu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI: XEM TRƯỚC -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-show text-primary me-2"></i>Xem trước hiển thị</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="br-preview-card">
+                        <div class="br-preview-logo" id="previewLogoContainer">
+                            <span class="br-preview-fallback" id="previewFallback">B</span>
+                        </div>
+                        <div class="fw-bold fs-5 text-dark mb-1" id="previewName">Tên thương hiệu</div>
+                        <div id="previewStatus">
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-3 py-1">
+                                <i class="bx bx-check-circle me-1"></i>Đang hiển thị
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            let uploadedDataUrl = '';
+
+            function renderPreview() {
+                const name = ($('#brandNameInput').val() || '').trim() || 'Tên thương hiệu';
+                const url = uploadedDataUrl || ($('#logoUrlInput').val() || '').trim();
+                const isActive = $('#isActiveSwitch').is(':checked');
+
+                $('#previewName').text(name);
+
+                if (url) {
+                    $('#previewLogoContainer').html($('<img>', { src: url, alt: name }));
+                } else {
+                    const initial = name.charAt(0).toUpperCase() || 'B';
+                    $('#previewLogoContainer').html('<span class="br-preview-fallback">' + initial + '</span>');
+                }
+
+                if (isActive) {
+                    $('#previewStatus').html('<span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-3 py-1"><i class="bx bx-check-circle me-1"></i>Đang hiển thị</span>');
+                } else {
+                    $('#previewStatus').html('<span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill px-3 py-1"><i class="bx bx-hide me-1"></i>Đang tạm ẩn</span>');
+                }
+            }
+
+            $('#logoFileInput').on('change', function (e) {
+                const file = e.target.files && e.target.files[0];
+                if (!file) {
+                    uploadedDataUrl = '';
+                    renderPreview();
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function (ev) {
+                    uploadedDataUrl = ev.target.result || '';
+                    renderPreview();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            $('#brandNameInput, #logoUrlInput, #isActiveSwitch').on('input change', renderPreview);
+            renderPreview();
+        })();
+    </script>
+}

@@ -202,7 +202,24 @@ public sealed class GhnClient
         using var resp = await _http.SendAsync(req, cancellationToken);
         var body = await resp.Content.ReadAsStringAsync(cancellationToken);
 
-        if (!resp.IsSuccessStatusCode)
+        if (!resp.IsSuccessStatusCode && reqBody.ServiceTypeId == 5)
+        {
+            // Fallback to service_type_id = 2 if GHN route doesn't support heavy service 5
+            reqBody.ServiceTypeId = 2;
+            reqBody.Weight = Math.Min(reqBody.Weight, 30000);
+            var fallbackJson = JsonSerializer.Serialize(reqBody, JsonOptions);
+            using var fallbackReq = new HttpRequestMessage(HttpMethod.Post, "v2/shipping-order/fee");
+            ApplyAuthHeaders(fallbackReq, shopId: resolvedShopId);
+            fallbackReq.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            fallbackReq.Content = new StringContent(fallbackJson, Encoding.UTF8, "application/json");
+            using var fallbackResp = await _http.SendAsync(fallbackReq, cancellationToken);
+            body = await fallbackResp.Content.ReadAsStringAsync(cancellationToken);
+            if (!fallbackResp.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"GHN fee request failed ({(int)fallbackResp.StatusCode}): {body}");
+            }
+        }
+        else if (!resp.IsSuccessStatusCode)
         {
             throw new HttpRequestException($"GHN fee request failed ({(int)resp.StatusCode}): {body}");
         }
@@ -243,7 +260,23 @@ public sealed class GhnClient
         using var resp = await _http.SendAsync(req, cancellationToken);
         var body = await resp.Content.ReadAsStringAsync(cancellationToken);
 
-        if (!resp.IsSuccessStatusCode)
+        if (!resp.IsSuccessStatusCode && reqBody.ServiceTypeId == 5)
+        {
+            reqBody.ServiceTypeId = 2;
+            reqBody.Weight = Math.Min(reqBody.Weight, 30000);
+            var fallbackJson = JsonSerializer.Serialize(reqBody, JsonOptions);
+            using var fallbackReq = new HttpRequestMessage(HttpMethod.Post, "v2/shipping-order/create");
+            ApplyAuthHeaders(fallbackReq, shopId: resolvedShopId);
+            fallbackReq.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            fallbackReq.Content = new StringContent(fallbackJson, Encoding.UTF8, "application/json");
+            using var fallbackResp = await _http.SendAsync(fallbackReq, cancellationToken);
+            body = await fallbackResp.Content.ReadAsStringAsync(cancellationToken);
+            if (!fallbackResp.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"GHN create-order request failed ({(int)fallbackResp.StatusCode}): {body}");
+            }
+        }
+        else if (!resp.IsSuccessStatusCode)
         {
             throw new HttpRequestException($"GHN create-order request failed ({(int)resp.StatusCode}): {body}");
         }
@@ -1154,6 +1187,22 @@ public sealed class GhnCreateOrderItem
 
     [JsonPropertyName("price")]
     public int Price { get; set; }
+
+    [JsonPropertyName("weight")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Weight { get; set; }
+
+    [JsonPropertyName("length")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Length { get; set; }
+
+    [JsonPropertyName("width")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Width { get; set; }
+
+    [JsonPropertyName("height")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Height { get; set; }
 }
 
 public sealed class GhnCreateOrderResponse
@@ -1229,6 +1278,10 @@ public sealed class GhnCalculateFeeRequest
 
     [JsonPropertyName("insurance_value")]
     public int InsuranceValue { get; set; }
+
+    [JsonPropertyName("items")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<GhnCreateOrderItem>? Items { get; set; }
 }
 
 public sealed class GhnFeeResponse

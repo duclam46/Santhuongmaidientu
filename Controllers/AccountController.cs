@@ -226,8 +226,13 @@ public class AccountController : Controller
                 FirstProductId = o.Items.OrderBy(i => i.Id).Select(i => i.Variant != null ? i.Variant.ProductId : 0).FirstOrDefault(),
                 FirstProductName = o.Items.OrderBy(i => i.Id).Select(i => i.ProductName).FirstOrDefault() ?? string.Empty,
                 FirstProductImageUrl = string.Empty,
-                FirstProductVariantName = o.Items.OrderBy(i => i.Id).Select(i => i.ColorName != null ? i.ColorName + (i.SizeName != null ? " - " + i.SizeName : "") : i.SizeName ?? string.Empty).FirstOrDefault(),
-                IsReceivedByCustomer = _db.OrderTrackingLogs.Any(l => l.OrderId == o.Id && l.Note == "Khách hàng xác nhận đã nhận hàng")
+                FirstProductVariantName = o.Items.OrderBy(i => i.Id).Select(i =>
+                    !string.IsNullOrEmpty(i.VariantDescription)
+                        ? i.VariantDescription
+                        : (i.ColorName != null ? i.ColorName + (i.SizeName != null ? " - " + i.SizeName : "") : i.SizeName ?? string.Empty))
+                    .FirstOrDefault(),
+                IsReceivedByCustomer = _db.OrderTrackingLogs.Any(l => l.OrderId == o.Id && l.Note == "Khách hàng xác nhận đã nhận hàng"),
+                CanReturn = !o.Items.Any(i => i.Variant != null && i.Variant.Product != null && !i.Variant.Product.IsReturnable)
             })
             .ToListAsync(cancellationToken);
 
@@ -397,8 +402,13 @@ public class AccountController : Controller
                 FirstProductId = o.Items.OrderBy(i => i.Id).Select(i => i.Variant != null ? i.Variant.ProductId : 0).FirstOrDefault(),
                 FirstProductName = o.Items.OrderBy(i => i.Id).Select(i => i.ProductName).FirstOrDefault() ?? string.Empty,
                 FirstProductImageUrl = string.Empty,
-                FirstProductVariantName = o.Items.OrderBy(i => i.Id).Select(i => i.ColorName != null ? i.ColorName + (i.SizeName != null ? " - " + i.SizeName : "") : i.SizeName ?? string.Empty).FirstOrDefault(),
-                IsReceivedByCustomer = _db.OrderTrackingLogs.Any(l => l.OrderId == o.Id && l.Note == "Khách hàng xác nhận đã nhận hàng")
+                FirstProductVariantName = o.Items.OrderBy(i => i.Id).Select(i =>
+                    !string.IsNullOrEmpty(i.VariantDescription)
+                        ? i.VariantDescription
+                        : (i.ColorName != null ? i.ColorName + (i.SizeName != null ? " - " + i.SizeName : "") : i.SizeName ?? string.Empty))
+                    .FirstOrDefault(),
+                IsReceivedByCustomer = _db.OrderTrackingLogs.Any(l => l.OrderId == o.Id && l.Note == "Khách hàng xác nhận đã nhận hàng"),
+                CanReturn = !o.Items.Any(i => i.Variant != null && i.Variant.Product != null && !i.Variant.Product.IsReturnable)
             })
             .ToListAsync(cancellationToken);
 
@@ -546,7 +556,17 @@ public class AccountController : Controller
         {
             OrderId = order.Id,
             Status = order.OrderStatus,
-            Note = "Ng\u01b0\u1eddi mua h\u1ee7y \u0111\u01a1n h\u00e0ng",
+            Note = "Người mua hủy đơn hàng",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        _db.SystemNotifications.Add(new SystemNotification
+        {
+            Title = $"Khách hàng đã hủy đơn #{order.OrderCode}",
+            Content = $"Khách hàng {order.RecipientName} đã hủy đơn hàng #{order.OrderCode} (Giá trị: {order.FinalAmount:N0}₫).",
+            TargetType = "Account",
+            TargetAccountId = order.ShopId,
+            SentByAdminId = accountId,
             CreatedAt = DateTime.UtcNow
         });
 
@@ -632,6 +652,10 @@ public class AccountController : Controller
         }
 
         var order = await _db.Orders
+            .Include(o => o.Voucher)
+            .Include(o => o.Items)
+                .ThenInclude(i => i.Variant)
+                    .ThenInclude(v => v!.Product)
             .FirstOrDefaultAsync(o => o.Id == id && o.CustomerId == accountId, cancellationToken);
 
         if (order is null)
@@ -650,19 +674,96 @@ public class AccountController : Controller
         }
 
         order.OrderStatus = "Completed";
+        if (!string.Equals(order.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase))
+        {
+            order.PaymentStatus = "Paid";
+        }
         order.UpdatedAt = DateTime.UtcNow;
+
+        // Tự động giải ngân tiền từ Escrow vào Ví Doanh thu của Shop ngay khi khách bấm "Đã nhận được hàng"
+        string settleRef = $"SETTLE-{order.OrderCode}";
+        var shopWallet = await _walletService.GetOrCreateWalletAsync(order.ShopId, cancellationToken);
+        bool alreadySettled = await _db.WalletTransactions
+            .AsNoTracking()
+            .AnyAsync(t => t.WalletId == shopWallet.WalletId && (t.ReferenceId == settleRef || t.ReferenceId == order.OrderCode), cancellationToken);
+
+        decimal settledNetPayout = 0m;
+        if (!alreadySettled)
+        {
+            var isShopMall = await _db.UserProfiles.AsNoTracking()
+                .AnyAsync(p => p.AccountId == order.ShopId && p.IsMall, cancellationToken);
+            var allCategories = await _db.Categories.AsNoTracking().ToDictionaryAsync(c => c.Id, cancellationToken);
+
+            decimal subTotal = order.SubTotal;
+            decimal shopVoucherDisc = order.ShopDiscountAmount > 0m
+                ? order.ShopDiscountAmount
+                : (order.Voucher?.ShopId != null ? order.DiscountAmount : 0m);
+            decimal effectiveSubTotal = Math.Max(0m, subTotal - shopVoucherDisc);
+            decimal shopDiscountScale = subTotal > 0m ? (effectiveSubTotal / subTotal) : 1m;
+
+            decimal comm = 0m;
+            foreach (var item in order.Items)
+            {
+                if (item.CommissionAmount > 0)
+                {
+                    comm += item.CommissionAmount;
+                }
+                else
+                {
+                    var catId = item.Variant?.Product?.CategoryId ?? 0;
+                    var policy = Helpers.CommissionHelper.ResolveCategoryPolicy(catId, allCategories, 8m);
+                    var rawComm = Helpers.CommissionHelper.CalculateItemCommission(
+                        item.UnitPrice, item.Quantity, policy.CommissionRatePercent, policy.MaxCommissionAmount, isShopMall);
+                    comm += Math.Round(rawComm * shopDiscountScale, 0);
+                }
+            }
+
+            decimal sellerTaxPct = isShopMall ? 0m : 1.5m;
+            decimal tax = Math.Round(effectiveSubTotal * (sellerTaxPct / 100m), 0);
+            settledNetPayout = Math.Max(0m, effectiveSubTotal - comm - tax);
+
+            if (settledNetPayout > 0m)
+            {
+                shopWallet.Balance += settledNetPayout;
+                shopWallet.UpdatedAt = DateTime.UtcNow;
+
+                string voucherNote = shopVoucherDisc > 0 ? $", Voucher Shop {shopVoucherDisc:N0}₫" : "";
+                _db.WalletTransactions.Add(new WalletTransaction
+                {
+                    WalletId = shopWallet.WalletId,
+                    Amount = settledNetPayout,
+                    TransactionType = "SETTLEMENT",
+                    ReferenceId = settleRef,
+                    Description = $"Giải ngân tự động đơn #{order.OrderCode} khi khách xác nhận Đã nhận hàng (Phí sàn {comm:N0}₫, Thuế {tax:N0}₫{voucherNote})",
+                    BalanceAfter = shopWallet.Balance,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                _db.SystemNotifications.Add(new SystemNotification
+                {
+                    Title = $"Giải ngân tự động +{settledNetPayout:N0}₫ đơn #{order.OrderCode}",
+                    Content = $"Khách hàng đã xác nhận nhận hàng thành công cho đơn #{order.OrderCode}. Hệ thống đã tự động giải ngân +{settledNetPayout:N0}₫ từ Escrow vào Ví Doanh thu của Shop.",
+                    TargetType = "Account",
+                    TargetAccountId = order.ShopId,
+                    SentByAdminId = accountId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
 
         _db.OrderTrackingLogs.Add(new OrderTrackingLog
         {
             OrderId = order.Id,
             Status = order.OrderStatus,
-            Note = "Khách hàng xác nhận đã nhận hàng",
+            Note = settledNetPayout > 0
+                ? $"Khách hàng xác nhận đã nhận hàng. Hệ thống đã giải ngân tự động +{settledNetPayout:N0}₫ vào Ví Doanh thu của Gian hàng."
+                : "Khách hàng xác nhận đã nhận hàng.",
             CreatedAt = DateTime.UtcNow
         });
 
         await _db.SaveChangesAsync(cancellationToken);
 
-        TempData["AccountSuccess"] = "Đã xác nhận nhận hàng thành công!";
+        TempData["AccountSuccess"] = "Đã xác nhận nhận hàng thành công! Cảm ơn bạn đã mua sắm trên Sellzy.";
         return Redirect(rUrl);
     }
 
@@ -960,6 +1061,10 @@ public class AccountController : Controller
             PaymentMethod = order.PaymentMethod,
             PaymentStatus = order.PaymentStatus,
             IsReceivedByCustomer = await _db.OrderTrackingLogs.AnyAsync(l => l.OrderId == order.Id && l.Note == "Khách hàng xác nhận đã nhận hàng", cancellationToken),
+            CanReturn = !await _db.OrderItems
+                .AsNoTracking()
+                .Where(i => i.OrderId == order.Id && i.Variant != null && i.Variant.Product != null && !i.Variant.Product.IsReturnable)
+                .AnyAsync(cancellationToken),
             PaymentDeadlineUtc = order.CreatedAt.AddMinutes(15),
             SubTotal = order.SubTotal,
             ShippingFee = order.ShippingFee,
@@ -985,12 +1090,19 @@ public class AccountController : Controller
                     ProductName = i.ProductName,
                     ColorName = i.ColorName,
                     SizeName = i.SizeName,
+                    VariantDescription = i.VariantDescription,
+                    IsReturnable = i.Variant?.Product?.IsReturnable ?? true,
                     UnitPrice = i.UnitPrice,
                     Quantity = i.Quantity,
                     LineTotal = i.LineTotal
                 })
                 .ToList(),
-            TrackingLogs = logs
+            TrackingLogs = logs,
+            IsDigitalOrder = order.IsDigitalOrder,
+            RequiresVatInvoice = order.RequiresVatInvoice,
+            CompanyName = order.CompanyName,
+            TaxCode = order.TaxCode,
+            CompanyAddress = order.CompanyAddress
         };
 
         return View(new MyOrderDetailsPageVm { IsSignedIn = true, Order = vm });
@@ -1922,16 +2034,75 @@ public class AccountController : Controller
             return Json(new { success = false, error = "Sản phẩm không tồn tại." });
         }
 
-        // Verify if customer has bought this product
-        var hasBought = await _db.Orders
-            .AnyAsync(o => o.CustomerId == accountId 
+        // Verify if customer has bought this product and capture purchased variant label
+        var purchasedOrder = await _db.Orders
+            .AsNoTracking()
+            .Include(o => o.Items)
+                .ThenInclude(i => i.Variant)
+                    .ThenInclude(v => v!.OptionValue1)
+            .Include(o => o.Items)
+                .ThenInclude(i => i.Variant)
+                    .ThenInclude(v => v!.OptionValue2)
+            .Where(o => o.CustomerId == accountId 
                 && (o.OrderStatus == "Completed" || o.OrderStatus == "success" || o.OrderStatus == "delivered" || o.OrderStatus == "Đã giao" || o.OrderStatus == "Hoàn tất") 
-                && o.Items.Any(i => i.Variant != null && i.Variant.ProductId == productId), cancellationToken);
+                && o.Items.Any(i => i.Variant != null && i.Variant.ProductId == productId))
+            .OrderByDescending(o => o.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!hasBought)
+        if (purchasedOrder == null)
         {
             return Json(new { success = false, error = "Bạn chỉ có thể đánh giá sản phẩm đã mua và giao hàng thành công." });
         }
+
+        string? purchasedVariantLabel = null;
+        var purchasedItem = purchasedOrder.Items.FirstOrDefault(i => i.Variant != null && i.Variant.ProductId == productId);
+        if (purchasedItem?.Variant != null)
+        {
+            var optParts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(purchasedItem.Variant.OptionValue1?.Value))
+                optParts.Add(purchasedItem.Variant.OptionValue1.Value.Trim());
+            if (!string.IsNullOrWhiteSpace(purchasedItem.Variant.OptionValue2?.Value))
+                optParts.Add(purchasedItem.Variant.OptionValue2.Value.Trim());
+
+            if (optParts.Count > 0)
+                purchasedVariantLabel = string.Join(" - ", optParts);
+            else if (!string.IsNullOrWhiteSpace(purchasedItem.Variant.Sku))
+                purchasedVariantLabel = purchasedItem.Variant.Sku;
+        }
+
+        // Save uploaded review images regardless of comment length (up to 5 photos)
+        var uploadedUrls = new List<string>();
+        if (reviewImages != null && reviewImages.Any(img => img.Length > 0))
+        {
+            try
+            {
+                var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "reviews");
+                if (!Directory.Exists(uploadsDir))
+                {
+                    Directory.CreateDirectory(uploadsDir);
+                }
+                foreach (var img in reviewImages.Where(x => x.Length > 0).Take(5))
+                {
+                    var ext = Path.GetExtension(img.FileName);
+                    if (string.IsNullOrWhiteSpace(ext)) ext = ".jpg";
+                    var fileName = $"{Guid.NewGuid()}{ext}";
+                    var filePath = Path.Combine(uploadsDir, fileName);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await img.CopyToAsync(stream, cancellationToken);
+                    }
+                    uploadedUrls.Add($"/uploads/reviews/{fileName}");
+                }
+            }
+            catch (Exception)
+            {
+                // Non-blocking
+            }
+        }
+
+        string? mediaJson = uploadedUrls.Count > 0
+            ? System.Text.Json.JsonSerializer.Serialize(uploadedUrls)
+            : null;
 
         // Check if already reviewed
         var existing = await _db.ProductReviews
@@ -1941,6 +2112,10 @@ public class AccountController : Controller
         {
             existing.Rating = rating;
             existing.Comment = comment;
+            if (!string.IsNullOrWhiteSpace(purchasedVariantLabel))
+                existing.VariantName = purchasedVariantLabel;
+            if (mediaJson != null)
+                existing.MediaUrlsJson = mediaJson;
             existing.UpdatedAt = DateTime.UtcNow;
             _db.ProductReviews.Update(existing);
         }
@@ -1952,6 +2127,9 @@ public class AccountController : Controller
                 AccountId = accountId,
                 Rating = rating,
                 Comment = comment,
+                VariantName = purchasedVariantLabel,
+                MediaUrlsJson = mediaJson,
+                IsHidden = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -1960,9 +2138,9 @@ public class AccountController : Controller
 
         await _db.SaveChangesAsync(cancellationToken);
 
-        // Recalculate average rating and review count for the product
+        // Recalculate average rating and review count for visible reviews only
         var reviews = await _db.ProductReviews
-            .Where(r => r.ProductId == productId)
+            .Where(r => r.ProductId == productId && !r.IsHidden)
             .Select(r => r.Rating)
             .ToListAsync(cancellationToken);
 
@@ -1981,38 +2159,12 @@ public class AccountController : Controller
         await _db.SaveChangesAsync(cancellationToken);
 
         // --- Coin Reward Logic: 1+ image & >= 50 characters ---
-        bool hasImage = reviewImages != null && reviewImages.Any(img => img.Length > 0);
+        bool hasImage = uploadedUrls.Count > 0;
         int commentLen = comment?.Trim().Length ?? 0;
         bool rewarded = false;
 
         if (hasImage && commentLen >= 50)
         {
-            try
-            {
-                // Save uploaded review images to disk
-                var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "reviews");
-                if (!Directory.Exists(uploadsDir))
-                {
-                    Directory.CreateDirectory(uploadsDir);
-                }
-                foreach (var img in reviewImages!)
-                {
-                    if (img.Length > 0)
-                    {
-                        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(img.FileName)}";
-                        var filePath = Path.Combine(uploadsDir, fileName);
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await img.CopyToAsync(stream, cancellationToken);
-                        }
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                // Non-blocking
-            }
-
             // Reward coins via WalletService
             var wallet = await _walletService.GetOrCreateWalletAsync(accountId, cancellationToken);
             string refId = $"REVIEW-BONUS-{productId}-{accountId}";
@@ -2106,6 +2258,15 @@ public class AccountController : Controller
         if (!IsDeliveredStatus(order.OrderStatus) && !isReturnState)
         {
             TempData["AccountError"] = "Chỉ có thể trả hàng sau khi đơn đã được giao thành công.";
+            return RedirectToAction("OrderDetails", "Account", new { id = orderId });
+        }
+
+        var hasNonReturnableItem = await _db.OrderItems
+            .AsNoTracking()
+            .AnyAsync(i => i.OrderId == orderId && i.Variant != null && i.Variant.Product != null && !i.Variant.Product.IsReturnable, cancellationToken);
+        if (hasNonReturnableItem && !isReturnState)
+        {
+            TempData["AccountError"] = "Đơn hàng có sản phẩm thuộc ngành hàng không hỗ trợ đổi trả.";
             return RedirectToAction("OrderDetails", "Account", new { id = orderId });
         }
 
@@ -2256,6 +2417,15 @@ public class AccountController : Controller
             return Redirect(returnUrl);
         }
 
+        var hasNonReturnableItem = await _db.OrderItems
+            .AsNoTracking()
+            .AnyAsync(i => i.OrderId == orderId && i.Variant != null && i.Variant.Product != null && !i.Variant.Product.IsReturnable, cancellationToken);
+        if (hasNonReturnableItem)
+        {
+            TempData["AccountError"] = "Đơn hàng có sản phẩm không hỗ trợ đổi trả.";
+            return Redirect(returnUrl);
+        }
+
         // Check if within 5 days of delivery
         var deliveredLog = await _db.OrderTrackingLogs
             .AsNoTracking()
@@ -2327,6 +2497,16 @@ public class AccountController : Controller
                 });
             }
         }
+
+        _db.SystemNotifications.Add(new SystemNotification
+        {
+            Title = $"Yêu cầu trả hàng/hoàn tiền mới - Đơn #{order.OrderCode}",
+            Content = $"Khách hàng {order.RecipientName} vừa gửi yêu cầu trả hàng/hoàn tiền cho đơn #{order.OrderCode}. Lý do: {reason.Trim()}. Vui lòng vào Kênh Người Bán để kiểm tra và phản hồi.",
+            TargetType = "Account",
+            TargetAccountId = order.ShopId,
+            SentByAdminId = accountId,
+            CreatedAt = DateTime.UtcNow
+        });
 
         await _db.SaveChangesAsync(cancellationToken);
 

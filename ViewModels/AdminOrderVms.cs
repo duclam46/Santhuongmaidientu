@@ -55,6 +55,12 @@ public sealed class AdminOrderItemVm
 
     public string? SizeName { get; set; }
 
+    public string? VariantDescription { get; set; }
+
+    public decimal CommissionAmount { get; set; }
+
+    public decimal UnitCostPrice { get; set; }
+
     public decimal UnitPrice { get; set; }
 
     public int Quantity { get; set; }
@@ -99,6 +105,16 @@ public sealed class AdminOrderDetailsVm
     public string? CustomerEmail { get; set; }
 
     public string? CancellationNote { get; set; }
+
+    public bool IsDigitalOrder { get; set; }
+
+    public bool RequiresVatInvoice { get; set; }
+
+    public string? CompanyName { get; set; }
+
+    public string? TaxCode { get; set; }
+
+    public string? CompanyAddress { get; set; }
 
     public List<AdminOrderItemVm> Items { get; set; } = new();
 }

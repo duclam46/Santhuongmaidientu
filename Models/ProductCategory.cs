@@ -22,6 +22,19 @@ public class Category
     [MaxLength(150)]
     public string Slug { get; set; } = string.Empty;
 
+    [Column(TypeName = "decimal(5,2)")]
+    public decimal? CommissionRate { get; set; }
+
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? MaxCommissionAmount { get; set; }
+
+    [MaxLength(500)]
+    public string? IconUrl { get; set; }
+
+    public bool HasSizeGuide { get; set; } = false;
+
+    public bool IsReturnableDefault { get; set; } = true;
+
     public int SortOrder { get; set; } = 0;
 
     public bool IsActive { get; set; } = true;
@@ -33,4 +46,6 @@ public class Category
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Category> Children { get; set; } = new List<Category>();
+
+    public ICollection<CategoryAttribute> Attributes { get; set; } = new List<CategoryAttribute>();
 }

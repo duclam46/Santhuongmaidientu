@@ -1,0 +1,163 @@
+@model List<DOAN_BANHANG.Models.PayoutRequest>
+@{
+    ViewData["Title"] = "Phê duyệt Rút tiền & Giải ngân Đối tác";
+    string selectedStatus = ViewBag.SelectedStatus as string ?? "";
+    string search = ViewBag.Search as string ?? "";
+    int pendingCount = ViewBag.PendingCount is int pc ? pc : 0;
+    decimal pendingAmount = ViewBag.PendingAmount is decimal pa ? pa : 0m;
+    decimal approvedAmount = ViewBag.ApprovedAmount is decimal aa ? aa : 0m;
+}
+
+<div class="p-4 rounded-4 text-white mb-4 shadow-sm" style="background: linear-gradient(135deg, #063532 0%, #0b5c56 58%, #0f766e 100%);">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <span class="badge rounded-pill mb-1" style="background: rgba(253,224,71,0.2); color: #fde047; font-weight: 700;">
+                <i class="bx bxs-bank me-1"></i>KẾ TOÁN &amp; ĐỐI SOÁT DÒNG TIỀN SÀN
+            </span>
+            <h4 class="fw-bold text-white mb-1">Phê duyệt Lệnh Rút Doanh thu Đối tác</h4>
+            <div class="small" style="color: rgba(255,255,255,0.84);">Kiểm tra thông tin thụ hưởng ngân hàng của Gian hàng, nhập mã giao dịch chuyển khoản hoặc từ chối hoàn Ví.</div>
+        </div>
+        <div class="d-flex flex-wrap gap-3">
+            <div class="px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="small" style="color: rgba(255,255,255,0.75);">Chờ phê duyệt (@pendingCount lệnh)</div>
+                <div class="fs-5 fw-bold" style="color: #fde047;">@pendingAmount.ToString("N0")₫</div>
+            </div>
+            <div class="px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);">
+                <div class="small" style="color: rgba(255,255,255,0.75);">Đã giải ngân lũy kế</div>
+                <div class="fs-5 fw-bold text-white">@approvedAmount.ToString("N0")₫</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["AdminToast"] is string ok && !string.IsNullOrWhiteSpace(ok))
+{
+    <div class="alert alert-success rounded-3 shadow-sm"><i class="bx bx-check-circle me-1"></i><strong>@ok</strong></div>
+}
+@if (TempData["AdminToastError"] is string err && !string.IsNullOrWhiteSpace(err))
+{
+    <div class="alert alert-danger rounded-3 shadow-sm"><i class="bx bx-error-circle me-1"></i><strong>@err</strong></div>
+}
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-bottom py-3 px-4">
+        <form method="get" asp-area="Admin" asp-controller="Payouts" asp-action="Index" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <input type="text" name="search" value="@search" class="form-control form-control-sm" placeholder="Tìm theo mã WD, tên Shop, số tài khoản, chủ TK..." />
+            </div>
+            <div class="col-md-4">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="" selected="@(string.IsNullOrEmpty(selectedStatus))">Tất cả trạng thái</option>
+                    <option value="Pending" selected="@(selectedStatus == "Pending")">Chờ phê duyệt</option>
+                    <option value="Approved" selected="@(selectedStatus == "Approved")">Đã giải ngân</option>
+                    <option value="Rejected" selected="@(selectedStatus == "Rejected")">Đã từ chối &amp; Hoàn Ví</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary fw-bold flex-grow-1"><i class="bx bx-filter-alt me-1"></i>Lọc</button>
+                <a asp-area="Admin" asp-controller="Payouts" asp-action="Index" class="btn btn-sm btn-light border">Đặt lại</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Mã yêu cầu</th>
+                    <th>Gian hàng</th>
+                    <th>Tài khoản thụ hưởng</th>
+                    <th class="text-end">Số tiền rút</th>
+                    <th>Trạng thái</th>
+                    <th class="pe-4 text-end">Xử lý giải ngân</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">Không có yêu cầu rút tiền nào khớp bộ lọc.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model)
+                    {
+                        var shopName = item.Shop?.Profile?.ShopName ?? item.Shop?.Email ?? $"Shop #{item.ShopId}";
+                        bool isMall = item.Shop?.Profile?.IsMall ?? false;
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold font-monospace text-dark">#@item.RequestCode</div>
+                                <div class="text-muted small">@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">
+                                    @shopName
+                                    @if (isMall)
+                                    {
+                                        <span class="badge bg-danger ms-1" style="font-size:10px;">MALL</span>
+                                    }
+                                </div>
+                                <div class="text-muted small">@item.Shop?.Email</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@item.BankName</div>
+                                <div class="font-monospace small text-primary fw-bold">@item.AccountNumber — @item.AccountHolder</div>
+                            </td>
+                            <td class="text-end fw-bold text-danger fs-6">@item.Amount.ToString("N0")₫</td>
+                            <td>
+                                @if (item.Status == "Pending")
+                                {
+                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis px-3 py-1">Chờ duyệt</span>
+                                }
+                                else if (item.Status == "Approved")
+                                {
+                                    <span class="badge rounded-pill bg-success-subtle text-success px-3 py-1">Đã giải ngân</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.TransactionRef))
+                                    {
+                                        <div class="small text-success mt-1">Mã GD: <strong>@item.TransactionRef</strong></div>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-1">Đã từ chối</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.AdminNote))
+                                    {
+                                        <div class="small text-muted mt-1">@item.AdminNote</div>
+                                    }
+                                }
+                            </td>
+                            <td class="pe-4 text-end">
+                                @if (item.Status == "Pending")
+                                {
+                                    <div class="d-flex flex-column gap-1 align-items-end">
+                                        <form method="post" asp-area="Admin" asp-controller="Payouts" asp-action="Approve" class="d-flex gap-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="text" name="transactionRef" class="form-control form-control-sm" style="width:145px;" placeholder="Mã GD Ngân hàng..." />
+                                            <button type="submit" class="btn btn-sm btn-success fw-bold text-nowrap">
+                                                <i class="bx bx-check"></i> Duyệt chi
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-area="Admin" asp-controller="Payouts" asp-action="Reject" class="d-flex gap-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="text" name="adminNote" class="form-control form-control-sm" style="width:145px;" placeholder="Lý do từ chối..." />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger fw-bold text-nowrap">
+                                                Từ chối
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Đã xử lý @(item.ProcessedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "")</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

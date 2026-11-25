@@ -29,6 +29,17 @@ public class ProductReview
 
     public DateTime? RepliedAt { get; set; }
 
+    [MaxLength(4000)]
+    public string? MediaUrlsJson { get; set; }
+
+    [MaxLength(255)]
+    public string? VariantName { get; set; }
+
+    public bool IsHidden { get; set; } = false;
+
+    [MaxLength(500)]
+    public string? ModerationNote { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

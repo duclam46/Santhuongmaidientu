@@ -1,0 +1,295 @@
+@model DOAN_BANHANG.ViewModels.PartnerStoreManageVm
+@{
+    ViewData["Title"] = "Nâng cấp gian hàng lên Sellzy Mall";
+
+    var passOrders = Model.CompletedOrderCount >= 3;
+    var passRating = Model.AverageRating >= 4.5m;
+    var passCancel = Model.CancelRatePercent <= 10.0m;
+    var passProducts = Model.ActiveProductCount >= 3;
+    var passedCount = (passOrders ? 1 : 0) + (passRating ? 1 : 0) + (passCancel ? 1 : 0) + (passProducts ? 1 : 0);
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <div>
+                <h4 class="mb-1 fw-bold"><i class="bx bxs-badge-check text-warning me-1"></i>Trung tâm Nâng cấp Sellzy Mall</h4>
+                <div class="text-muted small">Nâng tầm thương hiệu với huy hiệu Chính hãng, ưu tiên hiển thị Top đầu và hỗ trợ Hóa đơn VAT B2B</div>
+            </div>
+            <div class="page-title-right">
+                <a asp-area="Admin" asp-controller="PartnerStores" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+                    <i class="bx bx-store-alt me-1"></i>Hồ sơ cửa hàng
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["PartnerStoreSuccess"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+        <i class="bx bx-check-circle me-1 fs-5 align-middle"></i> @okMsg
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["PartnerStoreError"] is string errMsg && !string.IsNullOrWhiteSpace(errMsg))
+{
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+        <i class="bx bx-error-circle me-1 fs-5 align-middle"></i> @errMsg
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- BANNER TRẠNG THÁI HIỆN TẠI -->
+<div class="card border-0 rounded-4 overflow-hidden mb-4 shadow-sm" style="background: linear-gradient(135deg, #00262A 0%, #04464C 60%, #088178 100%); color: #ffffff;">
+    <div class="card-body p-4">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-8">
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-2" style="background: rgba(255,235,105,0.16); color: #FFEB69; font-size: 12px; font-weight: 700;">
+                    <i class="bx bxs-crown"></i>
+                    <span>HẠNG GIAN HÀNG HIỆN TẠI: @(Model.IsMall ? "SELLZY MALL CHÍNH HÃNG" : "SHOP THƯỜNG (TIÊU CHUẨN)")</span>
+                </div>
+                <h4 class="text-white fw-bold mb-1">
+                    @(Model.IsMall
+                        ? $"Chúc mừng! {Model.ShopName} đã là Đối tác Chính hãng Sellzy Mall"
+                        : $"Nâng cấp {Model.ShopName ?? "Gian hàng của bạn"} lên Sellzy Mall")
+                </h4>
+                <p class="mb-0" style="color: rgba(255,255,255,0.84); font-size: 13.5px;">
+                    @if (Model.IsMall)
+                    {
+                        <span>Gian hàng của bạn đang được hưởng toàn bộ đặc quyền hiển thị ưu tiên, huy hiệu Mall và miễn khấu trừ 1.5% thuế cá nhân tại nguồn.</span>
+                    }
+                    else if (string.Equals(Model.MallStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span>Hồ sơ nâng cấp Sellzy Mall của bạn đã được gửi và đang chờ Ban quản trị thẩm định pháp lý.</span>
+                    }
+                    else
+                    {
+                        <span>Hoàn thành các chỉ số vận hành và nộp hồ sơ pháp lý doanh nghiệp/thương hiệu để được xét duyệt lên Sellzy Mall.</span>
+                    }
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                @if (Model.IsMall)
+                {
+                    <span class="badge rounded-pill px-4 py-2.5 fs-6 fw-bold" style="background: #FFEB69; color: #161C24;">
+                        <i class="bx bxs-badge-check me-1"></i>Đã đạt chuẩn Sellzy Mall
+                    </span>
+                }
+                else if (string.Equals(Model.MallStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                {
+                    <span class="badge bg-warning text-dark rounded-pill px-4 py-2.5 fs-6 fw-bold">
+                        <i class="bx bx-time-five me-1"></i>Đang chờ Admin xét duyệt
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-light text-dark rounded-pill px-3 py-2 fw-bold">
+                        Đạt @passedCount / 4 chỉ số vận hành khuyến nghị
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.MallRejectionReason) && !Model.IsMall)
+{
+    <div class="alert alert-warning border-warning rounded-3 mb-4">
+        <div class="fw-bold"><i class="bx bx-message-square-error me-1"></i>Phản hồi từ Ban quản trị về hồ sơ Mall trước đó:</div>
+        <div class="mt-1">@Model.MallRejectionReason</div>
+        <div class="small text-muted mt-1">Bạn có thể cập nhật lại chứng từ pháp lý ở biểu mẫu bên dưới để gửi xét duyệt lại.</div>
+    </div>
+}
+
+<div class="row g-4">
+    <!-- CỘT TRÁI: CHECKLIST ĐIỀU KIỆN & SO SÁNH CHI PHÍ / ĐẶC QUYỀN -->
+    <div class="col-lg-6">
+        <!-- 1. CHECKLIST CHỈ SỐ VẬN HÀNH -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0 fw-bold"><i class="bx bx-check-double text-primary me-1"></i>1. Điều kiện Chỉ số Vận hành</h5>
+                    <span class="badge @(passedCount == 4 ? "bg-success" : "bg-primary") rounded-pill">Đạt @passedCount/4 tiêu chí</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 border @(passOrders ? "bg-success-subtle border-success-subtle" : "bg-light")">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="small fw-bold text-dark">Đơn hàng hoàn thành</span>
+                                <i class="bx @(passOrders ? "bx-check-circle text-success" : "bx-time text-warning") fs-5"></i>
+                            </div>
+                            <div class="fs-4 fw-bold text-dark">@Model.CompletedOrderCount <span class="fs-6 fw-normal text-muted">/ 3 đơn</span></div>
+                            <div class="small text-muted mt-1">Tối thiểu 3 đơn giao thành công</div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 border @(passRating ? "bg-success-subtle border-success-subtle" : "bg-light")">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="small fw-bold text-dark">Điểm đánh giá Shop</span>
+                                <i class="bx @(passRating ? "bx-check-circle text-success" : "bx-time text-warning") fs-5"></i>
+                            </div>
+                            <div class="fs-4 fw-bold text-dark">@Model.AverageRating.ToString("0.0") ★ <span class="fs-6 fw-normal text-muted">/ 4.5 ★</span></div>
+                            <div class="small text-muted mt-1">Điểm trung bình từ 4.5 sao trở lên</div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 border @(passCancel ? "bg-success-subtle border-success-subtle" : "bg-light")">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="small fw-bold text-dark">Tỷ lệ hủy đơn</span>
+                                <i class="bx @(passCancel ? "bx-check-circle text-success" : "bx-x-circle text-danger") fs-5"></i>
+                            </div>
+                            <div class="fs-4 fw-bold text-dark">@Model.CancelRatePercent.ToString("0.0")% <span class="fs-6 fw-normal text-muted">&lt;= 10%</span></div>
+                            <div class="small text-muted mt-1">Kiểm soát tỷ lệ đơn hủy dưới 10%</div>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="p-3 rounded-3 border @(passProducts ? "bg-success-subtle border-success-subtle" : "bg-light")">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="small fw-bold text-dark">Sản phẩm đang bán</span>
+                                <i class="bx @(passProducts ? "bx-check-circle text-success" : "bx-time text-warning") fs-5"></i>
+                            </div>
+                            <div class="fs-4 fw-bold text-dark">@Model.ActiveProductCount <span class="fs-6 fw-normal text-muted">/ 3 SP</span></div>
+                            <div class="small text-muted mt-1">Tối thiểu 3 sản phẩm đang hoạt động</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. SO SÁNH CHI PHÍ CHIẾT KHẤU & ĐẶC QUYỀN (PHƯƠNG ÁN A) -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="mb-0 fw-bold"><i class="bx bx-transfer-alt text-primary me-1"></i>2. So sánh Chi phí &amp; Đặc quyền</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tiêu chí</th>
+                                <th>Shop Thường</th>
+                                <th style="background: #FFFBEB; color: #92400E;">Sellzy Mall</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="fw-semibold">Phí chiết khấu sàn</td>
+                                <td>Phí ngành hàng cơ bản (<strong>4% – 10%</strong>)</td>
+                                <td style="background: #FFFDF5;">Phí ngành hàng <strong>+ 2.0% phí cố định Mall</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">Thuế khấu trừ tại nguồn</td>
+                                <td>Khấu trừ <strong>1.5%</strong> (GTGT + TNCN cá nhân)</td>
+                                <td style="background: #FFFDF5;"><strong>0%</strong> (Doanh nghiệp tự kê khai VAT)</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">Huy hiệu &amp; Hiển thị</td>
+                                <td>Nhãn Đối tác tiêu chuẩn</td>
+                                <td style="background: #FFFDF5;">Huy hiệu <strong>Sellzy Mall</strong> &amp; Ưu tiên Top đầu</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">Voucher &amp; Hóa đơn B2B</td>
+                                <td>Shop tự tài trợ Voucher riêng</td>
+                                <td style="background: #FFFDF5;">Hưởng <strong>Voucher trợ giá Sàn</strong> &amp; Xuất VAT</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI: FORM NỘP HỒ SƠ PHÁP LÝ NÂNG CẤP MALL -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header border-bottom py-3" style="background: #FFFBEB;">
+                <h5 class="mb-0 fw-bold" style="color: #92400E;">
+                    <i class="bx bx-file me-1"></i>3. Hồ sơ Pháp lý &amp; Thương hiệu đăng ký Sellzy Mall
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                @if (Model.IsMall)
+                {
+                    <div class="alert alert-success rounded-3 mb-3">
+                        <div class="fw-bold mb-1"><i class="bx bxs-badge-check me-1"></i>Hồ sơ Pháp lý đã được phê duyệt</div>
+                        <div class="small">Thời điểm cấp danh hiệu: @(Model.MallApprovedAt.HasValue ? Model.MallApprovedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm") : "Đã kích hoạt")</div>
+                    </div>
+                    <div class="row g-3 small">
+                        <div class="col-sm-6">
+                            <div class="text-muted">Tên Công ty / Pháp nhân</div>
+                            <div class="fw-bold text-dark">@(Model.BusinessName ?? "-")</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="text-muted">Mã số thuế doanh nghiệp</div>
+                            <div class="fw-bold text-primary font-monospace">@(Model.BusinessTaxCode ?? "-")</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted">Thương hiệu chính hãng</div>
+                            <div class="fw-bold text-dark">@(Model.BrandName ?? "-")</div>
+                        </div>
+                    </div>
+                }
+                else if (string.Equals(Model.MallStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                {
+                    <div class="p-4 rounded-3 border bg-light text-center">
+                        <i class="bx bx-time-five text-warning display-5 mb-2"></i>
+                        <h5 class="fw-bold">Hồ sơ đang được Admin thẩm định</h5>
+                        <p class="text-muted small mb-3">
+                            Bạn đã gửi yêu cầu nâng cấp cho pháp nhân <strong>@(Model.BusinessName ?? Model.ShopName)</strong> (MST: <code>@(Model.BusinessTaxCode ?? "-")</code>).
+                            Kết quả xét duyệt sẽ được cập nhật ngay tại trang này.
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <form asp-area="Admin" asp-controller="PartnerStores" asp-action="SubmitMallUpgrade" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tên Công ty / Pháp nhân đăng ký kinh doanh <span class="text-danger">*</span></label>
+                            <input type="text" name="BusinessName" value="@Model.BusinessName" class="form-control" placeholder="VD: Công ty TNHH Thương Mại & Dịch Vụ ABC" required />
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold">Mã số thuế doanh nghiệp <span class="text-danger">*</span></label>
+                                <input type="text" name="BusinessTaxCode" value="@Model.BusinessTaxCode" class="form-control" placeholder="VD: 0312345678" required />
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold">Tên Thương hiệu đăng ký <span class="text-danger">*</span></label>
+                                <input type="text" name="BrandName" value="@Model.BrandName" class="form-control" placeholder="VD: Apple / Uniqlo / Thương hiệu riêng" required />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Giấy phép Đăng ký Kinh doanh (Ảnh / PDF)</label>
+                            <input type="file" name="BusinessLicenseFile" accept=".jpg,.jpeg,.png,.webp,.pdf" class="form-control mb-1.5" />
+                            <input type="text" name="BusinessLicenseUrl" value="@Model.BusinessLicenseUrl" class="form-control form-control-sm" placeholder="Hoặc dán đường dẫn ảnh Giấy phép ĐKKD..." />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Giấy chứng nhận Nhãn hiệu / Ủy quyền Phân phối Chính hãng</label>
+                            <input type="file" name="BrandAuthorizationFile" accept=".jpg,.jpeg,.png,.webp,.pdf" class="form-control mb-1.5" />
+                            <input type="text" name="BrandAuthorizationUrl" value="@Model.BrandAuthorizationUrl" class="form-control form-control-sm" placeholder="Hoặc dán đường dẫn Giấy ủy quyền thương hiệu..." />
+                        </div>
+
+                        <div class="p-3 rounded-3 bg-light border small text-muted mb-4">
+                            <i class="bx bx-info-circle text-primary me-1"></i>
+                            Bằng việc gửi hồ sơ nâng cấp, bạn đồng ý áp dụng biểu phí <strong>Sellzy Mall (+2.0% phí dịch vụ cố định Mall trên phí ngành hàng, 0% thuế khấu trừ cá nhân)</strong> ngay sau khi được Admin phê duyệt.
+                        </div>
+
+                        <button type="submit" class="btn w-100 py-2.5 fw-bold rounded-3 shadow-sm" style="background: #00262A; color: #FFEB69;">
+                            <i class="bx bxs-paper-plane me-1"></i>Gửi hồ sơ xin nâng cấp lên Sellzy Mall
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

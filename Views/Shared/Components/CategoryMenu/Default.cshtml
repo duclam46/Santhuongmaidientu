@@ -1,35 +1,34 @@
 @model IReadOnlyList<DOAN_BANHANG.Models.Category>
 
 @functions {
-  private static string IconUrl(DOAN_BANHANG.Models.Category item)
+  private static (string Type, string CircleBg) GetCategoryVisual(DOAN_BANHANG.Models.Category item)
   {
     var name = (item.Name ?? string.Empty).Trim().ToLowerInvariant();
     var slug = (item.Slug ?? string.Empty).Trim().ToLowerInvariant();
+    var icon = (item.IconUrl ?? string.Empty).Trim().ToLowerInvariant();
 
-    // Prefer explicit slug mapping (stable even if Name changes).
-    // These icon files exist in wwwroot/assets/images/.
-    if (slug == "menu-thoi-trang-nam") return "assets/images/category_list_icon_1.png";
-    if (slug == "menu-thoi-trang-nu") return "assets/images/category_list_icon_2.png";
-    if (slug == "menu-thoi-trang-tre-em") return "assets/images/category_list_icon_3.png";
-    if (slug == "menu-bo-suu-tap-denim") return "assets/images/category_list_icon_4.png";
-    if (slug == "menu-thoi-trang-au-my") return "assets/images/category_list_icon_5.png";
-    if (slug == "menu-do-the-thao") return "assets/images/category_list_icon_6.png";
-    if (slug == "menu-giay-dep") return "assets/images/category_list_icon_7.png";
-    if (slug == "menu-trang-suc-thoi-trang") return "assets/images/category_list_icon_8.png";
-    if (slug == "menu-lam-dep-my-pham") return "assets/images/category_list_icon_9.png";
+    if (slug.Contains("dien-thoai") || name.Contains("điện thoại") || icon.Contains("mobile"))
+      return ("phone", "#DBEAFE");
+    if (slug.Contains("may-tinh") || slug.Contains("laptop") || name.Contains("laptop") || name.Contains("máy tính") || icon.Contains("laptop"))
+      return ("laptop", "#E0E7FF");
+    if (slug.Contains("gia-dung") || name.Contains("gia dụng") || name.Contains("điện tử") || icon.Contains("fridge"))
+      return ("appliance", "#CFFAFE");
+    if (slug.Contains("thoi-trang-nam") || name.Contains("thời trang nam"))
+      return ("men", "#DCFCE7");
+    if (slug.Contains("thoi-trang-nu") || name.Contains("thời trang nữ"))
+      return ("women", "#FCE7F3");
+    if (slug.Contains("giay-dep") || slug.Contains("tui-xach") || name.Contains("giày") || name.Contains("túi") || icon.Contains("walk"))
+      return ("shoes", "#FFEDD5");
+    if (slug.Contains("my-pham") || slug.Contains("sac-dep") || name.Contains("mỹ phẩm") || name.Contains("sắc đẹp") || icon.Contains("spa"))
+      return ("beauty", "#F3E8FF");
+    if (slug.Contains("thuc-pham") || slug.Contains("do-uong") || name.Contains("thực phẩm") || name.Contains("đồ uống") || icon.Contains("bowl"))
+      return ("food", "#FEE2E2");
+    if (slug.Contains("nha-sach") || slug.Contains("van-phong") || name.Contains("sách") || name.Contains("văn phòng") || icon.Contains("book"))
+      return ("book", "#FEF3C7");
+    if (slug.Contains("san-pham-so") || slug.Contains("evoucher") || name.Contains("sản phẩm số") || name.Contains("voucher") || icon.Contains("barcode"))
+      return ("digital", "#CCFBF1");
 
-    // Use existing assets in this project.
-    // Feel free to replace these mappings with your own icons.
-    // Fallback heuristics for non-template data
-    if (name.Contains("nam") || name.Contains("men") || slug.Contains("men")) return "assets/images/category_list_icon_1.png";
-    if (name.Contains("nữ") || name.Contains("nu") || name.Contains("women") || slug.Contains("women")) return "assets/images/category_list_icon_2.png";
-    if (name.Contains("trẻ") || name.Contains("tre") || name.Contains("kid") || name.Contains("kids") || slug.Contains("kid")) return "assets/images/category_list_icon_3.png";
-    if (name.Contains("denim") || slug.Contains("denim")) return "assets/images/category_list_icon_4.png";
-    if (name.Contains("âu") || name.Contains("au") || name.Contains("western") || slug.Contains("western")) return "assets/images/category_list_icon_5.png";
-    if (name.Contains("sport") || name.Contains("thể thao") || name.Contains("the thao") || slug.Contains("sport")) return "assets/images/category_list_icon_6.png";
-    if (name.Contains("giày") || name.Contains("giay") || name.Contains("shoe") || name.Contains("footwear") || slug.Contains("shoe")) return "assets/images/category_list_icon_7.png";
-
-    return "assets/images/category_list_icon_8.png";
+    return ("default", "#F3F4F6");
   }
 }
 
@@ -44,46 +43,107 @@
 @foreach (var level1 in Model)
 {
   var hasChildren = level1.Children.Count > 0;
+  var vis = GetCategoryVisual(level1);
   <li class="py-[9px] group @(hasChildren ? "relative" : "")">
-    <a href="@Href(level1)" class="flex items-center gap-x-2 relative text-light-primary-text group-hover:text-primary">
-      <span class="w-8 h-8 bg-primary-lighter inline-flex items-center justify-center rounded-full overflow-hidden">
-        <img src="@IconUrl(level1)" alt="category" class="w-5 h-5 object-contain" />
-      </span>
-      @level1.Name
+    <a href="@Href(level1)" class="flex items-center justify-between gap-x-3 relative text-light-primary-text group-hover:text-primary">
+      <div class="flex items-center gap-x-2.5 whitespace-nowrap">
+        <span class="inline-flex items-center justify-center rounded-full flex-shrink-0 overflow-hidden" style="width: 34px; height: 34px; min-width: 34px; background-color: @vis.CircleBg;">
+          @switch (vis.Type)
+          {
+            case "men":
+              <img src="assets/images/category_list_icon_1.png" alt="@level1.Name" class="w-5 h-5 object-contain" />
+              break;
+            case "women":
+              <img src="assets/images/category_list_icon_2.png" alt="@level1.Name" class="w-5 h-5 object-contain" />
+              break;
+            case "shoes":
+              <img src="assets/images/category_list_icon_7.png" alt="@level1.Name" class="w-5 h-5 object-contain" />
+              break;
+            case "beauty":
+              <img src="assets/images/category_list_icon_9.png" alt="@level1.Name" class="w-5 h-5 object-contain" />
+              break;
+            case "phone":
+              <svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="6" y="2.5" width="10" height="17" rx="2.2" fill="#60A5FA" stroke="#161C24" stroke-width="1.5" />
+                <rect x="7.5" y="4.5" width="7" height="11" rx="1" fill="#EFF6FF" stroke="#161C24" stroke-width="1.2" />
+                <circle cx="11" cy="17.5" r="0.9" fill="#161C24" />
+              </svg>
+              break;
+            case "laptop":
+              <svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3.5" y="4" width="15" height="10.5" rx="1.8" fill="#818CF8" stroke="#161C24" stroke-width="1.5" />
+                <rect x="5.2" y="5.7" width="11.6" height="7" rx="0.8" fill="#EEF2FF" />
+                <path d="M2 15.5H20L18.5 18H3.5L2 15.5Z" fill="#C7D2FE" stroke="#161C24" stroke-width="1.5" stroke-linejoin="round" />
+              </svg>
+              break;
+            case "appliance":
+              <svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="5" y="2.5" width="12" height="17" rx="2" fill="#22D3EE" stroke="#161C24" stroke-width="1.5" />
+                <path d="M5 9.5H17" stroke="#161C24" stroke-width="1.5" />
+                <line x1="7.5" y1="5.5" x2="7.5" y2="7.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" />
+                <line x1="7.5" y1="12" x2="7.5" y2="15" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              break;
+            case "food":
+              <svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 9.5H15V13.5C15 16.5376 12.5376 19 9.5 19C6.46243 19 4 16.5376 4 13.5V9.5Z" fill="#FB7185" stroke="#161C24" stroke-width="1.5" />
+                <path d="M15 10.5H16.8C18.015 10.5 19 11.485 19 12.7C19 13.915 18.015 14.9 16.8 14.9H15" stroke="#161C24" stroke-width="1.5" />
+                <path d="M7 4.5V6.8M9.5 3.5V6.8M12 4.5V6.8" stroke="#E11D48" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              break;
+            case "book":
+              <svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 5C3 4.17157 3.67157 3.5 4.5 3.5H9.5C10.3284 3.5 11 4.17157 11 5V17.5C11 16.9477 10.5523 16.5 10 16.5H4.5C3.67157 16.5 3 15.8284 3 15V5Z" fill="#FBBF24" stroke="#161C24" stroke-width="1.5" />
+                <path d="M19 5C19 4.17157 18.3284 3.5 17.5 3.5H12.5C11.6716 3.5 11 4.17157 11 5V17.5C11 16.9477 11.4477 16.5 12 16.5H17.5C18.3284 16.5 19 15.8284 19 15V5Z" fill="#FEF3C7" stroke="#161C24" stroke-width="1.5" />
+              </svg>
+              break;
+            case "digital":
+              <svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 7C3 5.89543 3.89543 5 5 5H17C18.1046 5 19 5.89543 19 7V9.2C17.8954 9.2 17 10.0954 17 11.2C17 12.3046 17.8954 13.2 19 13.2V15C19 16.1046 18.1046 17 17 17H5C3.89543 17 3 16.1046 3 15V13.2C4.10457 13.2 5 12.3046 5 11.2C5 10.0954 4.10457 9.2 3 9.2V7Z" fill="#2DD4BF" stroke="#161C24" stroke-width="1.5" />
+                <line x1="9" y1="8" x2="9" y2="14" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2 2" />
+              </svg>
+              break;
+            default:
+              <img src="assets/images/category_list_icon_8.png" alt="@level1.Name" class="w-5 h-5 object-contain" />
+              break;
+          }
+        </span>
+        <span>@level1.Name</span>
+      </div>
 
       @if (hasChildren)
       {
-        <span class="absolute right-0 top-1/2 -translate-y-1/2">
-          <i class="hgi hgi-stroke hgi-arrow-right-01 text-lg text-light-primary-text"></i>
+        <span class="flex-shrink-0">
+          <i class="hgi hgi-stroke hgi-arrow-right-01 text-lg text-light-primary-text group-hover:text-primary"></i>
         </span>
       }
     </a>
 
     @if (hasChildren)
     {
-      <ul class="menu_cat_droapdown absolute left-full top-0 z-60 w-[250px] max-w-[250px] bg-white rounded-2xl divide-y divide-gray-300 shadow-dark-z-24 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
+      <ul class="menu_cat_droapdown absolute left-full top-0 z-60 min-w-[310px] w-max max-w-[380px] bg-white rounded-2xl divide-y divide-gray-300 shadow-dark-z-24 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
         @foreach (var level2 in level1.Children)
         {
           var hasChildren2 = level2.Children.Count > 0;
           <li class="py-[9px] px-4 group/item @(hasChildren2 ? "relative" : "")">
-            <a href="@Href(level2)" class="flex items-center gap-x-2 relative text-light-primary-text group-hover/item:text-primary">
-              @level2.Name
+            <a href="@Href(level2)" class="flex items-center justify-between gap-x-3 relative text-light-primary-text group-hover/item:text-primary whitespace-nowrap">
+              <span>@level2.Name</span>
               @if (hasChildren2)
               {
-                <span class="absolute right-0 top-1/2 -translate-y-1/2">
-                  <i class="hgi hgi-stroke hgi-arrow-right-01 text-lg text-light-primary-text"></i>
+                <span class="flex-shrink-0">
+                  <i class="hgi hgi-stroke hgi-arrow-right-01 text-lg text-light-primary-text group-hover/item:text-primary"></i>
                 </span>
               }
             </a>
 
             @if (hasChildren2)
             {
-              <ul class="sub_category absolute left-full top-0 z-60 w-[250px] max-w-[250px] bg-white rounded-2xl divide-y divide-gray-300 shadow-dark-z-24 opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-300 transform translate-x-4 group-hover/item:translate-x-0">
+              <ul class="sub_category absolute left-full top-0 z-60 min-w-[280px] w-max max-w-[360px] bg-white rounded-2xl divide-y divide-gray-300 shadow-dark-z-24 opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-300 transform translate-x-4 group-hover/item:translate-x-0">
                 @foreach (var level3 in level2.Children)
                 {
                   <li class="py-[9px] px-4">
-                    <a href="@Href(level3)" class="flex items-center gap-x-2 relative text-light-primary-text hover:text-primary">
-                      @level3.Name
+                    <a href="@Href(level3)" class="flex items-center gap-x-2 relative text-light-primary-text hover:text-primary whitespace-nowrap">
+                      <span>@level3.Name</span>
                     </a>
                   </li>
                 }

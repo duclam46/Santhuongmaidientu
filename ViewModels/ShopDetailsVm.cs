@@ -13,4 +13,6 @@ public class ShopDetailsVm
     public int TotalPages => PageSize <= 0 ? 0 : (int)Math.Ceiling(TotalItems / (double)PageSize);
 
     public List<ProductCardVm> Products { get; set; } = new();
+
+    public List<StorefrontVoucherVm> ShopVouchers { get; set; } = new();
 }

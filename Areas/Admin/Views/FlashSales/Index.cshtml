@@ -1,472 +1,519 @@
 @model DOAN_BANHANG.ViewModels.AdminFlashSaleListVm
 
 @{
-    ViewData["Title"] = "Flash Sale";
+    ViewData["Title"] = "Chiến dịch Flash Sale";
     var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
     var nowLocal = DateTime.Now;
+    var items = Model.Items ?? new List<DOAN_BANHANG.ViewModels.AdminFlashSaleConfiguredItemVm>();
 
-    var total = Model.Items?.Count ?? 0;
-    var ongoing = Model.Items?.Count(i => i.SaleStartDate <= nowLocal && i.SaleEndDate >= nowLocal) ?? 0;
-    var upcoming = Model.Items?.Count(i => i.SaleStartDate > nowLocal) ?? 0;
-    var ended = Model.Items?.Count(i => i.SaleEndDate < nowLocal) ?? 0;
+    var total = items.Count;
+    var ongoing = items.Count(i => i.SaleStartDate.HasValue && i.SaleEndDate.HasValue && i.SaleStartDate.Value <= nowLocal && i.SaleEndDate.Value >= nowLocal);
+    var upcoming = items.Count(i => i.SaleStartDate.HasValue && i.SaleStartDate.Value > nowLocal);
+    var ended = items.Count(i => i.SaleEndDate.HasValue && i.SaleEndDate.Value < nowLocal);
 }
 
 <style>
-    /* Premium Dashboard Styles */
     :root {
-        --fs-primary: #556ee6;
-        --fs-primary-light: rgba(85, 110, 230, 0.1);
-        --fs-danger: #f46a6a;
-        --fs-danger-light: rgba(244, 106, 106, 0.1);
-        --fs-success: #34c38f;
-        --fs-success-light: rgba(52, 195, 143, 0.1);
-        --fs-warning: #f1b44c;
-        --fs-warning-light: rgba(241, 180, 76, 0.1);
+        --fs-teal: #0b5c56;
+        --fs-teal-dark: #063532;
+        --fs-emerald: #10b981;
+        --fs-amber: #d97706;
+        --fs-red: #dc2626;
+        --fs-border: #e2e8f0;
     }
 
-    .fs-page-header {
-        background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-        border-radius: 16px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-        padding: 24px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 24px;
+    .fs-hero {
+        background: linear-gradient(135deg, #063532 0%, #0b5c56 58%, #0f766e 100%);
+        border-radius: 18px;
+        padding: 24px 28px;
+        color: #fff;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 10px 28px rgba(6, 53, 50, 0.16);
+        margin-bottom: 20px;
     }
-
-    .fs-page-header::after {
+    .fs-hero::before {
         content: '';
         position: absolute;
-        top: -50px;
-        right: -50px;
-        width: 150px;
-        height: 150px;
-        background: var(--fs-primary-light);
+        top: -60px;
+        right: -30px;
+        width: 240px;
+        height: 240px;
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0) 70%);
         border-radius: 50%;
-        filter: blur(40px);
+        pointer-events: none;
     }
-
-    .stat-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 20px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 16px;
+    .fs-hero-title {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.02em;
+        margin-bottom: 4px;
     }
+    .fs-hero-sub { color: rgba(255, 255, 255, 0.8); font-size: 0.88rem; }
 
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.05);
-    }
-
-    .stat-icon {
-        width: 54px;
-        height: 54px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-    }
-
-    .stat-icon.primary { background: var(--fs-primary-light); color: var(--fs-primary); }
-    .stat-icon.success { background: var(--fs-success-light); color: var(--fs-success); }
-    .stat-icon.warning { background: var(--fs-warning-light); color: var(--fs-warning); }
-
-    .stat-content h5 { font-size: 1.5rem; font-weight: 700; margin: 0 0 4px 0; color: #495057; }
-    .stat-content p { margin: 0; font-size: 0.85rem; color: #74788d; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-
-    .fs-card {
-        border-radius: 16px;
+    .fs-btn-setup {
+        background: #10b981;
+        color: #fff;
         border: none;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-        overflow: hidden;
-    }
-
-    .nav-pills .nav-link {
-        border-radius: 10px;
-        padding: 8px 16px;
-        color: #495057;
-        font-weight: 600;
-        transition: all 0.3s;
-    }
-
-    .nav-pills .nav-link.active {
-        background-color: var(--fs-primary-light);
-        color: var(--fs-primary);
-    }
-
-    .table-flash th {
-        background-color: #f8f9fa;
-        color: #495057;
+        border-radius: 11px;
+        padding: 10px 20px;
         font-weight: 700;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-        padding: 16px;
-        border-bottom: 2px solid #e2e8f0;
+        font-size: 0.88rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+        transition: all 0.2s ease;
+        text-decoration: none;
     }
+    .fs-btn-setup:hover { background: #059669; color: #fff; transform: translateY(-1px); }
 
-    .table-flash td {
-        padding: 16px;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f5f9;
-        color: #495057;
-    }
-
-    .table-flash tbody tr {
-        transition: background-color 0.2s;
-    }
-    
-    .table-flash tbody tr:hover {
-        background-color: #f8fafc;
-    }
-
-    .prod-img {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
-        object-fit: cover;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-
-    .badge-soft {
-        padding: 6px 12px;
-        border-radius: 8px;
+    .fs-btn-danger-ghost {
+        background: rgba(239, 68, 68, 0.18);
+        color: #fecaca;
+        border: 1px solid rgba(248, 113, 113, 0.4);
+        border-radius: 11px;
+        padding: 10px 16px;
         font-weight: 600;
-        font-size: 0.75rem;
+        font-size: 0.85rem;
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        transition: all 0.2s;
+    }
+    .fs-btn-danger-ghost:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+    /* KPI Cards */
+    .fs-kpi-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid var(--fs-border);
+        padding: 18px 20px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        height: 100%;
+        transition: all 0.2s ease;
+    }
+    .fs-kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06); }
+    .fs-kpi-label { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 4px; }
+    .fs-kpi-val { font-size: 1.55rem; font-weight: 800; color: #0f172a; line-height: 1.15; }
+    .fs-kpi-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.45rem; flex-shrink: 0; }
+
+    /* Main Panel */
+    .fs-main-card {
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid var(--fs-border);
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.035);
+        overflow: hidden;
     }
 
-    .badge-soft-success { background: var(--fs-success-light); color: var(--fs-success); }
-    .badge-soft-warning { background: var(--fs-warning-light); color: #d97706; }
-    .badge-soft-secondary { background: #f1f5f9; color: #64748b; }
+    .fs-tabs-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 22px;
+        border-bottom: 1px solid var(--fs-border);
+        background: #fafcff;
+    }
+
+    #flashsale-status-tabs .nav-link {
+        border-radius: 10px;
+        padding: 8px 15px;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.18s;
+    }
+    #flashsale-status-tabs .nav-link:hover { color: var(--fs-teal); background: #f1f5f9; }
+    #flashsale-status-tabs .nav-link.active {
+        background: var(--fs-teal);
+        color: #fff;
+        box-shadow: 0 4px 10px rgba(11, 92, 86, 0.22);
+    }
+
+    .fs-search-box { position: relative; max-width: 340px; width: 100%; }
+    .fs-search-box i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.05rem; }
+    .fs-search-box input {
+        padding-left: 38px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        height: 39px;
+        font-size: 0.86rem;
+    }
+    .fs-search-box input:focus { border-color: var(--fs-teal); box-shadow: 0 0 0 3px rgba(11, 92, 86, 0.12); }
+
+    /* Table */
+    .fs-table { margin-bottom: 0; }
+    .fs-table thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 0.73rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 13px 16px;
+        border-bottom: 1.5px solid var(--fs-border);
+        white-space: nowrap;
+    }
+    .fs-table tbody td {
+        padding: 14px 16px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .fs-table tbody tr:hover td { background: #f8fafc; }
+
+    .fs-prod-img {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        flex-shrink: 0;
+    }
+
+    .fs-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .fs-status-live { background: #ecfdf5; color: #047857; }
+    .fs-status-upcoming { background: #fffbeb; color: #b45309; }
+    .fs-status-ended { background: #f1f5f9; color: #64748b; }
 
     .pulse-dot {
         width: 8px;
         height: 8px;
-        background-color: var(--fs-success);
+        background-color: #10b981;
         border-radius: 50%;
         display: inline-block;
-        animation: pulse 1.5s infinite;
+        animation: fsPulse 1.5s infinite;
+    }
+    @@keyframes fsPulse {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 
-    @@keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(52, 195, 143, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(52, 195, 143, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(52, 195, 143, 0); }
-    }
-
-    .btn-action {
-        border-radius: 8px;
-        padding: 6px 12px;
-        font-weight: 600;
-        font-size: 0.8rem;
-        transition: all 0.2s;
-    }
-    
-    .btn-setup {
-        background: linear-gradient(135deg, var(--fs-primary), #3b82f6);
-        color: white;
+    .fs-act-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
         border: none;
-        border-radius: 10px;
-        padding: 10px 24px;
-        font-weight: 600;
-        box-shadow: 0 4px 15px rgba(85, 110, 230, 0.3);
-        transition: all 0.3s;
+        transition: all 0.18s;
+        text-decoration: none;
     }
-    .btn-setup:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(85, 110, 230, 0.4);
-        color: white;
-    }
-
-    .search-box {
-        position: relative;
-    }
-    .search-box input {
-        border-radius: 10px;
-        padding-left: 40px;
-        border: 1px solid #e2e8f0;
-        background: #f8fafc;
-        box-shadow: none;
-        transition: all 0.3s;
-    }
-    .search-box input:focus {
-        background: white;
-        border-color: var(--fs-primary);
-        box-shadow: 0 0 0 3px var(--fs-primary-light);
-    }
-    .search-box i {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-        font-size: 1.1rem;
-    }
+    .fs-act-view { background: #f1f5f9; color: #334155; }
+    .fs-act-view:hover { background: var(--fs-teal); color: #fff; }
+    .fs-act-edit { background: #eff6ff; color: #2563eb; }
+    .fs-act-edit:hover { background: #2563eb; color: #fff; }
+    .fs-act-restart { background: #ecfdf5; color: #059669; }
+    .fs-act-restart:hover { background: #059669; color: #fff; }
+    .fs-act-del { background: #fef2f2; color: #dc2626; }
+    .fs-act-del:hover { background: #dc2626; color: #fff; }
 </style>
 
-<!-- Header Section -->
-<div class="row">
-    <div class="col-12">
-        <div class="fs-page-header d-flex flex-wrap align-items-center justify-content-between gap-3">
-            <div>
-                <h4 class="mb-1 fw-bold" style="color: #495057;">
-                    <i class="bx bxs-zap text-warning me-2" style="font-size: 1.4rem;"></i>Chiến dịch Flash Sale
-                </h4>
-                <div class="text-muted small">Quản lý và theo dõi các sự kiện giảm giá chớp nhoáng</div>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                @if (total > 0)
-                {
-                    <form asp-area="Admin" asp-controller="FlashSales" asp-action="CancelEvent" method="post" class="d-inline"
-                          onsubmit="return confirm('CẢNH BÁO: Bạn chuẩn bị hủy toàn bộ sự kiện FlashSale hiện tại! Hành động này không thể hoàn tác. Tiếp tục?');">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-action btn-outline-danger">
-                            <i class="bx bx-power-off me-1"></i>Hủy toàn bộ sự kiện
-                        </button>
-                    </form>
-                }
-                <a asp-area="Admin" asp-controller="FlashSales" asp-action="Setup" class="btn-setup">
-                    <i class="bx bx-plus-circle me-1"></i>Tạo sự kiện mới
-                </a>
-            </div>
+<!-- 1. HERO HEADER -->
+<div class="fs-hero d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div style="position: relative; z-index: 2;">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge rounded-pill" style="background: rgba(245, 158, 11, 0.24); color: #fde68a; font-weight: 700; font-size: 0.72rem;">
+                <i class="bx bxs-zap me-1"></i>KHUYẾN MÃI CHỚP NHOÁNG
+            </span>
+            @if (ongoing > 0)
+            {
+                <span class="badge rounded-pill" style="background: rgba(16, 185, 129, 0.22); color: #a7f3d0; font-weight: 700; font-size: 0.72rem;">
+                    @ongoing đang chạy trực tiếp
+                </span>
+            }
         </div>
+        <h3 class="fs-hero-title">
+            <i class="bx bxs-zap me-2" style="color: #fbbf24;"></i>Chiến dịch Flash Sale
+        </h3>
+        <div class="fs-hero-sub">Quản lý khung giờ, mức giảm giá theo biến thể và theo dõi trạng thái các sự kiện giảm giá chớp nhoáng.</div>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2" style="position: relative; z-index: 2;">
+        @if (total > 0)
+        {
+            <form asp-area="Admin" asp-controller="FlashSales" asp-action="CancelEvent" method="post" class="d-inline"
+                  onsubmit="return confirm('CẢNH BÁO: Bạn chuẩn bị hủy toàn bộ sự kiện FlashSale hiện tại! Hành động này không thể hoàn tác. Tiếp tục?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="fs-btn-danger-ghost">
+                    <i class="bx bx-power-off"></i>Hủy toàn bộ sự kiện
+                </button>
+            </form>
+        }
+        <a asp-area="Admin" asp-controller="FlashSales" asp-action="Setup" class="fs-btn-setup">
+            <i class="bx bx-plus-circle fs-5"></i>Tạo sự kiện mới
+        </a>
     </div>
 </div>
 
-<!-- Stats Section -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="stat-card">
-            <div class="stat-icon primary">
+<!-- 2. KPI CARDS -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="fs-kpi-card">
+            <div>
+                <div class="fs-kpi-label">Tổng sản phẩm Sale</div>
+                <div class="fs-kpi-val">@total</div>
+            </div>
+            <div class="fs-kpi-icon" style="background: rgba(11, 92, 86, 0.1); color: #0b5c56;">
                 <i class="bx bx-package"></i>
             </div>
-            <div class="stat-content">
-                <h5>@total</h5>
-                <p>Tổng sản phẩm Sale</p>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="fs-kpi-card">
+            <div>
+                <div class="fs-kpi-label">Đang diễn ra</div>
+                <div class="fs-kpi-val text-success">@ongoing</div>
+            </div>
+            <div class="fs-kpi-icon" style="background: #ecfdf5; color: #059669;">
+                <i class="bx bxs-zap"></i>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="stat-card">
-            <div class="stat-icon success">
-                <i class="bx bx-loader-circle bx-spin-hover"></i>
+    <div class="col-xl-3 col-md-6">
+        <div class="fs-kpi-card">
+            <div>
+                <div class="fs-kpi-label">Sắp diễn ra</div>
+                <div class="fs-kpi-val text-warning">@upcoming</div>
             </div>
-            <div class="stat-content">
-                <h5>@ongoing</h5>
-                <p>Đang diễn ra</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="stat-card">
-            <div class="stat-icon warning">
+            <div class="fs-kpi-icon" style="background: #fffbeb; color: #d97706;">
                 <i class="bx bx-calendar-event"></i>
             </div>
-            <div class="stat-content">
-                <h5>@upcoming</h5>
-                <p>Sắp diễn ra</p>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="fs-kpi-card">
+            <div>
+                <div class="fs-kpi-label">Đã kết thúc</div>
+                <div class="fs-kpi-val text-secondary">@ended</div>
+            </div>
+            <div class="fs-kpi-icon" style="background: #f1f5f9; color: #64748b;">
+                <i class="bx bx-history"></i>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Main Table Card -->
-<div class="row">
-    <div class="col-12">
-        <div class="card fs-card">
-            <div class="card-body p-4">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-                    <ul class="nav nav-pills" id="flashsale-status-tabs">
-                        <li class="nav-item">
-                            <a class="nav-link active" href="#" data-filter="all">Tất cả (@total)</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" data-filter="ongoing">Hoạt động & Sắp tới (@(ongoing + upcoming))</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" data-filter="ended">Đã kết thúc (@ended)</a>
-                        </li>
-                    </ul>
+<!-- 3. MAIN TABLE PANEL -->
+<div class="fs-main-card">
+    <div class="fs-tabs-bar">
+        <ul class="nav nav-pills gap-1" id="flashsale-status-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" data-filter="all">Tất cả (@total)</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-filter="ongoing">Hoạt động &amp; Sắp tới (@(ongoing + upcoming))</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-filter="ended">Đã kết thúc (@ended)</a>
+            </li>
+        </ul>
 
-                    <form method="get" class="d-flex gap-2" style="max-width: 400px; width: 100%;">
-                        <div class="search-box w-100">
-                            <i class="bx bx-search"></i>
-                            <input class="form-control" name="search" value="@Model.Search" placeholder="Tìm tên sản phẩm..." />
-                        </div>
-                    </form>
-                </div>
-
-                @if (total == 0)
-                {
-                    <div class="text-center py-5">
-                        <img src="~/admin/assets/images/illustrator/empty-cart.svg" alt="Empty" style="width: 150px; opacity: 0.5;" class="mb-4">
-                        <h5 class="text-muted fw-bold">Chưa có sự kiện Flash Sale nào</h5>
-                        <p class="text-muted mb-4">Bạn chưa thiết lập bất kỳ chiến dịch Flash Sale nào cho cửa hàng.</p>
-                        <a asp-area="Admin" asp-controller="FlashSales" asp-action="Setup" class="btn-setup">
-                            <i class="bx bx-plus-circle me-1"></i>Thiết lập ngay
-                        </a>
-                    </div>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-flash table-nowrap align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Sản phẩm</th>
-                                    <th class="text-center">Biến thể Sale</th>
-                                    <th class="text-end">Giá gốc</th>
-                                    <th class="text-end">Giá Flash Sale</th>
-                                    <th>Thời gian diễn ra</th>
-                                    <th>Trạng thái</th>
-                                    <th class="text-end">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in Model.Items)
-                                {
-                                    var startUtc = item.SaleStartDate;
-                                    var endUtc = item.SaleEndDate;
-
-                                    var statusText = "—";
-                                    var statusClass = "badge-soft-secondary";
-                                    var statusData = "all";
-                                    var showPulse = false;
-
-                                    if (startUtc.HasValue && endUtc.HasValue)
-                                    {
-                                        if (endUtc.Value < nowLocal)
-                                        {
-                                            statusText = "Đã kết thúc";
-                                            statusClass = "badge-soft-secondary";
-                                            statusData = "ended";
-                                        }
-                                        else if (startUtc.Value > nowLocal)
-                                        {
-                                            statusText = "Sắp diễn ra";
-                                            statusClass = "badge-soft-warning";
-                                            statusData = "ongoing";
-                                        }
-                                        else
-                                        {
-                                            statusText = "Đang diễn ra";
-                                            statusClass = "badge-soft-success";
-                                            statusData = "ongoing";
-                                            showPulse = true;
-                                        }
-                                    }
-
-                                    <tr data-status="@statusData" class="flashsale-row">
-                                        <td>
-                                            <div class="d-flex align-items-center gap-3">
-                                                @if (!string.IsNullOrWhiteSpace(item.PrimaryImageUrl))
-                                                {
-                                                    <img src="@item.PrimaryImageUrl" alt="@item.Name" class="prod-img" onerror="this.src='/admin/assets/images/users/avatar-1.jpg'" />
-                                                }
-                                                else
-                                                {
-                                                    <div class="prod-img bg-light d-flex align-items-center justify-content-center text-muted">
-                                                        <i class="bx bx-image fs-4"></i>
-                                                    </div>
-                                                }
-                                                <div>
-                                                    <div class="fw-bold text-dark" style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@item.Name</div>
-                                                    <div class="text-muted small">Mã SP: #@item.ProductId</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-light text-dark border px-2 py-1 fs-6">@item.VariantOnSaleCount</span>
-                                        </td>
-                                        <td class="text-end fw-semibold text-muted text-decoration-line-through">
-                                            @item.MinPrice.ToString("N0", viVn)₫
-                                        </td>
-                                        <td class="text-end">
-                                            @if (item.MinSalePrice.HasValue)
-                                            {
-                                                <span class="fw-bold text-danger fs-5">@item.MinSalePrice.Value.ToString("N0", viVn)₫</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">—</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            @if (startUtc.HasValue && endUtc.HasValue)
-                                            {
-                                                <div class="d-flex flex-column gap-1">
-                                                    <div class="small fw-semibold text-success"><i class="bx bx-time-five me-1"></i>@startUtc.Value.ToString("dd/MM/yyyy HH:mm")</div>
-                                                    <div class="small fw-semibold text-danger"><i class="bx bx-stop-circle me-1"></i>@endUtc.Value.ToString("dd/MM/yyyy HH:mm")</div>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">—</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <span class="badge-soft @statusClass">
-                                                @if(showPulse) { <span class="pulse-dot"></span> }
-                                                @statusText
-                                            </span>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="d-inline-flex gap-2">
-                                                <a asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" asp-route-id="@item.ProductId" class="btn btn-action btn-light text-primary" data-bs-toggle="tooltip" title="Chỉnh sửa">
-                                                    <i class="bx bx-edit-alt fs-5"></i>
-                                                </a>
-
-                                                @if (statusText == "Đã kết thúc")
-                                                {
-                                                    <a asp-area="Admin" asp-controller="FlashSales" asp-action="Setup" asp-route-restartProductId="@item.ProductId" class="btn btn-action btn-light text-success" data-bs-toggle="tooltip" title="Bắt đầu lại">
-                                                        <i class="bx bx-play-circle fs-5"></i>
-                                                    </a>
-                                                }
-                                                else
-                                                {
-                                                    <form asp-area="Admin" asp-controller="FlashSales" asp-action="CancelProduct" method="post" class="d-inline"
-                                                          onsubmit="return confirm('Hủy FlashSale của sản phẩm: @item.Name ?');">
-                                                        @Html.AntiForgeryToken()
-                                                        <input type="hidden" name="productId" value="@item.ProductId" />
-                                                        <input type="hidden" name="search" value="@Model.Search" />
-                                                        <button type="submit" class="btn btn-action btn-light text-danger" data-bs-toggle="tooltip" title="Hủy sự kiện">
-                                                            <i class="bx bx-trash fs-5"></i>
-                                                        </button>
-                                                    </form>
-                                                }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
-        </div>
+        <form method="get" class="fs-search-box">
+            <i class="bx bx-search"></i>
+            <input class="form-control" name="search" value="@Model.Search" placeholder="Tìm tên sản phẩm..." />
+        </form>
     </div>
+
+    @if (total == 0)
+    {
+        <div class="text-center py-5 px-3">
+            <div class="mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-radius: 20px; background: #fffbeb; color: #d97706; font-size: 2rem;">
+                <i class="bx bxs-zap"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">Chưa có sự kiện Flash Sale nào</h5>
+            <p class="text-muted small mb-4">Bạn chưa thiết lập chiến dịch Flash Sale nào cho cửa hàng.</p>
+            <a asp-area="Admin" asp-controller="FlashSales" asp-action="Setup" class="fs-btn-setup">
+                <i class="bx bx-plus-circle fs-5"></i>Thiết lập ngay
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table fs-table table-nowrap align-middle">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th class="text-center">Biến thể Sale</th>
+                        <th class="text-end">Giá gốc</th>
+                        <th class="text-end">Giá Flash Sale</th>
+                        <th>Khung thời gian</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in items)
+                    {
+                        var startUtc = item.SaleStartDate;
+                        var endUtc = item.SaleEndDate;
+
+                        var statusText = "—";
+                        var statusClass = "fs-status-ended";
+                        var statusData = "all";
+                        var showPulse = false;
+
+                        if (startUtc.HasValue && endUtc.HasValue)
+                        {
+                            if (endUtc.Value < nowLocal)
+                            {
+                                statusText = "Đã kết thúc";
+                                statusClass = "fs-status-ended";
+                                statusData = "ended";
+                            }
+                            else if (startUtc.Value > nowLocal)
+                            {
+                                statusText = "Sắp diễn ra";
+                                statusClass = "fs-status-upcoming";
+                                statusData = "ongoing";
+                            }
+                            else
+                            {
+                                statusText = "Đang diễn ra";
+                                statusClass = "fs-status-live";
+                                statusData = "ongoing";
+                                showPulse = true;
+                            }
+                        }
+
+                        var discountPct = (item.MinPrice > 0 && item.MinSalePrice.HasValue && item.MinSalePrice.Value > 0 && item.MinSalePrice.Value < item.MinPrice)
+                            ? (int?)Math.Round((1m - (item.MinSalePrice.Value / item.MinPrice)) * 100m, 0, MidpointRounding.AwayFromZero)
+                            : null;
+
+                        <tr data-status="@statusData" class="flashsale-row">
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrWhiteSpace(item.PrimaryImageUrl))
+                                    {
+                                        <img src="@item.PrimaryImageUrl" alt="@item.Name" class="fs-prod-img" onerror="this.src='/images/no-image.png'" />
+                                    }
+                                    else
+                                    {
+                                        <div class="fs-prod-img bg-light d-flex align-items-center justify-content-center text-muted">
+                                            <i class="bx bx-image fs-4"></i>
+                                        </div>
+                                    }
+                                    <div>
+                                        <a asp-area="Admin" asp-controller="FlashSales" asp-action="Details" asp-route-id="@item.ProductId"
+                                           class="fw-bold text-dark text-decoration-none d-block"
+                                           style="max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            @item.Name
+                                        </a>
+                                        <div class="text-muted small">Mã SP: #@item.ProductId</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill px-3 py-1" style="background: rgba(11, 92, 86, 0.1); color: #0b5c56; font-weight: 700;">
+                                    <i class="bx bx-layer me-1"></i>@item.VariantOnSaleCount SKU
+                                </span>
+                            </td>
+                            <td class="text-end fw-semibold text-muted text-decoration-line-through">
+                                @item.MinPrice.ToString("N0", viVn)₫
+                            </td>
+                            <td class="text-end">
+                                @if (item.MinSalePrice.HasValue)
+                                {
+                                    <div class="d-inline-flex align-items-center gap-2">
+                                        <span class="fw-bold text-danger" style="font-size: 1.02rem;">@item.MinSalePrice.Value.ToString("N0", viVn)₫</span>
+                                        @if (discountPct.HasValue && discountPct.Value > 0)
+                                        {
+                                            <span class="badge rounded-pill bg-danger-subtle text-danger fw-bold">-@discountPct.Value%</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (startUtc.HasValue && endUtc.HasValue)
+                                {
+                                    <div class="d-flex flex-column gap-1">
+                                        <div class="small fw-semibold text-success"><i class="bx bx-play-circle me-1"></i>@startUtc.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div class="small fw-semibold text-danger"><i class="bx bx-stop-circle me-1"></i>@endUtc.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="fs-status-pill @statusClass">
+                                    @if (showPulse) { <span class="pulse-dot"></span> }
+                                    @statusText
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <a asp-area="Admin" asp-controller="FlashSales" asp-action="Details" asp-route-id="@item.ProductId"
+                                       class="fs-act-btn fs-act-view" data-bs-toggle="tooltip" title="Xem chi tiết">
+                                        <i class="bx bx-show-alt"></i>
+                                    </a>
+                                    <a asp-area="Admin" asp-controller="FlashSales" asp-action="Edit" asp-route-id="@item.ProductId"
+                                       class="fs-act-btn fs-act-edit" data-bs-toggle="tooltip" title="Chỉnh sửa">
+                                        <i class="bx bx-edit-alt"></i>
+                                    </a>
+
+                                    @if (statusText == "Đã kết thúc")
+                                    {
+                                        <a asp-area="Admin" asp-controller="FlashSales" asp-action="Setup" asp-route-restartProductId="@item.ProductId"
+                                           class="fs-act-btn fs-act-restart" data-bs-toggle="tooltip" title="Bắt đầu lại">
+                                            <i class="bx bx-play-circle"></i>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <form asp-area="Admin" asp-controller="FlashSales" asp-action="CancelProduct" method="post" class="d-inline"
+                                              onsubmit="return confirm('Hủy FlashSale của sản phẩm: @item.Name ?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="productId" value="@item.ProductId" />
+                                            <input type="hidden" name="search" value="@Model.Search" />
+                                            <button type="submit" class="fs-act-btn fs-act-del" data-bs-toggle="tooltip" title="Hủy sự kiện">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
 @section Scripts {
     <script>
         $(document).ready(function() {
-            // Khởi tạo tooltip
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl)
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
             });
 
-            // Lọc tab
             $('#flashsale-status-tabs a').on('click', function(e) {
                 e.preventDefault();
                 $('#flashsale-status-tabs a').removeClass('active');
@@ -474,11 +521,11 @@
 
                 var filter = $(this).data('filter');
                 if (filter === 'all') {
-                    $('.flashsale-row').fadeIn(300);
+                    $('.flashsale-row').fadeIn(200);
                 } else {
                     $('.flashsale-row').each(function() {
                         if ($(this).data('status') === filter) {
-                            $(this).fadeIn(300);
+                            $(this).fadeIn(200);
                         } else {
                             $(this).hide();
                         }

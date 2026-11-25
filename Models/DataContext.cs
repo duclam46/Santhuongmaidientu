@@ -18,11 +18,7 @@ public class DataContext : DbContext
 
     public DbSet<Product> Products => Set<Product>();
 
-    public DbSet<Color> Colors => Set<Color>();
-
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
-
-    public DbSet<Size> Sizes => Set<Size>();
 
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
 
@@ -74,8 +70,25 @@ public class DataContext : DbContext
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
 
-    // ── Return Requests ──
+    // ── Return Requests & Disputes ──
     public DbSet<ReturnRequest> ReturnRequests => Set<ReturnRequest>();
+    public DbSet<OrderDispute> OrderDisputes => Set<OrderDispute>();
+    public DbSet<OrderDisputeMessage> OrderDisputeMessages => Set<OrderDisputeMessage>();
+
+    // ── Multi-Industry E-Commerce Extensions ──
+    public DbSet<Brand> Brands => Set<Brand>();
+    public DbSet<ProductOption> ProductOptions => Set<ProductOption>();
+    public DbSet<ProductOptionValue> ProductOptionValues => Set<ProductOptionValue>();
+    public DbSet<CategoryAttribute> CategoryAttributes => Set<CategoryAttribute>();
+    public DbSet<ProductAttributeValue> ProductAttributeValues => Set<ProductAttributeValue>();
+
+    // ── Platform Upgrades (Vouchers, Followers, Payouts, Moderation, Campaigns, Audit) ──
+    public DbSet<SavedVoucher> SavedVouchers => Set<SavedVoucher>();
+    public DbSet<ShopFollower> ShopFollowers => Set<ShopFollower>();
+    public DbSet<PayoutRequest> PayoutRequests => Set<PayoutRequest>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<HomeBanner> HomeBanners => Set<HomeBanner>();
+    public DbSet<PlatformCampaign> PlatformCampaigns => Set<PlatformCampaign>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -88,6 +101,11 @@ public class DataContext : DbContext
 
             entity.Property(x => x.Name).HasMaxLength(150).IsRequired();
             entity.Property(x => x.Slug).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.CommissionRate).HasColumnType("decimal(5,2)");
+            entity.Property(x => x.MaxCommissionAmount).HasColumnType("decimal(18,2)");
+            entity.Property(x => x.IconUrl).HasMaxLength(500);
+            entity.Property(x => x.HasSizeGuide).HasDefaultValue(false);
+            entity.Property(x => x.IsReturnableDefault).HasDefaultValue(true);
 
             entity.Property(x => x.SortOrder).HasDefaultValue(0);
             entity.Property(x => x.IsActive).HasDefaultValue(true);
@@ -101,7 +119,92 @@ public class DataContext : DbContext
                 .HasForeignKey(x => x.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasMany(x => x.Attributes)
+                .WithOne(a => a.Category)
+                .HasForeignKey(a => a.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasIndex(x => x.Slug).IsUnique();
+        });
+
+        modelBuilder.Entity<Brand>(entity =>
+        {
+            entity.ToTable("Brands");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.Slug).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.LogoUrl).HasMaxLength(500);
+            entity.Property(x => x.IsActive).HasDefaultValue(true);
+            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
+
+            entity.HasIndex(x => x.Slug).IsUnique();
+        });
+
+        modelBuilder.Entity<CategoryAttribute>(entity =>
+        {
+            entity.ToTable("CategoryAttributes");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.Unit).HasMaxLength(50);
+            entity.Property(x => x.IsFilterable).HasDefaultValue(true);
+            entity.Property(x => x.SortOrder).HasDefaultValue(0);
+
+            entity.HasIndex(x => x.CategoryId);
+        });
+
+        modelBuilder.Entity<ProductAttributeValue>(entity =>
+        {
+            entity.ToTable("ProductAttributeValues");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Value).HasMaxLength(255).IsRequired();
+
+            entity.HasIndex(x => x.ProductId);
+            entity.HasIndex(x => x.CategoryAttributeId);
+
+            entity.HasOne(x => x.Product)
+                .WithMany(p => p.AttributeValues)
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.CategoryAttribute)
+                .WithMany(a => a.ProductValues)
+                .HasForeignKey(x => x.CategoryAttributeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductOption>(entity =>
+        {
+            entity.ToTable("ProductOptions");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.SortOrder).HasDefaultValue(0);
+
+            entity.HasIndex(x => x.ProductId);
+
+            entity.HasOne(x => x.Product)
+                .WithMany(p => p.Options)
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(x => x.Values)
+                .WithOne(v => v.ProductOption)
+                .HasForeignKey(v => v.ProductOptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductOptionValue>(entity =>
+        {
+            entity.ToTable("ProductOptionValues");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Value).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.ImageUrl).HasMaxLength(500);
+
+            entity.HasIndex(x => x.ProductOptionId);
         });
 
         modelBuilder.Entity<Account>(entity =>
@@ -196,6 +299,10 @@ public class DataContext : DbContext
                 .HasDefaultValue(0m);
             entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
 
+            entity.Property(x => x.WarrantyMonths).HasDefaultValue(0);
+            entity.Property(x => x.WarrantyType).HasMaxLength(100);
+            entity.Property(x => x.IsReturnable).HasDefaultValue(true);
+
             entity.Property(x => x.IsNewArrival).HasDefaultValue(false);
 
             entity.Property(x => x.ReviewCount)
@@ -224,6 +331,13 @@ public class DataContext : DbContext
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasIndex(x => x.BrandId);
+
+            entity.HasOne(x => x.Brand)
+                .WithMany(b => b.Products)
+                .HasForeignKey(x => x.BrandId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasMany(x => x.Variants)
                 .WithOne(v => v.Product)
                 .HasForeignKey(v => v.ProductId)
@@ -238,15 +352,6 @@ public class DataContext : DbContext
                 .WithOne(r => r.Product)
                 .HasForeignKey(r => r.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<Color>(entity =>
-        {
-            entity.ToTable("Colors");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Name).HasMaxLength(50).IsRequired();
-            entity.Property(x => x.Code).HasMaxLength(20);
-            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         });
 
         modelBuilder.Entity<WishlistItem>(entity =>
@@ -269,16 +374,6 @@ public class DataContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<Size>(entity =>
-        {
-            entity.ToTable("Sizes");
-            entity.HasKey(x => x.Id);
-
-            entity.Property(x => x.Name).HasMaxLength(50).IsRequired();
-            entity.Property(x => x.SortOrder).HasDefaultValue(0);
-            entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
-        });
-
         modelBuilder.Entity<ProductVariant>(entity =>
         {
             entity.ToTable("ProductVariants");
@@ -292,6 +387,10 @@ public class DataContext : DbContext
 
             entity.Property(x => x.StockQuantity).HasDefaultValue(0);
             entity.Property(x => x.ReservedStock).HasDefaultValue(0);
+            entity.Property(x => x.WeightGram).HasDefaultValue(300);
+            entity.Property(x => x.LengthCm).HasDefaultValue(10);
+            entity.Property(x => x.WidthCm).HasDefaultValue(10);
+            entity.Property(x => x.HeightCm).HasDefaultValue(10);
             entity.Property(x => x.IsDefault).HasDefaultValue(false);
             entity.Property(x => x.IsActive).HasDefaultValue(true);
             entity.Property(x => x.IsDeleted).HasDefaultValue(false);
@@ -299,14 +398,14 @@ public class DataContext : DbContext
             entity.Property(x => x.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(x => x.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
 
-            entity.HasOne(x => x.Color)
-                .WithMany(c => c.Variants)
-                .HasForeignKey(x => x.ColorId)
+            entity.HasOne(x => x.OptionValue1)
+                .WithMany()
+                .HasForeignKey(x => x.OptionValue1Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(x => x.Size)
-                .WithMany(s => s.Variants)
-                .HasForeignKey(x => x.SizeId)
+            entity.HasOne(x => x.OptionValue2)
+                .WithMany()
+                .HasForeignKey(x => x.OptionValue2Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(x => x.Product)
@@ -434,6 +533,8 @@ public class DataContext : DbContext
             entity.Property(x => x.ProductName).HasMaxLength(255).IsRequired();
             entity.Property(x => x.ColorName).HasMaxLength(50);
             entity.Property(x => x.SizeName).HasMaxLength(50);
+            entity.Property(x => x.VariantDescription).HasMaxLength(255);
+            entity.Property(x => x.CommissionAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
             entity.Property(x => x.UnitPrice).HasColumnType("decimal(18,2)");
             entity.Property(x => x.LineTotal).HasColumnType("decimal(18,2)");
             entity.HasIndex(x => x.OrderId);
@@ -929,6 +1030,128 @@ public class DataContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── OrderDisputes & OrderDisputeMessages ──
+        modelBuilder.Entity<OrderDispute>(entity =>
+        {
+            entity.ToTable("OrderDisputes");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.DisputeCode).IsUnique();
+            entity.HasIndex(x => x.OrderId);
+            entity.HasIndex(x => x.CustomerId);
+            entity.HasIndex(x => x.ShopId);
+            entity.HasIndex(x => x.Status);
+
+            entity.HasOne(x => x.Order)
+                .WithMany()
+                .HasForeignKey(x => x.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Customer)
+                .WithMany()
+                .HasForeignKey(x => x.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Shop)
+                .WithMany()
+                .HasForeignKey(x => x.ShopId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Messages)
+                .WithOne(m => m.Dispute)
+                .HasForeignKey(m => m.DisputeId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OrderDisputeMessage>(entity =>
+        {
+            entity.ToTable("OrderDisputeMessages");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.DisputeId);
+
+            entity.HasOne(x => x.SenderAccount)
+                .WithMany()
+                .HasForeignKey(x => x.SenderAccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── Platform Upgrades ──
+        modelBuilder.Entity<SavedVoucher>(entity =>
+        {
+            entity.ToTable("SavedVouchers");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.AccountId, x.VoucherId }).IsUnique();
+            entity.HasIndex(x => x.AccountId);
+
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Voucher)
+                .WithMany()
+                .HasForeignKey(x => x.VoucherId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ShopFollower>(entity =>
+        {
+            entity.ToTable("ShopFollowers");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.FollowerAccountId, x.ShopId }).IsUnique();
+            entity.HasIndex(x => x.ShopId);
+
+            entity.HasOne(x => x.FollowerAccount)
+                .WithMany()
+                .HasForeignKey(x => x.FollowerAccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Shop)
+                .WithMany()
+                .HasForeignKey(x => x.ShopId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PayoutRequest>(entity =>
+        {
+            entity.ToTable("PayoutRequests");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(x => x.RequestCode).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(30).IsRequired().HasDefaultValue("Pending");
+            entity.HasIndex(x => x.RequestCode).IsUnique();
+            entity.HasIndex(x => x.ShopId);
+            entity.HasIndex(x => x.Status);
+
+            entity.HasOne(x => x.Shop)
+                .WithMany()
+                .HasForeignKey(x => x.ShopId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("AuditLogs");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.CreatedAt);
+            entity.HasIndex(x => x.Action);
+            entity.HasIndex(x => x.ActorAccountId);
+        });
+
+        modelBuilder.Entity<HomeBanner>(entity =>
+        {
+            entity.ToTable("HomeBanners");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.IsActive, x.SortOrder });
+        });
+
+        modelBuilder.Entity<PlatformCampaign>(entity =>
+        {
+            entity.ToTable("PlatformCampaigns");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => x.Slug).IsUnique();
+            entity.HasIndex(x => new { x.IsActive, x.StartDate, x.EndDate });
         });
     }
 }

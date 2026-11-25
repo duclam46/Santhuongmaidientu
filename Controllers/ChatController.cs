@@ -1,17 +1,28 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using DOAN_BANHANG.Models;
 using System.Security.Claims;
+using DOAN_BANHANG.Helpers;
+using DOAN_BANHANG.Hubs;
+using DOAN_BANHANG.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace DOAN_BANHANG.Controllers;
 
 public class ChatController : Controller
 {
     private readonly DataContext _db;
+    private readonly IHubContext<ChatHub> _hub;
 
-    public ChatController(DataContext db)
+    private static readonly HashSet<string> AllowedImageExts = new(StringComparer.OrdinalIgnoreCase)
+        { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+
+    private static readonly HashSet<string> AllowedVideoExts = new(StringComparer.OrdinalIgnoreCase)
+        { ".mp4", ".webm", ".mov" };
+
+    public ChatController(DataContext db, IHubContext<ChatHub> hub)
     {
         _db = db;
+        _hub = hub;
     }
 
     private int? GetAccountId()
@@ -20,12 +31,45 @@ public class ChatController : Controller
         return int.TryParse(claim, out var id) ? id : null;
     }
 
-    // GET /Chat — Inbox của customer
+    // GET /Chat — Hộp thư hỏi đáp của khách hàng
     [HttpGet]
-    public async Task<IActionResult> Index(int? id)
+    public async Task<IActionResult> Index(int? id, int? startShopId)
     {
         var accountId = GetAccountId();
-        if (!accountId.HasValue) return RedirectToAction("Login", "Auth", new { returnUrl = Request.Path + Request.QueryString });
+        if (!accountId.HasValue)
+        {
+            var guestReturn = $"{Request.Path}{Request.QueryString}";
+            ViewBag.IsGuest = true;
+            ViewBag.GuestReturnUrl = string.IsNullOrWhiteSpace(guestReturn) ? "/Chat" : guestReturn;
+            return View(new List<Conversation>());
+        }
+
+        ViewBag.IsGuest = false;
+
+        if (startShopId.HasValue && startShopId.Value != accountId.Value)
+        {
+            var isValidShop = await _db.Accounts
+                .AsNoTracking()
+                .AnyAsync(a => a.Id == startShopId.Value && !a.IsDeleted && a.Status == "Active");
+            if (isValidShop)
+            {
+                var targetConv = await _db.Conversations
+                    .FirstOrDefaultAsync(c => c.CustomerId == accountId.Value && c.ShopId == startShopId.Value);
+                if (targetConv == null)
+                {
+                    targetConv = new Conversation
+                    {
+                        CustomerId = accountId.Value,
+                        ShopId = startShopId.Value,
+                        CreatedAt = DateTime.UtcNow,
+                        LastMessageAt = DateTime.UtcNow
+                    };
+                    _db.Conversations.Add(targetConv);
+                    await _db.SaveChangesAsync();
+                }
+                id = targetConv.Id;
+            }
+        }
 
         var conversations = await _db.Conversations
             .Where(c => c.CustomerId == accountId || c.ShopId == accountId)
@@ -35,65 +79,199 @@ public class ChatController : Controller
             .OrderByDescending(c => c.LastMessageAt)
             .ToListAsync();
 
-        var account = await _db.Accounts.Include(a => a.Profile).FirstOrDefaultAsync(a => a.Id == accountId);
-        ViewBag.CurrentAccountId = accountId;
+        var convIds = conversations.Select(c => c.Id).ToList();
+        var unreadMap = new Dictionary<int, int>();
+        if (convIds.Count > 0)
+        {
+            var unreadRaw = await _db.Messages
+                .AsNoTracking()
+                .Where(m => convIds.Contains(m.ConversationId) && !m.IsDeleted && m.SenderId != accountId.Value)
+                .Select(m => new
+                {
+                    m.ConversationId,
+                    IsCustomerSide = m.Conversation!.CustomerId == accountId.Value,
+                    m.IsReadByCustomer,
+                    m.IsReadByShop
+                })
+                .ToListAsync();
+
+            foreach (var grp in unreadRaw.GroupBy(x => x.ConversationId))
+            {
+                unreadMap[grp.Key] = grp.Count(x => x.IsCustomerSide ? !x.IsReadByCustomer : !x.IsReadByShop);
+            }
+        }
+
+        var account = await _db.Accounts.AsNoTracking().Include(a => a.Profile).FirstOrDefaultAsync(a => a.Id == accountId);
+        ViewBag.CurrentAccountId = accountId.Value;
         ViewBag.CurrentRole = account?.Role;
+        ViewBag.UnreadByConv = unreadMap;
+        ViewBag.OnlineIds = ChatHub.GetOnlineAccountIds();
+
+        // Gợi ý gian hàng uy tín để khách có thể bấm nhắn tin ngay khi hộp thư trống
+        if (conversations.Count == 0)
+        {
+            var suggestedShops = await _db.Accounts
+                .AsNoTracking()
+                .Include(a => a.Profile)
+                .Where(a => !a.IsDeleted && a.Status == "Active" && a.Role == "Shop" && a.Id != accountId.Value)
+                .OrderByDescending(a => a.Profile != null && a.Profile.IsMall)
+                .ThenBy(a => a.Id)
+                .Take(4)
+                .ToListAsync();
+            ViewBag.SuggestedShops = suggestedShops;
+        }
 
         if (int.TryParse(Request.Query["attachProductId"], out int attachProductId))
         {
             ViewBag.AttachProduct = await _db.Products
+                .AsNoTracking()
                 .Include(p => p.Images)
                 .Include(p => p.Variants)
-                .FirstOrDefaultAsync(p => p.Id == attachProductId);
+                .FirstOrDefaultAsync(p => p.Id == attachProductId && !p.IsDeleted);
         }
 
-        if (conversations.Any())
+        if (conversations.Count > 0)
         {
             var activeConvId = id ?? conversations.First().Id;
-            var activeConv = await _db.Conversations
-                .Include(c => c.Customer).ThenInclude(a => a!.Profile)
-                .Include(c => c.Shop).ThenInclude(a => a!.Profile)
-                .FirstOrDefaultAsync(c => c.Id == activeConvId && (c.CustomerId == accountId || c.ShopId == accountId));
+            var activeConv = conversations.FirstOrDefault(c => c.Id == activeConvId) ?? conversations.First();
 
-            if (activeConv != null)
-            {
-                ViewBag.ActiveConversation = activeConv;
+            ViewBag.ActiveConversation = activeConv;
 
-                var messages = await _db.Messages
-                    .Where(m => m.ConversationId == activeConv.Id && !m.IsDeleted)
-                    .Include(m => m.Sender).ThenInclude(a => a!.Profile)
-                    .Include(m => m.AttachedProduct).ThenInclude(p => p!.Images)
-                    .Include(m => m.AttachedProduct).ThenInclude(p => p!.Variants)
-                    .Include(m => m.AttachedVoucher)
-                    .OrderBy(m => m.CreatedAt)
-                    .ToListAsync();
-                ViewBag.Messages = messages;
-            }
+            // Đánh dấu đã đọc khi mở
+            bool isCustomerSide = activeConv.CustomerId == accountId.Value;
+            var unreadQ = _db.Messages.Where(m => m.ConversationId == activeConv.Id && !m.IsDeleted);
+            if (isCustomerSide)
+                await unreadQ.Where(m => !m.IsReadByCustomer).ExecuteUpdateAsync(s => s.SetProperty(m => m.IsReadByCustomer, true));
+            else
+                await unreadQ.Where(m => !m.IsReadByShop).ExecuteUpdateAsync(s => s.SetProperty(m => m.IsReadByShop, true));
+
+            unreadMap[activeConv.Id] = 0;
+
+            var messages = await _db.Messages
+                .AsNoTracking()
+                .Where(m => m.ConversationId == activeConv.Id && !m.IsDeleted)
+                .Include(m => m.Sender).ThenInclude(a => a!.Profile)
+                .Include(m => m.AttachedProduct).ThenInclude(p => p!.Images)
+                .Include(m => m.AttachedProduct).ThenInclude(p => p!.Variants)
+                .Include(m => m.AttachedVoucher)
+                .OrderBy(m => m.CreatedAt)
+                .ToListAsync();
+
+            ViewBag.Messages = messages;
         }
 
         return View(conversations);
     }
 
+    // GET /Chat/GetMessages/{id} — Chuyển hội thoại mượt không reload trang
+    [HttpGet]
+    public async Task<IActionResult> GetMessages(int id)
+    {
+        var accountId = GetAccountId();
+        if (!accountId.HasValue) return Unauthorized();
 
+        var conv = await _db.Conversations
+            .AsNoTracking()
+            .Include(c => c.Customer).ThenInclude(a => a!.Profile)
+            .Include(c => c.Shop).ThenInclude(a => a!.Profile)
+            .FirstOrDefaultAsync(c => c.Id == id && (c.CustomerId == accountId || c.ShopId == accountId));
 
-    // POST /Chat/StartOrOpen — Customer bắt đầu chat với shop (có thể đính kèm sản phẩm)
+        if (conv == null) return Forbid();
+
+        bool isCustomerSide = conv.CustomerId == accountId.Value;
+        var unreadQ = _db.Messages.Where(m => m.ConversationId == id && !m.IsDeleted);
+        if (isCustomerSide)
+            await unreadQ.Where(m => !m.IsReadByCustomer).ExecuteUpdateAsync(s => s.SetProperty(m => m.IsReadByCustomer, true));
+        else
+            await unreadQ.Where(m => !m.IsReadByShop).ExecuteUpdateAsync(s => s.SetProperty(m => m.IsReadByShop, true));
+
+        await _hub.Clients.Group($"conversation_{id}")
+            .SendAsync("MessagesRead", new { conversationId = id, readByAccountId = accountId.Value });
+
+        var messages = await _db.Messages
+            .AsNoTracking()
+            .Where(m => m.ConversationId == id && !m.IsDeleted)
+            .Include(m => m.Sender).ThenInclude(a => a!.Profile)
+            .Include(m => m.AttachedProduct).ThenInclude(p => p!.Images)
+            .Include(m => m.AttachedProduct).ThenInclude(p => p!.Variants)
+            .Include(m => m.AttachedVoucher)
+            .OrderBy(m => m.CreatedAt)
+            .ToListAsync();
+
+        var partner = isCustomerSide ? conv.Shop : conv.Customer;
+        var partnerName = isCustomerSide
+            ? (partner?.Profile?.ShopName ?? partner?.Profile?.FullName ?? partner?.Email ?? "Gian hàng")
+            : (partner?.Profile?.FullName ?? partner?.Email ?? "Khách hàng");
+        var partnerAvatar = ImageUrlHelper.NormalizeStaticFileUrl(
+            isCustomerSide ? (partner?.Profile?.ShopLogoUrl ?? partner?.Profile?.AvatarUrl) : partner?.Profile?.AvatarUrl);
+        var partnerId = partner?.Id ?? 0;
+
+        var msgDtos = messages.Select(m =>
+        {
+            var prodImg = m.AttachedProduct?.Images.OrderByDescending(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault();
+            var prices = m.AttachedProduct?.Variants.Where(v => v.IsActive && !v.IsDeleted).Select(v => v.SalePrice ?? v.Price).ToList();
+            return new
+            {
+                id = m.Id,
+                conversationId = m.ConversationId,
+                senderId = m.SenderId,
+                content = m.Content,
+                messageType = m.MessageType,
+                isReadByCustomer = m.IsReadByCustomer,
+                isReadByShop = m.IsReadByShop,
+                createdAt = m.CreatedAt.ToString("o"),
+                product = m.AttachedProduct == null ? null : new
+                {
+                    id = m.AttachedProduct.Id,
+                    name = m.AttachedProduct.Name,
+                    slug = m.AttachedProduct.Slug,
+                    imageUrl = ImageUrlHelper.NormalizeStaticFileUrl(prodImg),
+                    price = prices != null && prices.Count > 0 ? prices.Min() : 0m
+                },
+                voucher = m.AttachedVoucher == null ? null : new
+                {
+                    id = m.AttachedVoucher.Id,
+                    code = m.AttachedVoucher.Code,
+                    discountType = m.AttachedVoucher.DiscountType,
+                    discountValue = m.AttachedVoucher.DiscountValue,
+                    minOrderValue = m.AttachedVoucher.MinOrderValue,
+                    endDate = m.AttachedVoucher.EndDate.AddHours(7).ToString("dd/MM/yyyy")
+                }
+            };
+        });
+
+        return Json(new
+        {
+            conversation = new
+            {
+                id = conv.Id,
+                partnerId,
+                partnerName,
+                partnerAvatar,
+                isMall = isCustomerSide && (partner?.Profile?.IsMall == true),
+                shopSlug = isCustomerSide ? partner?.Profile?.ShopSlug : null,
+                isOnline = ChatHub.IsAccountOnline(partnerId)
+            },
+            messages = msgDtos
+        });
+    }
+
+    // POST /Chat/StartOrOpen — Khách mở cuộc trò chuyện với Shop
     [HttpPost]
     public async Task<IActionResult> StartOrOpen([FromBody] StartChatRequest req)
     {
         try
         {
-            if (req == null) return BadRequest(new { error = "Request is null" });
+            if (req == null) return BadRequest(new { error = "Dữ liệu không hợp lệ." });
 
             var accountId = GetAccountId();
-            if (!accountId.HasValue) return Unauthorized(new { error = "Cần đăng nhập" });
+            if (!accountId.HasValue) return Unauthorized(new { error = "Cần đăng nhập để nhắn tin với Shop." });
 
-            var account = await _db.Accounts.FindAsync(accountId.Value);
-            if (account == null) return BadRequest(new { error = "Tài khoản không tồn tại" });
+            if (accountId.Value == req.ShopId)
+                return BadRequest(new { error = "Bạn không thể tự nhắn tin cho gian hàng của chính mình." });
 
-            if (accountId.Value == req.ShopId) return BadRequest(new { error = "Bạn không thể tự nhắn tin cho chính mình" });
-
-            var shop = await _db.Accounts.FindAsync(req.ShopId);
-            if (shop == null) return BadRequest(new { error = "Shop không tồn tại" });
+            var shop = await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == req.ShopId && !a.IsDeleted);
+            if (shop == null) return BadRequest(new { error = "Gian hàng không tồn tại." });
 
             var conv = await _db.Conversations
                 .FirstOrDefaultAsync(c => c.CustomerId == accountId && c.ShopId == req.ShopId);
@@ -111,31 +289,39 @@ public class ChatController : Controller
                 await _db.SaveChangesAsync();
             }
 
-            if (req.ProductId.HasValue)
+            // Chỉ tự động gửi thẻ sản phẩm nếu client yêu cầu rõ (AutoSendCard = true)
+            if (req.ProductId.HasValue && req.AutoSendCard)
             {
-                var product = await _db.Products
-                    .Include(p => p.Images)
-                    .Include(p => p.Variants)
-                    .FirstOrDefaultAsync(p => p.Id == req.ProductId);
-
+                var product = await _db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == req.ProductId && !p.IsDeleted);
                 if (product != null)
                 {
+                    var text = string.IsNullOrWhiteSpace(req.Message) ? "Tôi muốn hỏi về sản phẩm này." : req.Message.Trim();
                     var msg = new Message
                     {
                         ConversationId = conv.Id,
                         SenderId = accountId.Value,
-                        Content = req.Message ?? "Tôi muốn hỏi về sản phẩm này.",
+                        Content = text,
                         MessageType = "product_card",
                         AttachedProductId = req.ProductId,
+                        IsReadByCustomer = true,
+                        IsReadByShop = false,
                         CreatedAt = DateTime.UtcNow
                     };
                     _db.Messages.Add(msg);
                     conv.LastMessageAt = DateTime.UtcNow;
                     await _db.SaveChangesAsync();
+
+                    var dto = await ChatHub.BuildMessageDtoAsync(_db, msg.Id);
+                    if (dto != null)
+                    {
+                        await _hub.Clients.Group($"conversation_{conv.Id}").SendAsync("ReceiveMessage", dto);
+                        await _hub.Clients.Group($"shop_{conv.ShopId}")
+                            .SendAsync("NewMessageFromCustomer", new { conversationId = conv.Id, content = text, createdAt = DateTime.UtcNow.ToString("o") });
+                    }
                 }
             }
 
-            return Ok(new { conversationId = conv.Id });
+            return Ok(new { conversationId = conv.Id, attachProductId = req.ProductId });
         }
         catch (Exception ex)
         {
@@ -143,101 +329,121 @@ public class ChatController : Controller
         }
     }
 
-    // GET /Chat/UnreadCount — Badge số tin chưa đọc
-    [HttpGet]
+    // GET /Chat/UnreadCount — Badge số tin chưa đọc tách rõ Chat & Thông báo hệ thống
+    [HttpGet("/Chat/UnreadCount")]
     public async Task<IActionResult> UnreadCount()
     {
         var accountId = GetAccountId();
-        if (!accountId.HasValue) return Ok(new { count = 0 });
+        if (!accountId.HasValue) return Ok(new { count = 0, chatUnread = 0, sysUnread = 0, isSignedIn = false });
 
-        var account = await _db.Accounts.FindAsync(accountId.Value);
-        int count = 0;
+        var account = await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == accountId.Value && !a.IsDeleted);
+        if (account == null) return Ok(new { count = 0, chatUnread = 0, sysUnread = 0, isSignedIn = false });
 
-        if (account?.Role == "Customer")
-        {
-            count = await _db.Messages
-                .Where(m => !m.IsDeleted && !m.IsReadByCustomer
-                    && m.Conversation!.CustomerId == accountId
-                    && m.SenderId != accountId)
-                .CountAsync();
-        }
-        else if (account?.Role == "Shop")
-        {
-            count = await _db.Messages
-                .Where(m => !m.IsDeleted && !m.IsReadByShop
-                    && m.Conversation!.ShopId == accountId
-                    && m.SenderId != accountId)
-                .CountAsync();
-        }
-
-        // Cộng thêm thông báo hệ thống chưa đọc
-        var sysUnread = await _db.SystemNotifications
-            .Where(n => (n.TargetType == "All"
-                        || (n.TargetType == "Role" && n.TargetRole == account!.Role)
-                        || (n.TargetType == "Account" && n.TargetAccountId == accountId))
-                    && !n.Reads.Any(r => r.AccountId == accountId))
+        int chatUnread = await _db.Messages
+            .AsNoTracking()
+            .Where(m => !m.IsDeleted && m.SenderId != accountId.Value &&
+                ((m.Conversation!.CustomerId == accountId.Value && !m.IsReadByCustomer) ||
+                 (m.Conversation!.ShopId == accountId.Value && !m.IsReadByShop)))
             .CountAsync();
 
-        return Ok(new { count = count + sysUnread });
+        var sysUnread = await _db.SystemNotifications
+            .AsNoTracking()
+            .Where(n => (n.TargetType == "All"
+                        || (n.TargetType == "Role" && n.TargetRole == account.Role)
+                        || (n.TargetType == "Account" && n.TargetAccountId == accountId.Value))
+                    && !n.Reads.Any(r => r.AccountId == accountId.Value))
+            .CountAsync();
+
+        return Ok(new { count = chatUnread + sysUnread, chatUnread, sysUnread, isSignedIn = true, role = account.Role });
     }
 
-    // GET /Chat/GetLatestNotifications — Lấy 5 thông báo mới nhất cho dropdown admin
-    [HttpGet]
-    public async Task<IActionResult> GetLatestNotifications()
+    [HttpGet("/Chat/GetLatestNotifications")]
+    public async Task<IActionResult> GetLatestNotifications(int take = 12)
     {
         var accountId = GetAccountId();
         if (!accountId.HasValue) return Unauthorized();
 
-        var account = await _db.Accounts.FindAsync(accountId.Value);
-        
-        var notifications = await _db.SystemNotifications
+        var account = await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == accountId.Value && !a.IsDeleted);
+        if (account == null) return Unauthorized();
+
+        take = Math.Clamp(take, 1, 30);
+
+        var rawList = await _db.SystemNotifications
+            .AsNoTracking()
             .Where(n => n.TargetType == "All"
-                     || (n.TargetType == "Role" && n.TargetRole == account!.Role)
-                     || (n.TargetType == "Account" && n.TargetAccountId == accountId))
-            .Include(n => n.Reads.Where(r => r.AccountId == accountId))
+                     || (n.TargetType == "Role" && n.TargetRole == account.Role)
+                     || (n.TargetType == "Account" && n.TargetAccountId == accountId.Value))
+            .Include(n => n.Reads.Where(r => r.AccountId == accountId.Value))
             .OrderByDescending(n => n.CreatedAt)
-            .Take(5)
-            .Select(n => new {
+            .Take(take)
+            .ToListAsync();
+
+        var orderMap = await DOAN_BANHANG.Components.NotificationViewComponent.BuildOrderLinkMapAsync(
+            _db, accountId.Value, account.Role, rawList);
+
+        var notifications = rawList.Select(n =>
+        {
+            var meta = DOAN_BANHANG.Components.NotificationViewComponent.ResolveNotificationMeta(
+                n.Title, n.Content, account.Role, orderMap, accountId.Value);
+            return new
+            {
                 id = n.Id,
                 title = n.Title,
                 content = n.Content,
                 createdAt = n.CreatedAt,
-                isRead = n.Reads.Any()
-            })
-            .ToListAsync();
+                isRead = n.Reads.Any(),
+                categoryKey = meta.CategoryKey,
+                categoryLabel = meta.CategoryLabel,
+                iconClass = meta.IconClass,
+                actionUrl = meta.ActionUrl,
+                actionText = meta.ActionText
+            };
+        }).ToList();
 
         return Ok(notifications);
     }
 
-    // GET /Chat/SystemNotifications — Xem thông báo hệ thống
+    [HttpGet("/Chat/SystemNotifications")]
     public async Task<IActionResult> SystemNotifications()
     {
         var accountId = GetAccountId();
-        if (!accountId.HasValue) return RedirectToAction("Login", "Auth", new { returnUrl = Request.Path + Request.QueryString });
+        if (!accountId.HasValue)
+            return RedirectToAction("Index", "Home", new { requireLogin = "notifications", returnUrl = "/Chat/SystemNotifications" });
 
-        var account = await _db.Accounts.FindAsync(accountId.Value);
+        var account = await _db.Accounts
+            .AsNoTracking()
+            .Include(a => a.Profile)
+            .FirstOrDefaultAsync(a => a.Id == accountId.Value && !a.IsDeleted);
+        if (account == null)
+            return RedirectToAction("Index", "Home", new { requireLogin = "notifications", returnUrl = "/Chat/SystemNotifications" });
 
         var notifications = await _db.SystemNotifications
+            .AsNoTracking()
             .Where(n => n.TargetType == "All"
-                     || (n.TargetType == "Role" && n.TargetRole == account!.Role)
-                     || (n.TargetType == "Account" && n.TargetAccountId == accountId))
-            .Include(n => n.Reads.Where(r => r.AccountId == accountId))
+                     || (n.TargetType == "Role" && n.TargetRole == account.Role)
+                     || (n.TargetType == "Account" && n.TargetAccountId == accountId.Value))
+            .Include(n => n.Reads.Where(r => r.AccountId == accountId.Value))
             .OrderByDescending(n => n.CreatedAt)
             .ToListAsync();
 
-        ViewBag.AccountId = accountId;
+        var orderMap = await DOAN_BANHANG.Components.NotificationViewComponent.BuildOrderLinkMapAsync(
+            _db, accountId.Value, account.Role, notifications);
+
+        ViewBag.AccountId = accountId.Value;
+        ViewBag.UserRole = account.Role;
+        ViewBag.DisplayName = account.Profile?.ShopName ?? account.Profile?.FullName ?? account.Email;
+        ViewBag.OrderLinkMap = orderMap;
         return View(notifications);
     }
 
-    // POST /Chat/MarkSystemNotificationRead
-    [HttpPost]
+    [HttpPost("/Chat/MarkSystemNotificationRead")]
     public async Task<IActionResult> MarkSystemNotificationRead([FromBody] int notificationId)
     {
         var accountId = GetAccountId();
         if (!accountId.HasValue) return Unauthorized();
 
         var exists = await _db.SystemNotificationReads
-            .AnyAsync(r => r.SystemNotificationId == notificationId && r.AccountId == accountId);
+            .AnyAsync(r => r.SystemNotificationId == notificationId && r.AccountId == accountId.Value);
         if (!exists)
         {
             _db.SystemNotificationReads.Add(new SystemNotificationRead
@@ -248,30 +454,45 @@ public class ChatController : Controller
             });
             await _db.SaveChangesAsync();
         }
-        return Ok();
+        return Ok(new { ok = true });
     }
-    // POST /Chat/UploadMedia
+
+    // POST /Chat/UploadMedia — Bảo mật chặt đuôi file, MIME & dung lượng
     [HttpPost]
     public async Task<IActionResult> UploadMedia(IFormFile file)
     {
-        if (file == null || file.Length == 0) return BadRequest("Không có file nào được tải lên");
         var accountId = GetAccountId();
-        if (!accountId.HasValue) return Unauthorized();
+        if (!accountId.HasValue) return Unauthorized(new { error = "Cần đăng nhập để gửi tệp." });
+
+        if (file == null || file.Length == 0)
+            return BadRequest(new { error = "Không có tệp nào được tải lên." });
+
+        var ext = Path.GetExtension(file.FileName ?? string.Empty).ToLowerInvariant();
+        var isImage = AllowedImageExts.Contains(ext);
+        var isVideo = AllowedVideoExts.Contains(ext);
+
+        if (!isImage && !isVideo)
+            return BadRequest(new { error = "Chỉ hỗ trợ ảnh (JPG, PNG, WEBP, GIF) hoặc video (MP4, WEBM, MOV)." });
+
+        if (isImage && file.Length > 5 * 1024 * 1024)
+            return BadRequest(new { error = "Dung lượng ảnh tối đa là 5MB." });
+
+        if (isVideo && file.Length > 20 * 1024 * 1024)
+            return BadRequest(new { error = "Dung lượng video tối đa là 20MB." });
 
         var env = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
         var uploads = Path.Combine(env.WebRootPath, "uploads", "chat");
         if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
 
-        var ext = Path.GetExtension(file.FileName).ToLower();
-        var fileName = $"{Guid.NewGuid()}{ext}";
+        var fileName = $"{Guid.NewGuid():N}{ext}";
         var filePath = Path.Combine(uploads, fileName);
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        await using (var stream = new FileStream(filePath, FileMode.Create))
         {
             await file.CopyToAsync(stream);
         }
 
-        return Ok(new { url = $"/uploads/chat/{fileName}", type = file.ContentType.StartsWith("video") ? "video" : "image" });
+        return Ok(new { url = $"/uploads/chat/{fileName}", type = isVideo ? "video" : "image" });
     }
 }
 
@@ -280,4 +501,5 @@ public class StartChatRequest
     public int ShopId { get; set; }
     public int? ProductId { get; set; }
     public string? Message { get; set; }
+    public bool AutoSendCard { get; set; } = false;
 }

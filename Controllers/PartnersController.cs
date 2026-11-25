@@ -272,6 +272,33 @@ public class PartnersController : Controller
         var address = ComposeAddress(streetAddress, wardName, districtName, provinceName);
         if (address.Length > 500) address = address[..500];
 
+        var requestedTier = string.Equals(model.RequestedShopTier?.Trim(), "Mall", StringComparison.OrdinalIgnoreCase)
+            ? "Mall"
+            : "Standard";
+
+        var businessName = string.IsNullOrWhiteSpace(model.BusinessName) ? null : model.BusinessName.Trim();
+        if (businessName is not null && businessName.Length > 255) businessName = businessName[..255];
+
+        var businessTaxCode = string.IsNullOrWhiteSpace(model.BusinessTaxCode) ? null : model.BusinessTaxCode.Trim();
+        if (businessTaxCode is not null && businessTaxCode.Length > 50) businessTaxCode = businessTaxCode[..50];
+
+        var brandName = string.IsNullOrWhiteSpace(model.BrandName) ? null : model.BrandName.Trim();
+        if (brandName is not null && brandName.Length > 200) brandName = brandName[..200];
+
+        var businessLicenseUrl = string.IsNullOrWhiteSpace(model.BusinessLicenseUrl) ? null : model.BusinessLicenseUrl.Trim();
+        if (model.BusinessLicenseFile is not null && model.BusinessLicenseFile.Length > 0)
+        {
+            var uploadedLic = await SavePartnerDocAsync(model.BusinessLicenseFile, "licenses", cancellationToken);
+            if (!string.IsNullOrWhiteSpace(uploadedLic)) businessLicenseUrl = uploadedLic;
+        }
+
+        var brandAuthorizationUrl = string.IsNullOrWhiteSpace(model.BrandAuthorizationUrl) ? null : model.BrandAuthorizationUrl.Trim();
+        if (model.BrandAuthorizationFile is not null && model.BrandAuthorizationFile.Length > 0)
+        {
+            var uploadedAuth = await SavePartnerDocAsync(model.BrandAuthorizationFile, "authorizations", cancellationToken);
+            if (!string.IsNullOrWhiteSpace(uploadedAuth)) brandAuthorizationUrl = uploadedAuth;
+        }
+
         model.FullName = fullName;
         model.Email = email;
         model.PhoneNumber = phoneNumber;
@@ -285,10 +312,32 @@ public class PartnersController : Controller
         model.WardCode = wardCode;
         model.WardName = wardName;
         model.StreetAddress = streetAddress;
+        model.RequestedShopTier = requestedTier;
+        model.BusinessName = businessName;
+        model.BusinessTaxCode = businessTaxCode;
+        model.BrandName = brandName;
+        model.BusinessLicenseUrl = businessLicenseUrl;
+        model.BrandAuthorizationUrl = brandAuthorizationUrl;
 
         if (string.IsNullOrWhiteSpace(shopName))
         {
             ModelState.AddModelError(nameof(model.ShopName), "Vui lòng nhập tên cửa hàng/đối tác.");
+        }
+
+        if (requestedTier == "Mall")
+        {
+            if (string.IsNullOrWhiteSpace(businessName))
+            {
+                ModelState.AddModelError(nameof(model.BusinessName), "Đăng ký Sellzy Mall bắt buộc nhập Tên công ty / Pháp nhân.");
+            }
+            if (string.IsNullOrWhiteSpace(businessTaxCode))
+            {
+                ModelState.AddModelError(nameof(model.BusinessTaxCode), "Đăng ký Sellzy Mall bắt buộc nhập Mã số thuế doanh nghiệp.");
+            }
+            if (string.IsNullOrWhiteSpace(brandName))
+            {
+                ModelState.AddModelError(nameof(model.BrandName), "Đăng ký Sellzy Mall bắt buộc nhập Tên thương hiệu đăng ký.");
+            }
         }
 
         if (string.IsNullOrWhiteSpace(email) || !email.Contains('@', StringComparison.Ordinal))
@@ -412,6 +461,13 @@ public class PartnersController : Controller
                 WardCode = wardCode,
                 WardName = wardName,
                 StreetAddress = streetAddress,
+                RequestedShopTier = requestedTier,
+                ApplicationType = "NewRegistration",
+                BusinessName = requestedTier == "Mall" ? businessName : null,
+                BusinessTaxCode = requestedTier == "Mall" ? businessTaxCode : null,
+                BrandName = requestedTier == "Mall" ? brandName : null,
+                BusinessLicenseUrl = requestedTier == "Mall" ? businessLicenseUrl : null,
+                BrandAuthorizationUrl = requestedTier == "Mall" ? brandAuthorizationUrl : null,
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -419,7 +475,9 @@ public class PartnersController : Controller
 
             await _db.SaveChangesAsync(cancellationToken);
 
-            TempData["PartnerSuccess"] = "Đã gửi phiếu đăng ký đối tác. Vui lòng chờ Admin xét duyệt.";
+            TempData["PartnerSuccess"] = requestedTier == "Mall"
+                ? "Đã gửi hồ sơ đăng ký Sellzy Mall. Vui lòng chờ Admin thẩm định pháp lý và xét duyệt."
+                : "Đã gửi phiếu đăng ký Shop Thường. Vui lòng chờ Admin xét duyệt.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -477,6 +535,13 @@ public class PartnersController : Controller
             WardCode = wardCode,
             WardName = wardName,
             StreetAddress = streetAddress,
+            RequestedShopTier = requestedTier,
+            ApplicationType = "NewRegistration",
+            BusinessName = requestedTier == "Mall" ? businessName : null,
+            BusinessTaxCode = requestedTier == "Mall" ? businessTaxCode : null,
+            BrandName = requestedTier == "Mall" ? brandName : null,
+            BusinessLicenseUrl = requestedTier == "Mall" ? businessLicenseUrl : null,
+            BrandAuthorizationUrl = requestedTier == "Mall" ? brandAuthorizationUrl : null,
             Status = "Pending",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -486,8 +551,26 @@ public class PartnersController : Controller
 
         await RefreshSignInAsync(accountToCreate);
 
-        TempData["PartnerSuccess"] = "Đã gửi phiếu đăng ký đối tác. Vui lòng chờ Admin xét duyệt.";
+        TempData["PartnerSuccess"] = requestedTier == "Mall"
+            ? "Đã gửi hồ sơ đăng ký Sellzy Mall. Vui lòng chờ Admin thẩm định pháp lý và xét duyệt."
+            : "Đã gửi phiếu đăng ký Shop Thường. Vui lòng chờ Admin xét duyệt.";
         return RedirectToAction(nameof(Index));
+    }
+
+    private static async Task<string?> SavePartnerDocAsync(Microsoft.AspNetCore.Http.IFormFile file, string folder, CancellationToken ct)
+    {
+        if (file == null || file.Length <= 0) return null;
+        var ext = System.IO.Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".pdf" };
+        if (string.IsNullOrWhiteSpace(ext) || !allowed.Contains(ext)) ext = ".png";
+
+        var dir = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", "uploads", "partners", folder);
+        System.IO.Directory.CreateDirectory(dir);
+        var fileName = $"{Guid.NewGuid():N}{ext}";
+        var fullPath = System.IO.Path.Combine(dir, fileName);
+        await using var stream = System.IO.File.Create(fullPath);
+        await file.CopyToAsync(stream, ct);
+        return $"/uploads/partners/{folder}/{fileName}";
     }
 
     private async Task RefreshSignInAsync(Account account)

@@ -112,122 +112,141 @@
 }
 
 <!-- ========== Breadcrumb Section Start ========== -->
-<div class="container py-12">
-  <div class="breadcrumb">
-    <ul>
-      <li>
-        <a href='@Url.Action("Index", "Home")'>
-          <span class="inline-flex items-center justify-center">
-            <i class="hgi hgi-stroke hgi-home-01 text-2xl leading-6"></i>
-          </span>
-          Home
-        </a>
-      </li>
-      <li class="text-light-disabled-text">&#8226;</li>
-      <li><span class="text-sm leading-[22px]">Tài khoản</span></li>
-    </ul>
+<div class="sz-acc-shell">
+  <div class="container pt-8 pb-4">
+    <div class="breadcrumb">
+      <ul>
+        <li>
+          <a href='@Url.Action("Index", "Home")'>
+            <span class="inline-flex items-center justify-center">
+              <i class="hgi hgi-stroke hgi-home-01 text-xl leading-6"></i>
+            </span>
+            Trang chủ
+          </a>
+        </li>
+        <li class="text-light-disabled-text">&#8226;</li>
+        <li><span class="text-sm leading-[22px] font-semibold text-slate-600">Tài khoản của tôi</span></li>
+      </ul>
+    </div>
   </div>
-</div>
 <!-- ========== Breadcrumb Section End ========== -->
 
 <section class="pb-[90px]">
   <div class="container">
     <div class="grid grid-cols-12 gap-y-6 lg:gap-x-6">
       <div class="xl:col-span-3 lg:col-span-4 col-span-12">
-        <div class="border border-gray-300 rounded-2xl p-6">
-          <div class="flex items-center gap-x-4 pb-6 border-b border-gray-300">
-            <div class="size-14 rounded-full overflow-hidden bg-gray-200">
+        <div class="sz-acc-sidebar-card">
+          <div class="sz-acc-profile-head">
+            <div class="sz-acc-avatar-ring">
               <img src="@(ResolveImageUrl(account?.AvatarUrl))" alt="Avatar" class="w-full h-full object-cover" />
             </div>
-            <div>
-              <p class="text-sm leading-[22px] text-light-secondary-text">Xin chào</p>
-              <p id="my-account-display-name-left" class="text-base leading-6 text-light-primary-text font-semibold">@displayName</p>
+            <div class="min-w-0">
+              <p class="text-[11px] uppercase tracking-wider text-teal-100/80 font-semibold">Thành viên Sellzy</p>
+              <p id="my-account-display-name-left" class="text-base leading-6 text-white font-bold truncate">@displayName</p>
               @if (Model.IsSignedIn)
               {
-                <p class="text-xs leading-[18px] text-light-secondary-text">@account!.Email</p>
+                <p class="text-xs leading-[18px] text-teal-100/85 truncate">@account!.Email</p>
               }
             </div>
           </div>
 
-          <ul class="my-account-menu flex flex-col gap-y-1 pt-6">
+          <ul class="my-account-menu flex flex-col gap-y-1 p-4">
             <li>
-              <p class="px-2 pb-2 text-xs leading-[18px] text-primary font-semibold uppercase">Dashboard</p>
+              <p class="px-3 pb-1.5 pt-1 text-[11px] tracking-wider text-teal-700 font-extrabold uppercase">Tổng quan &amp; Mua sắm</p>
             </li>
             <li>
-              <button type="button" data-tab="dashboard" class="active w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+              <button type="button" data-tab="dashboard" class="sz-acc-nav-btn active w-full text-left px-3.5 py-2.5 rounded-xl font-semibold">
                 <span class="inline-flex items-center gap-x-3">
-                  <i class="hgi hgi-stroke hgi-dashboard-square-01 text-xl"></i>
+                  <i class="hgi hgi-stroke hgi-dashboard-square-01 text-lg"></i>
                   Tổng quan
                 </span>
               </button>
             </li>
             <li>
-              <button type="button" data-tab="orders" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+              <button type="button" data-tab="orders" class="sz-acc-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl font-semibold">
                 <span class="inline-flex items-center gap-x-3">
-                  <i class="hgi hgi-stroke hgi-package text-xl"></i>
-                  Đơn hàng
+                  <i class="hgi hgi-stroke hgi-package text-lg"></i>
+                  Đơn mua của tôi
                 </span>
               </button>
             </li>
             <li>
-              <a href="/my-wallet" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-blue-50 hover:text-blue-600 transition-colors duration-300" style="background: linear-gradient(135deg, rgba(37,99,235,0.06), rgba(124,58,237,0.02))">
+              <a href="/my-disputes" class="sz-acc-nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold">
                 <span class="inline-flex items-center gap-x-3">
-                  <span style="font-size:18px;">💳</span>
-                  Số dư tài khoản
+                  <i class="hgi hgi-stroke hgi-justice-scale-01 text-lg"></i>
+                  Khiếu nại &amp; Tranh chấp
                 </span>
-                <i class="hgi hgi-stroke hgi-arrow-right-01 text-xs text-blue-500"></i>
+                <i class="hgi hgi-stroke hgi-arrow-right-01 text-xs opacity-60"></i>
+              </a>
+            </li>
+            <li>
+              <a href="/my-wallet" class="sz-acc-nav-btn sz-acc-wallet-link w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold">
+                <span class="inline-flex items-center gap-x-3">
+                  <i class="hgi hgi-stroke hgi-wallet-02 text-lg"></i>
+                  Ví Sellzy &amp; Số dư
+                </span>
+                <i class="hgi hgi-stroke hgi-arrow-right-01 text-xs"></i>
+              </a>
+            </li>
+            <li>
+              <a href="/my-vouchers" class="sz-acc-nav-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold">
+                <span class="inline-flex items-center gap-x-3">
+                  <i class="hgi hgi-stroke hgi-ticket-01 text-lg"></i>
+                  Kho Voucher của tôi
+                </span>
+                <i class="hgi hgi-stroke hgi-arrow-right-01 text-xs opacity-60"></i>
               </a>
             </li>
 
-            <li class="pt-4 mt-3 border-t border-gray-200">
-              <p class="px-2 pb-2 text-xs leading-[18px] text-primary font-semibold uppercase">Account settings</p>
+            <li class="pt-3 mt-2 border-t border-slate-100">
+              <p class="px-3 pb-1.5 text-[11px] tracking-wider text-teal-700 font-extrabold uppercase">Thiết lập tài khoản</p>
             </li>
             <li>
-              <button type="button" data-tab="account-details" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+              <button type="button" data-tab="account-details" class="sz-acc-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl font-semibold">
                 <span class="inline-flex items-center gap-x-3">
-                  <i class="hgi hgi-stroke hgi-user-circle text-xl"></i>
+                  <i class="hgi hgi-stroke hgi-user-circle text-lg"></i>
                   Thông tin cá nhân
                 </span>
               </button>
             </li>
             <li>
-              <button type="button" data-tab="password" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+              <button type="button" data-tab="password" class="sz-acc-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl font-semibold">
                 <span class="inline-flex items-center gap-x-3">
-                  <i class="hgi hgi-stroke hgi-lock-sync-01 text-xl"></i>
+                  <i class="hgi hgi-stroke hgi-lock-sync-01 text-lg"></i>
                   Đổi mật khẩu
                 </span>
               </button>
             </li>
             <li>
-              <button type="button" data-tab="address" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+              <button type="button" data-tab="address" class="sz-acc-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl font-semibold">
                 <span class="inline-flex items-center gap-x-3">
-                  <i class="hgi hgi-stroke hgi-location-01 text-xl"></i>
-                  Địa chỉ
+                  <i class="hgi hgi-stroke hgi-location-01 text-lg"></i>
+                  Sổ địa chỉ
                 </span>
               </button>
             </li>
             <li>
-              <button type="button" data-tab="wishlist" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+              <button type="button" data-tab="wishlist" class="sz-acc-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl font-semibold">
                 <span class="inline-flex items-center gap-x-3">
-                  <i class="hgi hgi-stroke hgi-favourite text-xl"></i>
-                  Yêu thích
+                  <i class="hgi hgi-stroke hgi-favourite text-lg"></i>
+                  Sản phẩm yêu thích
                 </span>
               </button>
             </li>
             <li>
-              <button type="button" data-tab="reviews" class="w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+              <button type="button" data-tab="reviews" class="sz-acc-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl font-semibold">
                 <span class="inline-flex items-center gap-x-3">
-                  <i class="hgi hgi-stroke hgi-star text-xl"></i>
-                  Reviews
+                  <i class="hgi hgi-stroke hgi-star text-lg"></i>
+                  Đánh giá của tôi
                 </span>
               </button>
             </li>
             @if (Model.IsSignedIn)
             {
-              <li class="pt-3">
-                <button type="button" data-tab="logout" class="logout-btn w-full text-left px-4 py-3 rounded-xl text-light-primary-text font-semibold hover:bg-primary/8 hover:text-primary transition-colors duration-300">
+              <li class="pt-3 mt-2 border-t border-slate-100">
+                <button type="button" data-tab="logout" class="logout-btn sz-acc-nav-btn sz-acc-logout-btn w-full text-left px-3.5 py-2.5 rounded-xl font-semibold">
                   <span class="inline-flex items-center gap-x-3">
-                    <i class="hgi hgi-stroke hgi-logout-01 text-xl"></i>
+                    <i class="hgi hgi-stroke hgi-logout-01 text-lg"></i>
                     Đăng xuất
                   </span>
                 </button>
@@ -238,18 +257,20 @@
       </div>
 
       <div class="xl:col-span-9 lg:col-span-8 col-span-12">
-        <div class="border border-gray-300 rounded-2xl p-6">
+        <div class="sz-acc-main-card">
           <div id="my-account-ajax-message" class="mb-6 p-4 rounded-2xl hidden"></div>
           @if (TempData["AccountSuccess"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
           {
-            <div class="my-account-status-message mb-6 p-4 rounded-2xl bg-success-light text-light-primary-text">
-              @okMsg
+            <div class="my-account-status-message mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-semibold text-sm flex items-center gap-2.5">
+              <i class="hgi hgi-stroke hgi-checkmark-circle-02 text-emerald-600 text-lg"></i>
+              <span>@okMsg</span>
             </div>
           }
           @if (TempData["AccountError"] is string errMsg && !string.IsNullOrWhiteSpace(errMsg))
           {
-            <div class="my-account-status-message mb-6 p-4 rounded-2xl bg-warning-light text-light-primary-text">
-              @errMsg
+            <div class="my-account-status-message mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 font-semibold text-sm flex items-center gap-2.5">
+              <i class="hgi hgi-stroke hgi-alert-circle text-amber-600 text-lg"></i>
+              <span>@errMsg</span>
             </div>
           }
 
@@ -257,145 +278,121 @@
             <div id="dashboard" class="menu-tab-pane">
               @if (!Model.IsSignedIn)
               {
-                <h4 class="pb-3">Bạn chưa đăng nhập</h4>
-                <p class="text-light-secondary-text pb-6">
-                  Vui lòng đăng nhập để xem thông tin tài khoản.
-                </p>
-                <a href="#" class="btn btn-primary login-page-btn">Đăng nhập</a>
+                <div class="text-center py-12">
+                  <div class="w-16 h-16 rounded-2xl bg-teal-50 text-teal-700 inline-flex items-center justify-center text-3xl mb-4">
+                    <i class="hgi hgi-stroke hgi-user-circle"></i>
+                  </div>
+                  <h4 class="pb-2 text-slate-900 font-extrabold">Bạn chưa đăng nhập</h4>
+                  <p class="text-slate-500 pb-6 text-sm">
+                    Vui lòng đăng nhập để quản lý đơn hàng, ví Sellzy và thông tin cá nhân của bạn.
+                  </p>
+                  <a href="#" class="btn btn-primary rounded-full px-8 login-page-btn">Đăng nhập ngay</a>
+                </div>
               }
               else
               {
                 var orders = Model.Account?.Orders ?? new List<OrderSummaryVm>();
                 var totalOrders = orders.Count;
                 var completedOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "completed");
-                var processingOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey is "pending-confirmation" or "awaiting-pickup");
+                var processingOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey is "pending-confirmation" or "awaiting-pickup" or "delivering");
                 var cancelledOrdersCount = orders.Count(o => ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer).tabKey == "cancelled");
-                var wishlistCount = 0;
+                var wishlistCount = Model.Account?.WishlistItems?.Count ?? 0;
                 var reviewsCount = Model.Account?.ReviewsTotalCount ?? 0;
                 var recentOrders = orders.Take(5).ToList();
                 var recentReviews = Model.Account?.RecentReviews ?? new List<ReviewSummaryVm>();
 
-                <div class="pb-6">
-                  <h3 class="text-light-primary-text">Tổng quan</h3>
-                  <p class="text-light-secondary-text pt-1">
-                    Xin chào <span id="my-account-display-name-dashboard" class="text-light-primary-text font-semibold">@displayName</span>.
-                  </p>
+                <div class="sz-acc-dash-hero mb-6">
+                  <div>
+                    <span class="sz-acc-hero-kicker">BẢNG ĐIỀU KHIỂN CÁ NHÂN</span>
+                    <h3 class="text-white font-extrabold text-2xl mt-1 mb-1">
+                      Xin chào, <span id="my-account-display-name-dashboard">@displayName</span>!
+                    </h3>
+                    <p class="text-teal-100/85 text-sm">
+                      Theo dõi đơn hàng, quản lý số dư ví và cập nhật thông tin tài khoản của bạn tại một nơi duy nhất.
+                    </p>
+                  </div>
+                  <div class="sz-acc-wallet-hero-box">
+                    <div class="text-xs text-teal-100/85 font-semibold mb-0.5">Số dư Ví Sellzy</div>
+                    <div id="dashboard-wallet-balance" class="text-2xl font-extrabold text-white tracking-tight">Đang tải...</div>
+                    <a href="/my-wallet" class="sz-acc-wallet-cta mt-2.5">
+                      <i class="hgi hgi-stroke hgi-wallet-add-01"></i>
+                      <span>Nạp tiền / Lịch sử ví</span>
+                    </a>
+                  </div>
                 </div>
 
                 <div class="grid grid-cols-12 gap-4">
-                  <!-- Card Số dư tài khoản (Premium Wallet Style) -->
-                  <div class="md:col-span-4 col-span-12 rounded-2xl p-5 border border-blue-100 hover:border-blue-200 transition-all shadow-sm"
-                       style="background: linear-gradient(135deg, #eff6ff 0%, #faf5ff 100%)">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-x-3">
-                        <div class="size-12 rounded-2xl bg-blue-600 text-white inline-flex items-center justify-center shadow-md shadow-blue-500/20">
-                          <span style="font-size:20px;">💳</span>
-                        </div>
-                        <div>
-                          <p id="dashboard-wallet-balance" class="text-2xl leading-7 text-blue-700 font-bold">Đang tải...</p>
-                          <p class="text-xs leading-[18px] text-gray-500 font-medium">Số dư tài khoản</p>
-                        </div>
-                      </div>
-                      <a href="/my-wallet" class="btn btn-small rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 shadow-sm transition-all" style="font-size:11px">
-                        Nạp ngay
-                      </a>
+                  <div class="xl:col-span-4 md:col-span-6 col-span-12 sz-acc-kpi-card">
+                    <div class="sz-acc-kpi-icon kpi-teal"><i class="hgi hgi-stroke hgi-package"></i></div>
+                    <div>
+                      <p class="sz-acc-kpi-num">@totalOrders</p>
+                      <p class="sz-acc-kpi-lbl">Tổng đơn hàng</p>
                     </div>
                   </div>
 
-                  <div class="md:col-span-4 col-span-12 bg-success-lighter rounded-2xl p-5">
-                    <div class="flex items-center gap-x-4">
-                      <div class="size-12 rounded-2xl bg-success-light text-success-dark inline-flex items-center justify-center">
-                        <i class="hgi hgi-stroke hgi-package text-2xl leading-6"></i>
-                      </div>
-                      <div>
-                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@totalOrders</p>
-                        <p class="text-sm leading-[22px] text-light-secondary-text">Total Order</p>
-                      </div>
+                  <div class="xl:col-span-4 md:col-span-6 col-span-12 sz-acc-kpi-card">
+                    <div class="sz-acc-kpi-icon kpi-emerald"><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i></div>
+                    <div>
+                      <p class="sz-acc-kpi-num">@completedOrdersCount</p>
+                      <p class="sz-acc-kpi-lbl">Đơn hoàn tất</p>
                     </div>
                   </div>
 
-                  <div class="md:col-span-4 col-span-12 bg-primary-lighter rounded-2xl p-5">
-                    <div class="flex items-center gap-x-4">
-                      <div class="size-12 rounded-2xl bg-primary text-white inline-flex items-center justify-center">
-                        <i class="hgi hgi-stroke hgi-checkmark-circle-02 text-2xl leading-6"></i>
-                      </div>
-                      <div>
-                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@completedOrdersCount</p>
-                        <p class="text-sm leading-[22px] text-light-secondary-text">Completed Order</p>
-                      </div>
+                  <div class="xl:col-span-4 md:col-span-6 col-span-12 sz-acc-kpi-card">
+                    <div class="sz-acc-kpi-icon kpi-amber"><i class="hgi hgi-stroke hgi-time-quarter-pass"></i></div>
+                    <div>
+                      <p class="sz-acc-kpi-num">@processingOrdersCount</p>
+                      <p class="sz-acc-kpi-lbl">Đang xử lý / Giao</p>
                     </div>
                   </div>
 
-                  <div class="md:col-span-4 col-span-12 bg-warning-lighter rounded-2xl p-5">
-                    <div class="flex items-center gap-x-4">
-                      <div class="size-12 rounded-2xl bg-warning text-white inline-flex items-center justify-center">
-                        <i class="hgi hgi-stroke hgi-time-quarter-pass text-2xl leading-6"></i>
-                      </div>
-                      <div>
-                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@processingOrdersCount</p>
-                        <p class="text-sm leading-[22px] text-light-secondary-text">Pending Order</p>
-                      </div>
+                  <div class="xl:col-span-4 md:col-span-6 col-span-12 sz-acc-kpi-card">
+                    <div class="sz-acc-kpi-icon kpi-rose"><i class="hgi hgi-stroke hgi-cancel-01"></i></div>
+                    <div>
+                      <p class="sz-acc-kpi-num">@cancelledOrdersCount</p>
+                      <p class="sz-acc-kpi-lbl">Đơn đã hủy</p>
                     </div>
                   </div>
 
-                  <div class="md:col-span-4 col-span-12 bg-error-lighter rounded-2xl p-5">
-                    <div class="flex items-center gap-x-4">
-                      <div class="size-12 rounded-2xl bg-error text-white inline-flex items-center justify-center">
-                        <i class="hgi hgi-stroke hgi-cancel-01 text-2xl leading-6"></i>
-                      </div>
-                      <div>
-                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@cancelledOrdersCount</p>
-                        <p class="text-sm leading-[22px] text-light-secondary-text">Canceled Order</p>
-                      </div>
+                  <div class="xl:col-span-4 md:col-span-6 col-span-12 sz-acc-kpi-card">
+                    <div class="sz-acc-kpi-icon kpi-pink"><i class="hgi hgi-stroke hgi-favourite"></i></div>
+                    <div>
+                      <p class="sz-acc-kpi-num">@wishlistCount</p>
+                      <p class="sz-acc-kpi-lbl">Sản phẩm yêu thích</p>
                     </div>
                   </div>
 
-                  <div class="md:col-span-4 col-span-12 bg-gray-100 rounded-2xl p-5">
-                    <div class="flex items-center gap-x-4">
-                      <div class="size-12 rounded-2xl bg-primary-dark text-white inline-flex items-center justify-center">
-                        <i class="hgi hgi-stroke hgi-favourite text-2xl leading-6"></i>
-                      </div>
-                      <div>
-                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@wishlistCount</p>
-                        <p class="text-sm leading-[22px] text-light-secondary-text">Total Wishlist</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="md:col-span-4 col-span-12 bg-gray-100 rounded-2xl p-5">
-                    <div class="flex items-center gap-x-4">
-                      <div class="size-12 rounded-2xl bg-primary-darker text-white inline-flex items-center justify-center">
-                        <i class="hgi hgi-stroke hgi-star text-2xl leading-6"></i>
-                      </div>
-                      <div>
-                        <p class="text-2xl leading-7 text-light-primary-text font-semibold">@reviewsCount</p>
-                        <p class="text-sm leading-[22px] text-light-secondary-text">Total Reviews</p>
-                      </div>
+                  <div class="xl:col-span-4 md:col-span-6 col-span-12 sz-acc-kpi-card">
+                    <div class="sz-acc-kpi-icon kpi-slate"><i class="hgi hgi-stroke hgi-star"></i></div>
+                    <div>
+                      <p class="sz-acc-kpi-num">@reviewsCount</p>
+                      <p class="sz-acc-kpi-lbl">Đánh giá đã gửi</p>
                     </div>
                   </div>
                 </div>
 
-                <div class="grid grid-cols-12 gap-4 pt-6">
-                  <div class="lg:col-span-8 col-span-12 border border-gray-300 rounded-2xl overflow-x-auto">
-                    <div class="p-6 border-b border-gray-300">
-                      <h4 class="text-light-primary-text">Your Recent Order</h4>
+                <div class="grid grid-cols-12 gap-5 pt-6">
+                  <div class="lg:col-span-8 col-span-12 sz-acc-panel overflow-x-auto">
+                    <div class="sz-acc-panel-head">
+                      <h4 class="text-base font-extrabold text-slate-800 m-0">Đơn hàng gần đây</h4>
+                      <a href="/my-orders" class="text-xs font-bold text-teal-700 hover:underline">Xem tất cả →</a>
                     </div>
-                    <table class="w-full">
+                    <table class="w-full sz-acc-table">
                       <thead>
-                        <tr class="border-b border-gray-300 text-left">
-                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Order ID</th>
-                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Date</th>
-                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Status</th>
-                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Amount</th>
-                          <th class="py-4 px-6 text-sm leading-[22px] text-light-secondary-text font-semibold">Action</th>
+                        <tr>
+                          <th>Mã đơn</th>
+                          <th>Ngày đặt</th>
+                          <th>Trạng thái</th>
+                          <th>Tổng tiền</th>
+                          <th class="text-right">Thao tác</th>
                         </tr>
                       </thead>
                       <tbody>
                         @if (recentOrders.Count == 0)
                         {
                           <tr>
-                            <td class="py-5 px-6" colspan="5">
-                              <p class="text-light-secondary-text">Chưa có đơn hàng nào.</p>
+                            <td class="py-8 px-6 text-center text-slate-400 text-sm" colspan="5">
+                              Chưa có đơn hàng nào.
                             </td>
                           </tr>
                         }
@@ -404,28 +401,26 @@
                           foreach (var o in recentOrders)
                           {
                             var ui = ResolveOrderStatusUi(o.OrderStatus, o.IsReceivedByCustomer);
-                            <tr class="border-b border-gray-300">
-                              <td class="py-5 px-6 text-light-primary-text font-semibold">#@(!string.IsNullOrWhiteSpace(o.OrderCode) ? o.OrderCode : o.Id.ToString())</td>
-                              <td class="py-5 px-6 text-light-secondary-text">@o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
-                              <td class="py-5 px-6">
-                                <span class="@ui.pillClass">@ui.label</span>
-                              </td>
-                              <td class="py-5 px-6 text-light-primary-text font-semibold">@FormatVnd(o.FinalAmount)</td>
-                              <td class="py-5 px-6">
-                                  <div class="flex flex-wrap items-center gap-2">
-                                    <a class="btn btn-default outline btn-small rounded-full"
-                                       href='@Url.Action("OrderDetails", "Account", new { id = o.Id })'>Xem</a>
+                            <tr>
+                              <td class="font-bold text-slate-900">#@(!string.IsNullOrWhiteSpace(o.OrderCode) ? o.OrderCode : o.Id.ToString())</td>
+                              <td class="text-slate-500 text-xs">@o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                              <td><span class="@ui.pillClass">@ui.label</span></td>
+                              <td class="font-bold text-teal-700">@FormatVnd(o.FinalAmount)</td>
+                              <td class="text-right">
+                                <div class="inline-flex flex-wrap items-center justify-end gap-1.5">
+                                  <a class="sz-acc-mini-btn outline"
+                                     href='@Url.Action("OrderDetails", "Account", new { id = o.Id })'>Chi tiết</a>
 
-                                    @if (ui.tabKey is "pending-confirmation" or "awaiting-pickup")
-                                    {
-                                      <form method="post" action="/my-orders/cancel" class="inline-flex" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="Id" value="@o.Id" />
-                                        <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
-                                        <button type="submit" class="btn btn-small rounded-full bg-error text-white ring-1 ring-inset ring-error-dark/20">Hủy</button>
-                                      </form>
-                                    }
-                                  </div>
+                                  @if (ui.tabKey is "pending-confirmation" or "awaiting-pickup")
+                                  {
+                                    <form method="post" action="/my-orders/cancel" class="inline-flex" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');">
+                                      @Html.AntiForgeryToken()
+                                      <input type="hidden" name="Id" value="@o.Id" />
+                                      <input type="hidden" name="ReturnUrl" value="@($"{Context.Request.Path}{Context.Request.QueryString}")" />
+                                      <button type="submit" class="sz-acc-mini-btn danger">Hủy</button>
+                                    </form>
+                                  }
+                                </div>
                               </td>
                             </tr>
                           }
@@ -434,41 +429,41 @@
                     </table>
                   </div>
 
-                  <div class="lg:col-span-4 col-span-12 border border-gray-300 rounded-2xl overflow-hidden">
-                    <div class="p-6 border-b border-gray-300">
-                      <h4 class="text-light-primary-text">Your Recent Reviews</h4>
+                  <div class="lg:col-span-4 col-span-12 sz-acc-panel overflow-hidden">
+                    <div class="sz-acc-panel-head">
+                      <h4 class="text-base font-extrabold text-slate-800 m-0">Đánh giá gần đây</h4>
                     </div>
-                    <div class="p-6">
+                    <div class="p-5">
                       @if (recentReviews.Count == 0)
                       {
-                        <p class="text-light-secondary-text">Chưa có đánh giá nào.</p>
+                        <p class="text-slate-400 text-sm text-center py-6">Chưa có đánh giá nào.</p>
                       }
                       else
                       {
-                        <div class="flex flex-col gap-y-5">
+                        <div class="flex flex-col gap-y-4">
                           @foreach (var r in recentReviews)
                           {
                             var img = string.IsNullOrWhiteSpace(r.ProductImageUrl)
                               ? Url.Content("~/assets/images/product-details/product-details-1.png")
                               : ResolveImageUrl(r.ProductImageUrl);
 
-                            <div class="flex gap-x-4">
-                              <div class="size-16 rounded-2xl overflow-hidden bg-gray-200 shrink-0">
+                            <div class="flex gap-x-3 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
+                              <div class="size-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                                 <img src="@img" alt="@r.ProductName" class="w-full h-full object-cover" />
                               </div>
-                              <div class="min-w-0">
-                                <div class="flex items-start justify-between gap-x-3">
-                                  <a class="text-light-primary-text font-semibold truncate" href='@Url.RouteUrl("product_details", new { slug = r.ProductSlug })'>@r.ProductName</a>
-                                  <span class="inline-flex items-center gap-x-1 shrink-0">
+                              <div class="min-w-0 flex-1">
+                                <a class="text-slate-800 text-sm font-bold truncate block hover:text-teal-700" href='@Url.RouteUrl("product_details", new { slug = r.ProductSlug })'>@r.ProductName</a>
+                                <div class="flex items-center justify-between gap-2 mt-0.5">
+                                  <span class="inline-flex items-center gap-x-0.5">
                                     @for (var i = 1; i <= 5; i++)
                                     {
-                                      var starClass = i <= Math.Clamp(r.Rating, 0, 5) ? "text-warning" : "text-gray-300";
-                                      <i class="hgi hgi-stroke hgi-star text-base leading-4 @starClass"></i>
+                                      var starClass = i <= Math.Clamp(r.Rating, 0, 5) ? "text-amber-400" : "text-slate-200";
+                                      <i class="hgi hgi-stroke hgi-star text-xs @starClass"></i>
                                     }
                                   </span>
+                                  <span class="text-[11px] text-slate-400">@r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
                                 </div>
-                                <p class="text-xs leading-[18px] text-light-secondary-text pt-1">@r.CreatedAt.ToLocalTime().ToString("dd MMMM yyyy")</p>
-                                <p class="text-sm leading-[22px] text-light-secondary-text pt-2">
+                                <p class="text-xs text-slate-500 pt-1.5 line-clamp-2">
                                   @(string.IsNullOrWhiteSpace(r.Comment) ? "(Không có nội dung đánh giá.)" : r.Comment)
                                 </p>
                               </div>
@@ -483,187 +478,150 @@
             </div>
 
             <div id="account-details" class="menu-tab-pane hidden">
-              <h4 class="pb-6">Thông tin tài khoản</h4>
+              <div class="sz-acc-tab-header">
+                <div>
+                  <h4 class="text-xl font-extrabold text-slate-900 m-0">Thông tin cá nhân</h4>
+                  <p class="text-xs text-slate-500 mt-1">Cập nhật ảnh đại diện, họ tên và thông tin liên hệ của bạn.</p>
+                </div>
+              </div>
 
               @if (!Model.IsSignedIn)
               {
-                <p class="text-light-secondary-text">Vui lòng đăng nhập để xem thông tin.</p>
+                <p class="text-slate-500">Vui lòng đăng nhập để xem thông tin.</p>
               }
               else
               {
-                <div class="border border-gray-300 rounded-2xl">
-                  <div class="py-4 px-6 bg-gray-200 rounded-t-2xl">
-                    <h5 class="text-light-primary-text">Personal Information</h5>
+                <div class="sz-acc-panel">
+                  <div class="sz-acc-panel-head">
+                    <h5 class="text-sm font-extrabold text-slate-800 m-0">Hồ sơ thành viên</h5>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100">
+                      Đăng nhập: @(string.IsNullOrWhiteSpace(account!.AuthProvider) ? "Email" : account.AuthProvider)
+                    </span>
                   </div>
 
-                  <div class="px-6 py-6">
-                    <div class="flex flex-col gap-y-6">
-                      <form id="update-profile-form" method="post" action="/my-account/update-profile" enctype="multipart/form-data" class="flex flex-col gap-y-6">
-                        @Html.AntiForgeryToken()
+                  <div class="p-6">
+                    <form id="update-profile-form" method="post" action="/my-account/update-profile" enctype="multipart/form-data" class="flex flex-col gap-y-6">
+                      @Html.AntiForgeryToken()
 
-                        <div class="flex items-center justify-center">
-                          <div class="w-[144px] h-[144px] flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full hover:border-primary transition-all duration-300 ease-in-out">
-                            <label class="flex flex-col items-center justify-center w-[128px] h-[128px] bg-gray-100 rounded-full cursor-pointer overflow-hidden">
-                              <input type="file" name="AvatarFile" accept="image/*" class="hidden" />
+                      <div class="flex flex-col items-center justify-center">
+                        <div class="w-[132px] h-[132px] flex items-center justify-center border-2 border-dashed border-teal-300 rounded-full hover:border-teal-600 transition-all duration-300 bg-teal-50/40">
+                          <label class="flex flex-col items-center justify-center w-[116px] h-[116px] bg-slate-100 rounded-full cursor-pointer overflow-hidden relative group">
+                            <input type="file" name="AvatarFile" accept="image/*" class="hidden" />
 
-                              @if (!string.IsNullOrWhiteSpace(account!.AvatarUrl))
-                              {
-                                <img src="@(ResolveImageUrl(account.AvatarUrl))" alt="Avatar" class="w-full h-full object-cover" />
-                              }
-                              else
-                              {
-                                <svg class="w-6 h-6 text-light-secondary-text" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M3 8C3 8.55 3.45 9 4 9C4.55 9 5 8.55 5 8V6H7C7.55 6 8 5.55 8 5C8 4.45 7.55 4 7 4H5V2C5 1.45 4.55 1 4 1C3.45 1 3 1.45 3 2V4H1C0.45 4 0 4.45 0 5C0 5.55 0.45 6 1 6H3V8Z" fill="currentColor" />
-                                  <circle cx="13" cy="14" r="3" fill="currentColor" />
-                                  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.83 6H21C22.1 6 23 6.9 23 8V20C23 21.1 22.1 22 21 22H5C3.9 22 3 21.1 3 20V9.72C3.3 9.89 3.63 10 4 10C5.1 10 6 9.1 6 8V7H7C8.1 7 9 6.1 9 5C9 4.63 8.89 4.3 8.72 4H15.12C15.68 4 16.22 4.24 16.59 4.65L17.83 6ZM8 14C8 16.76 10.24 19 13 19C15.76 19 18 16.76 18 14C18 11.24 15.76 9 13 9C10.24 9 8 11.24 8 14Z" fill="currentColor" />
-                                </svg>
-                                <span class="mt-1 text-xs leading-[18px]">Upload photo</span>
-                              }
-                            </label>
-                          </div>
+                            @if (!string.IsNullOrWhiteSpace(account!.AvatarUrl))
+                            {
+                              <img src="@(ResolveImageUrl(account.AvatarUrl))" alt="Avatar" class="w-full h-full object-cover" />
+                            }
+                            else
+                            {
+                              <i class="hgi hgi-stroke hgi-camera-01 text-2xl text-teal-600"></i>
+                              <span class="mt-1 text-[11px] font-bold text-slate-500">Tải ảnh lên</span>
+                            }
+                          </label>
+                        </div>
+                        <span class="text-xs text-slate-400 mt-2">Nhấp vào ảnh để thay đổi (JPG, PNG, WEBP tối đa 2MB)</span>
+                      </div>
+
+                      <div class="grid md:grid-cols-2 grid-cols-1 gap-5">
+                        <div class="relative w-full">
+                          <input name="FullName" value="@(account!.FullName ?? string.Empty)" type="text" id="full_name" class="peer form-control input-group medium rounded-2xl px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Họ và tên" />
+                          <label for="full_name" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-teal-700 peer-placeholder-shown:text-[15px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                            Họ và tên
+                          </label>
                         </div>
 
-                        <div class="grid xl:grid-cols-2 md:grid-cols-2 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
-                          <div class="xl:col-span-1 md:col-span-1 col-span-1">
-                            <div class="relative w-full">
-                              <input name="FullName" value="@(account!.FullName ?? string.Empty)" type="text" id="full_name" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Họ và tên" />
-                              <label for="full_name" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                                Họ và tên
-                              </label>
-                            </div>
-                          </div>
+                        <div class="relative w-full">
+                          <input name="PhoneNumber" value="@(account!.PhoneNumber ?? string.Empty)" type="tel" id="phone_number" class="peer form-control input-group medium rounded-2xl px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Số điện thoại" />
+                          <label for="phone_number" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-teal-700 peer-placeholder-shown:text-[15px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                            Số điện thoại
+                          </label>
+                        </div>
+                      </div>
 
-                          <div class="xl:col-span-1 md:col-span-1 col-span-1">
-                            <div class="relative w-full">
-                              <input name="PhoneNumber" value="@(account!.PhoneNumber ?? string.Empty)" type="tel" id="phone_number" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Số điện thoại" />
-                              <label for="phone_number" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                                Số điện thoại
-                              </label>
-                            </div>
-                          </div>
+                      <div class="grid md:grid-cols-2 grid-cols-1 gap-5">
+                        <div class="relative w-full">
+                          <input value="@account!.Email" type="email" id="email_address" class="peer form-control input-group medium rounded-2xl px-3.5 bg-slate-50 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Email" readonly />
+                          <label for="email_address" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-teal-700 peer-placeholder-shown:text-[15px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                            Email (cố định)
+                          </label>
                         </div>
 
-                        <div class="grid xl:grid-cols-2 md:grid-cols-2 grid-cols-1 md:gap-x-4 gap-x-0 gap-y-6">
-                          <div class="xl:col-span-1 md:col-span-1 col-span-1">
-                            <div class="relative w-full">
-                              <input value="@account!.Email" type="email" id="email_address" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Email" readonly />
-                              <label for="email_address" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                                Email
-                              </label>
-                            </div>
-                          </div>
-
-                          <div class="xl:col-span-1 md:col-span-1 col-span-1">
-                            <div class="relative w-full">
-                              <input name="Address" value="@(account!.Address ?? string.Empty)" type="text" id="profile_address" class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Địa chỉ" />
-                              <label for="profile_address" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                                Địa chỉ
-                              </label>
-                            </div>
-                          </div>
+                        <div class="relative w-full">
+                          <input name="Address" value="@(account!.Address ?? string.Empty)" type="text" id="profile_address" class="peer form-control input-group medium rounded-2xl px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Địa chỉ" />
+                          <label for="profile_address" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-teal-700 peer-placeholder-shown:text-[15px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                            Địa chỉ liên hệ
+                          </label>
                         </div>
+                      </div>
 
-                        <div class="flex items-center justify-between gap-x-4">
-                          <span class="text-sm leading-[22px] text-light-secondary-text">Đăng nhập bằng: @(string.IsNullOrWhiteSpace(account!.AuthProvider) ? "local" : account.AuthProvider)</span>
-
-                          <div class="text-end">
-                            <button type="submit" class="btn btn-primary btn-large md:px-[42px] w-[45%] md:w-auto py-[11px] rounded-[100px]">
-                              Save
-                            </button>
-                          </div>
-                        </div>
-                      </form>
-                    </div>
+                      <div class="flex items-center justify-end pt-2 border-t border-slate-100">
+                        <button type="submit" class="btn btn-primary btn-large px-10 py-3 rounded-full font-bold">
+                          Lưu thay đổi
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               }
             </div>
 
             <div id="password" class="menu-tab-pane hidden">
-              <h4 class="pb-6">Đổi mật khẩu</h4>
+              <div class="sz-acc-tab-header">
+                <div>
+                  <h4 class="text-xl font-extrabold text-slate-900 m-0">Bảo mật &amp; Đổi mật khẩu</h4>
+                  <p class="text-xs text-slate-500 mt-1">Đặt mật khẩu mạnh tối thiểu 6 ký tự để bảo vệ tài khoản và Ví Sellzy.</p>
+                </div>
+              </div>
 
               @if (!Model.IsSignedIn)
               {
-                <p class="text-light-secondary-text">Vui lòng đăng nhập để đổi mật khẩu.</p>
+                <p class="text-slate-500">Vui lòng đăng nhập để đổi mật khẩu.</p>
               }
               else
               {
-                <div class="border border-gray-300 rounded-2xl">
-                  <div class="py-4 px-6 bg-gray-200 rounded-t-2xl">
-                    <h5 class="text-light-primary-text">Password Change</h5>
+                <div class="sz-acc-panel">
+                  <div class="sz-acc-panel-head">
+                    <h5 class="text-sm font-extrabold text-slate-800 m-0">Cập nhật mật khẩu đăng nhập</h5>
                   </div>
 
-                  <div class="px-6 py-6">
-                    <form id="change-password-form" method="post" action="/my-account/change-password" class="flex flex-col gap-y-6">
+                  <div class="p-6">
+                    <form id="change-password-form" method="post" action="/my-account/change-password" class="flex flex-col gap-y-5 max-w-xl">
                       @Html.AntiForgeryToken()
 
                       @if (!account!.HasPassword)
                       {
-                        <p class="text-sm leading-[22px] text-light-secondary-text">
-                          Tài khoản này chưa có mật khẩu (đăng nhập Google). Bạn có thể thiết lập mật khẩu mới để đăng nhập bằng email/mật khẩu.
-                        </p>
+                        <div class="p-3.5 rounded-xl bg-teal-50 border border-teal-200 text-xs text-teal-900 font-semibold">
+                          Tài khoản này đăng nhập qua Google và chưa có mật khẩu riêng. Bạn có thể thiết lập mật khẩu mới ngay dưới đây.
+                        </div>
                       }
 
                       @if (account!.HasPassword)
                       {
                         <div class="relative w-full">
-                          <input
-                            name="CurrentPassword"
-                            type="password"
-                            id="current_password"
-                            autocomplete="current-password"
-                            class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                            placeholder="Mật khẩu hiện tại"
-                          />
-
-                          <label
-                            for="current_password"
-                            class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                          >
+                          <input name="CurrentPassword" type="password" id="current_password" autocomplete="current-password" class="peer form-control input-group medium rounded-2xl px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Mật khẩu hiện tại" />
+                          <label for="current_password" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-teal-700 peer-placeholder-shown:text-[15px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
                             Mật khẩu hiện tại
                           </label>
                         </div>
                       }
 
                       <div class="relative w-full">
-                        <input
-                          name="NewPassword"
-                          type="password"
-                          id="new_password"
-                          autocomplete="new-password"
-                          class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                          placeholder="Mật khẩu mới"
-                        />
-
-                        <label
-                          for="new_password"
-                          class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                        >
+                        <input name="NewPassword" type="password" id="new_password" autocomplete="new-password" class="peer form-control input-group medium rounded-2xl px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Mật khẩu mới" />
+                        <label for="new_password" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-teal-700 peer-placeholder-shown:text-[15px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
                           Mật khẩu mới
                         </label>
                       </div>
 
                       <div class="relative w-full">
-                        <input
-                          name="ConfirmPassword"
-                          type="password"
-                          id="confirm_new_password"
-                          autocomplete="new-password"
-                          class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                          placeholder="Xác nhận mật khẩu mới"
-                        />
-
-                        <label
-                          for="confirm_new_password"
-                          class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1"
-                        >
+                        <input name="ConfirmPassword" type="password" id="confirm_new_password" autocomplete="new-password" class="peer form-control input-group medium rounded-2xl px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none" placeholder="Xác nhận mật khẩu mới" />
+                        <label for="confirm_new_password" class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-teal-700 peer-placeholder-shown:text-[15px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
                           Xác nhận mật khẩu mới
                         </label>
                       </div>
 
-                      <div class="text-end">
-                        <button type="submit" class="btn btn-primary btn-large md:px-[22px] w-[45%] md:w-auto py-[11px] rounded-[100px]">
-                          Save Changes
+                      <div class="pt-2">
+                        <button type="submit" class="btn btn-primary btn-large px-8 py-3 rounded-full font-bold">
+                          Cập nhật mật khẩu
                         </button>
                       </div>
                     </form>
@@ -673,80 +631,85 @@
             </div>
 
             <div id="address" class="menu-tab-pane hidden">
-              <div class="flex items-center justify-between pb-6">
-                <h4>Địa chỉ</h4>
+              <div class="sz-acc-tab-header">
+                <div>
+                  <h4 class="text-xl font-extrabold text-slate-900 m-0">Sổ địa chỉ GHN</h4>
+                  <p class="text-xs text-slate-500 mt-1">Quản lý địa chỉ nhận hàng cá nhân và địa chỉ kho lấy hàng của Shop.</p>
+                </div>
                 @if (Model.IsSignedIn)
                 {
-                  <button type="button" class="btn btn-primary btn-medium rounded-full add-new-address-button">
-                    Thêm địa chỉ mới
+                  <button type="button" class="btn btn-primary btn-medium rounded-full px-5 add-new-address-button">
+                    + Thêm địa chỉ mới
                   </button>
                 }
               </div>
               @if (!Model.IsSignedIn)
               {
-                <p class="text-light-secondary-text">Vui lòng đăng nhập để xem thông tin.</p>
+                <p class="text-slate-500">Vui lòng đăng nhập để xem thông tin.</p>
               }
               else
               {
                 <div id="address-list-container">
                   @if (account!.Addresses.Count == 0)
                   {
-                    <div class="border border-gray-300 rounded-2xl p-6">
-                      <p class="text-light-secondary-text">
-                        Bạn chưa có địa chỉ nào. Nhấn <span class="font-semibold">Thêm địa chỉ mới</span> để tạo địa chỉ theo chuẩn GHN.
+                    <div class="sz-acc-panel p-8 text-center">
+                      <p class="text-slate-500 text-sm">
+                        Bạn chưa có địa chỉ nào. Nhấn <span class="font-bold text-teal-700">+ Thêm địa chỉ mới</span> để tạo địa chỉ chuẩn GHN.
                       </p>
                     </div>
                   }
                   else
                   {
-                    <div class="flex flex-col gap-y-4">
+                    <div class="flex flex-col gap-y-3.5">
                       @foreach (var a in account!.Addresses)
                       {
-                        var typeLabel = a.AddressType == 1 ? "Shop" : "Cá nhân";
+                        var typeLabel = a.AddressType == 1 ? "Kho Shop" : "Cá nhân";
                         var typeBadgeClass = a.AddressType == 1
-                          ? "bg-warning-light text-warning-dark"
-                          : "bg-gray-100 text-light-secondary-text";
-                        <div class="border border-gray-300 rounded-2xl p-5">
-                          <div class="flex items-start justify-between gap-x-4">
-                            <div class="min-w-0">
-                              <div class="flex items-center gap-x-2 pb-1">
-                                <p class="text-base leading-6 text-light-primary-text font-semibold truncate">@a.FullName</p>
-                                <span class="px-2 py-1 rounded-full text-xs @typeBadgeClass">@typeLabel</span>
+                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                          : "bg-slate-100 text-slate-600 border border-slate-200";
+                        <div class="sz-acc-address-card">
+                          <div class="flex flex-wrap items-start justify-between gap-4">
+                            <div class="min-w-0 flex-1">
+                              <div class="flex flex-wrap items-center gap-2 pb-1.5">
+                                <p class="text-base leading-6 text-slate-900 font-bold truncate">@a.FullName</p>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold @typeBadgeClass">@typeLabel</span>
                                 @if (a.IsDefault)
                                 {
-                                  <span class="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">Mặc định</span>
+                                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200">Mặc định</span>
                                 }
                               </div>
-                              <p class="text-sm leading-[22px] text-light-secondary-text pb-1">@a.PhoneNumber</p>
-                              <p class="text-sm leading-[22px] text-light-secondary-text">
+                              <p class="text-sm text-slate-600 font-semibold pb-1">@a.PhoneNumber</p>
+                              <p class="text-sm text-slate-500 leading-relaxed">
                                 @a.StreetAddress, @a.WardName, @a.DistrictName, @a.ProvinceName
                               </p>
                             </div>
 
-                            <button
-                              type="button"
-                              class="btn btn-default outline btn-medium rounded-full edit-address-button"
-                              data-address-id="@a.Id"
-                              data-full-name="@a.FullName"
-                              data-phone-number="@a.PhoneNumber"
-                              data-address-type="@a.AddressType"
-                              data-province-id="@a.ProvinceId"
-                              data-province-name="@a.ProvinceName"
-                              data-district-id="@a.DistrictId"
-                              data-district-name="@a.DistrictName"
-                              data-ward-code="@a.WardCode"
-                              data-ward-name="@a.WardName"
-                              data-street-address="@a.StreetAddress"
-                              data-is-default="@(a.IsDefault ? "1" : "0")">
-                              Sửa
-                            </button>
+                            <div class="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                class="btn btn-default outline btn-small rounded-full px-4 edit-address-button"
+                                data-address-id="@a.Id"
+                                data-full-name="@a.FullName"
+                                data-phone-number="@a.PhoneNumber"
+                                data-address-type="@a.AddressType"
+                                data-province-id="@a.ProvinceId"
+                                data-province-name="@a.ProvinceName"
+                                data-district-id="@a.DistrictId"
+                                data-district-name="@a.DistrictName"
+                                data-ward-code="@a.WardCode"
+                                data-ward-name="@a.WardName"
+                                data-street-address="@a.StreetAddress"
+                                data-is-default="@(a.IsDefault ? "1" : "0")">
+                                Sửa
+                              </button>
 
-                            <button
-                              type="button"
-                              class="btn btn-error btn-medium rounded-full delete-address-button"
-                              data-address-id="@a.Id">
-                              Xóa
-                            </button>
+                              <button
+                                type="button"
+                                class="btn btn-error btn-small rounded-full px-4 delete-address-button"
+                                data-address-id="@a.Id">
+                                Xóa
+                              </button>
+                            </div>
                           </div>
                         </div>
                       }
@@ -1266,8 +1229,345 @@
     </div>
   </div>
 </section>
+</div>
 
 <style>
+  .sz-acc-shell {
+    background: #eef2f6;
+    min-height: 78vh;
+    color: #0f172a;
+  }
+
+  .sz-acc-sidebar-card {
+    background: #ffffff;
+    border: 1px solid #dbe4ee;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  .sz-acc-profile-head {
+    background: linear-gradient(135deg, #022c22 0%, #065f5b 55%, #008374 100%);
+    padding: 22px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .sz-acc-profile-head p {
+    color: #d1fae5 !important;
+  }
+
+  .sz-acc-profile-head #my-account-display-name-left {
+    color: #ffffff !important;
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .sz-acc-avatar-ring {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2.5px solid #5eead4;
+    background: rgba(255, 255, 255, 0.18);
+    flex-shrink: 0;
+  }
+
+  .sz-acc-nav-btn {
+    color: #1e293b !important;
+    font-size: 13.5px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    background: transparent;
+  }
+
+  .sz-acc-nav-btn:hover {
+    background: #ecfdf5 !important;
+    color: #006d60 !important;
+  }
+
+  .sz-acc-nav-btn.active {
+    background: linear-gradient(135deg, #008374, #065f5b) !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 16px -4px rgba(0, 131, 116, 0.4);
+  }
+
+  .sz-acc-nav-btn.active i,
+  .sz-acc-nav-btn.active span {
+    color: #ffffff !important;
+  }
+
+  .sz-acc-wallet-link {
+    background: #ecfdf5 !important;
+    color: #065f5b !important;
+    border: 1px solid #99f6e4 !important;
+  }
+
+  .sz-acc-wallet-link:hover {
+    background: #ccfbf1 !important;
+    color: #043e37 !important;
+  }
+
+  .sz-acc-logout-btn {
+    color: #dc2626 !important;
+  }
+
+  .sz-acc-logout-btn:hover {
+    background: #fef2f2 !important;
+    color: #b91c1c !important;
+  }
+
+  .sz-acc-main-card {
+    background: #ffffff;
+    border: 1px solid #dbe4ee;
+    border-radius: 22px;
+    padding: 26px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  .sz-acc-dash-hero {
+    background: linear-gradient(135deg, #022c22 0%, #065f5b 55%, #008374 100%);
+    border-radius: 20px;
+    padding: 26px 28px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    box-shadow: 0 14px 32px -10px rgba(0, 131, 116, 0.42);
+  }
+
+  .sz-acc-dash-hero h3,
+  .sz-acc-dash-hero #my-account-display-name-dashboard {
+    color: #ffffff !important;
+  }
+
+  .sz-acc-dash-hero p {
+    color: #d1fae5 !important;
+  }
+
+  .sz-acc-hero-kicker {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #fde047 !important;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(253, 224, 71, 0.3);
+    padding: 3px 11px;
+    border-radius: 999px;
+  }
+
+  .sz-acc-wallet-hero-box {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    backdrop-filter: blur(8px);
+    border-radius: 16px;
+    padding: 16px 20px;
+    min-width: 230px;
+  }
+
+  .sz-acc-wallet-hero-box > div:first-child {
+    color: #d1fae5 !important;
+  }
+
+  .sz-acc-wallet-hero-box #dashboard-wallet-balance {
+    color: #ffffff !important;
+  }
+
+  .sz-acc-wallet-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fde047 !important;
+    color: #022c22 !important;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 7px 15px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .sz-acc-wallet-cta:hover {
+    background: #facc15 !important;
+    transform: translateY(-1px);
+  }
+
+  .sz-acc-kpi-card {
+    background: #f8fafc;
+    border: 1px solid #dbe4ee;
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .sz-acc-kpi-card:hover {
+    background: #ffffff;
+    border-color: #008374;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px -8px rgba(0, 131, 116, 0.2);
+  }
+
+  .sz-acc-kpi-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .kpi-teal { background: #008374; color: #ffffff; }
+  .kpi-emerald { background: #10b981; color: #ffffff; }
+  .kpi-amber { background: #f59e0b; color: #ffffff; }
+  .kpi-rose { background: #ef4444; color: #ffffff; }
+  .kpi-pink { background: #ec4899; color: #ffffff; }
+  .kpi-slate { background: #334155; color: #ffffff; }
+
+  .sz-acc-kpi-num {
+    font-size: 23px;
+    font-weight: 800;
+    color: #0f172a !important;
+    line-height: 1.2;
+  }
+
+  .sz-acc-kpi-lbl {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #475569 !important;
+    margin-top: 2px;
+  }
+
+  .sz-acc-panel {
+    background: #ffffff;
+    border: 1px solid #dbe4ee;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .sz-acc-panel-head {
+    padding: 14px 20px;
+    background: #f0fdfa;
+    border-bottom: 1px solid #ccfbf1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .sz-acc-panel-head h4,
+  .sz-acc-panel-head h5 {
+    color: #043e37 !important;
+    font-weight: 800;
+  }
+
+  .sz-acc-panel-head a {
+    color: #008374 !important;
+  }
+
+  .sz-acc-tab-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 18px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #dbe4ee;
+  }
+
+  .sz-acc-tab-header h4 {
+    color: #0f172a !important;
+  }
+
+  .sz-acc-tab-header p {
+    color: #475569 !important;
+  }
+
+  .sz-acc-table th {
+    padding: 12px 16px;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    color: #475569 !important;
+    background: #f8fafc;
+    border-bottom: 1px solid #dbe4ee;
+    text-align: left;
+  }
+
+  .sz-acc-table td {
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .sz-acc-table tr:hover td {
+    background: #f8fafc;
+  }
+
+  .sz-acc-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .sz-acc-mini-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 13px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+
+  .sz-acc-mini-btn.outline {
+    background: #ecfdf5;
+    color: #065f5b !important;
+    border-color: #99f6e4;
+  }
+
+  .sz-acc-mini-btn.outline:hover {
+    background: #008374;
+    color: #ffffff !important;
+  }
+
+  .sz-acc-mini-btn.danger {
+    background: #fef2f2;
+    color: #dc2626 !important;
+    border-color: #fecaca;
+  }
+
+  .sz-acc-mini-btn.danger:hover {
+    background: #dc2626;
+    color: #ffffff !important;
+  }
+
+  .sz-acc-address-card {
+    background: #ffffff;
+    border: 1px solid #dbe4ee;
+    border-radius: 16px;
+    padding: 18px 20px;
+    transition: all 0.2s ease;
+  }
+
+  .sz-acc-address-card:hover {
+    border-color: #008374;
+    box-shadow: 0 8px 20px -8px rgba(0, 131, 116, 0.16);
+  }
+
   /* GHN address selects use jquery.niceSelect; keep controls fixed-size and make long lists scrollable */
   #add-address .nice-select,
   #edit-address .nice-select {

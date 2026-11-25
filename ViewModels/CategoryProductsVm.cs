@@ -40,5 +40,31 @@ public class CategoryProductsVm
 
     public IReadOnlyList<CategoryFilterVm> ChildCategories { get; set; } = Array.Empty<CategoryFilterVm>();
 
+    public int? SelectedBrandId { get; set; }
+
+    public IReadOnlyList<BrandFilterItemVm> Brands { get; set; } = Array.Empty<BrandFilterItemVm>();
+
+    public IReadOnlyList<DynamicAttributeFilterVm> DynamicAttributes { get; set; } = Array.Empty<DynamicAttributeFilterVm>();
+
+    public Dictionary<int, string> SelectedAttributes { get; set; } = new();
+
     public IReadOnlyList<ProductCardVm> Products { get; set; } = Array.Empty<ProductCardVm>();
+}
+
+public class BrandFilterItemVm
+{
+    public int BrandId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
+    public int ProductCount { get; set; }
+    public bool IsSelected { get; set; }
+}
+
+public class DynamicAttributeFilterVm
+{
+    public int AttributeId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Unit { get; set; }
+    public List<string> AvailableValues { get; set; } = new();
+    public string? SelectedValue { get; set; }
 }

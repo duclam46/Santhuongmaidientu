@@ -1,79 +1,659 @@
 @model IEnumerable<DOAN_BANHANG.Models.SystemNotification>
 @{
-    ViewData["Title"] = "Thông báo hệ thống";
-    var accountId = (int)ViewBag.AccountId;
+    ViewData["Title"] = "Trung tâm thông báo";
+    var accountId = ViewBag.AccountId is int idVal ? idVal : 0;
+    var userRole = (ViewBag.UserRole as string) ?? "Customer";
+    var displayName = (ViewBag.DisplayName as string) ?? "Tài khoản của bạn";
+    var isShopOrAdmin = string.Equals(userRole, "Shop", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase);
+    var orderMap = ViewBag.OrderLinkMap as Dictionary<string, (int OrderId, int ShopId, int CustomerId, int? ReturnId, int? DisputeId)>;
+
+    var list = Model?.ToList() ?? new List<DOAN_BANHANG.Models.SystemNotification>();
+    var enriched = list.Select(n =>
+    {
+        var isRead = n.Reads.Any(r => r.AccountId == accountId);
+        var meta = DOAN_BANHANG.Components.NotificationViewComponent.ResolveNotificationMeta(
+            n.Title, n.Content, userRole, orderMap, accountId);
+        return new
+        {
+            Entity = n,
+            IsRead = isRead,
+            Meta = meta
+        };
+    }).ToList();
+
+    int totalCount = enriched.Count;
+    int unreadCount = enriched.Count(x => !x.IsRead);
+    int orderCount = enriched.Count(x => x.Meta.CategoryKey is "order" or "return" or "dispute");
+    int walletCount = enriched.Count(x => x.Meta.CategoryKey == "wallet");
+    int systemPromoCount = enriched.Count(x => x.Meta.CategoryKey is "system" or "promo");
 }
 
-<div class="container py-8 max-w-4xl">
-    <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Thông báo từ Ban quản trị</h2>
-    </div>
-
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        @if (!Model.Any())
-        {
-            <div class="p-8 text-center text-gray-500">
-                <i class="hgi hgi-stroke hgi-notification-02 text-5xl mb-4 text-gray-300"></i>
-                <p>Bạn không có thông báo hệ thống nào.</p>
-            </div>
-        }
-        else
-        {
-            <div class="divide-y divide-gray-100">
-                @foreach (var notif in Model)
-                {
-                    var isRead = notif.Reads.Any(r => r.AccountId == accountId);
-
-                    <div class="p-5 flex gap-4 transition-colors notification-item @(isRead ? "bg-white" : "bg-blue-50/50")" data-id="@notif.Id">
-                        <div class="shrink-0 w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                            <i class="hgi hgi-stroke hgi-notification-03 text-2xl"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-start mb-1">
-                                <h4 class="text-lg font-bold text-gray-900 @(isRead ? "" : "text-primary")">@notif.Title</h4>
-                                <span class="text-xs text-gray-500 whitespace-nowrap ml-4">
-                                    @notif.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                                </span>
-                            </div>
-                            <p class="text-gray-700 whitespace-pre-wrap mt-2">@notif.Content</p>
-                        </div>
-                        @if (!isRead)
-                        {
-                            <div class="w-2.5 h-2.5 bg-blue-500 rounded-full shrink-0 mt-2"></div>
-                        }
+<section class="sz-nc-page py-8">
+    <div class="container max-w-5xl mx-auto px-4">
+        <!-- Hero Banner -->
+        <div class="sz-nc-hero">
+            <div class="sz-nc-hero-left">
+                <div class="sz-nc-hero-icon">
+                    <i class="hgi hgi-stroke hgi-notification-03"></i>
+                </div>
+                <div>
+                    <div class="sz-nc-role-chip">
+                        <i class="hgi hgi-stroke @(isShopOrAdmin ? "hgi-store-01" : "hgi-user-circle")"></i>
+                        <span>@(isShopOrAdmin ? "Tài khoản Gian hàng & Người mua" : "Thành viên Sellzy") • @displayName</span>
                     </div>
+                    <h1 class="sz-nc-title">Trung tâm Thông báo</h1>
+                    <p class="sz-nc-subtitle">
+                        Theo dõi tức thì mọi biến động đơn hàng, yêu cầu trả hàng, giải ngân ví và thông báo từ hệ thống Sellzy.
+                    </p>
+                </div>
+            </div>
+            <div class="sz-nc-hero-actions">
+                @if (isShopOrAdmin)
+                {
+                    <a href="/Admin/Orders/Index" class="sz-nc-btn sz-nc-btn-outline-light">
+                        <i class="hgi hgi-stroke hgi-store-01"></i>
+                        <span>Vào Kênh Người Bán</span>
+                    </a>
+                }
+                @if (unreadCount > 0)
+                {
+                    <button type="button" id="nc-mark-all-btn" class="sz-nc-btn sz-nc-btn-light">
+                        <i class="hgi hgi-stroke hgi-checkmark-circle-02"></i>
+                        <span>Đánh dấu đã đọc tất cả (<span id="nc-unread-btn-count">@unreadCount</span>)</span>
+                    </button>
                 }
             </div>
-        }
+        </div>
+
+        <!-- Filter Tabs & Stats -->
+        <div class="sz-nc-toolbar">
+            <div class="sz-nc-tabs" id="nc-filter-tabs">
+                <button type="button" class="sz-nc-tab active" data-filter="all">
+                    <span>Tất cả</span>
+                    <span class="sz-nc-tab-count">@totalCount</span>
+                </button>
+                <button type="button" class="sz-nc-tab" data-filter="unread">
+                    <span>Chưa đọc</span>
+                    <span class="sz-nc-tab-count sz-nc-count-alert" id="nc-tab-unread-count">@unreadCount</span>
+                </button>
+                <button type="button" class="sz-nc-tab" data-filter="order_group">
+                    <span>Đơn hàng & Đổi trả</span>
+                    <span class="sz-nc-tab-count">@orderCount</span>
+                </button>
+                <button type="button" class="sz-nc-tab" data-filter="wallet">
+                    <span>Ví & Tài chính</span>
+                    <span class="sz-nc-tab-count">@walletCount</span>
+                </button>
+                <button type="button" class="sz-nc-tab" data-filter="system_group">
+                    <span>Hệ thống & Ưu đãi</span>
+                    <span class="sz-nc-tab-count">@systemPromoCount</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Notification List -->
+        <div class="sz-nc-card-list" id="nc-list-wrapper">
+            @if (!enriched.Any())
+            {
+                <div class="sz-nc-empty">
+                    <div class="sz-nc-empty-icon">
+                        <i class="hgi hgi-stroke hgi-notification-off-01"></i>
+                    </div>
+                    <h3>Hộp thư thông báo đang trống</h3>
+                    <p>Khi có đơn hàng mới, cập nhật vận chuyển, hoàn tiền ví hoặc chương trình Flash Sale, thông báo sẽ xuất hiện tại đây.</p>
+                    <div class="sz-nc-empty-actions">
+                        <a href="/" class="sz-nc-btn sz-nc-btn-primary">Khám phá sản phẩm</a>
+                        @if (isShopOrAdmin)
+                        {
+                            <a href="/Admin" class="sz-nc-btn sz-nc-btn-secondary">Quản lý Gian hàng</a>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                @foreach (var item in enriched)
+                {
+                    var n = item.Entity;
+                    var meta = item.Meta;
+                    var filterGroup = meta.CategoryKey switch
+                    {
+                        "order" or "return" or "dispute" => "order_group",
+                        "wallet" => "wallet",
+                        _ => "system_group"
+                    };
+
+                    <div class="sz-nc-item @(item.IsRead ? "is-read" : "is-unread") theme-@meta.CategoryKey"
+                         data-id="@n.Id"
+                         data-read="@(item.IsRead ? "true" : "false")"
+                         data-group="@filterGroup"
+                         data-action-url="@(meta.ActionUrl ?? "")">
+                        <div class="sz-nc-item-left">
+                            <div class="sz-nc-item-icon">
+                                <i class="hgi hgi-stroke @meta.IconClass"></i>
+                            </div>
+                        </div>
+
+                        <div class="sz-nc-item-body">
+                            <div class="sz-nc-item-meta">
+                                <span class="sz-nc-badge">@meta.CategoryLabel</span>
+                                @if (!item.IsRead)
+                                {
+                                    <span class="sz-nc-new-pill">MỚI</span>
+                                }
+                                <span class="sz-nc-time">
+                                    <i class="hgi hgi-stroke hgi-clock-01"></i>
+                                    @n.CreatedAt.AddHours(7).ToString("dd/MM/yyyy HH:mm")
+                                </span>
+                            </div>
+
+                            <h3 class="sz-nc-item-title">@n.Title</h3>
+                            <p class="sz-nc-item-desc">@n.Content</p>
+
+                            <div class="sz-nc-item-footer">
+                                @if (!string.IsNullOrWhiteSpace(meta.ActionUrl))
+                                {
+                                    <a href="@meta.ActionUrl" class="sz-nc-action-link">
+                                        <span>@(meta.ActionText ?? "Xem chi tiết")</span>
+                                        <i class="hgi hgi-stroke hgi-arrow-right-01"></i>
+                                    </a>
+                                }
+                                @if (!item.IsRead)
+                                {
+                                    <button type="button" class="sz-nc-read-single-btn" data-id="@n.Id">
+                                        <i class="hgi hgi-stroke hgi-tick-02"></i>
+                                        <span>Đánh dấu đã đọc</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
     </div>
-</div>
+</section>
+
+<style>
+    .sz-nc-page {
+        background-color: #f8fafc;
+        min-height: 72vh;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .sz-nc-hero {
+        background: linear-gradient(135deg, #064e3b 0%, #006d60 50%, #008374 100%);
+        border-radius: 22px;
+        padding: 28px 30px;
+        color: #ffffff;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        box-shadow: 0 16px 36px -10px rgba(0, 131, 116, 0.35);
+        margin-bottom: 20px;
+    }
+
+    .sz-nc-hero-left {
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+        flex: 1;
+        min-width: 280px;
+    }
+
+    .sz-nc-hero-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        flex-shrink: 0;
+    }
+
+    .sz-nc-role-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 11px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.16);
+        color: #ccfbf1;
+        margin-bottom: 8px;
+    }
+
+    .sz-nc-title {
+        font-size: 26px;
+        font-weight: 800;
+        margin: 0 0 6px 0;
+        color: #ffffff;
+        letter-spacing: -0.4px;
+    }
+
+    .sz-nc-subtitle {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.86);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .sz-nc-hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .sz-nc-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 18px;
+        border-radius: 12px;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+    }
+
+    .sz-nc-btn-light {
+        background: #ffffff;
+        color: #008374;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .sz-nc-btn-light:hover {
+        background: #f0fdfa;
+        transform: translateY(-1px);
+    }
+
+    .sz-nc-btn-outline-light {
+        background: rgba(255, 255, 255, 0.14);
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .sz-nc-btn-outline-light:hover {
+        background: rgba(255, 255, 255, 0.24);
+    }
+
+    .sz-nc-btn-primary {
+        background: linear-gradient(135deg, #008374, #065f5b);
+        color: #ffffff !important;
+    }
+
+    .sz-nc-btn-secondary {
+        background: #f1f5f9;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1;
+    }
+
+    .sz-nc-toolbar {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 10px 14px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 18px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+    }
+
+    .sz-nc-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .sz-nc-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 15px;
+        border-radius: 11px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #475569;
+        background: transparent;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .sz-nc-tab:hover {
+        background: #f8fafc;
+        color: #0f172a;
+    }
+
+    .sz-nc-tab.active {
+        background: #f0fdfa;
+        color: #008374;
+        border-color: #99f6e4;
+    }
+
+    .sz-nc-tab-count {
+        font-size: 11px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .sz-nc-tab.active .sz-nc-tab-count {
+        background: #008374;
+        color: #ffffff;
+    }
+
+    .sz-nc-count-alert {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .sz-nc-card-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .sz-nc-item {
+        display: flex;
+        gap: 16px;
+        padding: 20px 22px;
+        background: #ffffff;
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.22s ease;
+        position: relative;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
+    }
+
+    .sz-nc-item:hover {
+        transform: translateY(-2px);
+        border-color: #99f6e4;
+        box-shadow: 0 12px 24px -6px rgba(0, 131, 116, 0.12);
+    }
+
+    .sz-nc-item.is-unread {
+        background: linear-gradient(to right, #f0fdfa 0%, #ffffff 30%);
+        border-color: #5eead4;
+        border-left: 4px solid #008374;
+    }
+
+    .sz-nc-item-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: #ffffff;
+        flex-shrink: 0;
+    }
+
+    .theme-order .sz-nc-item-icon { background: linear-gradient(135deg, #008374, #0d9488); }
+    .theme-order .sz-nc-badge { color: #008374; background: #f0fdfa; border: 1px solid #ccfbf1; }
+
+    .theme-return .sz-nc-item-icon { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .theme-return .sz-nc-badge { color: #d97706; background: #fffbeb; border: 1px solid #fde68a; }
+
+    .theme-dispute .sz-nc-item-icon { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .theme-dispute .sz-nc-badge { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
+
+    .theme-wallet .sz-nc-item-icon { background: linear-gradient(135deg, #10b981, #059669); }
+    .theme-wallet .sz-nc-badge { color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; }
+
+    .theme-promo .sz-nc-item-icon { background: linear-gradient(135deg, #ec4899, #e11d48); }
+    .theme-promo .sz-nc-badge { color: #e11d48; background: #fff1f2; border: 1px solid #ffe4e6; }
+
+    .theme-system .sz-nc-item-icon { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .theme-system .sz-nc-badge { color: #2563eb; background: #eff6ff; border: 1px solid #dbeafe; }
+
+    .sz-nc-item-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .sz-nc-item-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+
+    .sz-nc-badge {
+        font-size: 11px;
+        font-weight: 800;
+        padding: 3px 9px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .sz-nc-new-pill {
+        font-size: 10px;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #ffffff;
+    }
+
+    .sz-nc-time {
+        margin-left: auto;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .sz-nc-item-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 6px 0;
+        line-height: 1.4;
+    }
+
+    .sz-nc-item-desc {
+        font-size: 14px;
+        color: #334155;
+        margin: 0;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+
+    .sz-nc-item-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .sz-nc-action-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 10px;
+        background: #008374;
+        color: #ffffff !important;
+        font-size: 12.5px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .sz-nc-action-link:hover {
+        background: #065f5b;
+        transform: translateX(2px);
+    }
+
+    .sz-nc-read-single-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        border-radius: 10px;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .sz-nc-read-single-btn:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .sz-nc-empty {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px dashed #cbd5e1;
+        padding: 56px 24px;
+        text-align: center;
+    }
+
+    .sz-nc-empty-icon {
+        width: 76px;
+        height: 76px;
+        border-radius: 22px;
+        background: #f0fdfa;
+        color: #008374;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        margin-bottom: 16px;
+    }
+
+    .sz-nc-empty h3 {
+        font-size: 19px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 8px 0;
+    }
+
+    .sz-nc-empty p {
+        font-size: 14px;
+        color: #64748b;
+        max-width: 460px;
+        margin: 0 auto 22px auto;
+        line-height: 1.6;
+    }
+
+    .sz-nc-empty-actions {
+        display: inline-flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+</style>
 
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // Khi người dùng cuộn xem hoặc click, đánh dấu đã đọc
-            const items = document.querySelectorAll('.notification-item.bg-blue-50\\/50');
-            
-            items.forEach(item => {
-                // Tự động đánh dấu đã đọc sau 2 giây nếu user nhìn thấy
-                setTimeout(() => {
-                    const id = item.getAttribute('data-id');
-                    fetch('/Chat/MarkSystemNotificationRead', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(parseInt(id))
-                    }).then(() => {
-                        item.classList.remove('bg-blue-50/50');
-                        item.classList.add('bg-white');
-                        const dot = item.querySelector('.bg-blue-500');
-                        if(dot) dot.remove();
-                        const title = item.querySelector('h4');
-                        if(title) title.classList.remove('text-primary');
+            const tabs = document.querySelectorAll('#nc-filter-tabs .sz-nc-tab');
+            const items = document.querySelectorAll('.sz-nc-item');
+            const markAllBtn = document.getElementById('nc-mark-all-btn');
+            const tabUnreadCount = document.getElementById('nc-tab-unread-count');
+            const btnUnreadCount = document.getElementById('nc-unread-btn-count');
+
+            function syncUnreadCounters() {
+                const count = document.querySelectorAll('.sz-nc-item.is-unread').length;
+                if (tabUnreadCount) tabUnreadCount.textContent = count.toString();
+                if (btnUnreadCount) btnUnreadCount.textContent = count.toString();
+                if (count === 0 && markAllBtn) {
+                    markAllBtn.style.display = 'none';
+                }
+            }
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function () {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const filter = this.getAttribute('data-filter');
+                    items.forEach(item => {
+                        const isUnread = item.classList.contains('is-unread');
+                        const group = item.getAttribute('data-group');
+
+                        let show = true;
+                        if (filter === 'unread') show = isUnread;
+                        else if (filter !== 'all') show = (group === filter);
+
+                        item.style.display = show ? 'flex' : 'none';
                     });
-                }, 1500);
+                });
             });
+
+            document.querySelectorAll('.sz-nc-read-single-btn').forEach(btn => {
+                btn.addEventListener('click', async function (e) {
+                    e.stopPropagation();
+                    const id = this.getAttribute('data-id');
+                    const card = this.closest('.sz-nc-item');
+                    if (!id || !card) return;
+
+                    try {
+                        const res = await fetch(`/notifications/mark-read?id=${id}`, {
+                            method: 'POST',
+                            credentials: 'same-origin'
+                        });
+                        if (res.ok) {
+                            card.classList.remove('is-unread');
+                            card.classList.add('is-read');
+                            card.setAttribute('data-read', 'true');
+                            const pill = card.querySelector('.sz-nc-new-pill');
+                            if (pill) pill.remove();
+                            this.remove();
+                            syncUnreadCounters();
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    }
+                });
+            });
+
+            if (markAllBtn) {
+                markAllBtn.addEventListener('click', async function () {
+                    try {
+                        const res = await fetch('/notifications/mark-all-read', {
+                            method: 'POST',
+                            credentials: 'same-origin'
+                        });
+                        if (res.ok) {
+                            document.querySelectorAll('.sz-nc-item.is-unread').forEach(card => {
+                                card.classList.remove('is-unread');
+                                card.classList.add('is-read');
+                                card.setAttribute('data-read', 'true');
+                                const pill = card.querySelector('.sz-nc-new-pill');
+                                if (pill) pill.remove();
+                                const btn = card.querySelector('.sz-nc-read-single-btn');
+                                if (btn) btn.remove();
+                            });
+                            syncUnreadCounters();
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    }
+                });
+            }
         });
     </script>
 }

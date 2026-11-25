@@ -38,6 +38,12 @@ public class Order
     public decimal DiscountAmount { get; set; } = 0m;
 
     [Column(TypeName = "decimal(18,2)")]
+    public decimal ShopDiscountAmount { get; set; } = 0m;
+
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal PlatformDiscountAmount { get; set; } = 0m;
+
+    [Column(TypeName = "decimal(18,2)")]
     public decimal FinalAmount { get; set; }
 
     [NotMapped]
@@ -89,6 +95,19 @@ public class Order
 
     [MaxLength(100)]
     public string? TrackingCode { get; set; }
+
+    public bool IsDigitalOrder { get; set; } = false;
+
+    public bool RequiresVatInvoice { get; set; } = false;
+
+    [MaxLength(255)]
+    public string? CompanyName { get; set; }
+
+    [MaxLength(50)]
+    public string? TaxCode { get; set; }
+
+    [MaxLength(500)]
+    public string? CompanyAddress { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

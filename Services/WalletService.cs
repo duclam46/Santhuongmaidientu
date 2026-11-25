@@ -135,8 +135,10 @@ public sealed class WalletService
         if (amount <= 0)
             return (false, "Số tiền thanh toán không hợp lệ.");
 
-        await using var dbTx = await _db.Database.BeginTransactionAsync(
+        var hasActiveTx = _db.Database.CurrentTransaction != null;
+        var dbTx = hasActiveTx ? null : await _db.Database.BeginTransactionAsync(
             System.Data.IsolationLevel.RepeatableRead, ct);
+
         try
         {
             // Lock row để đọc số dư thực tế, tránh race condition
@@ -167,7 +169,11 @@ public sealed class WalletService
             });
 
             await _db.SaveChangesAsync(ct);
-            await dbTx.CommitAsync(ct);
+            
+            if (dbTx != null)
+            {
+                await dbTx.CommitAsync(ct);
+            }
 
             _logger.LogInformation("Wallet payment success. UserId={UserId} Amount={Amount} NewBalance={Balance} Order={Order}",
                 userId, amount, wallet.Balance, orderCode);
@@ -175,9 +181,12 @@ public sealed class WalletService
         }
         catch (Exception ex)
         {
-            await dbTx.RollbackAsync(ct);
+            if (dbTx != null)
+            {
+                await dbTx.RollbackAsync(ct);
+            }
             _logger.LogError(ex, "Wallet payment failed. UserId={UserId} Order={Order}", userId, orderCode);
-            return (false, "Thanh toán thất bại. Vui lòng thử lại.");
+            return (false, $"Thanh toán thất bại: {ex.Message}");
         }
     }
 
@@ -207,7 +216,8 @@ public sealed class WalletService
             return (true, "Đơn hàng đã được hoàn tiền trước đó.");
         }
 
-        await using var dbTx = await _db.Database.BeginTransactionAsync(ct);
+        var hasActiveTx = _db.Database.CurrentTransaction != null;
+        var dbTx = hasActiveTx ? null : await _db.Database.BeginTransactionAsync(ct);
         try
         {
             var wallet = await GetOrCreateWalletAsync(userId, ct);
@@ -227,7 +237,11 @@ public sealed class WalletService
             });
 
             await _db.SaveChangesAsync(ct);
-            await dbTx.CommitAsync(ct);
+            
+            if (dbTx != null)
+            {
+                await dbTx.CommitAsync(ct);
+            }
 
             _logger.LogInformation("Wallet refund success. UserId={UserId} Amount={Amount} Order={Order}",
                 userId, amount, orderCode);
@@ -235,7 +249,10 @@ public sealed class WalletService
         }
         catch (Exception ex)
         {
-            await dbTx.RollbackAsync(ct);
+            if (dbTx != null)
+            {
+                await dbTx.RollbackAsync(ct);
+            }
             _logger.LogError(ex, "Wallet refund failed. UserId={UserId} Order={Order}", userId, orderCode);
             return (false, "Hoàn tiền thất bại. Vui lòng liên hệ hỗ trợ.");
         }

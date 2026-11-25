@@ -1,425 +1,828 @@
 @model DOAN_BANHANG.ViewModels.ShopListVm
 
 @{
-    ViewData["Title"] = "Cửa hàng";
-    string ShopUrl(int? categoryId = null, int? minRating = null, int? maxRating = null, int? page = null)
-        => Url.RouteUrl("shop_index", new { categoryId, minRating, maxRating, page }) ?? "#";
+    ViewData["Title"] = "Cửa hàng đối tác";
+    string ShopUrl(int? categoryId = null, int? minRating = null, int? maxRating = null, int? page = null, string? tier = null)
+        => Url.RouteUrl("shop_index", new { categoryId, minRating, maxRating, tier = tier ?? Model.SelectedTier, page }) ?? "#";
 }
 
-<!-- ========== Hero Banner ========== -->
-<section class="shop-hero relative overflow-hidden">
-    <div class="container py-10">
-        <div class="relative rounded-3xl overflow-hidden shadow-2xl">
-            <!-- Animated gradient background -->
-            <div class="absolute inset-0 shop-hero-bg"></div>
-            <!-- Dot pattern -->
-            <div class="absolute inset-0 opacity-15" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;40&quot; height=&quot;40&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Ccircle cx=&quot;20&quot; cy=&quot;20&quot; r=&quot;1.5&quot; fill=&quot;white&quot;/%3E%3C/svg%3E');"></div>
-            <!-- Floating decorative shapes -->
-            <div class="absolute top-6 right-[15%] size-16 rounded-full border-2 border-white/20 shop-float-1"></div>
-            <div class="absolute bottom-8 right-[30%] size-10 rounded-full bg-white/10 shop-float-2"></div>
-            <div class="absolute top-[40%] right-[8%] size-6 rounded-full bg-[#fbc2eb]/30 shop-float-3"></div>
-            <div class="absolute bottom-6 left-[20%] size-12 rounded-lg border-2 border-white/15 rotate-45 shop-float-1"></div>
-            <div class="absolute top-10 left-[45%] size-4 rounded-full bg-[#00f2fe]/30 shop-float-2"></div>
-            <!-- Sparkle SVGs -->
-            <svg class="absolute top-8 right-[25%] size-5 text-white/40 shop-sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg>
-            <svg class="absolute bottom-10 left-[35%] size-4 text-[#fbc2eb]/50 shop-sparkle-delay" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg>
-            <svg class="absolute top-[55%] right-[5%] size-3 text-white/30 shop-sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41Z"/></svg>
+@section Styles {
+  <style>
+    /* ========== MODERN MULTI-INDUSTRY SHOP DIRECTORY ========== */
+    .sh-hero {
+      background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                  linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+      border-radius: 28px;
+      padding: 34px 38px;
+      color: #ffffff;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      box-shadow: 0 22px 46px -18px rgba(0, 38, 42, 0.35);
+    }
+    @@media (max-width: 767px) {
+      .sh-hero {
+        padding: 24px 20px;
+        border-radius: 22px;
+      }
+    }
+    .sh-crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.72);
+      margin-bottom: 10px;
+    }
+    .sh-crumb a {
+      color: rgba(255, 255, 255, 0.88);
+      transition: color 0.2s;
+    }
+    .sh-crumb a:hover {
+      color: #FFEB69;
+    }
+    .sh-page-title {
+      font-size: clamp(26px, 2.8vw, 34px);
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.22;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px 0;
+    }
+    .sh-page-sub {
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.84);
+      margin: 0;
+      max-width: 580px;
+    }
+    .sh-header-metrics {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .sh-hm-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 18px;
+      padding: 12px 18px;
+      color: #ffffff;
+    }
+    .sh-hm-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background-color: rgba(255, 235, 105, 0.18);
+      color: #FFEB69;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
 
-            <div class="relative z-10 px-8 py-14 md:py-16 md:px-12 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-                <div>
-                    <nav class="flex items-center gap-2 text-white/60 text-sm mb-5">
-                        <a href='@Url.Action("Index", "Home")' class="flex items-center gap-1.5 hover:text-white transition-colors">
-                            <i class="hgi hgi-stroke hgi-home-01 text-base"></i> Trang chủ
-                        </a>
-                        <span>/</span>
-                        <span class="text-white font-semibold">Cửa hàng</span>
-                    </nav>
-                    <h2 class="text-white text-3xl md:text-4xl font-bold mb-3 flex items-center gap-3">
-                        <span class="size-12 rounded-2xl bg-white/15 backdrop-blur-sm inline-flex items-center justify-center">
-                            <i class="hgi hgi-stroke hgi-store-04 text-2xl text-white"></i>
-                        </span>
-                        Khám phá Cửa hàng
-                    </h2>
-                    <p class="text-white/75 text-base max-w-lg mb-5">
-                        Nơi hội tụ những cửa hàng chất lượng, sản phẩm đa dạng và dịch vụ tận tâm.
-                    </p>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-white text-xs font-semibold">
-                            <i class="hgi hgi-stroke hgi-checkmark-badge-02 text-sm"></i> Uy tín
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-white text-xs font-semibold">
-                            <i class="hgi hgi-stroke hgi-shield-check text-sm"></i> An toàn
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-white text-xs font-semibold">
-                            <i class="hgi hgi-stroke hgi-flash text-sm"></i> Giao nhanh
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-white text-xs font-semibold">
-                            <i class="hgi hgi-stroke hgi-star text-sm"></i> Đánh giá tốt
-                        </span>
-                    </div>
-                </div>
+    /* Main 2-column layout */
+    .sh-layout {
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+    @@media (max-width: 1023px) {
+      .sh-layout {
+        grid-template-columns: 1fr;
+      }
+    }
 
-                <div class="flex flex-wrap gap-3">
-                    <div class="group/stat bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 text-center min-w-[110px] border border-white/10 hover:bg-white/25 hover:scale-105 transition-all duration-300 cursor-default relative overflow-hidden">
-                        <div class="absolute -top-2 -right-2 size-10 rounded-full bg-white/5 group-hover/stat:bg-white/10 transition-colors"></div>
-                        <div class="text-3xl font-bold text-white relative z-10">@Model.TotalItems</div>
-                        <div class="text-white/60 text-[11px] font-semibold uppercase tracking-widest mt-0.5 relative z-10">🏪 Cửa hàng</div>
-                    </div>
-                    <div class="group/stat bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 text-center min-w-[110px] border border-white/10 hover:bg-white/25 hover:scale-105 transition-all duration-300 cursor-default relative overflow-hidden">
-                        <div class="absolute -top-2 -right-2 size-10 rounded-full bg-white/5 group-hover/stat:bg-white/10 transition-colors"></div>
-                        <div class="text-3xl font-bold text-white relative z-10">4.9</div>
-                        <div class="text-white/60 text-[11px] font-semibold uppercase tracking-widest mt-0.5 relative z-10">⭐ Đánh giá</div>
-                    </div>
-                    <div class="group/stat bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 text-center min-w-[110px] border border-white/10 hover:bg-white/25 hover:scale-105 transition-all duration-300 cursor-default relative overflow-hidden">
-                        <div class="absolute -top-2 -right-2 size-10 rounded-full bg-white/5 group-hover/stat:bg-white/10 transition-colors"></div>
-                        <div class="text-3xl font-bold text-white relative z-10">24h</div>
-                        <div class="text-white/60 text-[11px] font-semibold uppercase tracking-widest mt-0.5 relative z-10">🚀 Giao hàng</div>
-                    </div>
-                </div>
-            </div>
+    /* Sidebar */
+    .sh-sidebar-box {
+      background-color: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 8px 24px -12px rgba(22, 28, 36, 0.06);
+      position: sticky;
+      top: 90px;
+    }
+    .sh-sidebar-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .sh-sidebar-top h5 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #161C24;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sh-clear-link {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #088178;
+    }
+    .sh-clear-link:hover {
+      text-decoration: underline;
+    }
+    .sh-filter-sec {
+      padding-bottom: 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .sh-filter-sec:last-child {
+      padding-bottom: 0;
+      margin-bottom: 0;
+      border-bottom: none;
+    }
+    .sh-filter-sec-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .sh-filter-sec-head h6 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #161C24;
+      margin: 0;
+    }
+    .sh-reset-btn {
+      font-size: 12px;
+      color: #64748B;
+      font-weight: 600;
+    }
+    .sh-reset-btn:hover {
+      color: #088178;
+    }
+    .sh-cat-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease;
+      font-size: 13.5px;
+      color: #334155;
+    }
+    .sh-cat-item:hover {
+      background-color: #F2F9F8;
+      color: #088178;
+    }
+    .sh-cat-item.is-selected {
+      background-color: #E6F4F3;
+      color: #088178;
+      font-weight: 700;
+    }
+    .sh-radio-box {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      border: 2px solid #CBD5E1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background-color: #ffffff;
+      transition: all 0.2s ease;
+    }
+    .sh-cat-item.is-selected .sh-radio-box {
+      border-color: #088178;
+      background-color: #088178;
+      color: #ffffff;
+    }
+    .sh-rating-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .sh-rating-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background-color: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      color: #1E293B;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .sh-rating-pill:hover {
+      border-color: #088178;
+      color: #088178;
+      background-color: #F2F9F8;
+    }
+    .sh-rating-pill.active {
+      background-color: #088178;
+      border-color: #088178;
+      color: #ffffff;
+    }
+    .sh-rating-pill .sh-star-ic {
+      color: #F59E0B;
+      font-size: 13px;
+      line-height: 1;
+    }
+    .sh-rating-pill.active .sh-star-ic {
+      color: #FFEB69;
+    }
+
+    /* Toolbar & Search */
+    .sh-toolbar-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 14px 18px;
+      background-color: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 18px;
+    }
+    .sh-search-inline {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+      max-width: 300px;
+    }
+    .sh-search-inline input {
+      width: 100%;
+      height: 40px;
+      padding: 0 14px 0 38px;
+      border-radius: 999px;
+      border: 1px solid #E2E8F0;
+      background-color: #F8FAFC;
+      font-size: 13.5px;
+      color: #161C24;
+      outline: none;
+      transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+    }
+    .sh-search-inline input:focus {
+      border-color: #088178;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(8, 129, 120, 0.12);
+    }
+    .sh-search-inline i {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748B;
+      font-size: 15px;
+    }
+
+    /* Shop Cards Grid */
+    .sh-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+    @@media (max-width: 1279px) {
+      .sh-cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @@media (max-width: 639px) {
+      .sh-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .sh-clean-card {
+      background-color: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 22px;
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .sh-clean-card:hover {
+      transform: translateY(-5px);
+      border-color: #088178;
+      box-shadow: 0 20px 38px -14px rgba(8, 129, 120, 0.18);
+    }
+    .sh-card-cover {
+      height: 86px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      position: relative;
+    }
+    .sh-mall-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background-color: rgba(255, 255, 255, 0.92);
+      color: #088178;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    .sh-rate-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background-color: rgba(22, 28, 36, 0.78);
+      backdrop-filter: blur(6px);
+      color: #ffffff;
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .sh-rate-tag i {
+      color: #FFEB69;
+    }
+    .sh-card-inner {
+      padding: 0 20px 20px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .sh-avatar-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: -32px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 2;
+    }
+    .sh-avatar {
+      width: 66px;
+      height: 66px;
+      border-radius: 18px;
+      background-color: #ffffff;
+      border: 3px solid #ffffff;
+      box-shadow: 0 8px 18px rgba(22, 28, 36, 0.12);
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sh-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .sh-avatar-text {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #088178 0%, #04464C 100%);
+      color: #FFEB69;
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .sh-live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #047857;
+      background-color: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .sh-live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #10B981;
+    }
+    .sh-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .sh-title-row h6 {
+      font-size: 16.5px;
+      font-weight: 800;
+      color: #161C24;
+      margin: 0;
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sh-clean-card:hover .sh-title-row h6 {
+      color: #088178;
+    }
+    .sh-verified-icon {
+      color: #088178;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .sh-loc-line {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12.5px;
+      color: #64748B;
+      margin-bottom: 14px;
+    }
+    .sh-meta-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px 10px;
+      background-color: #F8FAFC;
+      border: 1px solid #EEF2F6;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .sh-meta-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #161C24;
+      line-height: 1.25;
+    }
+    .sh-meta-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748B;
+      margin-top: 2px;
+    }
+    .sh-card-footer {
+      margin-top: auto;
+    }
+    .sh-btn-visit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: 12px;
+      background-color: #E6F4F3;
+      color: #088178;
+      font-size: 13.5px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .sh-clean-card:hover .sh-btn-visit,
+    .sh-btn-visit:hover {
+      background-color: #088178;
+      color: #ffffff;
+    }
+  </style>
+}
+
+<!-- ========== Top Hero Header Start ========== -->
+<section class="pt-6 pb-7">
+  <div class="container">
+    <div class="sh-hero">
+      <div>
+        <nav class="sh-crumb">
+          <a href='@Url.Action("Index", "Home")'>
+            <i class="hgi hgi-stroke hgi-home-01 mr-1"></i>Trang chủ
+          </a>
+          <span>/</span>
+          <span style="color: #FFEB69; font-weight: 700;">Cửa hàng</span>
+        </nav>
+        <h1 class="sh-page-title">Cửa Hàng Đối Tác Sellzy</h1>
+        <p class="sh-page-sub">
+          Khám phá các gian hàng chính hãng đa ngành hàng — từ Công nghệ, Thời trang, Mỹ phẩm đến Thực phẩm sạch, Nhà sách &amp; Sản phẩm số.
+        </p>
+      </div>
+
+      <div class="sh-header-metrics">
+        <div class="sh-hm-pill">
+          <span class="sh-hm-icon"><i class="hgi hgi-stroke hgi-store-04"></i></span>
+          <div>
+            <div class="text-lg font-extrabold leading-tight" style="color: #ffffff;">@Model.TotalItems</div>
+            <div class="text-xs" style="color: rgba(255,255,255,0.78);">Gian hàng đối tác</div>
+          </div>
         </div>
+        <div class="sh-hm-pill">
+          <span class="sh-hm-icon"><i class="hgi hgi-stroke hgi-checkmark-badge-02"></i></span>
+          <div>
+            <div class="text-lg font-extrabold leading-tight" style="color: #FFEB69;">100%</div>
+            <div class="text-xs" style="color: rgba(255,255,255,0.78);">Kiểm duyệt chính hãng</div>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </section>
+<!-- ========== Top Hero Header End ========== -->
 
-<!-- ========== Main Content ========== -->
+<!-- ========== Main Content Start ========== -->
 <section class="pb-20">
-    <div class="container">
-        <div class="grid grid-cols-12 lg:gap-x-6 gap-y-6">
-            <!-- LEFT SIDEBAR -->
-            <div class="xl:col-span-3 lg:col-span-4 col-span-12">
-                <div class="sidebar sticky top-20">
-                    <div class="border border-gray-300 rounded-2xl bg-gradient-to-b from-white via-primary/[0.03] to-warning/[0.05] overflow-hidden shadow-sm">
-                        <div class="px-6 py-4 bg-gradient-to-r from-primary/20 via-warning/15 to-info/20 sidebar-title">
-                            <div class="flex items-center justify-between">
-                                <h5 class="text-light-primary-text">Bộ lọc</h5>
-                                <a href="@ShopUrl()" class="text-primary text-base leading-[26px] font-semibold hover:underline">Xóa tất cả</a>
-                            </div>
-                        </div>
+  <div class="container">
+    <div class="sh-layout">
+      <!-- LEFT SIDEBAR -->
+      <aside>
+        <div class="sh-sidebar-box">
+          <div class="sh-sidebar-top">
+            <h5>
+              <i class="hgi hgi-stroke hgi-filter-horizontal text-primary"></i>
+              <span>Bộ lọc tìm kiếm</span>
+            </h5>
+            <a href='@(Url.RouteUrl("shop_index") ?? "#")' class="sh-clear-link">Xóa tất cả</a>
+          </div>
 
-                        <div class="px-6 py-6">
-                            <div class="widget-category">
-                                <div class="flex flex-col gap-y-4 pb-6 border-b border-gray-300">
-                                    <div class="flex items-center justify-between widget-category-title">
-                                        <h6>Danh mục</h6>
-                                        <a href="@ShopUrl(categoryId: null, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: 1)" class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out">Đặt lại</a>
-                                    </div>
-                                    <div class="widget-category-content">
-                                        <ul class="flex flex-col gap-y-2">
-                                            @if (Model.Categories.Count == 0)
-                                            {
-                                                <li><p class="text-sm leading-[22px] text-light-disabled-text">Chưa có danh mục để lọc.</p></li>
-                                            }
-                                            else
-                                            {
-                                                @foreach (var c in Model.Categories)
-                                                {
-                                                    var catUrl = ShopUrl(categoryId: c.CategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: 1);
-                                                    <li class="widget-category-content-list-items">
-                                                        <label class="group flex items-center justify-between w-full cursor-pointer">
-                                                            <span class="flex items-center gap-x-2">
-                                                                <span class="group-has-[input:checked]:group-hover:bg-primary/10 flex items-center justify-center w-9 h-9 bg-transparent rounded-full group-hover:bg-gray-100 transition-colors duration-300 ease-in-out">
-                                                                    <span class="relative inline-flex w-5 h-5 items-center justify-center">
-                                                                        <input type="radio" name="categoryId" value="@c.CategoryId" checked="@(c.IsSelected ? "checked" : null)" onchange="window.location.href='@catUrl'" class="peer appearance-none w-full h-full border-2 focus:outline-none checked:border-none border-gray-300 rounded-sm bg-white checked:bg-primary transition-all duration-300 ease-in-out" />
-                                                                        <span class="absolute inset-0 inline-flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 transition-all">
-                                                                            <i class="hgi hgi-stroke hgi-tick-02 text-[18px] leading-[18px]"></i>
-                                                                        </span>
-                                                                    </span>
-                                                                </span>
-                                                                <span class="text-light-primary-text group-hover:text-primary transition-colors duration-300 ease-in-out">@c.Name</span>
-                                                            </span>
-                                                            <span class="group-hover:text-primary transition-colors duration-300 ease-in-out">(@c.ShopCount)</span>
-                                                        </label>
-                                                    </li>
-                                                }
-                                            }
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                @if (Model.SelectedCategoryId.HasValue && !string.IsNullOrWhiteSpace(Model.SelectedCategoryName))
-                                {
-                                    <div class="pt-6">
-                                        <div class="rounded-2xl border border-warning/30 bg-gradient-to-r from-warning/15 via-error/[0.08] to-info/[0.08] p-4">
-                                            <div class="flex items-start gap-3">
-                                                <span class="size-10 rounded-2xl bg-warning/15 text-warning inline-flex items-center justify-center flex-none">
-                                                    <i class="hgi hgi-stroke hgi-filter text-xl"></i>
-                                                </span>
-                                                <div class="min-w-0">
-                                                    <p class="text-sm leading-[22px] text-light-secondary-text">Đang lọc theo</p>
-                                                    <p class="font-semibold text-light-primary-text line-clamp-2">@Model.SelectedCategoryName</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-
-                            <div class="widget-rating">
-                                <div class="flex flex-col gap-y-4 py-8 border-b border-gray-300">
-                                    <div class="flex items-center justify-between widget-rating-title">
-                                        <h6 class="text-light-primary-text">Đánh giá</h6>
-                                        <a href="@ShopUrl(categoryId: Model.SelectedCategoryId, minRating: null, maxRating: null, page: 1)" class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out">Reset</a>
-                                    </div>
-                                    <div class="ratings">
-                                        <ul class="flex items-center flex-wrap gap-3">
-                                            @for (var r = 5; r >= 1; r--)
-                                            {
-                                                var ratingUrl = ShopUrl(categoryId: Model.SelectedCategoryId, minRating: r, maxRating: 5, page: 1);
-                                                var isActive = Model.SelectedMinRating == r && ((Model.SelectedMaxRating ?? 5) == 5);
-                                                <li>
-                                                    <a href="@ratingUrl" class="btn btn-default outline shadow-none gap-x-1.5 items-center text-base leading-6 px-2.5 py-1.5 rounded-[80px] transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-sm hover:border-warning hover:bg-gradient-to-r hover:from-warning/15 hover:to-error/10 @(isActive ? "active" : "")">@r
-                                                        <div class="bg-[url('../images/star-icon.png')] w-5 h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
-                                                            <div style="width: 100%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
-                                                        </div>
-                                                    </a>
-                                                </li>
-                                            }
-                                        </ul>
-                                    </div>
-                                    <p class="text-xs leading-[18px] text-light-secondary-text">Bấm để lọc shop theo điểm trung bình (từ 1–5 sao).</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+          <div class="sh-filter-sec">
+            <div class="sh-filter-sec-head">
+              <h6>Hạng gian hàng</h6>
+              <a href='@(Url.RouteUrl("shop_index", new { categoryId = Model.SelectedCategoryId, minRating = Model.SelectedMinRating, maxRating = Model.SelectedMaxRating, tier = (string?)null, page = 1 }) ?? "#")' class="sh-reset-btn">Đặt lại</a>
             </div>
-
-            <!-- RIGHT CONTENT -->
-            <div class="xl:col-span-9 lg:col-span-8 col-span-12">
-                <!-- Toolbar -->
-                <div class="relative mb-6 p-4 rounded-2xl border border-gray-300 bg-white overflow-hidden">
-                    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#667eea] via-[#f093fb] to-[#43e97b]"></div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="size-10 rounded-xl bg-gradient-to-br from-[#667eea]/15 to-[#f093fb]/15 inline-flex items-center justify-center">
-                                <i class="hgi hgi-stroke hgi-grid-view text-xl text-[#667eea]"></i>
-                            </span>
-                            <div>
-                                <span class="font-semibold text-light-primary-text text-sm">Hiển thị @Model.Shops.Count kết quả</span>
-                                @if (Model.SelectedCategoryId.HasValue)
-                                {
-                                    <span class="text-xs text-light-secondary-text block">Danh mục: @Model.SelectedCategoryName</span>
-                                }
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            @if (Model.SelectedCategoryId.HasValue)
-                            {
-                                <a href="@ShopUrl(categoryId: null, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: 1)" class="inline-flex items-center gap-1 text-xs font-semibold bg-[#667eea]/10 text-[#667eea] rounded-full px-3 py-1.5 hover:bg-[#667eea] hover:text-white transition-all duration-300">
-                                    <i class="hgi hgi-stroke hgi-filter text-sm"></i>
-                                    @Model.SelectedCategoryName
-                                    <i class="hgi hgi-stroke hgi-cancel-01 text-sm"></i>
-                                </a>
-                            }
-                            @if (Model.SelectedMinRating.HasValue)
-                            {
-                                <a href="@ShopUrl(categoryId: Model.SelectedCategoryId, minRating: null, maxRating: null, page: 1)" class="inline-flex items-center gap-1 text-xs font-semibold bg-[#f5a623]/15 text-[#f5a623] rounded-full px-3 py-1.5 hover:bg-[#f5a623] hover:text-white transition-all duration-300">
-                                    @Model.SelectedMinRating⭐+
-                                    <i class="hgi hgi-stroke hgi-cancel-01 text-sm"></i>
-                                </a>
-                            }
-                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-light-primary-text rounded-full px-3.5 py-1.5 hover:bg-gray-200 transition-colors cursor-pointer">
-                                <i class="hgi hgi-stroke hgi-sorting-03 text-sm"></i>
-                                Mới nhất
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                @if (Model.Shops.Count == 0)
-                {
-                    <div class="rounded-2xl border border-gray-300 p-16 text-center bg-white">
-                        <div class="text-6xl mb-4">🔍</div>
-                        <h5 class="text-light-primary-text mb-2">Không tìm thấy shop</h5>
-                        <p class="text-light-secondary-text mb-6">Hãy thử thay đổi bộ lọc.</p>
-                        <a href="@ShopUrl()" class="btn btn-primary rounded-[60px] py-2 px-6 text-white font-semibold">Xóa bộ lọc</a>
-                    </div>
-                }
-                else
-                {
-                    <div class="grid grid-cols-12 gap-5">
-                        @{ var cardColors = new[] { "#667eea", "#f093fb", "#43e97b", "#fa709a", "#a18cd1", "#fbc2eb", "#4facfe", "#00f2fe", "#f5576c", "#fda085" }; }
-                        @foreach (var shop in Model.Shops)
-                        {
-                            var detailsUrl = Url.RouteUrl("shop_details", new { slug = shop.Slug }) ?? "#";
-                            var colorIdx = Math.Abs(shop.Name?.GetHashCode() ?? 0) % cardColors.Length;
-                            var cardColor = cardColors[colorIdx];
-                            var cardColor2 = cardColors[(colorIdx + 3) % cardColors.Length];
-
-                            <div class="xl:col-span-4 md:col-span-6 col-span-12">
-                                <div class="shop-card border border-gray-300 rounded-2xl bg-white overflow-hidden group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 h-full flex flex-col">
-                                    <!-- Colorful Top Banner -->
-                                    <div class="shop-card-banner relative h-32 overflow-hidden" style="background: linear-gradient(135deg, @cardColor 0%, @cardColor2 100%);">
-                                        <!-- Decorative shapes -->
-                                        <div class="absolute -top-6 -right-6 size-24 rounded-full border-[3px] border-white/20"></div>
-                                        <div class="absolute top-4 right-10 size-6 rounded-full bg-white/15"></div>
-                                        <div class="absolute -bottom-3 -left-3 size-14 rounded-full bg-white/10"></div>
-                                        <div class="absolute top-1/2 right-1/4 size-3 rounded-full bg-white/30"></div>
-
-                                        <!-- Badges -->
-                                        <div class="absolute top-3.5 left-3.5 flex items-center gap-1.5">
-                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-white/25 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm">
-                                                <i class="hgi hgi-stroke hgi-checkmark-badge-02 text-[11px]"></i> Uy tín
-                                            </span>
-                                            @if (shop.RatingAverage >= 4.5m)
-                                            {
-                                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-white/25 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm">
-                                                    <i class="hgi hgi-stroke hgi-fire text-[11px]"></i> Top
-                                                </span>
-                                            }
-                                        </div>
-
-                                        <!-- Rating pill -->
-                                        <div class="absolute top-3.5 right-3.5">
-                                            <span class="inline-flex items-center gap-1 text-sm font-bold text-white bg-black/20 backdrop-blur-sm rounded-full px-3 py-1">
-                                                ⭐ @shop.RatingAverage.ToString("0.0")
-                                            </span>
-                                        </div>
-
-                                        <!-- Floating Logo -->
-                                        <div class="absolute -bottom-8 left-5 z-10">
-                                            <div class="size-16 rounded-2xl bg-white p-1 shadow-xl ring-3 ring-white overflow-hidden group-hover:scale-110 transition-transform duration-500">
-                                                @if (!string.IsNullOrWhiteSpace(shop.LogoUrl))
-                                                {
-                                                    <img src="@shop.LogoUrl" alt="@shop.Name" class="w-full h-full object-cover rounded-xl" />
-                                                }
-                                                else
-                                                {
-                                                    <div class="w-full h-full rounded-xl flex items-center justify-center text-white text-2xl font-bold" style="background: linear-gradient(135deg, @cardColor, @cardColor2);">
-                                                        @(string.IsNullOrWhiteSpace(shop.Name) ? "S" : shop.Name.Trim()[0].ToString().ToUpperInvariant())
-                                                    </div>
-                                                }
-                                            </div>
-                                        </div>
-
-                                        <!-- SVG wave divider -->
-                                        <svg class="absolute -bottom-px left-0 w-full" viewBox="0 0 400 30" preserveAspectRatio="none"><path d="M0,20 Q100,0 200,15 T400,10 L400,30 L0,30Z" fill="white"/></svg>
-                                    </div>
-
-                                    <!-- Card Body -->
-                                    <div class="p-5 pt-11 flex flex-col flex-1">
-                                        <!-- Shop Name -->
-                                        <div class="flex items-start justify-between mb-4">
-                                            <div class="min-w-0 flex-1">
-                                                <h6 class="font-bold text-light-primary-text text-[18px] leading-7 line-clamp-1 mb-1 group-hover:text-primary transition-colors">@shop.Name</h6>
-                                                <div class="flex items-center gap-1.5">
-                                                    <span class="size-2 rounded-full bg-[#43e97b] animate-pulse"></span>
-                                                    <span class="text-xs text-[#43e97b] font-semibold">Đang hoạt động</span>
-                                                </div>
-                                            </div>
-                                            <span class="size-9 rounded-xl inline-flex items-center justify-center text-light-secondary-text group-hover:text-white group-hover:shadow-lg transition-all duration-300" style="background: transparent;" onmouseover="this.style.background='linear-gradient(135deg, ' + '@cardColor' + ', ' + '@cardColor2' + ')'" onmouseout="this.style.background='transparent'">
-                                                <i class="hgi hgi-stroke hgi-arrow-right-02 text-lg"></i>
-                                            </span>
-                                        </div>
-
-                                        <!-- Stats Row -->
-                                        <div class="flex items-center gap-2 mb-4">
-                                            <div class="flex-1 rounded-xl p-3 text-center border border-gray-100 bg-gradient-to-b from-[#667eea]/8 to-[#667eea]/3 hover:from-[#667eea]/15 hover:to-[#667eea]/8 transition-colors">
-                                                <div class="text-lg font-bold text-light-primary-text">@shop.ProductCount</div>
-                                                <div class="text-[10px] font-bold uppercase tracking-wider" style="color: @cardColor;">📦 Sản phẩm</div>
-                                            </div>
-                                            <div class="flex-1 rounded-xl p-3 text-center border border-gray-100 bg-gradient-to-b from-[#f5a623]/8 to-[#f5a623]/3 hover:from-[#f5a623]/15 hover:to-[#f5a623]/8 transition-colors">
-                                                <div class="text-lg font-bold text-light-primary-text">@shop.RatingAverage.ToString("0.0")</div>
-                                                <div class="text-[10px] text-[#f5a623] font-bold uppercase tracking-wider">⭐ Đánh giá</div>
-                                            </div>
-                                            <div class="flex-1 rounded-xl p-3 text-center border border-gray-100 bg-gradient-to-b from-[#43e97b]/8 to-[#43e97b]/3 hover:from-[#43e97b]/15 hover:to-[#43e97b]/8 transition-colors">
-                                                <div class="text-lg font-bold text-light-primary-text">🚀</div>
-                                                <div class="text-[10px] text-[#43e97b] font-bold uppercase tracking-wider">Siêu tốc</div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Location -->
-                                        @if (!string.IsNullOrWhiteSpace(shop.Location))
-                                        {
-                                            <div class="flex items-center gap-2.5 mb-5 p-2.5 rounded-xl border border-gray-100 bg-gray-50/50">
-                                                <span class="size-8 rounded-lg inline-flex items-center justify-center flex-none" style="background: linear-gradient(135deg, @(cardColor)20, @(cardColor2)20);">
-                                                    <span class="text-sm">📍</span>
-                                                </span>
-                                                <span class="text-sm text-light-secondary-text line-clamp-1">@shop.Location</span>
-                                            </div>
-                                        }
-
-                                        <!-- CTA Button -->
-                                        <a href="@detailsUrl" class="shop-cta-btn mt-auto relative flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white text-sm font-bold shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden" style="background: linear-gradient(135deg, @cardColor, @cardColor2);">
-                                            <i class="hgi hgi-stroke hgi-store-04 text-base relative z-10"></i>
-                                            <span class="relative z-10">Ghé thăm Shop</span>
-                                            <i class="hgi hgi-stroke hgi-arrow-right-02 text-base relative z-10"></i>
-                                            <span class="shop-cta-shimmer"></span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-
-                    @if (Model.TotalPages > 1)
-                    {
-                        <div class="flex justify-center pt-12">
-                            <ul class="flex items-center gap-x-1.5 blog-pagination">
-                                <li class="group blog-pagination-item">
-                                    <a href="@(Model.Page > 1 ? ShopUrl(categoryId: Model.SelectedCategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: Model.Page - 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 transition-colors">
-                                        <i class="hgi hgi-stroke hgi-arrow-left-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
-                                    </a>
-                                </li>
-                                @for (var i = 1; i <= Model.TotalPages; i++)
-                                {
-                                    var isActive = i == Model.Page;
-                                    <li class="group blog-pagination-item">
-                                        <a href='@ShopUrl(categoryId: Model.SelectedCategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: i)' class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] @(isActive ? "active" : "text-base leading-6 text-light-primary-text bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 group-hover:text-primary transition-colors")">@i</a>
-                                    </li>
-                                }
-                                <li class="group blog-pagination-item">
-                                    <a href="@(Model.Page < Model.TotalPages ? ShopUrl(categoryId: Model.SelectedCategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: Model.Page + 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 transition-colors">
-                                        <i class="hgi hgi-stroke hgi-arrow-right-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    }
-                }
+            <div class="flex flex-col gap-1.5">
+              @{
+                var allTierUrl = Url.RouteUrl("shop_index", new { categoryId = Model.SelectedCategoryId, minRating = Model.SelectedMinRating, maxRating = Model.SelectedMaxRating, tier = (string?)null, page = 1 }) ?? "#";
+                var mallTierUrl = Url.RouteUrl("shop_index", new { categoryId = Model.SelectedCategoryId, minRating = Model.SelectedMinRating, maxRating = Model.SelectedMaxRating, tier = "Mall", page = 1 }) ?? "#";
+                var stdTierUrl = Url.RouteUrl("shop_index", new { categoryId = Model.SelectedCategoryId, minRating = Model.SelectedMinRating, maxRating = Model.SelectedMaxRating, tier = "Standard", page = 1 }) ?? "#";
+              }
+              <a href="@allTierUrl" class="sh-cat-item @(string.IsNullOrWhiteSpace(Model.SelectedTier) ? "is-selected" : "")">
+                <span class="flex items-center gap-2">
+                  <i class="hgi hgi-stroke hgi-store-04"></i>
+                  <span>Tất cả gian hàng</span>
+                </span>
+              </a>
+              <a href="@mallTierUrl" class="sh-cat-item @(Model.SelectedTier == "Mall" ? "is-selected" : "")">
+                <span class="flex items-center gap-2">
+                  <i class="hgi hgi-stroke hgi-checkmark-badge-02" style="color: #B45309;"></i>
+                  <span>Sellzy Mall (Chính hãng)</span>
+                </span>
+              </a>
+              <a href="@stdTierUrl" class="sh-cat-item @(Model.SelectedTier == "Standard" ? "is-selected" : "")">
+                <span class="flex items-center gap-2">
+                  <i class="hgi hgi-stroke hgi-store-02"></i>
+                  <span>Shop Thường (Tiêu chuẩn)</span>
+                </span>
+              </a>
             </div>
+          </div>
+
+          <div class="sh-filter-sec">
+            <div class="sh-filter-sec-head">
+              <h6>Ngành hàng</h6>
+              <a href="@ShopUrl(categoryId: null, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: 1)" class="sh-reset-btn">Đặt lại</a>
+            </div>
+            <ul class="flex flex-col gap-y-1">
+              @if (Model.Categories.Count == 0)
+              {
+                <li><p class="text-xs text-light-disabled-text py-1">Chưa có danh mục để lọc.</p></li>
+              }
+              else
+              {
+                @foreach (var c in Model.Categories)
+                {
+                  var catUrl = ShopUrl(categoryId: c.CategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: 1);
+                  <li>
+                    <label class="sh-cat-item @(c.IsSelected ? "is-selected" : "")">
+                      <span class="flex items-center gap-2.5 min-w-0">
+                        <input type="radio" name="categoryId" value="@c.CategoryId" checked="@(c.IsSelected ? "checked" : null)" onchange="window.location.href='@catUrl'" class="hidden" />
+                        <span class="sh-radio-box">
+                          @if (c.IsSelected)
+                          {
+                            <i class="hgi hgi-stroke hgi-tick-02 text-[12px]"></i>
+                          }
+                        </span>
+                        <span class="truncate">@c.Name</span>
+                      </span>
+                      <span class="text-xs opacity-75 shrink-0">(@c.ShopCount)</span>
+                    </label>
+                  </li>
+                }
+              }
+            </ul>
+          </div>
+
+          <div class="sh-filter-sec">
+            <div class="sh-filter-sec-head">
+              <h6>Mức đánh giá</h6>
+              <a href="@ShopUrl(categoryId: Model.SelectedCategoryId, minRating: null, maxRating: null, page: 1)" class="sh-reset-btn">Đặt lại</a>
+            </div>
+            <div class="sh-rating-pills">
+              @for (var r = 5; r >= 1; r--)
+              {
+                var ratingUrl = ShopUrl(categoryId: Model.SelectedCategoryId, minRating: r, maxRating: 5, page: 1);
+                var isActive = Model.SelectedMinRating == r && ((Model.SelectedMaxRating ?? 5) == 5);
+                <a href="@ratingUrl" class="sh-rating-pill @(isActive ? "active" : "")">
+                  <span>@r</span>
+                  <span class="sh-star-ic">★</span>
+                  @if (r < 5)
+                  {
+                    <span class="text-[11px] opacity-80">trở lên</span>
+                  }
+                </a>
+              }
+            </div>
+            <p class="text-xs text-light-secondary-text m-0">Hiển thị cửa hàng đạt điểm trung bình từ mức sao đã chọn.</p>
+          </div>
         </div>
+      </aside>
+
+      <!-- RIGHT CONTENT -->
+      <div>
+        <div class="sh-toolbar-bar">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="text-sm font-semibold text-light-primary-text">
+              Hiển thị <strong id="shop-visible-count" class="text-primary">@Model.Shops.Count</strong> cửa hàng
+            </span>
+            @if (Model.SelectedCategoryId.HasValue && !string.IsNullOrWhiteSpace(Model.SelectedCategoryName))
+            {
+              <a href="@ShopUrl(categoryId: null, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: 1)" class="inline-flex items-center gap-1 text-xs font-bold bg-[#E6F4F3] text-primary rounded-full px-3 py-1">
+                <span>@Model.SelectedCategoryName</span>
+                <i class="hgi hgi-stroke hgi-cancel-01 text-xs"></i>
+              </a>
+            }
+            @if (Model.SelectedMinRating.HasValue)
+            {
+              <a href="@ShopUrl(categoryId: Model.SelectedCategoryId, minRating: null, maxRating: null, page: 1)" class="inline-flex items-center gap-1 text-xs font-bold bg-[#FFF7CC] text-light-primary-text rounded-full px-3 py-1">
+                <span>Từ @Model.SelectedMinRating sao</span>
+                <i class="hgi hgi-stroke hgi-cancel-01 text-xs"></i>
+              </a>
+            }
+          </div>
+
+          <div class="sh-search-inline">
+            <i class="hgi hgi-stroke hgi-search-01"></i>
+            <input type="text" id="shop-quick-search" placeholder="Tìm nhanh tên cửa hàng..." />
+          </div>
+        </div>
+
+        @if (Model.Shops.Count == 0)
+        {
+          <div class="rounded-2xl border border-dashed border-gray-300 p-14 text-center bg-white">
+            <i class="hgi hgi-stroke hgi-store-04 text-5xl text-gray-400 mb-3 inline-block"></i>
+            <h5 class="text-lg font-bold text-light-primary-text mb-1">Không tìm thấy cửa hàng phù hợp</h5>
+            <p class="text-sm text-light-secondary-text mb-6">Hãy thử thay đổi điều kiện lọc ở cột bên trái.</p>
+            <a href="@ShopUrl()" class="btn btn-primary rounded-full py-2.5 px-6 text-white text-sm font-semibold">Xem tất cả cửa hàng</a>
+          </div>
+        }
+        else
+        {
+          <div id="shop-cards-grid" class="sh-cards-grid">
+            @{
+              var coverGradients = new[] {
+                "linear-gradient(135deg, #047857 0%, #088178 100%)",
+                "linear-gradient(135deg, #312E81 0%, #4F46E5 100%)",
+                "linear-gradient(135deg, #0F766E 0%, #0EA5E9 100%)",
+                "linear-gradient(135deg, #9A3412 0%, #EA580C 100%)"
+              };
+            }
+            @foreach (var shop in Model.Shops)
+            {
+              var detailsUrl = Url.RouteUrl("shop_details", new { slug = shop.Slug }) ?? "#";
+              var coverIdx = Math.Abs(shop.Name?.GetHashCode() ?? 0) % coverGradients.Length;
+              var coverBg = coverGradients[coverIdx];
+
+              <div class="shop-grid-item" data-shop-name="@(shop.Name?.ToLowerInvariant() ?? "")">
+                <div class="sh-clean-card">
+                  <div class="sh-card-cover" style="background: @coverBg;">
+                    @if (shop.IsMall)
+                    {
+                      <span class="sh-mall-tag" style="background-color: #00262A; color: #FFEB69;">
+                        <i class="hgi hgi-stroke hgi-checkmark-badge-02"></i> Sellzy Mall
+                      </span>
+                    }
+                    else
+                    {
+                      <span class="sh-mall-tag">
+                        <i class="hgi hgi-stroke hgi-store-02"></i> Shop Thường
+                      </span>
+                    }
+                    <span class="sh-rate-tag">
+                      <i class="hgi hgi-stroke hgi-star"></i> @shop.RatingAverage.ToString("0.0")
+                    </span>
+                  </div>
+
+                  <div class="sh-card-inner">
+                    <div class="sh-avatar-row">
+                      <div class="sh-avatar">
+                        @if (!string.IsNullOrWhiteSpace(shop.LogoUrl))
+                        {
+                          <img src="@shop.LogoUrl" alt="@shop.Name" />
+                        }
+                        else
+                        {
+                          <div class="sh-avatar-text">
+                            @(string.IsNullOrWhiteSpace(shop.Name) ? "S" : shop.Name.Trim()[0].ToString().ToUpperInvariant())
+                          </div>
+                        }
+                      </div>
+
+                      <span class="sh-live-badge">
+                        <span class="sh-live-dot"></span>
+                        Đang mở cửa
+                      </span>
+                    </div>
+
+                    <div class="sh-title-row">
+                      <h6 title="@shop.Name">@shop.Name</h6>
+                      <i class="hgi hgi-stroke hgi-checkmark-badge-02 sh-verified-icon" title="Cửa hàng chính hãng"></i>
+                    </div>
+
+                    <div class="sh-loc-line">
+                      <i class="hgi hgi-stroke hgi-location-01 text-sm text-primary"></i>
+                      <span class="truncate">@(!string.IsNullOrWhiteSpace(shop.Location) ? shop.Location : "Toàn quốc")</span>
+                    </div>
+
+                    <div class="sh-meta-strip">
+                      <div>
+                        <div class="sh-meta-val">@shop.ProductCount</div>
+                        <div class="sh-meta-lbl">Sản phẩm</div>
+                      </div>
+                      <div>
+                        <div class="sh-meta-val">@shop.RatingAverage.ToString("0.0") ★</div>
+                        <div class="sh-meta-lbl">Đánh giá</div>
+                      </div>
+                      <div>
+                        <div class="sh-meta-val">@(shop.IsMall ? "Chính hãng" : "Đối tác")</div>
+                        <div class="sh-meta-lbl"> Phân hạng</div>
+                      </div>
+                    </div>
+
+                    <div class="sh-card-footer">
+                      <a href="@detailsUrl" class="sh-btn-visit">
+                        <span>Ghé thăm gian hàng</span>
+                        <i class="hgi hgi-stroke hgi-arrow-right-02 text-sm"></i>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (Model.TotalPages > 1)
+          {
+            <div class="flex justify-center pt-12">
+              <ul class="flex items-center gap-x-1.5 blog-pagination">
+                <li class="group blog-pagination-item">
+                  <a href="@(Model.Page > 1 ? ShopUrl(categoryId: Model.SelectedCategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: Model.Page - 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 transition-colors">
+                    <i class="hgi hgi-stroke hgi-arrow-left-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
+                  </a>
+                </li>
+                @for (var i = 1; i <= Model.TotalPages; i++)
+                {
+                  var isActive = i == Model.Page;
+                  <li class="group blog-pagination-item">
+                    <a href='@ShopUrl(categoryId: Model.SelectedCategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: i)' class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] @(isActive ? "active" : "text-base leading-6 text-light-primary-text bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 group-hover:text-primary transition-colors")">@i</a>
+                  </li>
+                }
+                <li class="group blog-pagination-item">
+                  <a href="@(Model.Page < Model.TotalPages ? ShopUrl(categoryId: Model.SelectedCategoryId, minRating: Model.SelectedMinRating, maxRating: Model.SelectedMaxRating, page: Model.Page + 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 transition-colors">
+                    <i class="hgi hgi-stroke hgi-arrow-right-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          }
+        }
+      </div>
     </div>
+  </div>
 </section>
 
-<style>
-    .shop-hero-bg {
-        background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #4facfe, #43e97b);
-        background-size: 300% 300%;
-        animation: heroGradient 8s ease infinite;
-    }
-    @@keyframes heroGradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-    .shop-float-1 { animation: shopFloat 6s ease-in-out infinite; }
-    .shop-float-2 { animation: shopFloat 4s ease-in-out infinite reverse; }
-    .shop-float-3 { animation: shopFloat 5s ease-in-out infinite 1s; }
-    @@keyframes shopFloat {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-    .shop-sparkle { animation: sparkleRotate 4s linear infinite; }
-    .shop-sparkle-delay { animation: sparkleRotate 5s linear infinite 1.5s; }
-    @@keyframes sparkleRotate {
-        0% { transform: rotate(0deg) scale(1); opacity: 0.4; }
-        50% { transform: rotate(180deg) scale(1.3); opacity: 1; }
-        100% { transform: rotate(360deg) scale(1); opacity: 0.4; }
-    }
-    .shop-cta-shimmer {
-        position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-        transition: left 0.6s;
-    }
-    .shop-cta-btn:hover .shop-cta-shimmer { left: 100%; }
-    .shop-card { position: relative; }
-    .shop-card::after {
-        content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
-        background: linear-gradient(90deg, #667eea, #f093fb, #43e97b);
-        opacity: 0; transition: opacity 0.4s;
-    }
-    .shop-card:hover::after { opacity: 1; }
-    .shop-card:hover .shop-card-banner { transform: scale(1.03); }
-    .shop-card-banner { transition: transform 0.7s ease; }
-</style>
+@section Scripts {
+  <script>
+    (function () {
+      const input = document.getElementById('shop-quick-search');
+      const items = document.querySelectorAll('#shop-cards-grid .shop-grid-item');
+      const countEl = document.getElementById('shop-visible-count');
+      if (!input || !items.length) return;
+
+      input.addEventListener('input', function () {
+        const q = (this.value || '').trim().toLowerCase();
+        let visible = 0;
+        items.forEach(function (el) {
+          const name = el.getAttribute('data-shop-name') || '';
+          const match = !q || name.includes(q);
+          el.style.display = match ? '' : 'none';
+          if (match) visible++;
+        });
+        if (countEl) countEl.textContent = visible;
+      });
+    })();
+  </script>
+}

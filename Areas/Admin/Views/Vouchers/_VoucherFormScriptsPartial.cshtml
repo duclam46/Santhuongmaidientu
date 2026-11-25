@@ -1,0 +1,183 @@
+@using DOAN_BANHANG.ViewModels
+@model VoucherAdminUpsertVm
+
+<script>
+    var isAdminContext = @(Model.IsAdmin ? "true" : "false");
+    var defaultBaseMargin = @Model.ShopAvgNetMarginPercent.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+
+    function formatVnd(val) {
+        var num = parseFloat(val);
+        if (isNaN(num) || num <= 0) return '0₫';
+        return Math.round(num).toLocaleString('vi-VN') + '₫';
+    }
+
+    function generateCode() {
+        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        var prefix = isAdminContext ? 'SELLZY' : 'SHOP';
+        var result = prefix;
+        for (var i = 0; i < 4; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('voucherCodeInput').value = result;
+        updatePreviewAndAiGuard();
+    }
+
+    function selectAiRecommendedProducts() {
+        $('.prod-scope-cb').each(function () {
+            var margin = parseFloat($(this).attr('data-margin')) || 0;
+            var isFlash = $(this).attr('data-flash') === '1';
+            $(this).prop('checked', margin >= 22.0 && !isFlash);
+        });
+        updatePreviewAndAiGuard();
+    }
+
+    function computeActiveScopeMargin() {
+        var scope = $('#scopeTypeSelect').val();
+        if (scope === 'ByCategory') {
+            var catComms = [];
+            $('.cat-scope-cb:checked').each(function () {
+                catComms.push(parseFloat($(this).attr('data-comm')) || 8.0);
+            });
+            if (catComms.length > 0) {
+                var avgComm = catComms.reduce(function (a, b) { return a + b; }, 0) / catComms.length;
+                return isAdminContext ? avgComm : Math.max(12.0, defaultBaseMargin);
+            }
+        } else if (!isAdminContext && scope === 'SpecificProducts') {
+            var prodMargins = [];
+            $('.prod-scope-cb:checked').each(function () {
+                prodMargins.push(parseFloat($(this).attr('data-margin')) || defaultBaseMargin);
+            });
+            if (prodMargins.length > 0) {
+                return prodMargins.reduce(function (a, b) { return a + b; }, 0) / prodMargins.length;
+            }
+        }
+        return defaultBaseMargin;
+    }
+
+    function updateScopePanels() {
+        var scope = $('#scopeTypeSelect').val();
+        $('#categoryScopeBox').toggle(scope === 'ByCategory');
+        $('#productScopeBox').toggle(scope === 'SpecificProducts');
+        updatePreviewAndAiGuard();
+    }
+
+    function updatePreviewAndAiGuard() {
+        var code = ($('#voucherCodeInput').val() || '').trim().toUpperCase() || 'SELLZY2026';
+        var type = $('#discountTypeSelect').val();
+        var val = parseFloat($('#discountValueInput').val()) || 0;
+        var maxVal = parseFloat($('#maxDiscountInput').val()) || 0;
+        var minOrder = parseFloat($('#minOrderInput').val()) || 0;
+        var usageLimit = parseInt($('#usageLimitInput').val()) || 0;
+        var scope = $('#scopeTypeSelect').val();
+        var audience = $('#targetAudienceSelect option:selected').text();
+
+        var checkedProds = $('.prod-scope-cb:checked').length;
+        $('#selectedProdCount').text(checkedProds);
+
+        $('#previewCode').text(code);
+        if (type === 'Percent') {
+            $('#previewTypeBadge').text('Mã giảm giá (%)');
+            $('#previewHeadline').text('Giảm ' + val + '%' + (maxVal > 0 ? ' (Tối đa ' + formatVnd(maxVal) + ')' : ''));
+        } else if (type === 'FixedAmount') {
+            $('#previewTypeBadge').text('Giảm tiền trực tiếp');
+            $('#previewHeadline').text('Giảm ngay ' + formatVnd(val));
+        } else {
+            $('#previewTypeBadge').text('Miễn phí vận chuyển');
+            $('#previewHeadline').text('Trợ giá phí ship ' + formatVnd(val));
+        }
+
+        $('#previewCondition').text(minOrder > 0 ? ('Đơn hàng tối thiểu từ ' + formatVnd(minOrder)) : 'Áp dụng cho mọi giá trị đơn hàng');
+
+        var scopeLabel = $('#scopeTypeSelect option:selected').text();
+        $('#previewScopeLine').text(scopeLabel + ' • ' + audience);
+
+        // AI Margin & Budget Guard calculation
+        var baseMargin = computeActiveScopeMargin();
+        $('#aiBaseMarginDisplay').text(baseMargin.toFixed(1) + '%');
+
+        var refOrderValue = minOrder > 0 ? minOrder : 350000;
+        var effectiveDiscountPct = 0;
+        var singleMaxBurn = 0;
+
+        if (type === 'Percent') {
+            effectiveDiscountPct = val;
+            if (maxVal > 0 && minOrder > 0) {
+                effectiveDiscountPct = Math.min(val, (maxVal / minOrder) * 100.0);
+            }
+            singleMaxBurn = maxVal > 0 ? maxVal : (refOrderValue * val / 100.0);
+        } else {
+            effectiveDiscountPct = (val / refOrderValue) * 100.0;
+            singleMaxBurn = val;
+        }
+
+        $('#aiEffectiveDiscDisplay').text('~' + effectiveDiscountPct.toFixed(1) + '% GMV');
+        $('#aiMaxBudgetDisplay').text(usageLimit > 0 ? formatVnd(singleMaxBurn * usageLimit) : 'Không giới hạn lượt');
+
+        var remainingMargin = baseMargin - effectiveDiscountPct;
+        var $verdict = $('#aiMarginVerdictBox');
+
+        if (isAdminContext) {
+            if (remainingMargin >= 1.5) {
+                $verdict.css({ background: '#F0FDF4', borderColor: '#BBF7D0', color: '#166534' })
+                    .html('<i class="bx bx-check-shield me-1"></i><strong>An toàn Quỹ Phí Sàn:</strong> Sau khi trợ giá Voucher (~' + effectiveDiscountPct.toFixed(1) + '%), Sàn vẫn thu dương <strong>+' + remainingMargin.toFixed(1) + '% GMV</strong> từ phí chiết khấu.');
+            } else if (remainingMargin >= 0) {
+                $verdict.css({ background: '#FFFBEB', borderColor: '#FDE68A', color: '#92400E' })
+                    .html('<i class="bx bx-info-circle me-1"></i><strong>Chiến dịch Kích cầu Hòa vốn:</strong> Mức trợ giá xấp xỉ phí sàn thu về. Phù hợp cho dịp Mega Sale Ngày Đôi.');
+            } else {
+                $verdict.css({ background: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B' })
+                    .html('<i class="bx bx-error-circle me-1"></i><strong>Cảnh báo Vượt Quỹ Phí Sàn:</strong> Mức trợ giá đang cao hơn phí chiết khấu sàn (' + baseMargin.toFixed(1) + '%). Nên đặt Đơn tối thiểu từ <strong>' + formatVnd(singleMaxBurn / (baseMargin / 100.0)) + '</strong>.');
+            }
+        } else {
+            if (minOrder <= 0 && type === 'FixedAmount' && val >= 30000) {
+                $verdict.css({ background: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B' })
+                    .html('<i class="bx bx-error-circle me-1"></i><strong>Rủi ro Lỗ vốn:</strong> Bạn đang giảm trực tiếp ' + formatVnd(val) + ' nhưng Đơn tối thiểu = 0₫. AI khuyến nghị đặt Đơn tối thiểu từ <strong>' + formatVnd(val * 6) + '</strong>!');
+            } else if (remainingMargin >= 10.0) {
+                $verdict.css({ background: '#F0FDF4', borderColor: '#BBF7D0', color: '#166534' })
+                    .html('<i class="bx bx-check-shield me-1"></i><strong>Biên lợi nhuận Tối ưu:</strong> Sau khi khấu trừ Voucher này vào tiền quyết toán đơn, Shop vẫn bỏ túi lãi ròng trung bình <strong>+' + remainingMargin.toFixed(1) + '%</strong>.');
+            } else if (remainingMargin > 0) {
+                $verdict.css({ background: '#FFFBEB', borderColor: '#FDE68A', color: '#92400E' })
+                    .html('<i class="bx bx-info-circle me-1"></i><strong>Biên lãi Mỏng (+' + remainingMargin.toFixed(1) + '%):</strong> Phù hợp để xả tồn kho hoặc kéo khách hàng mới mua mở hàng.');
+            } else {
+                var safeMinOrder = Math.ceil((singleMaxBurn / Math.max(0.08, (baseMargin - 8) / 100.0)) / 10000) * 10000;
+                $verdict.css({ background: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B' })
+                    .html('<i class="bx bx-error-circle me-1"></i><strong>Cảnh báo Âm Lợi nhuận (' + remainingMargin.toFixed(1) + '%):</strong> Mức giảm vượt quá biên lãi ròng (' + baseMargin.toFixed(1) + '%). Hãy nâng Đơn tối thiểu lên <strong>' + formatVnd(safeMinOrder) + '</strong> hoặc hạ mức giảm!');
+            }
+        }
+    }
+
+    $(document).ready(function () {
+        function updateFormByDiscountType() {
+            var type = $('#discountTypeSelect').val();
+            if (type === 'Percent') {
+                $('#lblDiscountValue').html('Mức giảm (%) <span class="text-danger">*</span>');
+                $('#discountUnit').text('%');
+                $('#rowMaxDiscount').show();
+            } else if (type === 'FixedAmount') {
+                $('#lblDiscountValue').html('Số tiền giảm <span class="text-danger">*</span>');
+                $('#discountUnit').text('VNĐ');
+                $('#rowMaxDiscount').hide();
+            } else if (type === 'FreeShipping') {
+                $('#lblDiscountValue').html('Mức hỗ trợ phí vận chuyển <span class="text-danger">*</span>');
+                $('#discountUnit').text('VNĐ');
+                $('#rowMaxDiscount').hide();
+            }
+            updatePreviewAndAiGuard();
+        }
+
+        $('#discountTypeSelect').on('change', updateFormByDiscountType);
+        $('#scopeTypeSelect, #targetAudienceSelect').on('change', updateScopePanels);
+        $('#voucherCodeInput, #discountValueInput, #maxDiscountInput, #minOrderInput, #usageLimitInput').on('input change', updatePreviewAndAiGuard);
+        $(document).on('change', '.cat-scope-cb, .prod-scope-cb', updatePreviewAndAiGuard);
+
+        $('#prodScopeSearch').on('input', function () {
+            var q = ($(this).val() || '').trim().toLowerCase();
+            $('.prod-scope-row').each(function () {
+                var text = $(this).attr('data-search') || '';
+                $(this).toggle(!q || text.indexOf(q) !== -1);
+            });
+        });
+
+        updateScopePanels();
+        updateFormByDiscountType();
+    });
+</script>

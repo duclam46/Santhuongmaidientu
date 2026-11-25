@@ -1,115 +1,780 @@
 @model PartnerRegisterVm
 @{
     ViewData["Title"] = "Đối tác";
-  var isSignedIn = User?.Identity?.IsAuthenticated ?? false;
+    var isSignedIn = User?.Identity?.IsAuthenticated ?? false;
 }
 
-<!-- ========== Breadcrumb Section Start ========== -->
-<div class="py-12">
-  <div class="container">
-    <div class="breadcrumb">
-      <ul>
-        <li>
-          <a href='@Url.Action("Index", "Home")'>
-            <span>
-              <i class="hgi hgi-stroke hgi-home-01 text-[20px]"></i>
-            </span>
-            Home
-          </a>
-        </li>
-        <li class="text-light-disabled-text">&#8226;</li>
-        <li><span>Đối tác</span></li>
-      </ul>
+@section Styles {
+  <style>
+    /* ========== PREMIUM PARTNER REGISTRATION UI ========== */
+    .pt-hero-banner {
+      background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                  linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+      border-radius: 28px;
+      padding: 36px 40px;
+      margin-bottom: 34px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      color: #ffffff;
+      box-shadow: 0 22px 46px -18px rgba(0, 38, 42, 0.36);
+      position: relative;
+      overflow: hidden;
+    }
+    @@media (max-width: 767px) {
+      .pt-hero-banner { padding: 24px 20px; border-radius: 22px; }
+    }
+    .pt-crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.72);
+      margin-bottom: 10px;
+    }
+    .pt-crumb a { color: rgba(255, 255, 255, 0.88); transition: color 0.2s; }
+    .pt-crumb a:hover { color: #FFEB69; }
+    .pt-hero-title {
+      font-size: clamp(26px, 2.8vw, 36px);
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px 0;
+    }
+    .pt-hero-title span { color: #FFEB69; }
+    .pt-hero-sub {
+      font-size: 14.5px;
+      line-height: 1.65;
+      color: rgba(255, 255, 255, 0.84);
+      margin: 0;
+      max-width: 580px;
+    }
+    .pt-hero-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .pt-stat-glass {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 18px;
+      padding: 12px 18px;
+      color: #ffffff;
+    }
+    .pt-stat-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background-color: rgba(255, 235, 105, 0.18);
+      color: #FFEB69;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .pt-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #E6F4F3;
+      color: #088178;
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 5px 13px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+
+    /* Tier Comparison Cards */
+    .pt-tier-compare-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @@media (max-width: 767px) {
+      .pt-tier-compare-grid { grid-template-columns: 1fr; }
+    }
+    .pt-tier-info-card {
+      background: #ffffff;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 24px;
+      padding: 24px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 10px 28px -14px rgba(22, 28, 36, 0.08);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .pt-tier-info-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 18px 34px -14px rgba(22, 28, 36, 0.12);
+    }
+    .pt-tier-info-card.is-mall {
+      background: radial-gradient(circle at 90% 10%, rgba(255, 235, 105, 0.14) 0%, transparent 45%),
+                  linear-gradient(155deg, #00262A 0%, #033E44 60%, #065B5E 100%);
+      border-color: #088178;
+      color: #ffffff;
+      box-shadow: 0 20px 40px -14px rgba(0, 38, 42, 0.38);
+      position: relative;
+    }
+    .pt-tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: 999px;
+      align-self: flex-start;
+    }
+    .pt-tier-sec-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .pt-tier-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .pt-tier-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .pt-tier-list li i {
+      flex-shrink: 0;
+      font-size: 15px;
+    }
+
+    /* Step Cards */
+    .pt-step-card {
+      background-color: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 20px;
+      padding: 20px 18px;
+      height: 100%;
+      position: relative;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .pt-step-card:hover {
+      transform: translateY(-3px);
+      border-color: #088178;
+      box-shadow: 0 14px 28px -12px rgba(8, 129, 120, 0.16);
+    }
+    .pt-step-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background-color: #E6F4F3;
+      color: #088178;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+    .pt-step-num {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #CBD5E1;
+    }
+
+    /* Benefit Strip */
+    .pt-benefit-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    @@media (max-width: 639px) {
+      .pt-benefit-strip { grid-template-columns: 1fr; }
+    }
+    .pt-benefit-item {
+      background-color: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 18px;
+      padding: 16px 14px;
+      text-align: center;
+      box-shadow: 0 6px 16px -10px rgba(22, 28, 36, 0.08);
+    }
+    .pt-benefit-ic {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    /* Form Card */
+    .pt-form-card {
+      background-color: #ffffff;
+      border: 1px solid #E2E8F0;
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: 0 22px 46px -18px rgba(22, 28, 36, 0.14);
+      position: sticky;
+      top: 90px;
+    }
+    .pt-form-head {
+      background: radial-gradient(circle at 90% 20%, rgba(255, 235, 105, 0.18) 0%, transparent 50%),
+                  linear-gradient(135deg, #00262A 0%, #055A5B 100%);
+      padding: 26px 30px;
+      color: #ffffff;
+    }
+    .pt-form-head h4 {
+      color: #ffffff;
+      font-size: 21px;
+      font-weight: 800;
+      margin: 0 0 6px 0;
+    }
+    .pt-form-head p {
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 13.5px;
+      margin: 0;
+    }
+    .pt-sec-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .pt-sec-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      background-color: #E6F4F3;
+      color: #088178;
+      font-size: 12px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Radio selector inside form */
+    .pt-tier-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @@media (max-width: 575px) {
+      .pt-tier-choice-grid { grid-template-columns: 1fr; }
+    }
+    .pt-tier-choice {
+      border: 2px solid #E2E8F0;
+      border-radius: 18px;
+      padding: 16px;
+      cursor: pointer;
+      background-color: #F8FAFC;
+      transition: all 0.22s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .pt-tier-choice:hover {
+      border-color: #94A3B8;
+      background-color: #ffffff;
+    }
+    .pt-tier-choice.active-standard {
+      border-color: #088178;
+      background-color: #F0FAF9;
+      box-shadow: 0 10px 22px -10px rgba(8, 129, 120, 0.28);
+    }
+    .pt-tier-choice.active-mall {
+      border-color: #D97706;
+      background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+      box-shadow: 0 10px 22px -10px rgba(217, 119, 6, 0.28);
+    }
+    .pt-choice-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .pt-choice-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .pt-choice-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .pt-choice-icon.is-std {
+      background-color: #E6F4F3;
+      color: #088178;
+    }
+    .pt-choice-icon.is-mall {
+      background-color: #FEF3C7;
+      color: #B45309;
+    }
+    .pt-choice-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #161C24;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+    }
+    .pt-choice-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      line-height: 1.3;
+    }
+    .pt-choice-tag.is-std {
+      background-color: #E6F4F3;
+      color: #088178;
+    }
+    .pt-choice-tag.is-mall {
+      background-color: #FEF3C7;
+      color: #92400E;
+    }
+    .pt-choice-desc {
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #475569;
+    }
+    .pt-choice-radio {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #CBD5E1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .pt-tier-choice.active-standard .pt-choice-radio {
+      border-color: #088178;
+      background-color: #088178;
+      box-shadow: inset 0 0 0 3px #ffffff;
+    }
+    .pt-tier-choice.active-mall .pt-choice-radio {
+      border-color: #B45309;
+      background-color: #B45309;
+      box-shadow: inset 0 0 0 3px #ffffff;
+    }
+    .pt-submit-btn {
+      background: linear-gradient(135deg, #088178 0%, #055A5B 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      box-shadow: 0 14px 26px -10px rgba(8, 129, 120, 0.45);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+    .pt-submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 30px -10px rgba(8, 129, 120, 0.55);
+      color: #ffffff;
+    }
+
+    /* Achievements (Những điều bạn đạt được) */
+    .pt-ach-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 20px;
+    }
+    @@media (max-width: 1199px) {
+      .pt-ach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @@media (max-width: 639px) {
+      .pt-ach-grid { grid-template-columns: 1fr; }
+    }
+    .pt-ach-card {
+      background: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 22px;
+      padding: 26px 22px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 10px 28px -16px rgba(22, 28, 36, 0.1);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .pt-ach-card:hover {
+      transform: translateY(-4px);
+      border-color: #088178;
+      box-shadow: 0 18px 34px -14px rgba(8, 129, 120, 0.18);
+    }
+    .pt-ach-ic {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .pt-ach-title {
+      font-size: 16.5px;
+      font-weight: 800;
+      color: #161C24;
+      line-height: 1.35;
+      margin: 0;
+    }
+    .pt-ach-desc {
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #475569;
+      margin: 0;
+    }
+    .pt-ach-bullets {
+      list-style: none;
+      padding: 12px 0 0 0;
+      margin: auto 0 0 0;
+      border-top: 1px solid #F1F5F9;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12.5px;
+      color: #334155;
+    }
+    .pt-ach-bullets li {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+    }
+    .pt-ach-bullets li i {
+      color: #088178;
+      font-size: 14px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Roadmap (4 Bước để bắt đầu) */
+    .pt-roadmap-wrap {
+      background: linear-gradient(135deg, #F8FAFC 0%, #F1F8F7 100%);
+      border: 1px solid #E2E8F0;
+      border-radius: 30px;
+      padding: 48px 34px;
+    }
+    @@media (max-width: 767px) {
+      .pt-roadmap-wrap { padding: 32px 18px; border-radius: 22px; }
+    }
+    .pt-roadmap-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+    }
+    @@media (max-width: 1199px) {
+      .pt-roadmap-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @@media (max-width: 639px) {
+      .pt-roadmap-grid { grid-template-columns: 1fr; }
+    }
+    .pt-roadmap-card {
+      background: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 22px;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .pt-roadmap-card:hover {
+      transform: translateY(-4px);
+      border-color: #088178;
+      box-shadow: 0 16px 30px -14px rgba(8, 129, 120, 0.16);
+    }
+    .pt-roadmap-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .pt-roadmap-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #ffffff;
+      background-color: #088178;
+      padding: 4px 12px;
+      border-radius: 999px;
+      letter-spacing: 0.03em;
+    }
+    .pt-roadmap-ic {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background-color: #E6F4F3;
+      color: #088178;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .pt-roadmap-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #161C24;
+      margin: 0;
+      line-height: 1.35;
+    }
+    .pt-roadmap-desc {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #475569;
+      margin: 0;
+    }
+    .pt-roadmap-note {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px dashed #E2E8F0;
+      font-size: 12px;
+      font-weight: 600;
+      color: #088178;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  </style>
+}
+
+<!-- ========== Top Hero Banner Start ========== -->
+<div class="container pt-6">
+  <div class="pt-hero-banner">
+    <div>
+      <nav class="pt-crumb">
+        <a href='@Url.Action("Index", "Home")'><i class="hgi hgi-stroke hgi-home-01 mr-1"></i>Trang chủ</a>
+        <span>/</span>
+        <span style="color: #FFEB69; font-weight: 700;">Đối tác bán hàng</span>
+      </nav>
+      <h1 class="pt-hero-title">
+        Trở Thành Đối Tác Bán Hàng Cùng <span>Sellzy</span>
+      </h1>
+      <p class="pt-hero-sub">
+        Mở gian hàng trực tuyến chỉ trong vài phút, lựa chọn linh hoạt giữa <strong>Shop Thường</strong> và <strong>Sellzy Mall</strong>, vận hành tự động qua Giao Hàng Nhanh (GHN).
+      </p>
+    </div>
+    <div class="pt-hero-stats">
+      <div class="pt-stat-glass">
+        <span class="pt-stat-icon"><i class="hgi hgi-stroke hgi-store-04"></i></span>
+        <div>
+          <div class="text-lg font-extrabold leading-tight" style="color: #FFEB69;">0đ</div>
+          <div class="text-xs" style="color: rgba(255,255,255,0.8);">Phí mở gian hàng</div>
+        </div>
+      </div>
+      <div class="pt-stat-glass">
+        <span class="pt-stat-icon"><i class="hgi hgi-stroke hgi-clock-01"></i></span>
+        <div>
+          <div class="text-lg font-extrabold leading-tight" style="color: #ffffff;">24h</div>
+          <div class="text-xs" style="color: rgba(255,255,255,0.8);">Thẩm định &amp; duyệt đơn</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-<!-- ========== Breadcrumb Section End ========== -->
+<!-- ========== Top Hero Banner End ========== -->
 
 <!-- ========== Partner Hero + Form Start ========== -->
 <section class="pb-[70px]">
   <div class="container">
     <div class="grid grid-cols-12 gap-x-[30px] gap-y-10 items-start">
-      <div class="lg:col-span-7 col-span-12">
-        <div class="mb-7">
-          <h2 class="pb-3 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-            Trở thành Đối tác bán hàng
-          </h2>
-          <p class="wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
-            Mở gian hàng, tiếp cận khách hàng mới và phát triển doanh thu cùng nền tảng của chúng tôi.
+      <div class="lg:col-span-6 col-span-12">
+        <div class="mb-6">
+          <span class="pt-eyebrow"><i class="hgi hgi-stroke hgi-sparkles"></i> 2 Mô hình Gian hàng</span>
+          <h3 class="text-2xl font-extrabold text-light-primary-text mb-2">Chọn Hạng Gian Hàng Phù Hợp Với Bạn</h3>
+          <p class="text-sm text-light-secondary-text mb-5">
+            Bạn có thể khởi đầu nhanh với <strong>Shop Thường</strong> (và nâng cấp lên Mall sau khi đủ chỉ số vận hành) hoặc đăng ký thẳng <strong>Sellzy Mall</strong> nếu có đầy đủ pháp lý thương hiệu.
           </p>
 
-          <div class="mt-5 grid grid-cols-12 gap-x-[30px] gap-y-4">
-            <div class="md:col-span-4 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-              <div class="p-5 border border-gray-300 bg-white rounded-2xl h-full">
-                <div class="flex items-start gap-x-3">
-                  <span class="inline-flex items-center justify-center size-11 bg-warning-lighter rounded-full flex-none">
-                    <i class="hgi hgi-stroke hgi-store-02 text-2xl text-light-primary-text"></i>
-                  </span>
-                  <div>
-                    <div class="font-semibold text-light-primary-text">Tạo gian hàng</div>
-                    <div class="text-sm leading-[22px] text-light-secondary-text">Điền thông tin cơ bản và địa chỉ lấy hàng.</div>
-                  </div>
-                </div>
+          <!-- Bảng so sánh 2 lựa chọn: Yêu cầu, Chi phí, Đặc quyền -->
+          <div class="pt-tier-compare-grid">
+            <!-- Lựa chọn 1: Shop Thường -->
+            <div class="pt-tier-info-card">
+              <span class="pt-tier-badge" style="background: #E6F4F3; color: #088178;">
+                <i class="hgi hgi-stroke hgi-store-02"></i> Lựa chọn 1 • Shop Thường
+              </span>
+              <div>
+                <div class="text-lg font-extrabold text-light-primary-text">Gian Hàng Tiêu Chuẩn</div>
+                <div class="text-xs text-light-secondary-text">Dành cho cá nhân, hộ kinh doanh &amp; cửa hàng nhỏ lẻ</div>
+              </div>
+
+              <div class="border-t border-gray-100 pt-2.5">
+                <div class="pt-tier-sec-title" style="color: #088178;">1. Yêu cầu hồ sơ</div>
+                <ul class="pt-tier-list text-light-secondary-text">
+                  <li><i class="hgi hgi-stroke hgi-checkmark-circle-02 text-primary mt-0.5"></i> <span>Thông tin liên hệ (Họ tên, Email, SĐT xác thực).</span></li>
+                  <li><i class="hgi hgi-stroke hgi-checkmark-circle-02 text-primary mt-0.5"></i> <span>Địa chỉ kho lấy hàng chuẩn GHN.</span></li>
+                  <li><i class="hgi hgi-stroke hgi-checkmark-circle-02 text-primary mt-0.5"></i> <span><strong>Không yêu cầu</strong> Giấy phép ĐKKD doanh nghiệp.</span></li>
+                </ul>
+              </div>
+
+              <div class="border-t border-gray-100 pt-2.5">
+                <div class="pt-tier-sec-title" style="color: #B45309;">2. Biểu phí &amp; Chiết khấu</div>
+                <ul class="pt-tier-list text-light-secondary-text">
+                  <li><i class="hgi hgi-stroke hgi-coins-01 text-warning mt-0.5"></i> <span><strong>Phí mở shop:</strong> 0đ (Miễn phí duy trì).</span></li>
+                  <li><i class="hgi hgi-stroke hgi-coins-01 text-warning mt-0.5"></i> <span><strong>Chiết khấu sàn:</strong> Phí ngành hàng cơ bản (<strong>4% – 10%</strong>).</span></li>
+                  <li><i class="hgi hgi-stroke hgi-coins-01 text-warning mt-0.5"></i> <span><strong>Thuế khấu trừ tại nguồn:</strong> <strong>1.5%</strong> (1% GTGT + 0.5% TNCN cá nhân).</span></li>
+                </ul>
+              </div>
+
+              <div class="border-t border-gray-100 pt-2.5">
+                <div class="pt-tier-sec-title" style="color: #161C24;">3. Quyền lợi &amp; Nâng cấp</div>
+                <ul class="pt-tier-list text-light-secondary-text">
+                  <li><i class="hgi hgi-stroke hgi-star text-primary mt-0.5"></i> <span>Đăng bán đa ngành, tự động tạo vận đơn GHN &amp; Ví Sellzy.</span></li>
+                  <li><i class="hgi hgi-stroke hgi-arrow-up-right-01 text-primary mt-0.5"></i> <span><strong>Được phép nâng cấp lên Sellzy Mall</strong> ngay trong Kênh Người Bán khi đạt đủ đơn hàng &amp; đánh giá tốt.</span></li>
+                </ul>
               </div>
             </div>
-            <div class="md:col-span-4 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
-              <div class="p-5 border border-gray-300 bg-white rounded-2xl h-full">
-                <div class="flex items-start gap-x-3">
-                  <span class="inline-flex items-center justify-center size-11 bg-warning-lighter rounded-full flex-none">
-                    <i class="hgi hgi-stroke hgi-shield-01 text-2xl text-light-primary-text"></i>
-                  </span>
-                  <div>
-                    <div class="font-semibold text-light-primary-text">Xét duyệt</div>
-                    <div class="text-sm leading-[22px] text-light-secondary-text">Hệ thống ghi nhận và chờ Admin kiểm tra.</div>
-                  </div>
-                </div>
+
+            <!-- Lựa chọn 2: Sellzy Mall -->
+            <div class="pt-tier-info-card is-mall">
+              <span class="pt-tier-badge" style="background: #FFEB69; color: #161C24;">
+                <i class="hgi hgi-stroke hgi-checkmark-badge-02"></i> Lựa chọn 2 • Sellzy Mall
+              </span>
+              <div>
+                <div class="text-lg font-extrabold text-white">Gian Hàng Chính Hãng Mall</div>
+                <div class="text-xs" style="color: rgba(255,255,255,0.78);">Dành cho doanh nghiệp, chủ thương hiệu &amp; nhà phân phối ủy quyền</div>
+              </div>
+
+              <div style="border-top: 1px solid rgba(255,255,255,0.14); padding-top: 10px;">
+                <div class="pt-tier-sec-title" style="color: #FFEB69;">1. Yêu cầu pháp lý bắt buộc</div>
+                <ul class="pt-tier-list" style="color: rgba(255,255,255,0.88);">
+                  <li><i class="hgi hgi-stroke hgi-checkmark-badge-02 mt-0.5" style="color: #FFEB69;"></i> <span>Tên công ty / Pháp nhân &amp; <strong>Mã số thuế doanh nghiệp</strong>.</span></li>
+                  <li><i class="hgi hgi-stroke hgi-checkmark-badge-02 mt-0.5" style="color: #FFEB69;"></i> <span>Giấy phép Đăng ký kinh doanh hợp lệ.</span></li>
+                  <li><i class="hgi hgi-stroke hgi-checkmark-badge-02 mt-0.5" style="color: #FFEB69;"></i> <span>Giấy chứng nhận đăng ký nhãn hiệu hoặc Giấy ủy quyền phân phối chính hãng.</span></li>
+                </ul>
+              </div>
+
+              <div style="border-top: 1px solid rgba(255,255,255,0.14); padding-top: 10px;">
+                <div class="pt-tier-sec-title" style="color: #FFEB69;">2. Biểu phí &amp; Chiết khấu</div>
+                <ul class="pt-tier-list" style="color: rgba(255,255,255,0.88);">
+                  <li><i class="hgi hgi-stroke hgi-coins-01 mt-0.5" style="color: #FFEB69;"></i> <span><strong>Phí mở shop:</strong> 0đ.</span></li>
+                  <li><i class="hgi hgi-stroke hgi-coins-01 mt-0.5" style="color: #FFEB69;"></i> <span><strong>Chiết khấu Mall:</strong> Phí ngành hàng <strong>+ 2.0% phí dịch vụ cố định Mall</strong> (có áp trần tối đa).</span></li>
+                  <li><i class="hgi hgi-stroke hgi-coins-01 mt-0.5" style="color: #FFEB69;"></i> <span><strong>Thuế khấu trừ cá nhân:</strong> <strong>0%</strong> (Doanh nghiệp tự kê khai &amp; xuất hóa đơn VAT trực tiếp).</span></li>
+                </ul>
+              </div>
+
+              <div style="border-top: 1px solid rgba(255,255,255,0.14); padding-top: 10px;">
+                <div class="pt-tier-sec-title" style="color: #FFEB69;">3. Đặc quyền độc quyền Sellzy Mall</div>
+                <ul class="pt-tier-list" style="color: rgba(255,255,255,0.88);">
+                  <li><i class="hgi hgi-stroke hgi-sparkles mt-0.5" style="color: #FFEB69;"></i> <span>Gắn huy hiệu <strong>Sellzy Mall</strong> bảo chứng 100% chính hãng toàn sàn.</span></li>
+                  <li><i class="hgi hgi-stroke hgi-sparkles mt-0.5" style="color: #FFEB69;"></i> <span><strong>Ưu tiên đẩy Top hiển thị</strong> tại trang Tìm kiếm, Danh mục &amp; `/shop`.</span></li>
+                  <li><i class="hgi hgi-stroke hgi-sparkles mt-0.5" style="color: #FFEB69;"></i> <span>Hỗ trợ xuất Hóa đơn VAT B2B &amp; hưởng <strong>Voucher trợ giá 100% từ Sàn</strong>.</span></li>
+                </ul>
               </div>
             </div>
-            <div class="md:col-span-4 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".4s">
-              <div class="p-5 border border-gray-300 bg-white rounded-2xl h-full">
-                <div class="flex items-start gap-x-3">
-                  <span class="inline-flex items-center justify-center size-11 bg-warning-lighter rounded-full flex-none">
-                    <i class="hgi hgi-stroke hgi-coins-02 text-2xl text-light-primary-text"></i>
-                  </span>
-                  <div>
-                    <div class="font-semibold text-light-primary-text">Bắt đầu bán</div>
-                    <div class="text-sm leading-[22px] text-light-secondary-text">Đăng sản phẩm và theo dõi doanh thu.</div>
-                  </div>
-                </div>
-              </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="pt-step-card wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+              <span class="pt-step-num">01</span>
+              <span class="pt-step-icon"><i class="hgi hgi-stroke hgi-store-02"></i></span>
+              <div class="font-bold text-sm text-light-primary-text mb-1">Chọn mô hình &amp; Điền đơn</div>
+              <div class="text-xs leading-relaxed text-light-secondary-text">Chọn Shop Thường hoặc Sellzy Mall và khai báo kho lấy hàng GHN.</div>
+            </div>
+            <div class="pt-step-card wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
+              <span class="pt-step-num">02</span>
+              <span class="pt-step-icon" style="background-color: #FFF7CC; color: #B76E00;"><i class="hgi hgi-stroke hgi-shield-01"></i></span>
+              <div class="font-bold text-sm text-light-primary-text mb-1">Thẩm định &amp; Xét duyệt</div>
+              <div class="text-xs leading-relaxed text-light-secondary-text">Admin kiểm tra thông tin kho (và chứng từ pháp lý nếu đăng ký Mall).</div>
+            </div>
+            <div class="pt-step-card wow animate__animated animate__fadeInUp" data-wow-delay=".4s">
+              <span class="pt-step-num">03</span>
+              <span class="pt-step-icon" style="background-color: #ECFDF5; color: #059669;"><i class="hgi hgi-stroke hgi-coins-02"></i></span>
+              <div class="font-bold text-sm text-light-primary-text mb-1">Vận hành &amp; Nâng cấp</div>
+              <div class="text-xs leading-relaxed text-light-secondary-text">Đăng bán sản phẩm, đối soát Ví tự động &amp; nâng cấp Mall bất cứ lúc nào.</div>
             </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-12 gap-x-[30px] gap-y-6">
-          <div class="md:col-span-7 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-            <img src="assets/images/2-girls.jpg" alt="Đối tác" class="rounded-2xl w-full h-[320px] object-cover" />
+        <div class="pt-benefit-strip">
+          <div class="pt-benefit-item">
+            <span class="pt-benefit-ic" style="background: #E0F2FE; color: #0284C7;"><i class="hgi hgi-stroke hgi-truck"></i></span>
+            <div class="text-sm font-bold text-light-primary-text">Tích hợp GHN</div>
+            <div class="text-xs text-light-secondary-text mt-0.5">Tự động tính phí &amp; tạo vận đơn</div>
           </div>
-          <div class="md:col-span-5 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
-            <img src="assets/images/red-shirt-female.png" alt="Đối tác" class="rounded-2xl w-full h-[320px] object-cover bg-[#F4F3F5]" />
+          <div class="pt-benefit-item">
+            <span class="pt-benefit-ic" style="background: #DCFCE7; color: #16A34A;"><i class="hgi hgi-stroke hgi-wallet-02"></i></span>
+            <div class="text-sm font-bold text-light-primary-text">Ví Sellzy minh bạch</div>
+            <div class="text-xs text-light-secondary-text mt-0.5">Khấu trừ chiết khấu tự động</div>
+          </div>
+          <div class="pt-benefit-item">
+            <span class="pt-benefit-ic" style="background: #FEF3C7; color: #D97706;"><i class="hgi hgi-stroke hgi-crown"></i></span>
+            <div class="text-sm font-bold text-light-primary-text">Lộ trình lên Mall rõ ràng</div>
+            <div class="text-xs text-light-secondary-text mt-0.5">Xét duyệt trực tuyến trên Kênh Bán</div>
           </div>
         </div>
       </div>
 
-      <div class="lg:col-span-5 col-span-12">
-        <div class="border border-gray-300 rounded-2xl p-6 md:p-8 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-          <div class="flex items-start justify-between gap-x-4 pb-6">
-            <div>
-              <h4 class="pb-2">Đăng ký trở thành nhà bán hàng</h4>
-              <p class="text-light-disabled-text">Điền thông tin cơ bản để bắt đầu. Trường có dấu * là bắt buộc.</p>
+      <div class="lg:col-span-6 col-span-12">
+        <div class="pt-form-card wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+          <div class="pt-form-head">
+            <div class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-2" style="background: rgba(255,235,105,0.18); color: #FFEB69;">
+              <i class="hgi hgi-stroke hgi-sparkles"></i> Đăng ký trực tuyến • Miễn phí 0đ
             </div>
+            <h4>Phiếu đăng ký trở thành nhà bán hàng</h4>
+            <p>Hoàn tất các mục dưới đây để gửi hồ sơ xét duyệt. Trường có dấu * là bắt buộc.</p>
           </div>
 
+          <div class="p-6 md:p-8">
           @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
           {
-            <div class="mb-4 p-4 rounded-2xl bg-success-lighter text-light-primary-text">
+            <div class="mb-5 p-4 rounded-2xl bg-success-lighter text-light-primary-text text-sm font-medium">
               @Model.SuccessMessage
             </div>
           }
 
           @if (!ViewData.ModelState.IsValid)
           {
-            <div class="mb-4 p-4 rounded-2xl bg-[rgba(255,86,48,0.08)]">
+            <div class="mb-5 p-4 rounded-2xl bg-[rgba(255,86,48,0.08)]">
               <div class="text-danger text-sm leading-[22px]">
                 @Html.ValidationSummary(excludePropertyErrors: false)
               </div>
@@ -118,13 +783,13 @@
 
           @if (Model.HideForm)
           {
-            <div class="p-5 rounded-2xl border border-gray-300 bg-gray-100 text-light-primary-text">
+            <div class="p-5 rounded-2xl border border-gray-200 bg-[#F8FAFC] text-light-primary-text">
               <div class="flex items-start gap-x-3">
-                <span class="inline-flex items-center justify-center size-11 bg-warning-lighter rounded-full flex-none">
-                  <i class="hgi hgi-stroke hgi-checkmark-circle-02 text-2xl text-light-primary-text"></i>
+                <span class="inline-flex items-center justify-center size-11 bg-[#E6F4F3] text-primary rounded-full flex-none">
+                  <i class="hgi hgi-stroke hgi-checkmark-circle-02 text-2xl"></i>
                 </span>
                 <div>
-                  <div class="font-semibold pb-1">Bạn đã nộp đơn đăng ký</div>
+                  <div class="font-bold pb-1">Bạn đã nộp đơn đăng ký</div>
                   <div class="text-sm leading-[22px] text-light-secondary-text">
                     @(string.IsNullOrWhiteSpace(Model.HideFormMessage)
                       ? "Hệ thống đã ghi nhận đơn đăng ký của bạn. Vui lòng chờ xét duyệt."
@@ -139,12 +804,101 @@
           }
           else
           {
-            <form asp-action="Register" asp-controller="Partners" method="post" class="flex flex-col gap-y-5">
+            var isMallSelected = string.Equals(Model.RequestedShopTier, "Mall", StringComparison.OrdinalIgnoreCase);
+            <form asp-action="Register" asp-controller="Partners" method="post" enctype="multipart/form-data" class="flex flex-col gap-y-5">
               @Html.AntiForgeryToken()
 
+              <!-- LỰA CHỌN MÔ HÌNH GIAN HÀNG -->
+              <div>
+                <div class="pt-sec-heading">
+                  <span class="pt-sec-num">1</span>
+                  <div class="font-bold text-sm text-light-primary-text">Chọn mô hình gian hàng đăng ký *</div>
+                </div>
+                <div class="text-xs text-light-disabled-text mb-3 pl-8">Chọn 1 trong 2 mô hình bên dưới. Biểu phí chiết khấu sẽ áp dụng theo hạng gian hàng được duyệt.</div>
+
+                <div class="pt-tier-choice-grid">
+                  <label class="pt-tier-choice @(!isMallSelected ? "active-standard" : "")" id="lbl-tier-standard">
+                    <input type="radio" name="RequestedShopTier" value="Standard" class="hidden" @(!isMallSelected ? "checked" : "") onchange="togglePartnerTier('Standard')" />
+                    <div class="pt-choice-head">
+                      <div class="pt-choice-left">
+                        <span class="pt-choice-radio"></span>
+                        <span class="pt-choice-icon is-std"><i class="hgi hgi-stroke hgi-store-02"></i></span>
+                        <span class="pt-choice-name">Shop Thường</span>
+                      </div>
+                      <span class="pt-choice-tag is-std">Phí chuẩn</span>
+                    </div>
+                    <div class="pt-choice-desc">
+                      Cá nhân / Hộ KD • Phí ngành hàng cơ bản + 1.5% thuế cá nhân • Không cần GPĐKKD.
+                    </div>
+                  </label>
+
+                  <label class="pt-tier-choice @(isMallSelected ? "active-mall" : "")" id="lbl-tier-mall">
+                    <input type="radio" name="RequestedShopTier" value="Mall" class="hidden" @(isMallSelected ? "checked" : "") onchange="togglePartnerTier('Mall')" />
+                    <div class="pt-choice-head">
+                      <div class="pt-choice-left">
+                        <span class="pt-choice-radio"></span>
+                        <span class="pt-choice-icon is-mall"><i class="hgi hgi-stroke hgi-checkmark-badge-02"></i></span>
+                        <span class="pt-choice-name">Sellzy Mall</span>
+                      </div>
+                      <span class="pt-choice-tag is-mall">+2% Phí Mall</span>
+                    </div>
+                    <div class="pt-choice-desc">
+                      Doanh nghiệp / Thương hiệu • 0% thuế khấu trừ cá nhân • Cần MST &amp; Giấy phép.
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- KHỐI HỒ SƠ PHÁP LÝ (CHỈ HIỆN KHI CHỌN SELLZY MALL) -->
+              <div id="mall-legal-section" class="p-4 rounded-2xl border border-amber-300 bg-[#FFFDF5] flex flex-col gap-y-4" style="display: @(isMallSelected ? "flex" : "none");">
+                <div>
+                  <div class="font-bold text-sm text-light-primary-text flex items-center gap-1.5">
+                    <i class="hgi hgi-stroke hgi-checkmark-badge-02" style="color: #B45309;"></i>
+                    <span>Hồ sơ pháp lý &amp; Thương hiệu (Bắt buộc cho Sellzy Mall)</span>
+                  </div>
+                  <div class="text-xs text-light-secondary-text mt-0.5">
+                    Cung cấp thông tin doanh nghiệp và chứng từ thương hiệu để Admin thẩm định cấp huy hiệu <strong>Sellzy Mall</strong>.
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div>
+                    <label class="block text-xs font-bold pb-1.5 text-light-primary-text">Tên công ty / Pháp nhân *</label>
+                    <input type="text" name="BusinessName" value="@Model.BusinessName" class="form-control input-group medium rounded-xl px-3.5 focus:outline-none bg-white" placeholder="VD: Công ty TNHH Thương Mại ABC" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold pb-1.5 text-light-primary-text">Mã số thuế doanh nghiệp *</label>
+                    <input type="text" name="BusinessTaxCode" value="@Model.BusinessTaxCode" class="form-control input-group medium rounded-xl px-3.5 focus:outline-none bg-white" placeholder="VD: 0312345678" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold pb-1.5 text-light-primary-text">Tên thương hiệu đăng ký Mall *</label>
+                  <input type="text" name="BrandName" value="@Model.BrandName" class="form-control input-group medium rounded-xl px-3.5 focus:outline-none bg-white" placeholder="VD: Samsung / Uniqlo / Thương hiệu độc quyền..." />
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div>
+                    <label class="block text-xs font-bold pb-1.5 text-light-primary-text">Giấy phép ĐKKD (Ảnh/PDF)</label>
+                    <input type="file" name="BusinessLicenseFile" accept=".jpg,.jpeg,.png,.webp,.pdf" class="form-control input-group rounded-xl px-3 py-2 text-xs bg-white" />
+                    <input type="text" name="BusinessLicenseUrl" value="@Model.BusinessLicenseUrl" class="form-control input-group rounded-xl px-3 py-1.5 text-xs bg-white mt-1.5" placeholder="Hoặc dán link ảnh Giấy phép ĐKKD..." />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold pb-1.5 text-light-primary-text">Giấy chứng nhận / Ủy quyền thương hiệu</label>
+                    <input type="file" name="BrandAuthorizationFile" accept=".jpg,.jpeg,.png,.webp,.pdf" class="form-control input-group rounded-xl px-3 py-2 text-xs bg-white" />
+                    <input type="text" name="BrandAuthorizationUrl" value="@Model.BrandAuthorizationUrl" class="form-control input-group rounded-xl px-3 py-1.5 text-xs bg-white mt-1.5" placeholder="Hoặc dán link Giấy ủy quyền chính hãng..." />
+                  </div>
+                </div>
+              </div>
+
+              <div class="border-t border-gray-200 pt-2"></div>
+
               <div class="pb-1">
-                <div class="font-semibold text-light-primary-text">Thông tin liên hệ</div>
-                <div class="text-sm leading-[22px] text-light-disabled-text">Dùng để xác minh và liên hệ khi cần.</div>
+                <div class="pt-sec-heading">
+                  <span class="pt-sec-num">2</span>
+                  <div class="font-bold text-sm text-light-primary-text">Thông tin liên hệ</div>
+                </div>
+                <div class="text-xs text-light-disabled-text pl-8">Dùng để xác minh và liên hệ khi cần.</div>
               </div>
 
               <div class="relative w-full">
@@ -162,42 +916,47 @@
                 </label>
               </div>
 
-              <div class="relative w-full">
-                <input
-                  type="email"
-                  id="partner-email"
-                  name="Email"
-                  value="@Model.Email"
-                  @(isSignedIn ? "readonly=\"readonly\"" : "")
-                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                  placeholder="Email *" />
-                <label
-                  for="partner-email"
-                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                  Email *
-                </label>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="relative w-full">
+                  <input
+                    type="email"
+                    id="partner-email"
+                    name="Email"
+                    value="@Model.Email"
+                    @(isSignedIn ? "readonly=\"readonly\"" : "")
+                    class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                    placeholder="Email *" />
+                  <label
+                    for="partner-email"
+                    class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                    Email *
+                  </label>
+                </div>
+
+                <div class="relative w-full">
+                  <input
+                    type="text"
+                    id="partner-phone"
+                    name="PhoneNumber"
+                    value="@Model.PhoneNumber"
+                    class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
+                    placeholder="Số điện thoại *" />
+                  <label
+                    for="partner-phone"
+                    class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
+                    Số điện thoại *
+                  </label>
+                </div>
               </div>
 
-              <div class="relative w-full">
-                <input
-                  type="text"
-                  id="partner-phone"
-                  name="PhoneNumber"
-                  value="@Model.PhoneNumber"
-                  class="peer form-control input-group medium rounded-[80px] px-3.5 placeholder-transparent focus:placeholder-transparent focus:outline-none"
-                  placeholder="Số điện thoại *" />
-                <label
-                  for="partner-phone"
-                  class="absolute left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-focus:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">
-                  Số điện thoại *
-                </label>
-              </div>
-
-              <div class="border-t border-gray-300 pt-5"></div>
+              <div class="border-t border-gray-200 pt-2"></div>
 
               <div class="pb-1">
-                <div class="font-semibold text-light-primary-text">Thông tin cửa hàng</div>
-                <div class="text-sm leading-[22px] text-light-disabled-text">Giúp Admin hiểu rõ mô hình bán hàng của bạn.</div>
+                <div class="pt-sec-heading">
+                  <span class="pt-sec-num">3</span>
+                  <div class="font-bold text-sm text-light-primary-text">Thông tin cửa hàng</div>
+                </div>
+                <div class="text-xs text-light-disabled-text pl-8">Giúp Admin hiểu rõ mô hình bán hàng của bạn.</div>
               </div>
 
               <div class="relative w-full">
@@ -216,24 +975,27 @@
               </div>
 
               <div class="w-full">
-                <label for="partner-desc" class="block text-sm leading-[22px] font-semibold pb-2">Mô tả (tuỳ chọn)</label>
+                <label for="partner-desc" class="block text-xs font-bold pb-2 text-light-primary-text">Mô tả (tuỳ chọn)</label>
                 <textarea
                   id="partner-desc"
                   name="ShopDescription"
-                  rows="4"
+                  rows="3"
                   class="form-control input-group rounded-2xl px-4 py-3 focus:outline-none"
                   placeholder="Giới thiệu ngắn về cửa hàng của bạn...">@Model.ShopDescription</textarea>
               </div>
 
-              <div class="border-t border-gray-300 pt-5"></div>
+              <div class="border-t border-gray-200 pt-2"></div>
 
               <div class="pb-1">
-                <div class="font-semibold text-light-primary-text">Địa chỉ lấy hàng (GHN)</div>
-                <div class="text-sm leading-[22px] text-light-disabled-text">Dùng để tính phí vận chuyển và tạo vận đơn.</div>
+                <div class="pt-sec-heading">
+                  <span class="pt-sec-num">4</span>
+                  <div class="font-bold text-sm text-light-primary-text">Địa chỉ lấy hàng (GHN)</div>
+                </div>
+                <div class="text-xs text-light-disabled-text pl-8">Dùng để tính phí vận chuyển và tạo vận đơn.</div>
               </div>
 
               <div class="w-full">
-                <label class="block text-sm leading-[22px] font-semibold pb-2">Khu vực và địa chỉ chi tiết *</label>
+                <label class="block text-xs font-bold pb-2 text-light-primary-text">Khu vực và địa chỉ chi tiết *</label>
 
                 <div id="partner_ghn_debug" class="hidden text-sm leading-[22px] mb-2 p-3 rounded-2xl bg-[rgba(0,0,0,0.03)]"></div>
 
@@ -274,21 +1036,17 @@
                     </label>
                   </div>
                 </div>
-
-                <p class="pt-2 text-sm leading-[22px] text-light-disabled-text">
-                  Hệ thống sẽ dùng địa chỉ này để tính phí vận chuyển (GHN).
-                </p>
               </div>
 
               @if (!isSignedIn)
               {
-                <div class="border-t border-gray-300 pt-5"></div>
+                <div class="border-t border-gray-200 pt-2"></div>
 
                 <div class="pb-1">
-                  <div class="font-semibold text-light-primary-text">Tạo tài khoản</div>
-                  <div class="text-sm leading-[22px] text-light-disabled-text">Bạn chưa đăng nhập, hệ thống sẽ tạo tài khoản mới.</div>
+                  <div class="font-bold text-sm text-light-primary-text">Tạo tài khoản</div>
+                  <div class="text-xs text-light-disabled-text">Bạn chưa đăng nhập, hệ thống sẽ tạo tài khoản mới.</div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div class="relative w-full">
                     <input
                       type="password"
@@ -320,11 +1078,12 @@
                 </div>
               }
 
-              <button type="submit" class="btn btn-primary btn-large rounded-[80px] w-full">
-                Gửi đăng ký
+              <button type="submit" class="pt-submit-btn">
+                <span>Gửi đăng ký đối tác</span>
+                <i class="hgi hgi-stroke hgi-arrow-right-02"></i>
               </button>
 
-              <p class="text-sm leading-[22px] text-light-disabled-text">
+              <p class="text-xs leading-relaxed text-light-disabled-text m-0">
                 @if (isSignedIn)
                 {
                   <span>Bạn đang đăng nhập, chỉ cần bổ sung thông tin cửa hàng để nâng cấp thành nhà bán hàng.</span>
@@ -336,6 +1095,7 @@
               </p>
             </form>
           }
+          </div>
         </div>
       </div>
     </div>
@@ -372,6 +1132,17 @@
 </style>
 
 <script>
+  window.togglePartnerTier = function (tier) {
+    const isMall = (tier === 'Mall');
+    const legalSec = document.getElementById('mall-legal-section');
+    const lblStd = document.getElementById('lbl-tier-standard');
+    const lblMall = document.getElementById('lbl-tier-mall');
+
+    if (legalSec) legalSec.style.display = isMall ? 'flex' : 'none';
+    if (lblStd) lblStd.classList.toggle('active-standard', !isMall);
+    if (lblMall) lblMall.classList.toggle('active-mall', isMall);
+  };
+
   (() => {
     const endpoints = {
       provinces: '/api/ghn/provinces',
@@ -781,54 +1552,71 @@
 <!-- ========== Benefits (Những điều đạt được) Start ========== -->
 <section class="mb-[70px]">
   <div class="container">
-    <div class="text-center">
-      <h3 class="pb-3 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-        Những điều bạn đạt được
+    <div class="text-center max-w-2xl mx-auto mb-10 wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+      <span class="pt-eyebrow"><i class="hgi hgi-stroke hgi-award-01"></i> Quyền lợi đối tác</span>
+      <h3 class="text-2xl md:text-3xl font-extrabold text-light-primary-text mb-2">
+        Những Điều Bạn Đạt Được Khi Đồng Hành Cùng Sellzy
       </h3>
-      <p class="pb-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-        Hợp tác cùng chúng tôi để tăng trưởng bền vững.
+      <p class="text-sm text-light-secondary-text m-0">
+        Hệ sinh thái bán hàng đa ngành toàn diện giúp tối ưu vận hành, minh bạch dòng tiền và bứt phá doanh thu bền vững.
       </p>
     </div>
 
-    <div class="grid grid-cols-12 gap-x-[30px] gap-y-6">
-      <div class="lg:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-        <div class="p-6 border border-gray-300 bg-white rounded-2xl h-full">
-          <span class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full">
-            <i class="hgi hgi-stroke hgi-store-02 text-3xl text-light-primary-text"></i>
-          </span>
-          <h5 class="pt-3 pb-0.5">Mở gian hàng nhanh</h5>
-          <p>Tạo cửa hàng và bắt đầu bán chỉ trong vài bước.</p>
-        </div>
+    <div class="pt-ach-grid">
+      <div class="pt-ach-card wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+        <span class="pt-ach-ic" style="background: #E6F4F3; color: #088178;">
+          <i class="hgi hgi-stroke hgi-store-02"></i>
+        </span>
+        <h5 class="pt-ach-title">Mở Gian Hàng Nhanh &amp; Lên Mall Linh Hoạt</h5>
+        <p class="pt-ach-desc">
+          Khởi tạo Shop Thường miễn phí 0đ chỉ trong vài phút và dễ dàng nâng cấp lên Sellzy Mall ngay trên Kênh Bán.
+        </p>
+        <ul class="pt-ach-bullets">
+          <li><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i><span>Phí mở &amp; duy trì gian hàng <strong>0đ</strong></span></li>
+          <li><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i><span>Lộ trình nâng cấp Mall rõ ràng</span></li>
+        </ul>
       </div>
 
-      <div class="lg:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".3s">
-        <div class="p-6 border border-gray-300 bg-white rounded-2xl h-full">
-          <span class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full">
-            <i class="hgi hgi-stroke hgi-megaphone-01 text-3xl text-light-primary-text"></i>
-          </span>
-          <h5 class="pt-3 pb-0.5">Hỗ trợ marketing</h5>
-          <p>Tăng hiển thị sản phẩm với các chương trình ưu đãi.</p>
-        </div>
+      <div class="pt-ach-card wow animate__animated animate__fadeInUp" data-wow-delay=".25s">
+        <span class="pt-ach-ic" style="background: #FEF3C7; color: #B45309;">
+          <i class="hgi hgi-stroke hgi-megaphone-01"></i>
+        </span>
+        <h5 class="pt-ach-title">Đẩy Hiển Thị &amp; Trợ Giá Marketing</h5>
+        <p class="pt-ach-desc">
+          Tiếp cận hàng trăm nghìn khách hàng mỗi ngày thông qua Flash Sale, trang Tìm kiếm và các chiến dịch đa ngành.
+        </p>
+        <ul class="pt-ach-bullets">
+          <li><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i><span>Ưu tiên Top đầu cho <strong>Sellzy Mall</strong></span></li>
+          <li><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i><span>Hưởng <strong>Voucher trợ giá 100%</strong> từ Sàn</span></li>
+        </ul>
       </div>
 
-      <div class="lg:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".4s">
-        <div class="p-6 border border-gray-300 bg-white rounded-2xl h-full">
-          <span class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full">
-            <i class="hgi hgi-stroke hgi-coins-02 text-3xl text-light-primary-text"></i>
-          </span>
-          <h5 class="pt-3 pb-0.5">Thanh toán minh bạch</h5>
-          <p>Đối soát rõ ràng, giúp bạn quản lý doanh thu dễ dàng.</p>
-        </div>
+      <div class="pt-ach-card wow animate__animated animate__fadeInUp" data-wow-delay=".35s">
+        <span class="pt-ach-ic" style="background: #DCFCE7; color: #15803D;">
+          <i class="hgi hgi-stroke hgi-coins-02"></i>
+        </span>
+        <h5 class="pt-ach-title">Đối Soát Ví &amp; Lợi Nhuận Minh Bạch</h5>
+        <p class="pt-ach-desc">
+          Hệ thống tự động tính phí chiết khấu theo ngành hàng, giá vốn, thuế và cập nhật doanh thu về Ví Sellzy theo thời gian thực.
+        </p>
+        <ul class="pt-ach-bullets">
+          <li><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i><span>Tích hợp <strong>Máy tính Lợi nhuận</strong></span></li>
+          <li><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i><span>Miễn 1.5% thuế CN cho Doanh nghiệp Mall</span></li>
+        </ul>
       </div>
 
-      <div class="lg:col-span-3 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".5s">
-        <div class="p-6 border border-gray-300 bg-white rounded-2xl h-full">
-          <span class="inline-flex items-center justify-center size-14 bg-warning-lighter rounded-full">
-            <i class="hgi hgi-stroke hgi-shield-01 text-3xl text-light-primary-text"></i>
-          </span>
-          <h5 class="pt-3 pb-0.5">Vận hành an tâm</h5>
-          <p>Quy trình và hỗ trợ giúp bạn bán hàng ổn định.</p>
-        </div>
+      <div class="pt-ach-card wow animate__animated animate__fadeInUp" data-wow-delay=".45s">
+        <span class="pt-ach-ic" style="background: #E0E7FF; color: #4338CA;">
+          <i class="hgi hgi-stroke hgi-shield-01"></i>
+        </span>
+        <h5 class="pt-ach-title">Vận Hành Tự Động &amp; Hỗ Trợ VAT B2B</h5>
+        <p class="pt-ach-desc">
+          Kết nối Giao Hàng Nhanh (GHN) tự động tính cước, quản lý hạn sử dụng thực phẩm, giao mã số 24/7 và xuất Hóa đơn VAT.
+        </p>
+        <ul class="pt-ach-bullets">
+          <li><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i><span>Tự động tạo vận đơn chuẩn <strong>GHN</strong></span></li>
+          <li><i class="hgi hgi-stroke hgi-checkmark-circle-02"></i><span>Hỗ trợ xuất <strong>Hóa đơn VAT</strong> điện tử</span></li>
+        </ul>
       </div>
     </div>
   </div>
@@ -838,64 +1626,80 @@
 <!-- ========== Steps (Các bước) Start ========== -->
 <section class="mb-[70px]">
   <div class="container">
-    <div class="text-center">
-      <h3 class="pb-3 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-        Các bước để bắt đầu
-      </h3>
-      <p class="pb-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-        Quy trình đơn giản, rõ ràng.
-      </p>
-    </div>
+    <div class="pt-roadmap-wrap">
+      <div class="text-center max-w-2xl mx-auto mb-10 wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+        <span class="pt-eyebrow"><i class="hgi hgi-stroke hgi-route-01"></i> Lộ trình 4 bước</span>
+        <h3 class="text-2xl md:text-3xl font-extrabold text-light-primary-text mb-2">
+          Các Bước Để Bắt Đầu Kinh Doanh Trên Sellzy
+        </h3>
+        <p class="text-sm text-light-secondary-text m-0">
+          Quy trình tinh gọn, rõ ràng từ lúc gửi hồ sơ đăng ký đến khi nhận đơn hàng đầu tiên.
+        </p>
+      </div>
 
-    <div class="grid grid-cols-12">
-      <div class="lg:col-start-2 md:col-start-2 col-start-1 xl:col-end-12 md:col-end-12 col-end-13">
-        <div class="accordion">
-          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-            <div class="accordion-header active">
-              <h6>1. Gửi đăng ký</h6>
-              <i class="hgi hgi-stroke hgi-minus-sign"></i>
-              <i class="hgi hgi-stroke hgi-plus-sign"></i>
-            </div>
-            <div class="accordion-body">
-              <p>Điền thông tin cửa hàng và thông tin liên hệ ở form phía trên.</p>
-            </div>
+      <div class="pt-roadmap-grid">
+        <div class="pt-roadmap-card wow animate__animated animate__fadeInUp" data-wow-delay=".15s">
+          <div class="pt-roadmap-top">
+            <span class="pt-roadmap-badge">Bước 01</span>
+            <span class="pt-roadmap-ic"><i class="hgi hgi-stroke hgi-edit-02"></i></span>
           </div>
-
-          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-            <div class="accordion-header">
-              <h6>2. Xác minh thông tin</h6>
-              <i class="hgi hgi-stroke hgi-minus-sign"></i>
-              <i class="hgi hgi-stroke hgi-plus-sign"></i>
-            </div>
-            <div class="accordion-body">
-              <p>Chúng tôi sẽ kiểm tra thông tin cơ bản để kích hoạt gian hàng.</p>
-            </div>
+          <h5 class="pt-roadmap-title">Chọn Mô Hình &amp; Nộp Đơn</h5>
+          <p class="pt-roadmap-desc">
+            Chọn <strong>Shop Thường</strong> hoặc <strong>Sellzy Mall</strong> ở biểu mẫu phía trên, điền thông tin liên hệ và địa chỉ kho lấy hàng chuẩn GHN.
+          </p>
+          <div class="pt-roadmap-note">
+            <i class="hgi hgi-stroke hgi-information-circle"></i>
+            <span>Shop Mall đính kèm thêm MST &amp; GPĐKKD</span>
           </div>
+        </div>
 
-          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-            <div class="accordion-header">
-              <h6>3. Đăng sản phẩm</h6>
-              <i class="hgi hgi-stroke hgi-minus-sign"></i>
-              <i class="hgi hgi-stroke hgi-plus-sign"></i>
-            </div>
-            <div class="accordion-body">
-              <p>Thêm sản phẩm, hình ảnh, phân loại và giá để bắt đầu bán.</p>
-            </div>
+        <div class="pt-roadmap-card wow animate__animated animate__fadeInUp" data-wow-delay=".25s">
+          <div class="pt-roadmap-top">
+            <span class="pt-roadmap-badge" style="background: #B45309;">Bước 02</span>
+            <span class="pt-roadmap-ic" style="background: #FEF3C7; color: #B45309;"><i class="hgi hgi-stroke hgi-user-check-01"></i></span>
           </div>
+          <h5 class="pt-roadmap-title">Thẩm Định &amp; Kích Hoạt</h5>
+          <p class="pt-roadmap-desc">
+            Ban quản trị kiểm tra địa chỉ kho bãi và chứng từ pháp lý (nếu có). Khi được duyệt, tài khoản sẽ mở quyền truy cập <strong>Kênh Người Bán</strong>.
+          </p>
+          <div class="pt-roadmap-note" style="color: #B45309;">
+            <i class="hgi hgi-stroke hgi-clock-01"></i>
+            <span>Thời gian xét duyệt trong vòng 24 giờ</span>
+          </div>
+        </div>
 
-          <div class="accordion-item wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-            <div class="accordion-header">
-              <h6>4. Bắt đầu bán hàng</h6>
-              <i class="hgi hgi-stroke hgi-minus-sign"></i>
-              <i class="hgi hgi-stroke hgi-plus-sign"></i>
-            </div>
-            <div class="accordion-body">
-              <p>Nhận đơn, xử lý giao hàng và theo dõi doanh thu ngay trên hệ thống.</p>
-            </div>
+        <div class="pt-roadmap-card wow animate__animated animate__fadeInUp" data-wow-delay=".35s">
+          <div class="pt-roadmap-top">
+            <span class="pt-roadmap-badge" style="background: #4338CA;">Bước 03</span>
+            <span class="pt-roadmap-ic" style="background: #E0E7FF; color: #4338CA;"><i class="hgi hgi-stroke hgi-package"></i></span>
+          </div>
+          <h5 class="pt-roadmap-title">Đăng Sản Phẩm &amp; Kho</h5>
+          <p class="pt-roadmap-desc">
+            Đăng bán sản phẩm thuộc 10 ngành hàng với đầy đủ biến thể, giá vốn, ảnh, thông số kỹ thuật, hạn sử dụng (HSD) hoặc mã E-Voucher.
+          </p>
+          <div class="pt-roadmap-note" style="color: #4338CA;">
+            <i class="hgi hgi-stroke hgi-sparkles"></i>
+            <span>Hỗ trợ đăng Flash Sale &amp; mã giảm giá</span>
+          </div>
+        </div>
+
+        <div class="pt-roadmap-card wow animate__animated animate__fadeInUp" data-wow-delay=".45s">
+          <div class="pt-roadmap-top">
+            <span class="pt-roadmap-badge" style="background: #15803D;">Bước 04</span>
+            <span class="pt-roadmap-ic" style="background: #DCFCE7; color: #15803D;"><i class="hgi hgi-stroke hgi-chart-increase"></i></span>
+          </div>
+          <h5 class="pt-roadmap-title">Bán Hàng &amp; Nâng Cấp Mall</h5>
+          <p class="pt-roadmap-desc">
+            Xác nhận đơn, đẩy vận đơn GHN tự động và theo dõi lợi nhuận ròng trên Ví Sellzy. Shop Thường có thể gửi yêu cầu nâng cấp <strong>Sellzy Mall</strong> bất kỳ lúc nào.
+          </p>
+          <div class="pt-roadmap-note" style="color: #15803D;">
+            <i class="hgi hgi-stroke hgi-checkmark-badge-02"></i>
+            <span>Đối soát tự động &amp; rút tiền nhanh</span>
           </div>
         </div>
       </div>
     </div>
   </div>
 </section>
+<!-- ========== Steps End ========== -->
 <!-- ========== Steps End ========== -->

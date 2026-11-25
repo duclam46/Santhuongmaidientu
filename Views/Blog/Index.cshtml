@@ -18,368 +18,429 @@
     var clearAllUrl = BlogUrl(search: null, shop: Model.ShopSlug, sort: Model.Sort ?? "newest", category: null, page: 1);
     var clearCategoryUrl = BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: null, page: 1);
 }
-}
 
-<style>
-    /* Premium Blog CSS */
-    .premium-blog-card {
-        background: #ffffff;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        border-radius: 24px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        position: relative;
-        overflow: hidden;
+@section Styles {
+  <style>
+    /* ========== SELLZY EDITORIAL BLOG REDESIGN ========== */
+    .bl-hero {
+      background: linear-gradient(125deg, #EFF8F7 0%, #FFFFFF 55%, #FFFBEB 100%);
+      border: 1px solid rgba(8, 129, 120, 0.12);
+      border-radius: 26px;
+      padding: 28px 34px;
+      margin-bottom: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
     }
-    .premium-blog-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-        border-color: rgba(20, 184, 166, 0.3);
+    @@media (max-width: 767px) {
+      .bl-hero { padding: 22px 18px; border-radius: 20px; }
     }
-    .premium-blog-image {
-        position: relative;
-        overflow: hidden;
-        border-radius: 20px;
-        margin: 12px 12px 0 12px;
+    .bl-crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748B;
+      margin-bottom: 8px;
     }
-    .premium-blog-image img {
-        transition: transform 0.7s ease;
+    .bl-crumb a { color: #475569; transition: color 0.2s; }
+    .bl-crumb a:hover { color: #088178; }
+
+    .bl-toolbar {
+      background-color: #ffffff;
+      border: 1px solid #EAECEF;
+      border-radius: 18px;
+      padding: 12px 18px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
-    .premium-blog-card:hover .premium-blog-image img {
-        transform: scale(1.05);
+
+    .bl-card {
+      background: #ffffff;
+      border: 1px solid #EAECEF;
+      border-radius: 22px;
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     }
-    .premium-category-badge {
-        background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-        color: white;
-        padding: 6px 14px;
-        border-radius: 30px;
-        font-weight: 800;
-        font-size: 11px;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+    .bl-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(8, 129, 120, 0.4);
+      box-shadow: 0 18px 36px -14px rgba(22, 28, 36, 0.12);
     }
-    .premium-read-more {
-        background: linear-gradient(135deg, #14b8a6, #0f766e);
-        color: white !important;
-        border-radius: 50px;
-        transition: all 0.3s ease;
-        border: none;
+    .bl-card-img {
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+      background-color: #F4F6F8;
     }
-    .premium-read-more:hover {
-        box-shadow: 0 8px 20px rgba(15, 118, 110, 0.35);
-        transform: translateY(-2px);
+    .bl-card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
     }
-    
-    /* Sidebar styling */
-    .premium-sidebar-widget {
-        background: #ffffff;
-        border-radius: 24px;
-        border: 1px solid rgba(0,0,0,0.05);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-        overflow: hidden;
+    .bl-card:hover .bl-card-img img {
+      transform: scale(1.06);
     }
-    .premium-sidebar-header {
-        background: linear-gradient(to right, #f8fafc, #f1f5f9);
-        padding: 20px 24px;
-        border-bottom: 1px solid rgba(0,0,0,0.04);
+    .bl-cat-pill {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 5;
+      background-color: #00262A;
+      color: #FFEB69;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 999px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
-    .premium-sidebar-title {
-        font-weight: 800;
-        color: #0f172a;
-        font-size: 16px;
+    .bl-read-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background-color: #E6F4F3;
+      color: #088178;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s ease;
     }
-    .premium-tag {
-        background: #f8fafc;
-        color: #475569;
-        border: 1px solid #e2e8f0;
-        transition: all 0.3s ease;
+    .bl-card:hover .bl-read-btn,
+    .bl-read-btn:hover {
+      background-color: #088178;
+      color: #ffffff;
     }
-    .premium-tag:hover {
-        background: linear-gradient(135deg, #14b8a6, #0f766e);
-        color: white;
-        border-color: transparent;
-        box-shadow: 0 4px 12px rgba(20, 184, 166, 0.25);
-        transform: translateY(-2px);
+
+    /* Sidebar Widgets */
+    .bl-widget {
+      background: #ffffff;
+      border: 1px solid #EAECEF;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .bl-widget-head {
+      background-color: #F8FAFC;
+      padding: 15px 20px;
+      border-bottom: 1px solid #EEF2F6;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .bl-widget-head h5 {
+      font-size: 15px;
+      font-weight: 800;
+      color: #161C24;
+      margin: 0;
+    }
+    .bl-tag {
+      background: #F8FAFC;
+      color: #475569;
+      border: 1px solid #E2E8F0;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .bl-tag:hover {
+      background-color: #088178;
+      color: #ffffff;
+      border-color: #088178;
     }
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-</style>
+  </style>
+}
 
-<!-- ========== Breadcrumb Section Start ========== -->
-<div class="py-12">
-    <div class="container">
-        <div class="breadcrumb">
-            <ul>
-                <li>
-                    <a href='@Url.Action("Index", "Home")'>
-                        <span>
-                            <i class="hgi hgi-stroke hgi-home-01 text-[20px]"></i>
-                        </span>
-                        Home
-                    </a>
-                </li>
-                <li class="text-light-disabled-text">&#8226;</li>
-                <li><span>Blog Page</span></li>
-            </ul>
-        </div>
+<!-- ========== Top Hero Banner Start ========== -->
+<div class="container pt-6">
+  <div class="bl-hero">
+    <div>
+      <nav class="bl-crumb">
+        <a href='@Url.Action("Index", "Home")'><i class="hgi hgi-stroke hgi-home-01 mr-1"></i>Trang chủ</a>
+        <span>/</span>
+        <span class="font-semibold text-primary">Tin tức &amp; Blog</span>
+      </nav>
+      <h1 class="text-2xl md:text-3xl font-extrabold text-light-primary-text mb-1">
+        Tạp Chí Thời Trang &amp; Xu Hướng Sellzy
+      </h1>
+      <p class="text-sm text-light-secondary-text m-0 max-w-xl">
+        Cập nhật mẹo phối đồ, xu hướng mùa mới và những câu chuyện thú vị từ các thương hiệu đối tác.
+      </p>
     </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl px-5 py-3 flex items-center gap-3 shadow-sm">
+      <span class="size-10 rounded-xl bg-[#E6F4F3] text-primary inline-flex items-center justify-center">
+        <i class="hgi hgi-stroke hgi-news text-xl"></i>
+      </span>
+      <div>
+        <div class="text-base font-extrabold text-light-primary-text leading-tight">@Model.Posts.Count bài viết</div>
+        <div class="text-xs text-light-secondary-text">Cập nhật mỗi ngày</div>
+      </div>
+    </div>
+  </div>
 </div>
-<!-- ========== Breadcrumb Section End ========== -->
+<!-- ========== Top Hero Banner End ========== -->
 
 <!-- ========== Blog Grid Section Start ========== -->
-<div class="pb-12">
-    <div class="container">
-        <div class="grid grid-cols-12 gap-6">
-            <div class="xl:col-span-9 col-span-12">
-                <div class="flex items-center justify-between mb-12 wow animate__animated animate__fadeInUp" data-wow-delay="0.2s">
-                    <div class="flex items-center gap-x-4">
-                        <a class='w-10 h-10 rounded-full inline-flex items-center justify-center btn btn-default outline shadow-none cursor-pointer' href='@Url.Action("Index", "Blog")'>
-                            <span class="inline-flex items-center justify-center">
-                                <i class="hgi hgi-stroke hgi-left-to-right-list-bullet text-2xl leading-6 text-light-primary-text"></i>
-                            </span>
-                        </a>
-                        <a href='#' class="w-10 h-10 rounded-full inline-flex items-center justify-center btn-primary cursor-pointer">
-                            <span class="inline-flex items-center justify-center">
-                                <i class="hgi hgi-stroke hgi-more-01 text-2xl leading-6 text-white"></i>
-                            </span>
-                        </a>
-                    </div>
+<div class="pb-16">
+  <div class="container">
+    <div class="grid grid-cols-12 gap-6">
+      <div class="xl:col-span-9 col-span-12">
+        <div class="bl-toolbar wow animate__animated animate__fadeInUp" data-wow-delay="0.2s">
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="text-sm font-semibold text-light-primary-text">
+              Hiển thị <strong class="text-primary">@Model.Posts.Count</strong> bài viết
+            </span>
+            @if (!string.IsNullOrWhiteSpace(Model.CategorySlug))
+            {
+              <a href="@clearCategoryUrl" class="inline-flex items-center gap-1.5 text-xs font-semibold bg-[#E6F4F3] text-primary rounded-full px-3 py-1">
+                <span>Danh mục: @Model.CategorySlug</span>
+                <i class="hgi hgi-stroke hgi-cancel-01 text-xs"></i>
+              </a>
+            }
+          </div>
 
-                    <!-- sorting -->
-                    <div class="relative min-w-[100px]">
-                        <select id="sorting" class="filter-select label" onchange="window.location.href=this.value">
-                            <option value="@sortNewestUrl" selected="@(string.Equals(Model.Sort, "newest", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Newest First</option>
-                            <option value="@sortOldestUrl" selected="@(string.Equals(Model.Sort, "oldest", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Oldest First</option>
-                            <option value="@sortMostViewedUrl" selected="@(string.Equals(Model.Sort, "most-viewed", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Most Viewed</option>
-                            <option value="@sortMostCommentedUrl" selected="@(string.Equals(Model.Sort, "most-commented", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Most Commented</option>
-                            <option value="@sortAToZUrl" selected="@(string.Equals(Model.Sort, "a-z-order", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">A-Z Order</option>
-                            <option value="@sortZToAUrl" selected="@(string.Equals(Model.Sort, "z-a-order", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Z-A Order</option>
-                        </select>
-                        <label for="sorting" class="nice-select-label">Sorting</label>
-                    </div>
-                </div>
-
-                <div class="grid 2xl:grid-cols-3 xl:grid-cols-2 grid-cols-12 gap-6 pb-12">
-                    @if (Model.Posts.Count == 0)
-                    {
-                        <div class="col-span-12">
-                            <div class="border border-gray-300 rounded-2xl p-6 text-center">
-                                <p class="text-light-secondary-text">Chưa có bài viết phù hợp.</p>
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        int index = 0;
-                        foreach (var post in Model.Posts)
-                        {
-                            var detailsUrl = Url.Action("Details", "Blog", new { slug = post.Slug }) ?? "#";
-                            var categoryName = string.IsNullOrWhiteSpace(post.ProductCategoryName) ? "Category Name" : post.ProductCategoryName;
-                            var when = post.PublishedAt ?? post.CreatedAt;
-                            var delay = 0.2 + (index % 3) * 0.1;
-                            index++;
-
-                            <div class="2xl:col-span-1 xl:col-span-1 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay="@(delay.ToString("F1", CultureInfo.InvariantCulture))s">
-                                <div class="premium-blog-card h-full flex flex-col">
-                                    <div class="premium-blog-image mb-5 h-[240px] shrink-0 relative">
-                                        <a href='@detailsUrl' class="block w-full h-full">
-                                            <img src="@(post.CoverImageUrl ?? "/assets/images/no-image.png")" alt="@post.Title" class="w-full h-full object-cover" />
-                                        </a>
-                                        <!-- Absolute Category Badge on Image -->
-                                        <div class="absolute top-4 left-4 z-10">
-                                            <span class="premium-category-badge">@categoryName</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="px-6 pb-6 flex flex-col grow">
-                                        <div class="flex flex-wrap items-center gap-4 mb-4 text-[13px] font-semibold text-gray-500">
-                                            <span class="inline-flex items-center gap-x-1.5">
-                                                <i class="hgi hgi-stroke hgi-calendar-03 text-[18px] text-[#14b8a6]"></i>
-                                                @when.ToString("dd MMM, yyyy", CultureInfo.InvariantCulture)
-                                            </span>
-                                            <span class="inline-flex items-center gap-x-1.5">
-                                                <i class="hgi hgi-stroke hgi-chatting-01 text-[18px] text-[#14b8a6]"></i>
-                                                @post.CommentCount Bình luận
-                                            </span>
-                                        </div>
-                                        
-                                        <a href='@detailsUrl' class="grow">
-                                            <h4 class="text-lg font-extrabold text-gray-900 mb-3 hover:text-[#14b8a6] transition-colors line-clamp-2 leading-snug">@post.Title</h4>
-                                        </a>
-                                        
-                                        @if (!string.IsNullOrWhiteSpace(post.Summary))
-                                        {
-                                            <p class="mb-5 text-[15px] leading-relaxed text-gray-600 line-clamp-2 font-medium">@post.Summary</p>
-                                        }
-                                        
-                                        <div class="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-                                            <a class="premium-read-more py-2 px-6 text-sm font-bold flex items-center gap-2" href='@detailsUrl'>
-                                                Đọc tiếp
-                                                <i class="hgi hgi-stroke hgi-arrow-right-01 text-lg"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    }
-                </div>
-
-                <!-- pagination -->
-                @if (Model.TotalPages > 1)
-                {
-                    <div data-wow-delay="0.2s" class="grid grid-cols-12 wow animate__animated animate__fadeInUp">
-                        <div class="col-span-12">
-                            <ul class="flex items-center justify-center gap-x-1.5 blog-pagination">
-                                <li class="group blog-pagination-item">
-                                    <a href="@(Model.CurrentPage > 1 ? BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: Model.CategorySlug, page: Model.CurrentPage - 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:font-semibold group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out">
-                                        <span class="inline-flex items-center justify-center">
-                                            <i class="hgi hgi-stroke hgi-arrow-left-01 text-[20px] group-hover:font-semibold leading-5 text-light-primary-text group-hover:text-primary"></i>
-                                        </span>
-                                    </a>
-                                </li>
-
-                                @for (var i = 1; i <= Model.TotalPages; i++)
-                                {
-                                    var isActive = i == Model.CurrentPage;
-                                    <li class="group blog-pagination-item">
-                                        <a href='@BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: Model.CategorySlug, page: i)' class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] @(isActive ? "active" : "text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out")">@i</a>
-                                    </li>
-                                }
-
-                                <li class="group blog-pagination-item">
-                                    <a href="@(Model.CurrentPage < Model.TotalPages ? BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: Model.CategorySlug, page: Model.CurrentPage + 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out">
-                                        <span class="inline-flex items-center justify-center">
-                                            <i class="hgi hgi-stroke hgi-arrow-right-01 text-[20px] leading-5 group-hover:font-semibold text-light-primary-text group-hover:text-primary"></i>
-                                        </span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                }
-            </div>
-
-            <div class="xl:col-span-3 col-span-12">
-                <div class="sticky top-4">
-                    <div class="flex flex-col gap-y-6">
-                        <form method="get" action="@Url.Action("Index", "Blog")" class="input-group medium pl-4 py-4 pr-2.5 rounded-[100px] flex-1 lg:flex hidden wow animate__animated animate__fadeInUp" data-wow-delay="0.2s">
-                            @if (!string.IsNullOrWhiteSpace(Model.ShopSlug))
-                            {
-                                <input type="hidden" name="shop" value="@Model.ShopSlug" />
-                            }
-                            @if (!string.IsNullOrWhiteSpace(Model.Sort))
-                            {
-                                <input type="hidden" name="sort" value="@Model.Sort" />
-                            }
-                            @if (!string.IsNullOrWhiteSpace(Model.CategorySlug))
-                            {
-                                <input type="hidden" name="category" value="@Model.CategorySlug" />
-                            }
-                            <div class="input-group-addon inline-flex items-center justify-center leading-6" data-align="inline-start">
-                                <span class="inline-flex items-center justify-center">
-                                    <i class="hgi hgi-stroke hgi-search-01 text-2xl leading-6 text-light-primary-text"></i>
-                                </span>
-                            </div>
-                            <input type="text" name="search" value="@Model.SearchQuery" class="peer form-control placeholder-transparent focus:placeholder-transparent" id="sidebar-search" placeholder="Search..." />
-                            <label for="sidebar-search" class="absolute left-12 peer-focus:left-[14px] top-1/2 -translate-y-1/2 text-xs leading-[18px] transition-all peer-placeholder-shown:text-light-disabled-text peer-placeholder-shown:text-[16px] peer-placeholder-shown:top-1/2 peer-focus:text-[12px] peer-focus:top-0 peer-[:not(:placeholder-shown)]:text-[12px] peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:left-[14px] bg-white peer-focus:px-1 peer-[:not(:placeholder-shown)]:px-1">Search...</label>
-                        </form>
-
-                        <!-- Category-content -->
-                        <div class="premium-sidebar-widget wow animate__animated animate__fadeInUp" data-wow-delay="0.3s">
-                            <div class="premium-sidebar-header flex items-center justify-between">
-                                <h5 class="premium-sidebar-title">Danh mục bài viết</h5>
-                                <a href='@clearAllUrl' class="text-xs font-bold text-error hover:underline">Xóa Lọc</a>
-                            </div>
-
-                            <div class="p-5">
-                                <div class="max-h-[240px] overflow-y-auto custom-scrollbar pr-3">
-                                    <ul class="flex flex-col gap-y-3">
-                                        @if (Model.ProductCategories.Count == 0)
-                                        {
-                                            <li>
-                                                <span class="text-light-disabled-text text-sm font-medium">Chưa có danh mục nào.</span>
-                                            </li>
-                                        }
-                                        else
-                                        {
-                                            foreach (var c in Model.ProductCategories)
-                                            {
-                                                var catUrl = BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: c.Slug, page: 1);
-                                                var isSelected = string.Equals(Model.CategorySlug, c.Slug, StringComparison.OrdinalIgnoreCase);
-
-                                                <li>
-                                                    <label class="group flex items-center justify-between w-full cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors">
-                                                        <span class="flex items-center gap-x-3">
-                                                            <span class="relative inline-flex w-5 h-5 items-center justify-center">
-                                                                <input type="checkbox" class="peer appearance-none w-full h-full border-2 focus:outline-none checked:border-transparent border-gray-300 rounded-md bg-white checked:bg-[#14b8a6] transition-all duration-300 ease-in-out cursor-pointer" checked="@(isSelected ? "checked" : null)" onchange="window.location.href=(this.checked ? '@catUrl' : '@clearCategoryUrl')" />
-                                                                <span class="absolute inset-0 inline-flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 transition-all pointer-events-none">
-                                                                    <i class="hgi hgi-stroke hgi-tick-02 text-[14px]"></i>
-                                                                </span>
-                                                            </span>
-                                                            <span class="text-gray-700 font-semibold text-[15px] group-hover:text-[#14b8a6] transition-colors duration-300">@c.Name</span>
-                                                        </span>
-                                                        <span class="text-xs font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-full group-hover:bg-[#14b8a6]/10 group-hover:text-[#14b8a6] transition-colors">@c.PostCount</span>
-                                                    </label>
-                                                </li>
-                                            }
-                                        }
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Popular Tags -->
-                        <div class="premium-sidebar-widget wow animate__animated animate__fadeInUp" data-wow-delay="0.4s">
-                            <div class="premium-sidebar-header">
-                                <h5 class="premium-sidebar-title">Từ khóa phổ biến</h5>
-                            </div>
-                            <div class="p-5">
-                                <div class="flex flex-wrap items-center gap-2.5">
-                                    @foreach (var c in Model.ProductCategories.Take(8))
-                                    {
-                                        var catUrl = BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: c.Slug, page: 1);
-                                        <button type="button" onclick="window.location.href='@catUrl'" class="premium-tag py-2 px-4 rounded-full text-xs font-bold cursor-pointer">@c.Name</button>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recent Posts -->
-                        <div class="premium-sidebar-widget wow animate__animated animate__fadeInUp" data-wow-delay="0.5s">
-                            <div class="premium-sidebar-header">
-                                <h5 class="premium-sidebar-title">Bài viết mới nhất</h5>
-                            </div>
-
-                            <div class="p-5">
-                                <div class="flex flex-col gap-5">
-                                    @foreach (var post in Model.RecentPosts)
-                                    {
-                                        var detailsUrl = Url.Action("Details", "Blog", new { slug = post.Slug }) ?? "#";
-                                        var categoryName = string.IsNullOrWhiteSpace(post.ProductCategoryName) ? "Chung" : post.ProductCategoryName;
-                                        var when = post.PublishedAt ?? post.CreatedAt;
-
-                                        <div class="flex gap-4 items-center group cursor-pointer" onclick="window.location.href='@detailsUrl'">
-                                            <div class="w-[84px] h-[84px] rounded-xl overflow-hidden shrink-0 relative shadow-sm border border-gray-100">
-                                                <img src="@(post.CoverImageUrl ?? "/assets/images/no-image.png")" alt="@post.Title" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                            </div>
-                                            <div class="flex flex-col gap-1.5 flex-1">
-                                                <h6 class="text-[14px] font-bold text-gray-800 line-clamp-2 group-hover:text-[#14b8a6] transition-colors leading-snug">@post.Title</h6>
-                                                <div class="flex items-center gap-3 text-[11px] font-bold text-gray-500 mt-1">
-                                                    <span class="inline-flex items-center gap-1"><i class="hgi hgi-stroke hgi-calendar-03 text-[#14b8a6]"></i> @when.ToString("dd MMM, yyyy", CultureInfo.InvariantCulture)</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+          <!-- Sorting -->
+          <div class="relative min-w-[150px]">
+            <select id="sorting" class="filter-select label" onchange="window.location.href=this.value">
+              <option value="@sortNewestUrl" selected="@(string.Equals(Model.Sort, "newest", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Mới nhất</option>
+              <option value="@sortOldestUrl" selected="@(string.Equals(Model.Sort, "oldest", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Cũ nhất</option>
+              <option value="@sortMostViewedUrl" selected="@(string.Equals(Model.Sort, "most-viewed", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Xem nhiều nhất</option>
+              <option value="@sortMostCommentedUrl" selected="@(string.Equals(Model.Sort, "most-commented", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Bình luận nhiều</option>
+              <option value="@sortAToZUrl" selected="@(string.Equals(Model.Sort, "a-z-order", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Tên (A-Z)</option>
+              <option value="@sortZToAUrl" selected="@(string.Equals(Model.Sort, "z-a-order", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Tên (Z-A)</option>
+            </select>
+            <label for="sorting" class="nice-select-label">Sắp xếp</label>
+          </div>
         </div>
+
+        <div class="grid 2xl:grid-cols-3 xl:grid-cols-2 grid-cols-12 gap-6 pb-12 items-stretch">
+          @if (Model.Posts.Count == 0)
+          {
+            <div class="col-span-12">
+              <div class="border border-dashed border-gray-300 bg-gray-50 rounded-3xl p-14 text-center">
+                <i class="hgi hgi-stroke hgi-news text-5xl text-gray-400 mb-3 inline-block"></i>
+                <h5 class="text-lg font-bold text-light-primary-text mb-1">Chưa có bài viết phù hợp</h5>
+                <p class="text-sm text-light-secondary-text mb-5">Hãy thử tìm kiếm từ khóa khác hoặc xóa bộ lọc danh mục.</p>
+                <a href="@clearAllUrl" class="btn btn-primary rounded-full px-6 py-2.5 text-sm font-semibold text-white">Xem tất cả bài viết</a>
+              </div>
+            </div>
+          }
+          else
+          {
+            int index = 0;
+            foreach (var post in Model.Posts)
+            {
+              var detailsUrl = Url.Action("Details", "Blog", new { slug = post.Slug }) ?? "#";
+              var categoryName = string.IsNullOrWhiteSpace(post.ProductCategoryName) ? "Thời trang" : post.ProductCategoryName;
+              var when = post.PublishedAt ?? post.CreatedAt;
+              var delay = 0.2 + (index % 3) * 0.1;
+              index++;
+
+              <div class="2xl:col-span-1 xl:col-span-1 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay="@(delay.ToString("F1", CultureInfo.InvariantCulture))s">
+                <div class="bl-card">
+                  <div class="bl-card-img">
+                    <a href='@detailsUrl' class="block w-full h-full">
+                      <img src="@(post.CoverImageUrl ?? "/assets/images/no-image.png")" alt="@post.Title" />
+                    </a>
+                    <span class="bl-cat-pill">@categoryName</span>
+                  </div>
+
+                  <div class="p-5 flex flex-col flex-1">
+                    <div class="flex flex-wrap items-center gap-4 mb-3 text-xs font-semibold text-light-secondary-text">
+                      <span class="inline-flex items-center gap-1.5">
+                        <i class="hgi hgi-stroke hgi-calendar-03 text-base text-primary"></i>
+                        @when.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+                      </span>
+                      <span class="inline-flex items-center gap-1.5">
+                        <i class="hgi hgi-stroke hgi-chatting-01 text-base text-primary"></i>
+                        @post.CommentCount bình luận
+                      </span>
+                    </div>
+
+                    <a href='@detailsUrl' class="block mb-2.5">
+                      <h4 class="text-base font-extrabold text-light-primary-text hover:text-primary transition-colors line-clamp-2 leading-snug m-0">@post.Title</h4>
+                    </a>
+
+                    @if (!string.IsNullOrWhiteSpace(post.Summary))
+                    {
+                      <p class="mb-4 text-sm leading-relaxed text-light-secondary-text line-clamp-2">@post.Summary</p>
+                    }
+
+                    <div class="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+                      <a class="bl-read-btn" href='@detailsUrl'>
+                        <span>Đọc tiếp</span>
+                        <i class="hgi hgi-stroke hgi-arrow-right-02 text-base"></i>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+          <div data-wow-delay="0.2s" class="grid grid-cols-12 wow animate__animated animate__fadeInUp">
+            <div class="col-span-12">
+              <ul class="flex items-center justify-center gap-x-1.5 blog-pagination">
+                <li class="group blog-pagination-item">
+                  <a href="@(Model.CurrentPage > 1 ? BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: Model.CategorySlug, page: Model.CurrentPage - 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:font-semibold group-hover:border-primary group-hover:bg-[rgba(8,129,120,0.08)] transition-colors duration-300 ease-in-out">
+                    <span class="inline-flex items-center justify-center">
+                      <i class="hgi hgi-stroke hgi-arrow-left-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
+                    </span>
+                  </a>
+                </li>
+
+                @for (var i = 1; i <= Model.TotalPages; i++)
+                {
+                  var isActive = i == Model.CurrentPage;
+                  <li class="group blog-pagination-item">
+                    <a href='@BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: Model.CategorySlug, page: i)' class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] @(isActive ? "active" : "text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(8,129,120,0.08)] transition-colors duration-300 ease-in-out")">@i</a>
+                  </li>
+                }
+
+                <li class="group blog-pagination-item">
+                  <a href="@(Model.CurrentPage < Model.TotalPages ? BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: Model.CategorySlug, page: Model.CurrentPage + 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(8,129,120,0.08)] transition-colors duration-300 ease-in-out">
+                    <span class="inline-flex items-center justify-center">
+                      <i class="hgi hgi-stroke hgi-arrow-right-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
+                    </span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <div class="xl:col-span-3 col-span-12">
+        <div class="sticky top-20 flex flex-col gap-y-5">
+          <form method="get" action="@Url.Action("Index", "Blog")" class="input-group medium pl-4 py-3 pr-3 rounded-[100px] bg-white border border-gray-200 flex items-center wow animate__animated animate__fadeInUp" data-wow-delay="0.2s">
+            @if (!string.IsNullOrWhiteSpace(Model.ShopSlug))
+            {
+              <input type="hidden" name="shop" value="@Model.ShopSlug" />
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.Sort))
+            {
+              <input type="hidden" name="sort" value="@Model.Sort" />
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.CategorySlug))
+            {
+              <input type="hidden" name="category" value="@Model.CategorySlug" />
+            }
+            <div class="input-group-addon inline-flex items-center justify-center leading-6 mr-2" data-align="inline-start">
+              <i class="hgi hgi-stroke hgi-search-01 text-lg text-primary"></i>
+            </div>
+            <input type="text" name="search" value="@Model.SearchQuery" class="form-control text-sm w-full outline-none bg-transparent" id="sidebar-search" placeholder="Tìm kiếm bài viết..." />
+          </form>
+
+          <!-- Categories -->
+          <div class="bl-widget wow animate__animated animate__fadeInUp" data-wow-delay="0.3s">
+            <div class="bl-widget-head">
+              <h5>Danh mục bài viết</h5>
+              <a href='@clearAllUrl' class="text-xs font-bold text-primary hover:underline">Xóa lọc</a>
+            </div>
+            <div class="p-4">
+              <div class="max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
+                <ul class="flex flex-col gap-y-1.5">
+                  @if (Model.ProductCategories.Count == 0)
+                  {
+                    <li><span class="text-light-disabled-text text-xs">Chưa có danh mục nào.</span></li>
+                  }
+                  else
+                  {
+                    foreach (var c in Model.ProductCategories)
+                    {
+                      var catUrl = BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: c.Slug, page: 1);
+                      var isSelected = string.Equals(Model.CategorySlug, c.Slug, StringComparison.OrdinalIgnoreCase);
+
+                      <li>
+                        <label class="group flex items-center justify-between w-full cursor-pointer hover:bg-[#F4FAF9] p-2 rounded-xl transition-colors @(isSelected ? "bg-[#E6F4F3]" : "")">
+                          <span class="flex items-center gap-x-2.5">
+                            <span class="relative inline-flex w-4.5 h-4.5 items-center justify-center">
+                              <input type="checkbox" class="peer appearance-none w-full h-full border-2 focus:outline-none checked:border-transparent border-gray-300 rounded-md bg-white checked:bg-primary transition-all duration-200 cursor-pointer" checked="@(isSelected ? "checked" : null)" onchange="window.location.href=(this.checked ? '@catUrl' : '@clearCategoryUrl')" />
+                              <span class="absolute inset-0 inline-flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 transition-all pointer-events-none">
+                                <i class="hgi hgi-stroke hgi-tick-02 text-[13px]"></i>
+                              </span>
+                            </span>
+                            <span class="text-sm font-semibold @(isSelected ? "text-primary" : "text-light-primary-text group-hover:text-primary")">@c.Name</span>
+                          </span>
+                          <span class="text-xs font-bold bg-gray-100 text-light-secondary-text px-2 py-0.5 rounded-full">@c.PostCount</span>
+                        </label>
+                      </li>
+                    }
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Popular Tags -->
+          <div class="bl-widget wow animate__animated animate__fadeInUp" data-wow-delay="0.4s">
+            <div class="bl-widget-head">
+              <h5>Từ khóa phổ biến</h5>
+            </div>
+            <div class="p-4">
+              <div class="flex flex-wrap items-center gap-2">
+                @foreach (var c in Model.ProductCategories.Take(8))
+                {
+                  var catUrl = BlogUrl(search: Model.SearchQuery, shop: Model.ShopSlug, sort: Model.Sort, category: c.Slug, page: 1);
+                  <button type="button" onclick="window.location.href='@catUrl'" class="bl-tag">@c.Name</button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Posts -->
+          <div class="bl-widget wow animate__animated animate__fadeInUp" data-wow-delay="0.5s">
+            <div class="bl-widget-head">
+              <h5>Bài viết mới nhất</h5>
+            </div>
+            <div class="p-4">
+              <div class="flex flex-col gap-4">
+                @foreach (var post in Model.RecentPosts)
+                {
+                  var detailsUrl = Url.Action("Details", "Blog", new { slug = post.Slug }) ?? "#";
+                  var when = post.PublishedAt ?? post.CreatedAt;
+
+                  <div class="flex gap-3 items-center group cursor-pointer" onclick="window.location.href='@detailsUrl'">
+                    <div class="w-[72px] h-[72px] rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
+                      <img src="@(post.CoverImageUrl ?? "/assets/images/no-image.png")" alt="@post.Title" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    </div>
+                    <div class="flex flex-col gap-1 flex-1 min-w-0">
+                      <h6 class="text-xs font-bold text-light-primary-text line-clamp-2 group-hover:text-primary transition-colors leading-snug m-0">@post.Title</h6>
+                      <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-light-secondary-text">
+                        <i class="hgi hgi-stroke hgi-calendar-03 text-primary"></i>
+                        @when.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 <!-- ========== Blog Grid Section End ========== -->

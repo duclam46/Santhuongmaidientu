@@ -18,6 +18,8 @@ public class ShopListVm
 
     public int? SelectedMaxRating { get; set; }
 
+    public string? SelectedTier { get; set; } // null | "Mall" | "Standard"
+
     public IReadOnlyList<ShopCategoryFilterItemVm> Categories { get; set; } = Array.Empty<ShopCategoryFilterItemVm>();
 
     public IReadOnlyList<ShopSummaryVm> Shops { get; set; } = Array.Empty<ShopSummaryVm>();

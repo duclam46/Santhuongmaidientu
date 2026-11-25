@@ -54,12 +54,13 @@ public sealed class VnPayExpiredOrderCleaner : BackgroundService
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        var walletService = scope.ServiceProvider.GetRequiredService<WalletService>();
 
-        var cutoff = DateTime.Now - PaymentTimeout;
+        var cutoff = DateTime.UtcNow - PaymentTimeout;
 
-        // Find orders that are BankTransfer, still awaiting payment, and created before the cutoff
+        // Find orders that are BankTransfer or WalletVNPay, still awaiting payment, and created before the cutoff
         var expiredOrders = await db.Orders
-            .Where(o => o.PaymentMethod == "BankTransfer"
+            .Where(o => (o.PaymentMethod == "BankTransfer" || o.PaymentMethod == "WalletVNPay")
                 && o.PaymentStatus == "AwaitingPayment"
                 && o.OrderStatus != "Cancelled"
                 && o.CreatedAt <= cutoff)
@@ -81,13 +82,34 @@ public sealed class VnPayExpiredOrderCleaner : BackgroundService
                 CreatedAt = DateTime.UtcNow
             });
 
+            // Refund wallet if there was a payment transaction for this order
+            var wallet = await db.Wallets.FirstOrDefaultAsync(w => w.UserId == order.CustomerId, cancellationToken);
+            if (wallet != null)
+            {
+                var totalDeducted = await db.WalletTransactions
+                    .Where(t => t.WalletId == wallet.WalletId && t.ReferenceId == order.OrderCode && t.TransactionType == WalletService.TypePayment)
+                    .Select(t => t.Amount)
+                    .SumAsync(cancellationToken);
+
+                var refundAmount = Math.Abs(totalDeducted);
+                if (refundAmount > 0)
+                {
+                    await walletService.RefundAsync(
+                        order.CustomerId,
+                        refundAmount,
+                        order.OrderCode,
+                        $"Hoàn tiền đơn hàng {order.OrderCode} bị hủy tự động do hết hạn thanh toán",
+                        cancellationToken);
+                }
+            }
+
             _logger.LogInformation(
-                "Auto-cancelled expired VNPay order. OrderCode={OrderCode}, CreatedAt={CreatedAt}",
+                "Auto-cancelled expired VNPay/WalletVNPay order. OrderCode={OrderCode}, CreatedAt={CreatedAt}",
                 order.OrderCode, order.CreatedAt);
         }
 
         await db.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Cancelled {Count} expired VNPay order(s).", expiredOrders.Count);
+        _logger.LogInformation("Cancelled {Count} expired order(s).", expiredOrders.Count);
     }
 }

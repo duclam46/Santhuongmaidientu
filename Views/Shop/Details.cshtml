@@ -15,220 +15,727 @@
     }
 
     var shopLogo = ResolveImageUrl(Model.Shop.LogoUrl);
-
     string PageUrl(int page) => Url.RouteUrl("shop_details", new { slug = Model.Shop.Slug, page }) ?? "#";
-    
-    // Hardcoded Rainbow Palette
-    var color1 = "#FF0080"; // Pink
-    var color2 = "#7928CA"; // Purple
-    var color3 = "#0070F3"; // Blue
-    var color4 = "#00DFD8"; // Cyan
-    var color5 = "#FF4D4D"; // Red
-    var color6 = "#F5A623"; // Gold
+    var shopRating = Model.Shop.RatingAverage > 0 ? Model.Shop.RatingAverage.ToString("0.0") : "5.0";
 }
 
-<div class="shop-rainbow-page" style="background-color: #f8f9ff; min-height: 100vh; font-family: 'Inter', sans-serif; padding-bottom: 80px;">
-    
-    <!-- ========== RAINBOW HERO HEADER ========== -->
-    <section style="background: linear-gradient(135deg, @color1, @color2, @color3); padding: 50px 0; position: relative; overflow: hidden; border-bottom: 8px solid white;">
-        <!-- Abstract Decoration -->
-        <div style="position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: rgba(255,255,255,0.1); border-radius: 50%; blur: 100px;"></div>
-        
-        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 10;">
-            <!-- Split Layout: Info Left, Stats Right -->
-            <div style="display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 40px;">
-                
-                <!-- LEFT: Shop Identity (approx 40-45%) -->
-                <div style="flex: 1; min-width: 350px; display: flex; align-items: center; gap: 25px; background: rgba(0,0,0,0.15); backdrop-filter: blur(15px); padding: 30px; border-radius: 40px; border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);">
-                    <!-- Logo -->
-                    <div style="position: relative; flex-shrink: 0;">
-                        <div style="width: 120px; height: 120px; background: white; border-radius: 50%; padding: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                            <img src="@shopLogo" alt="@Model.Shop.Name" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />
-                        </div>
-                        <div style="position: absolute; bottom: 5px; right: 5px; background: #22c55e; width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                            <i class="hgi hgi-stroke hgi-flash" style="color: white; font-size: 14px;"></i>
-                        </div>
-                    </div>
+@section Styles {
+  <style>
+    /* ========== SELLZY SHOP DETAILS STOREFRONT ========== */
+    .sd-hero {
+      background: linear-gradient(125deg, #EFF8F7 0%, #FFFFFF 55%, #FFFBEB 100%);
+      border: 1px solid rgba(8, 129, 120, 0.12);
+      border-radius: 26px;
+      padding: 28px 32px;
+      box-shadow: 0 12px 32px -14px rgba(22, 28, 36, 0.08);
+    }
+    @@media (max-width: 767px) {
+      .sd-hero {
+        padding: 22px 18px;
+        border-radius: 20px;
+      }
+    }
+    .sd-crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748B;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .sd-crumb a {
+      color: #475569;
+      transition: color 0.2s;
+    }
+    .sd-crumb a:hover {
+      color: #088178;
+    }
+    .sd-avatar-wrap {
+      position: relative;
+      width: 88px;
+      height: 88px;
+      flex-shrink: 0;
+    }
+    .sd-avatar {
+      width: 88px;
+      height: 88px;
+      border-radius: 22px;
+      background-color: #ffffff;
+      border: 2px solid #ffffff;
+      box-shadow: 0 10px 24px rgba(22, 28, 36, 0.10);
+      overflow: hidden;
+    }
+    .sd-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .sd-live-dot {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background-color: #10B981;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+    .sd-mall-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background-color: #E6F4F3;
+      color: #088178;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+    }
+    .sd-shop-title {
+      font-size: clamp(22px, 2.5vw, 30px);
+      font-weight: 800;
+      color: #161C24;
+      line-height: 1.25;
+      margin: 0 0 6px 0;
+    }
+    .sd-shop-loc {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13.5px;
+      color: #637381;
+      margin-bottom: 16px;
+    }
+    .sd-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @@media (min-width: 640px) {
+      .sd-stat-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+    .sd-stat-card {
+      background-color: #ffffff;
+      border: 1px solid #EAECEF;
+      border-radius: 18px;
+      padding: 16px 14px;
+      text-align: center;
+      box-shadow: 0 4px 14px rgba(22, 28, 36, 0.03);
+      transition: transform 0.2s ease;
+    }
+    .sd-stat-card:hover {
+      transform: translateY(-2px);
+    }
+    .sd-stat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .sd-stat-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: #161C24;
+      line-height: 1.2;
+    }
+    .sd-stat-lbl {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #64748B;
+      margin-top: 2px;
+    }
 
-                    <!-- Name & Buttons -->
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                            <span style="background: @color6; color: white; padding: 3px 10px; border-radius: 6px; font-size: 9px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">YÊU THÍCH+</span>
-                        </div>
-                        <h1 style="font-size: 32px; font-weight: 900; color: white; margin: 0 0 10px 0; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">@Model.Shop.Name</h1>
-                        <p style="color: rgba(255,255,255,0.8); font-size: 14px; font-weight: 600; margin: 0 0 20px 0;">
-                            <i class="hgi hgi-stroke hgi-location-01" style="color: @color4;"></i> @Model.Shop.Location
-                        </p>
-                        
-                        <div style="display: flex; gap: 10px;">
-                            <button type="button" onclick="openChatWithShop(null, @Model.Shop.ShopId)" style="background: white; color: @color2; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 6px;">
-                                <i class="hgi hgi-stroke hgi-chatting-01"></i> CHAT NGAY
-                            </button>
-                            <button style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 12px; font-weight: 900; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                                <i class="hgi hgi-stroke hgi-user-add-01"></i> THEO DÕI
-                            </button>
-                        </div>
-                    </div>
-                </div>
+    /* Toolbar */
+    .sd-toolbar {
+      background-color: #ffffff;
+      border: 1px solid #EAECEF;
+      border-radius: 18px;
+      padding: 14px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .sd-search-box {
+      position: relative;
+      width: 240px;
+    }
+    .sd-search-box input {
+      width: 100%;
+      height: 38px;
+      padding: 0 14px 0 36px;
+      border-radius: 999px;
+      border: 1px solid #E2E8F0;
+      background-color: #F8FAFC;
+      font-size: 13px;
+      color: #161C24;
+      outline: none;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+    .sd-search-box input:focus {
+      border-color: #088178;
+      background-color: #ffffff;
+    }
+    .sd-search-box i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #919EAB;
+      font-size: 15px;
+    }
+    .sd-sort-select {
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid #E2E8F0;
+      background-color: #F8FAFC;
+      font-size: 13px;
+      font-weight: 600;
+      color: #161C24;
+      outline: none;
+      cursor: pointer;
+    }
 
-                <!-- RIGHT: Stats Row (approx 55-60%) -->
-                <div style="flex: 1.5; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px;">
-                    <div style="background: white; padding: 25px; border-radius: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); text-align: center; border-bottom: 6px solid @color3; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div style="color: @color3; font-size: 24px; margin-bottom: 5px;"><i class="hgi hgi-stroke hgi-package"></i></div>
-                        <div style="font-size: 24px; font-weight: 900; color: #333;">@Model.Shop.ProductCount</div>
-                        <div style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase;">Sản phẩm</div>
-                    </div>
-                    <div style="background: white; padding: 25px; border-radius: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); text-align: center; border-bottom: 6px solid @color1; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div style="color: @color1; font-size: 24px; margin-bottom: 5px;"><i class="hgi hgi-stroke hgi-chatting-01"></i></div>
-                        <div style="font-size: 24px; font-weight: 900; color: #333;">99%</div>
-                        <div style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase;">Phản hồi</div>
-                    </div>
-                    <div style="background: white; padding: 25px; border-radius: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); text-align: center; border-bottom: 6px solid @color6; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div style="color: @color6; font-size: 24px; margin-bottom: 5px;"><i class="hgi hgi-stroke hgi-favourite"></i></div>
-                        <div style="font-size: 24px; font-weight: 900; color: #333;">4.9</div>
-                        <div style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase;">Hài lòng</div>
-                    </div>
-                    <div style="background: white; padding: 25px; border-radius: 30px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); text-align: center; border-bottom: 6px solid @color4; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-10px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div style="color: @color4; font-size: 24px; margin-bottom: 5px;"><i class="hgi hgi-stroke hgi-delivery-truck-01"></i></div>
-                        <div style="font-size: 24px; font-weight: 900; color: #333;">FAST</div>
-                        <div style="font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase;">Giao hàng</div>
-                    </div>
-                </div>
+    /* Product Card */
+    .sd-card {
+      background-color: #ffffff;
+      border: 1px solid #EAECEF !important;
+      border-radius: 20px !important;
+      padding: 16px !important;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .sd-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(8, 129, 120, 0.45) !important;
+      box-shadow: 0 16px 32px -12px rgba(22, 28, 36, 0.10);
+    }
+    .sd-discount-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background-color: #00262A;
+      color: #FFEB69;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .sd-title {
+      font-size: 15.5px !important;
+      line-height: 1.45 !important;
+      font-weight: 700 !important;
+      color: #161C24;
+      height: 45px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .sd-title a:hover {
+      color: #088178;
+    }
+    .sd-price-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .sd-price-now {
+      font-size: 17px;
+      font-weight: 800;
+      color: #088178;
+    }
+    .sd-price-old {
+      font-size: 13px;
+      color: #919EAB;
+      text-decoration: line-through;
+    }
+    .sd-price-off {
+      font-size: 11px;
+      font-weight: 700;
+      color: #B71D18;
+      background-color: #FFE4DE;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .sd-card .btn-section {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      width: 100% !important;
+      margin-top: auto;
+    }
+    .sd-card .btn-section button[data-wishlist-toggle] {
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      flex: 0 0 40px !important;
+      background-color: #F8FAFC !important;
+      border-color: #E2E8F0 !important;
+    }
+    .sd-card .btn-section .btn {
+      flex: 1 1 0% !important;
+      min-width: 0 !important;
+      padding: 9px 12px !important;
+      font-size: 13px !important;
+      line-height: 20px !important;
+      gap: 6px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+    }
+  </style>
+}
 
+<!-- ========== Shop Profile Hero Start ========== -->
+<section class="pt-6 pb-8">
+  <div class="container">
+    <div class="sd-hero">
+      <nav class="sd-crumb">
+        <a href='@Url.Action("Index", "Home")'><i class="hgi hgi-stroke hgi-home-01 mr-1"></i>Trang chủ</a>
+        <span>/</span>
+        <a href='@Url.RouteUrl("shop_index")'>Cửa hàng</a>
+        <span>/</span>
+        <span class="font-semibold text-primary">@Model.Shop.Name</span>
+      </nav>
+
+      <div class="grid grid-cols-12 gap-6 items-center">
+        <!-- Shop Identity -->
+        <div class="col-span-12 xl:col-span-6 flex flex-col sm:flex-row sm:items-center gap-5">
+          <div class="sd-avatar-wrap">
+            <div class="sd-avatar">
+              <img src="@shopLogo" alt="@Model.Shop.Name" />
             </div>
+            <span class="sd-live-dot" title="Đang hoạt động"></span>
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <span class="sd-mall-pill">
+              <i class="hgi hgi-stroke hgi-checkmark-badge-02"></i> Đối tác chính hãng
+            </span>
+            <h1 class="sd-shop-title">@Model.Shop.Name</h1>
+            <div class="sd-shop-loc">
+              <i class="hgi hgi-stroke hgi-location-01 text-primary text-base"></i>
+              <span>@(!string.IsNullOrWhiteSpace(Model.Shop.Location) ? Model.Shop.Location : "Giao hàng toàn quốc")</span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button type="button" onclick="openChatWithShop(null, @Model.Shop.ShopId)" class="btn btn-primary rounded-full px-5 py-2 text-xs font-bold text-white flex items-center gap-1.5">
+                <i class="hgi hgi-stroke hgi-chatting-01 text-base"></i>
+                <span>Chat với Shop</span>
+              </button>
+              <button type="button"
+                      id="btn-follow-shop"
+                      data-shop-id="@Model.Shop.ShopId"
+                      class="btn rounded-full px-5 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      style="@(Model.Shop.IsFollowing ? "background-color:#E6F4F3; border:1px solid #088178; color:#088178;" : "background-color:#ffffff; border:1px solid #D1D5DB; color:#161C24;")">
+                <i class="hgi hgi-stroke @(Model.Shop.IsFollowing ? "hgi-tick-02" : "hgi-user-add-01") text-base"></i>
+                <span>@(Model.Shop.IsFollowing ? "Đang theo dõi" : "Theo dõi")</span>
+              </button>
+            </div>
+          </div>
         </div>
-    </section>
 
-    <!-- ========== PRODUCTS SHOWCASE ========== -->
-    <div class="container" style="max-width: 1200px; margin: 60px auto; padding: 0 20px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; background: white; padding: 20px 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-left: 10px solid @color3;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <h2 style="font-size: 28px; font-weight: 900; color: #333; margin: 0; letter-spacing: -1px;">TẤT CẢ SẢN PHẨM</h2>
-                <span style="background: #f0f2f5; color: #888; padding: 4px 12px; border-radius: 10px; font-weight: 700; font-size: 14px;">@Model.TotalItems</span>
+        <!-- Shop Stats -->
+        <div class="col-span-12 xl:col-span-6">
+          <div class="sd-stat-grid">
+            <div class="sd-stat-card">
+              <span class="sd-stat-icon" style="background-color: #E6F4F3; color: #088178;">
+                <i class="hgi hgi-stroke hgi-package"></i>
+              </span>
+              <div class="sd-stat-val">@Model.Shop.ProductCount</div>
+              <div class="sd-stat-lbl">Sản phẩm</div>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <span style="font-size: 14px; font-weight: 700; color: #999;">Sắp xếp:</span>
-                <select style="background: #f9fafb; border: 1px solid #eee; padding: 8px 15px; border-radius: 12px; font-weight: 800; outline: none; cursor: pointer;">
-                    <option>Mới nhất</option>
-                    <option>Bán chạy</option>
-                </select>
+            <div class="sd-stat-card">
+              <span class="sd-stat-icon" style="background-color: #FFF7CC; color: #B76E00;">
+                <i class="hgi hgi-stroke hgi-star"></i>
+              </span>
+              <div class="sd-stat-val">@shopRating ★</div>
+              <div class="sd-stat-lbl">Đánh giá</div>
             </div>
+            <div class="sd-stat-card">
+              <span class="sd-stat-icon" style="background-color: #ECFDF5; color: #059669;">
+                <i class="hgi hgi-stroke hgi-user-group"></i>
+              </span>
+              <div class="sd-stat-val" id="js-shop-follower-stat">@Model.Shop.FollowerCount.ToString("N0", viVn)</div>
+              <div class="sd-stat-lbl">Người theo dõi</div>
+            </div>
+            <div class="sd-stat-card">
+              <span class="sd-stat-icon" style="background-color: #EFF6FF; color: #2563EB;">
+                <i class="hgi hgi-stroke hgi-chatting-01"></i>
+              </span>
+              <div class="sd-stat-val">99%</div>
+              <div class="sd-stat-lbl">Phản hồi Chat</div>
+            </div>
+          </div>
         </div>
-
-        <!-- Product Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px;">
-            @if (Model.Products is null || Model.Products.Count == 0)
-            {
-                <div style="grid-column: 1 / -1; padding: 80px; text-align: center; background: white; border-radius: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
-                    <i class="hgi hgi-stroke hgi-package-01" style="font-size: 60px; color: #eee; display: block; margin-bottom: 20px;"></i>
-                    <p style="font-size: 18px; font-weight: 700; color: #ccc;">Chưa có sản phẩm nào.</p>
-                </div>
-            }
-            else
-            {
-                foreach (var p in Model.Products)
-                {
-                    var imageUrl = ResolveImageUrl(p.PrimaryImageUrl);
-                    var detailsUrl = Url.RouteUrl("product_details", new { slug = p.Slug }) ?? "#";
-                    var cardColor = (p.GetHashCode() % 3 == 0) ? color1 : (p.GetHashCode() % 3 == 1) ? color2 : color3;
-
-                    <div class="product-card" style="background: white; border-radius: 40px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.05); transition: all 0.5s; border-bottom: 8px solid @cardColor; position: relative;">
-                        <!-- Discount -->
-                        @if (p.DiscountPercent > 0)
-                        {
-                            <div style="position: absolute; top: 20px; left: 20px; z-index: 10; background: @color5; color: white; padding: 6px 12px; border-radius: 12px; font-weight: 900; font-size: 11px; box-shadow: 0 10px 20px rgba(239,68,68,0.3);">
-                                GIẢM @p.DiscountPercent%
-                            </div>
-                        }
-
-                        <div style="position: relative; aspect-ratio: 1/1; overflow: hidden; background: #f9fafb;">
-                            <a href="@detailsUrl">
-                                <img src="@imageUrl" alt="@p.Name" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s;" onmouseover="this.style.transform='scale(1.1) rotate(2deg)'" onmouseout="this.style.transform='scale(1) rotate(0deg)'" />
-                            </a>
-                        </div>
-
-                        <div style="padding: 25px;">
-                            <h3 style="font-size: 16px; font-weight: 800; margin: 0 0 15px 0; height: 45px; overflow: hidden; line-height: 1.4;">
-                                <a href="@detailsUrl" style="color: #333; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='@cardColor'" onmouseout="this.style.color='#333'">@p.Name</a>
-                            </h3>
-                            
-                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                                <div style="display: flex; color: @color6; font-size: 11px; gap: 2px;">
-                                    @for(int i=1; i<=5; i++) { <i class="hgi hgi-solid hgi-star @(i <= (int)p.RatingAverage ? "" : "opacity-20")"></i> }
-                                    <span style="color: #bbb; font-weight: 800; margin-left: 5px;">(@p.RatingCount)</span>
-                                </div>
-                                <span style="font-size: 10px; font-weight: 800; color: @cardColor; background: @cardColor; color: white; padding: 2px 8px; border-radius: 6px;">HOT</span>
-                            </div>
-
-                            <div style="display: flex; align-items: center; justify-content: space-between; border-top: 2px solid #f9fafb; pt-20px; padding-top: 20px;">
-                                <div>
-                                    @if (p.OldPrice.HasValue)
-                                    {
-                                        <div style="font-size: 11px; color: #ddd; text-decoration: line-through; font-weight: 700;">@p.OldPrice.Value.ToString("N0", viVn) đ</div>
-                                    }
-                                    <div style="font-size: 22px; font-weight: 900; color: @color5;">@p.Price.ToString("N0", viVn)<span style="font-size: 14px; margin-left: 2px;">đ</span></div>
-                                </div>
-                                <button type="button" onclick="openChatWithShop(@p.ProductId, @Model.Shop.ShopId)" style="width: 50px; height: 50px; background: @cardColor; border: none; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                                    <i class="hgi hgi-stroke hgi-shopping-basket-01" style="font-size: 24px;"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                }
-            }
-        </div>
-
-        <!-- Pagination -->
-        @if (Model.TotalPages > 1)
-        {
-            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 80px;">
-                @for (var i = 1; i <= Model.TotalPages; i++)
-                {
-                    var isActive = i == Model.Page;
-                    <a href="@PageUrl(i)" style="width: 55px; height: 55px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: 900; text-decoration: none; background: @(isActive ? color2 : "white"); color: @(isActive ? "white" : "#ccc"); box-shadow: 0 10px 30px rgba(0,0,0,0.05); font-size: 18px; transition: all 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">@i</a>
-                }
-            </div>
-        }
+      </div>
     </div>
-</div>
+  </div>
+</section>
+<!-- ========== Shop Profile Hero End ========== -->
 
-<script>
-    function openChatWithShop(productId, shopId) {
-        fetch('/Chat/StartOrOpen', {
+@if (Model.ShopVouchers != null && Model.ShopVouchers.Count > 0)
+{
+  <section class="pb-6">
+    <div class="container">
+      <div class="rounded-3xl border border-amber-200 p-5 shadow-xs" style="background: linear-gradient(135deg, #fffbeb 0%, #ffffff 55%, #f0fdf4 100%);">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3.5">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🎟️</span>
+            <div>
+              <h3 class="text-base font-extrabold text-light-primary-text m-0">Kho Voucher &amp; Ưu Đãi Của @Model.Shop.Name</h3>
+              <p class="text-xs text-light-secondary-text m-0">Bấm "Lưu mã" để hệ thống tự động áp dụng giảm giá khi bạn đặt hàng tại Shop</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800">@Model.ShopVouchers.Count mã đang mở</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          @foreach (var v in Model.ShopVouchers)
+          {
+            var discTitle = v.DiscountType == "FreeShipping"
+              ? $"Freeship {v.DiscountValue.ToString("N0", viVn)}₫"
+              : (v.DiscountType == "Percent" ? $"Giảm {v.DiscountValue:0.##}%" : $"Giảm {v.DiscountValue.ToString("N0", viVn)}₫");
+            <div class="flex items-center justify-between gap-3 bg-white border border-amber-300 rounded-2xl p-3.5 shadow-xs">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-1 mb-1">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full @(v.IsShopVoucher ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800")">@v.SponsorBadge</span>
+                  <span class="text-[10px] font-semibold text-gray-500">@v.ScopeBadge</span>
+                </div>
+                <div class="text-base font-extrabold text-red-600 leading-tight">@discTitle</div>
+                <div class="text-xs text-gray-500 mt-0.5">Đơn tối thiểu @v.MinOrderValue.ToString("N0", viVn)₫</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">Mã: <strong class="text-gray-700">@v.Code</strong> • HSD: @v.EndDate.ToString("dd/MM")</div>
+              </div>
+              <button type="button"
+                      class="js-shop-claim-voucher px-3 py-2 rounded-xl text-xs font-bold text-white shrink-0 cursor-pointer transition-all"
+                      style="background: @(v.IsSaved ? "#d97706" : "linear-gradient(135deg, #088178, #059669)");"
+                      data-voucher-id="@v.Id"
+                      data-voucher-code="@v.Code"
+                      onclick="claimShopVoucher(@v.Id, '@v.Code')">
+                @(v.IsSaved ? "✓ Đã lưu" : "Lưu mã")
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+  <script>
+    async function claimShopVoucher(voucherId, code) {
+      if (!code) return;
+      document.cookie = "sellzy_claimed_voucher=" + encodeURIComponent(code) + "; path=/; max-age=604800; SameSite=Lax";
+      try { localStorage.setItem("sellzy_claimed_voucher", code); } catch (e) {}
+      if (voucherId > 0) {
+        try {
+          await fetch('/vouchers/save', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                ShopId: shopId,
-                ProductId: productId
-            })
-        })
-        .then(res => {
-            if (res.status === 401) {
-                window.location.href = '/Auth/Login';
-                throw new Error('Chưa đăng nhập');
-            }
-            if (!res.ok) throw new Error('Có lỗi xảy ra');
-            return res.json();
-        })
-        .then(data => {
-            if (data && data.conversationId) {
-                window.location.href = '/Chat/Index?id=' + data.conversationId;
-            }
-        })
-        .catch(err => {
-            if(err.message !== 'Chưa đăng nhập') {
-                console.error(err);
-                alert("Không thể kết nối đến Shop. Vui lòng thử lại sau.");
-            }
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ voucherId: voucherId, code: code })
+          });
+        } catch (e) {}
+      }
+      document.querySelectorAll('.js-shop-claim-voucher').forEach(btn => {
+        if (btn.dataset.voucherCode === code) {
+          btn.textContent = "✓ Đã lưu";
+          btn.style.background = "#d97706";
+        }
+      });
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+      const m = document.cookie.match(/(?:^|;\s*)sellzy_claimed_voucher=([^;]*)/);
+      const saved = m ? decodeURIComponent(m[1]) : "";
+      if (saved) {
+        document.querySelectorAll('.js-shop-claim-voucher').forEach(btn => {
+          if (btn.dataset.voucherCode === saved) {
+            btn.textContent = "✓ Đã lưu";
+            btn.style.background = "#d97706";
+          }
         });
-    }
-</script>
+      }
+    });
+  </script>
+}
 
-<style>
-    .shop-details-wrap .container {
-        max-width: 1200px;
-        margin: 0 auto;
+<!-- ========== Shop Products Showcase Start ========== -->
+<section class="pb-20">
+  <div class="container">
+    <div class="sd-toolbar">
+      <div class="flex items-center gap-3">
+        <h2 class="text-lg font-extrabold text-light-primary-text m-0">Tất cả sản phẩm</h2>
+        <span class="text-xs font-bold text-primary bg-[#E6F4F3] px-3 py-1 rounded-full">@Model.TotalItems sản phẩm</span>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="sd-search-box">
+          <i class="hgi hgi-stroke hgi-search-01"></i>
+          <input type="text" id="shop-detail-search" placeholder="Tìm sản phẩm trong shop..." />
+        </div>
+        <select id="shop-detail-sort" class="sd-sort-select">
+          <option value="default">Mặc định</option>
+          <option value="price-asc">Giá: Thấp → Cao</option>
+          <option value="price-desc">Giá: Cao → Thấp</option>
+        </select>
+      </div>
+    </div>
+
+    @if (Model.Products is null || Model.Products.Count == 0)
+    {
+      <div class="rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-16 text-center">
+        <i class="hgi hgi-stroke hgi-package text-5xl text-gray-400 mb-3 inline-block"></i>
+        <h5 class="text-lg font-bold text-light-primary-text mb-1">Cửa hàng chưa có sản phẩm nào</h5>
+        <p class="text-sm text-light-secondary-text mb-5">Vui lòng quay lại sau hoặc khám phá các cửa hàng khác trên Sellzy.</p>
+        <a href='@Url.RouteUrl("shop_index")' class="btn btn-primary rounded-full px-6 py-2.5 text-sm font-semibold text-white">Xem cửa hàng khác</a>
+      </div>
     }
-</style>
+    else
+    {
+      <div id="shop-detail-grid" class="grid grid-cols-12 gap-5 items-stretch">
+        @foreach (var p in Model.Products)
+        {
+          var imageUrl = ResolveImageUrl(p.PrimaryImageUrl);
+          var detailsUrl = Url.RouteUrl("product_details", new { slug = p.Slug }) ?? "#";
+          var ratingPct = (int)Math.Round(Math.Clamp((double)(p.RatingAverage / 5m * 100m), 0d, 100d));
+
+          <div class="xl:col-span-3 lg:col-span-4 md:col-span-6 col-span-12 sd-product-item"
+               data-name="@(p.Name?.ToLowerInvariant() ?? "")"
+               data-price="@p.Price.ToString("0", CultureInfo.InvariantCulture)">
+            <div class="product-card-1 sd-card group">
+              <div class="product-image-container relative">
+                @if (p.DiscountPercent > 0)
+                {
+                  <span class="sd-discount-tag">-@p.DiscountPercent%</span>
+                }
+                <div class="product-image rounded-xl bg-[#F4F6F8] mb-3.5 overflow-hidden">
+                  <a href="@detailsUrl">
+                    <img src="@imageUrl" alt="@p.Name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-in-out" />
+                  </a>
+                </div>
+                <div class="product-btn-actions absolute bottom-0 right-0 left-0 flex justify-center z-9 transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 group-hover:bottom-3">
+                  <ul class="flex items-center gap-x-px shadow-md rounded-lg overflow-hidden">
+                    <li>
+                      <button type="button" aria-label="Yêu thích" data-wishlist-toggle data-product-id="@p.ProductId" class="product-btn-action-item relative size-10 bg-white inline-flex items-center justify-center">
+                        <svg class="wishlist-heart-icon w-5 h-5 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                          <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
+                        </svg>
+                      </button>
+                    </li>
+                    <li>
+                      <a aria-label="So sánh" class="product-btn-action-item relative size-10 bg-white inline-flex items-center justify-center" href="javascript:void(0)" onclick="addToCompare(@p.ProductId)">
+                        <i class="hgi hgi-stroke hgi-reload text-xl text-light-primary-text"></i>
+                      </a>
+                    </li>
+                    <li>
+                      <a aria-label="Xem nhanh" class="quick-view-sidebar-btn product-btn-action-item relative size-10 bg-white inline-flex items-center justify-center" href="#" data-quick-view-url="@Url.Action("QuickView", "Products", new { id = p.ProductId })">
+                        <i class="hgi hgi-stroke hgi-view text-xl text-light-primary-text"></i>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="product-content flex-1 flex flex-col justify-between">
+                <div>
+                  <h5 class="sd-title">
+                    <a href="@detailsUrl" class="line-clamp-2 transition-colors">@p.Name</a>
+                  </h5>
+
+                  <div class="rating-section flex items-center mb-2.5">
+                    <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+                      <div style="width: @ratingPct%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+                    </div>
+                    <span class="text-xs leading-[18px] text-light-secondary-text inline-block ml-1.5">(@p.RatingCount)</span>
+                  </div>
+
+                  <div class="sd-price-row">
+                    <span class="sd-price-now">@p.Price.ToString("N0", viVn)đ</span>
+                    @if (p.OldPrice.HasValue && p.OldPrice.Value > p.Price)
+                    {
+                      <span class="sd-price-old">@p.OldPrice.Value.ToString("N0", viVn)đ</span>
+                      <span class="sd-price-off">-@p.DiscountPercent%</span>
+                    }
+                  </div>
+                </div>
+
+                <div class="btn-section">
+                  <button type="button" aria-label="Yêu thích" data-wishlist-toggle data-product-id="@p.ProductId" class="flex items-center justify-center rounded-full border">
+                    <svg class="wishlist-heart-icon w-5 h-5 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                      <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
+                    </svg>
+                  </button>
+                  <a class="btn btn-primary rounded-full font-semibold text-white" href="#" data-add-to-cart data-variant-id="@p.DefaultVariantId">
+                    <i class="hgi hgi-stroke hgi-shopping-cart-02 text-lg text-white"></i>
+                    <span>Thêm vào giỏ</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (Model.TotalPages > 1)
+      {
+        <div class="flex justify-center pt-12">
+          <ul class="flex items-center gap-x-1.5 blog-pagination">
+            <li class="group blog-pagination-item">
+              <a href="@(Model.Page > 1 ? PageUrl(Model.Page - 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 transition-colors">
+                <i class="hgi hgi-stroke hgi-arrow-left-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
+              </a>
+            </li>
+            @for (var i = 1; i <= Model.TotalPages; i++)
+            {
+              var isActive = i == Model.Page;
+              <li class="group blog-pagination-item">
+                <a href="@PageUrl(i)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] @(isActive ? "active" : "text-base leading-6 text-light-primary-text bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 group-hover:text-primary transition-colors")">@i</a>
+              </li>
+            }
+            <li class="group blog-pagination-item">
+              <a href="@(Model.Page < Model.TotalPages ? PageUrl(Model.Page + 1) : "#")" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-primary/10 transition-colors">
+                <i class="hgi hgi-stroke hgi-arrow-right-01 text-[20px] leading-5 text-light-primary-text group-hover:text-primary"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      }
+    }
+  </div>
+</section>
+<!-- ========== Shop Products Showcase End ========== -->
+
+@section Scripts {
+  <script>
+    function openChatWithShop(productId, shopId) {
+      fetch('/Chat/StartOrOpen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ShopId: shopId, ProductId: productId })
+      })
+      .then(res => {
+        if (res.status === 401) {
+          const targetUrl = '/Chat?startShopId=' + encodeURIComponent(shopId)
+            + (productId ? '&attachProductId=' + encodeURIComponent(productId) : '');
+          if (typeof window.showSellzyAuthPrompt === 'function') {
+            window.showSellzyAuthPrompt({ context: 'shop_chat', returnUrl: targetUrl });
+          } else {
+            const loginTrigger = document.querySelector('.login-page-btn');
+            if (loginTrigger) {
+              loginTrigger.click();
+            } else {
+              window.location.href = '/Auth/Login';
+            }
+          }
+          throw new Error('Chưa đăng nhập');
+        }
+        if (!res.ok) throw new Error('Có lỗi xảy ra');
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.conversationId) {
+          window.location.href = '/Chat/Index?id=' + data.conversationId;
+        }
+      })
+      .catch(err => {
+        if (err.message !== 'Chưa đăng nhập') {
+          console.error(err);
+          alert("Không thể kết nối đến Shop. Vui lòng thử lại sau.");
+        }
+      });
+    }
+
+    (function () {
+      const followBtn = document.getElementById('btn-follow-shop');
+      if (followBtn) {
+        followBtn.addEventListener('click', async function () {
+          const shopId = Number(followBtn.dataset.shopId || 0);
+          if (!shopId) return;
+          try {
+            const res = await fetch('/shop/toggle-follow', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({ shopId: shopId })
+            });
+            if (res.status === 401) {
+              if (typeof window.showSellzyAuthPrompt === 'function') {
+                window.showSellzyAuthPrompt({ context: 'follow_shop', returnUrl: window.location.pathname });
+              } else {
+                window.location.href = '/auth/login?returnUrl=' + encodeURIComponent(window.location.pathname);
+              }
+              return;
+            }
+            const data = await res.json();
+            if (data && data.ok) {
+              const statEl = document.getElementById('js-shop-follower-stat');
+              if (statEl && typeof data.followerCount === 'number') {
+                statEl.textContent = data.followerCount.toLocaleString('vi-VN');
+              }
+              if (data.isFollowing) {
+                followBtn.style.backgroundColor = '#E6F4F3';
+                followBtn.style.borderColor = '#088178';
+                followBtn.style.color = '#088178';
+                followBtn.innerHTML = '<i class="hgi hgi-stroke hgi-tick-02 text-base"></i><span>Đang theo dõi</span>';
+              } else {
+                followBtn.style.backgroundColor = '#ffffff';
+                followBtn.style.borderColor = '#D1D5DB';
+                followBtn.style.color = '#161C24';
+                followBtn.innerHTML = '<i class="hgi hgi-stroke hgi-user-add-01 text-base"></i><span>Theo dõi</span>';
+              }
+            }
+          } catch (e) { console.error(e); }
+        });
+      }
+
+      const searchInput = document.getElementById('shop-detail-search');
+      const sortSelect = document.getElementById('shop-detail-sort');
+      const grid = document.getElementById('shop-detail-grid');
+      if (!grid) return;
+
+      const items = Array.from(grid.querySelectorAll('.sd-product-item'));
+
+      if (searchInput) {
+        searchInput.addEventListener('input', function () {
+          const q = (this.value || '').trim().toLowerCase();
+          items.forEach(function (el) {
+            const name = el.getAttribute('data-name') || '';
+            el.style.display = !q || name.includes(q) ? '' : 'none';
+          });
+        });
+      }
+
+      if (sortSelect) {
+        sortSelect.addEventListener('change', function () {
+          const mode = this.value;
+          const sorted = [...items];
+          if (mode === 'price-asc') {
+            sorted.sort((a, b) => Number(a.dataset.price || 0) - Number(b.dataset.price || 0));
+          } else if (mode === 'price-desc') {
+            sorted.sort((a, b) => Number(b.dataset.price || 0) - Number(a.dataset.price || 0));
+          }
+          sorted.forEach(el => grid.appendChild(el));
+        });
+      }
+    })();
+  </script>
+}

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace DOAN_BANHANG.ViewModels;
 
 public class PartnerRegisterVm
@@ -28,6 +30,23 @@ public class PartnerRegisterVm
     public string? WardName { get; set; }
 
     public string? StreetAddress { get; set; }
+
+    // Tier selection: "Standard" (Shop Thường) | "Mall" (Sellzy Mall)
+    public string RequestedShopTier { get; set; } = "Standard";
+
+    public string? BusinessName { get; set; }
+
+    public string? BusinessTaxCode { get; set; }
+
+    public string? BrandName { get; set; }
+
+    public string? BusinessLicenseUrl { get; set; }
+
+    public IFormFile? BusinessLicenseFile { get; set; }
+
+    public string? BrandAuthorizationUrl { get; set; }
+
+    public IFormFile? BrandAuthorizationFile { get; set; }
 
     public string? Password { get; set; }
 

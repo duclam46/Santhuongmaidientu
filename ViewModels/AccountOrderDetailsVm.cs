@@ -59,6 +59,12 @@ public sealed class CustomerOrderDetailsVm
 
     public List<CustomerOrderTrackingLogVm> TrackingLogs { get; set; } = new();
     public bool IsReceivedByCustomer { get; set; }
+    public bool CanReturn { get; set; } = true;
+    public bool IsDigitalOrder { get; set; }
+    public bool RequiresVatInvoice { get; set; }
+    public string? CompanyName { get; set; }
+    public string? TaxCode { get; set; }
+    public string? CompanyAddress { get; set; }
 }
 
 public sealed class CustomerOrderItemVm
@@ -68,6 +74,10 @@ public sealed class CustomerOrderItemVm
     public string? ColorName { get; set; }
 
     public string? SizeName { get; set; }
+
+    public string? VariantDescription { get; set; }
+
+    public bool IsReturnable { get; set; } = true;
 
     public decimal UnitPrice { get; set; }
 

@@ -47,6 +47,28 @@ public class PartnerApplication
     [MaxLength(500)]
     public string? StreetAddress { get; set; }
 
+    // Shop Tier & Legal Documents for Mall Registration / Upgrade
+    [MaxLength(30)]
+    public string RequestedShopTier { get; set; } = "Standard"; // Standard | Mall
+
+    [MaxLength(30)]
+    public string ApplicationType { get; set; } = "NewRegistration"; // NewRegistration | MallUpgrade
+
+    [MaxLength(255)]
+    public string? BusinessName { get; set; }
+
+    [MaxLength(50)]
+    public string? BusinessTaxCode { get; set; }
+
+    [MaxLength(200)]
+    public string? BrandName { get; set; }
+
+    [MaxLength(500)]
+    public string? BusinessLicenseUrl { get; set; }
+
+    [MaxLength(500)]
+    public string? BrandAuthorizationUrl { get; set; }
+
     [MaxLength(30)]
     public string Status { get; set; } = "Pending"; // Pending | Approved | Rejected
 

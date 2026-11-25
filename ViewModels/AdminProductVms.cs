@@ -10,8 +10,18 @@ public class ProductAdminSelectOptionVm
 
     public string Label { get; set; } = string.Empty;
 
-    // Optional: used for visual pickers (e.g., Color hex code)
     public string? Hex { get; set; }
+}
+
+public class ProductAdminAttributeInputVm
+{
+    public int CategoryAttributeId { get; set; }
+
+    public string? AttributeName { get; set; }
+
+    public string? Unit { get; set; }
+
+    public string? Value { get; set; }
 }
 
 public class ProductAdminListQueryVm
@@ -21,6 +31,10 @@ public class ProductAdminListQueryVm
     public int? CategoryId { get; set; }
 
     public string? Status { get; set; }
+
+    public string? StockFilter { get; set; }
+
+    public string? SortBy { get; set; }
 
     public int Page { get; set; } = 1;
 
@@ -37,7 +51,48 @@ public class ProductAdminListVm
 
     public int TotalItems { get; set; }
 
+    public int AllProductsCount { get; set; }
+
+    public int ActiveProductsCount { get; set; }
+
+    public int HiddenProductsCount { get; set; }
+
+    public int DraftProductsCount { get; set; }
+
+    public int LowStockProductsCount { get; set; }
+
+    public int OutOfStockProductsCount { get; set; }
+
+    public int TotalAvailableStockAll { get; set; }
+
+    public int TotalVariantsAll { get; set; }
+
     public int TotalPages => Query.PageSize <= 0 ? 0 : (int)Math.Ceiling(TotalItems / (double)Query.PageSize);
+}
+
+public class ProductAdminListVariantVm
+{
+    public int Id { get; set; }
+
+    public string Sku { get; set; } = string.Empty;
+
+    public string Label { get; set; } = string.Empty;
+
+    public decimal Price { get; set; }
+
+    public decimal CostPrice { get; set; }
+
+    public int StockQuantity { get; set; }
+
+    public int ReservedStock { get; set; }
+
+    public int AvailableStock => Math.Max(0, StockQuantity - ReservedStock);
+
+    public int SoldQuantity { get; set; }
+
+    public bool IsActive { get; set; }
+
+    public string? ImageUrl { get; set; }
 }
 
 public class ProductAdminListItemVm
@@ -46,7 +101,11 @@ public class ProductAdminListItemVm
 
     public string Name { get; set; } = string.Empty;
 
+    public string? Slug { get; set; }
+
     public string? CategoryName { get; set; }
+
+    public string? BrandName { get; set; }
 
     public string? Status { get; set; }
 
@@ -55,6 +114,24 @@ public class ProductAdminListItemVm
     public int VariantCount { get; set; }
 
     public string? PrimaryImageUrl { get; set; }
+
+    public decimal MinPrice { get; set; }
+
+    public decimal MaxPrice { get; set; }
+
+    public int TotalStock { get; set; }
+
+    public int ReservedStock { get; set; }
+
+    public int AvailableStock => Math.Max(0, TotalStock - ReservedStock);
+
+    public int LowStockVariantCount { get; set; }
+
+    public int OutOfStockVariantCount { get; set; }
+
+    public int SoldQuantity { get; set; }
+
+    public List<ProductAdminListVariantVm> Variants { get; set; } = new();
 }
 
 public class ProductAdminUpsertVm
@@ -73,6 +150,29 @@ public class ProductAdminUpsertVm
 
     public int? ParentCategoryId { get; set; }
 
+    public int? BrandId { get; set; }
+
+    public int WarrantyMonths { get; set; } = 0;
+
+    [StringLength(100)]
+    public string? WarrantyType { get; set; }
+
+    public bool IsReturnable { get; set; } = true;
+
+    public bool IsDigital { get; set; } = false;
+
+    [StringLength(1000)]
+    public string? DigitalContent { get; set; }
+
+    public DateTime? ManufacturingDate { get; set; }
+
+    public DateTime? ExpiryDate { get; set; }
+
+    [StringLength(50)]
+    public string? ShippingCondition { get; set; } = "Tiêu chuẩn";
+
+    public decimal SingleCostPrice { get; set; } = 0m;
+
     public string? Description { get; set; }
 
     [Required(ErrorMessage = "Vui lòng nhập giá sản phẩm.")]
@@ -87,31 +187,42 @@ public class ProductAdminUpsertVm
 
     public List<ProductAdminSelectOptionVm> CategoryOptions { get; set; } = new();
 
-    // Create-only: parent/child category selection
     public List<ProductAdminSelectOptionVm> ParentCategoryOptions { get; set; } = new();
 
     public List<ProductAdminSelectOptionVm> ChildCategoryOptions { get; set; } = new();
+
+    public List<ProductAdminSelectOptionVm> BrandOptions { get; set; } = new();
 
     public List<ProductAdminSelectOptionVm> StatusOptions { get; set; } = new();
 
     public List<ProductAdminSelectOptionVm> ColorOptions { get; set; } = new();
 
-    // Create-only (and usable for bulk generation): selected colors to generate variants
     public List<int> SelectedColorIds { get; set; } = new();
 
     public List<ProductAdminSelectOptionVm> SizeOptions { get; set; } = new();
 
     public List<ProductAdminSizeGuideRowVm> SizeGuide { get; set; } = new();
 
-    // Create-only: variant mode
-    // - true: variants by size (clothing)
-    // - false: single variant (watch/cosmetic)
-    public bool HasSizeVariants { get; set; } = true;
+    // Dynamic EAV technical specs
+    public List<ProductAdminAttributeInputVm> AttributeValues { get; set; } = new();
 
-    // When HasSizeVariants=true, this controls which options are shown (shoe size, clothing, ml...)
+    // Dynamic 2-tier option group names (e.g. "Màu sắc", "Dung lượng")
+    public bool UseDynamicOptions { get; set; } = true;
+
+    public bool HasSizeGuide { get; set; } = false;
+
+    public string? Option1Name { get; set; }
+
+    public string? Option2Name { get; set; }
+
+    public List<string> Option1Values { get; set; } = new();
+
+    public List<string> Option2Values { get; set; } = new();
+
+    public bool HasSizeVariants { get; set; } = false;
+
     public string SizeScheme { get; set; } = "clothing";
 
-    // Product measurements/specs (optional). Unit: cm.
     [Range(0, double.MaxValue)]
     public decimal? ClothingLengthCm { get; set; }
 
@@ -127,17 +238,22 @@ public class ProductAdminUpsertVm
     [Range(0, int.MaxValue)]
     public int SingleStockQuantity { get; set; }
 
-    // Create-only: initial inventory by size
+    public int SingleWeightGram { get; set; } = 300;
+
+    public int SingleLengthCm { get; set; } = 10;
+
+    public int SingleWidthCm { get; set; } = 10;
+
+    public int SingleHeightCm { get; set; } = 10;
+
     public List<ProductAdminInitialSizeStockVm> InitialSizeStocks { get; set; } = new();
 
-    // Create-only: custom option rows (e.g., 50ml, 100ml) for volume scheme
     public List<ProductAdminCustomOptionStockVm> VolumeOptionStocks { get; set; } = new();
 
     public List<ProductAdminVariantRowVm> Variants { get; set; } = new();
 
     public List<ProductAdminImageRowVm> Images { get; set; } = new();
 
-    // Create-only uploads
     public Microsoft.AspNetCore.Http.IFormFile? PrimaryImage { get; set; }
 
     public List<Microsoft.AspNetCore.Http.IFormFile> ContentImages { get; set; } = new();
@@ -205,7 +321,8 @@ public class ProductAdminSizeGuideRowVm
 public class ProductAdminVariantRowVm
 {
     public int VariantId { get; set; }
-    public string Sku { get; set; } = string.Empty;
+    [StringLength(100)]
+    public string? Sku { get; set; }
 
     public int? ColorId { get; set; }
 
@@ -215,6 +332,23 @@ public class ProductAdminVariantRowVm
     public int? SizeId { get; set; }
 
     public string? SizeName { get; set; }
+
+    // Dynamic 2-tier values
+    public int? OptionValue1Id { get; set; }
+    public string? Option1Value { get; set; }
+    public string? Option1ImageUrl { get; set; }
+    public string? ImageUrl { get; set; }
+
+    public int? OptionValue2Id { get; set; }
+    public string? Option2Value { get; set; }
+
+    public string? VariantLabel { get; set; }
+
+    // Physical weight & dimensions for GHN
+    public int WeightGram { get; set; } = 300;
+    public int LengthCm { get; set; } = 10;
+    public int WidthCm { get; set; } = 10;
+    public int HeightCm { get; set; } = 10;
 
     [Range(0, double.MaxValue)]
     public decimal Price { get; set; }
@@ -228,7 +362,9 @@ public class ProductAdminVariantRowVm
 
     public int StockQuantity { get; set; }
 
-    public bool IsActive { get; set; }
+    public decimal CostPrice { get; set; } = 0m;
+
+    public bool IsActive { get; set; } = true;
     public string? IsActiveStr { get; set; }
 }
 
@@ -242,7 +378,6 @@ public class ProductAdminVariantEditVm
 
     public int? SizeId { get; set; }
 
-    // SKU is auto-generated server-side (ProductId-Color-Size) to match the Create flow.
     [StringLength(100)]
     public string? Sku { get; set; }
 
@@ -251,6 +386,8 @@ public class ProductAdminVariantEditVm
 
     [Range(0, int.MaxValue)]
     public int StockQuantity { get; set; }
+
+    public decimal CostPrice { get; set; } = 0m;
 
     public bool IsActive { get; set; } = true;
 }

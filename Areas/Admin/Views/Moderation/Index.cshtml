@@ -1,0 +1,192 @@
+@using DOAN_BANHANG.Helpers
+@{
+    ViewData["Title"] = "Kiểm duyệt Nội dung Sản phẩm & Đánh giá";
+    string activeTab = ViewBag.ActiveTab as string ?? "products";
+    string q = ViewBag.Query as string ?? "";
+    string status = ViewBag.Status as string ?? "";
+    var products = ViewBag.Products as List<DOAN_BANHANG.Models.Product> ?? new();
+    var reviews = ViewBag.Reviews as List<DOAN_BANHANG.Models.ProductReview> ?? new();
+}
+
+<div class="p-4 rounded-4 text-white mb-4 shadow-sm" style="background: linear-gradient(135deg, #063532 0%, #0b5c56 58%, #0f766e 100%);">
+    <span class="badge rounded-pill mb-1" style="background: rgba(253,224,71,0.2); color: #fde047; font-weight: 700;">
+        <i class="bx bx-shield-alt-2 me-1"></i>TRUNG TÂM KIỂM SOÁT CHẤT LƯỢNG SÀN
+    </span>
+    <h4 class="fw-bold text-white mb-1">Kiểm duyệt Sản phẩm Đăng bán &amp; Đánh giá Khách hàng</h4>
+    <div class="small" style="color: rgba(255,255,255,0.84);">Tạm khóa sản phẩm vi phạm chính sách Sàn (kèm thông báo lý do cho Shop) và ẩn các đánh giá spam/ngôn từ xấu.</div>
+</div>
+
+@if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+{
+    <div class="alert alert-success rounded-3 shadow-sm"><i class="bx bx-check-circle me-1"></i><strong>@toast</strong></div>
+}
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-bottom pt-3 pb-0 px-4">
+        <ul class="nav nav-tabs border-0 gap-2">
+            <li class="nav-item">
+                <a class="nav-link fw-bold @(activeTab == "products" ? "active text-primary" : "text-muted")"
+                   asp-area="Admin" asp-controller="Moderation" asp-action="Index" asp-route-tab="products">
+                    <i class="bx bx-package me-1"></i>Kiểm duyệt Sản phẩm (@products.Count)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold @(activeTab == "reviews" ? "active text-primary" : "text-muted")"
+                   asp-area="Admin" asp-controller="Moderation" asp-action="Index" asp-route-tab="reviews">
+                    <i class="bx bx-comment-check me-1"></i>Kiểm duyệt Đánh giá (@reviews.Count)
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="p-3 border-bottom bg-light bg-opacity-50">
+        <form method="get" asp-area="Admin" asp-controller="Moderation" asp-action="Index" class="row g-2 align-items-center">
+            <input type="hidden" name="tab" value="@activeTab" />
+            <div class="col-md-6">
+                <input type="text" name="q" value="@q" class="form-control form-control-sm" placeholder="@(activeTab == "products" ? "Tìm tên sản phẩm hoặc tên Gian hàng..." : "Tìm nội dung bình luận hoặc tên sản phẩm...")" />
+            </div>
+            <div class="col-md-3">
+                @if (activeTab == "products")
+                {
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="" selected="@(string.IsNullOrEmpty(status))">Tất cả trạng thái</option>
+                        <option value="Active" selected="@(status == "Active")">Đang hiển thị (Active)</option>
+                        <option value="Hidden" selected="@(status == "Hidden")">Đang bị khóa/ẩn (Hidden)</option>
+                    </select>
+                }
+                else
+                {
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="" selected="@(string.IsNullOrEmpty(status))">Tất cả đánh giá</option>
+                        <option value="LowRating" selected="@(status == "LowRating")">Đánh giá thấp (1-2 Sao)</option>
+                        <option value="Hidden" selected="@(status == "Hidden")">Đã bị ẩn</option>
+                    </select>
+                }
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary fw-bold flex-grow-1"><i class="bx bx-search me-1"></i>Tìm lọc</button>
+                <a asp-area="Admin" asp-controller="Moderation" asp-action="Index" asp-route-tab="@activeTab" class="btn btn-sm btn-light border">Đặt lại</a>
+            </div>
+        </form>
+    </div>
+
+    @if (activeTab == "products")
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Sản phẩm</th>
+                        <th>Gian hàng</th>
+                        <th>Danh mục</th>
+                        <th>Trạng thái</th>
+                        <th class="pe-4 text-end">Hành động kiểm duyệt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in products)
+                    {
+                        var img = ImageUrlHelper.NormalizeStaticFileUrl(p.Images.OrderByDescending(i => i.IsPrimary).Select(i => i.ImageUrl).FirstOrDefault()) ?? "/assets/images/vitamin-c.png";
+                        var shopName = p.ShopAccount?.Profile?.ShopName ?? p.ShopAccount?.Email ?? $"Shop #{p.ShopId}";
+                        bool isHidden = p.Status == "Hidden";
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <img src="@img" alt="@p.Name" style="width:46px; height:46px; border-radius:10px; object-fit:cover;" class="border" />
+                                    <div>
+                                        <a href="/product/@p.Slug" target="_blank" class="fw-bold text-dark text-decoration-none">@p.Name</a>
+                                        <div class="text-muted small">ID: #@p.Id • ★ @p.AverageRating.ToString("0.0") (@p.ReviewCount)</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="fw-semibold">@shopName</td>
+                            <td><span class="badge bg-light text-dark border">@(p.Category?.Name ?? "-")</span></td>
+                            <td>
+                                @if (isHidden)
+                                {
+                                    <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-1">Đã tạm ẩn</span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill bg-success-subtle text-success px-3 py-1">Đang mở bán</span>
+                                }
+                            </td>
+                            <td class="pe-4 text-end">
+                                <form method="post" asp-area="Admin" asp-controller="Moderation" asp-action="ToggleProductStatus" class="d-inline-flex gap-1 align-items-center">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="productId" value="@p.Id" />
+                                    <input type="text" name="reason" class="form-control form-control-sm" style="width:185px;" placeholder="@(isHidden ? "Ghi chú mở lại..." : "Lý do vi phạm gửi Shop...")" />
+                                    <button type="submit" class="btn btn-sm @(isHidden ? "btn-success" : "btn-outline-danger") fw-bold text-nowrap">
+                                        @(isHidden ? "Khôi phục" : "Khóa hiển thị")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Người mua &amp; Số sao</th>
+                        <th>Sản phẩm</th>
+                        <th>Nội dung đánh giá</th>
+                        <th>Trạng thái</th>
+                        <th class="pe-4 text-end">Kiểm duyệt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in reviews)
+                    {
+                        var author = r.Account?.Profile?.FullName ?? r.Account?.Email ?? "Khách hàng";
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">@author</div>
+                                <div class="text-warning fw-bold small">★ @r.Rating / 5 <span class="text-muted fw-normal">• @r.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span></div>
+                            </td>
+                            <td style="max-width: 220px;">
+                                <div class="fw-semibold text-truncate">@(r.Product?.Name ?? $"SP #{r.ProductId}")</div>
+                                @if (!string.IsNullOrWhiteSpace(r.VariantName))
+                                {
+                                    <div class="small text-muted">Phân loại: @r.VariantName</div>
+                                }
+                            </td>
+                            <td style="max-width: 320px;">
+                                <div class="small text-dark">@(string.IsNullOrWhiteSpace(r.Comment) ? "(Không có nhận xét chữ)" : r.Comment)</div>
+                                @if (!string.IsNullOrWhiteSpace(r.ModerationNote))
+                                {
+                                    <div class="small text-danger mt-1"><i class="bx bx-info-circle"></i> @r.ModerationNote</div>
+                                }
+                            </td>
+                            <td>
+                                @if (r.IsHidden)
+                                {
+                                    <span class="badge rounded-pill bg-danger-subtle text-danger">Đã ẩn</span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill bg-success-subtle text-success">Hiển thị</span>
+                                }
+                            </td>
+                            <td class="pe-4 text-end">
+                                <form method="post" asp-area="Admin" asp-controller="Moderation" asp-action="ToggleReviewVisibility" class="d-inline-flex gap-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="reviewId" value="@r.Id" />
+                                    <input type="text" name="note" class="form-control form-control-sm" style="width:155px;" placeholder="Ghi chú kiểm duyệt..." />
+                                    <button type="submit" class="btn btn-sm @(r.IsHidden ? "btn-outline-success" : "btn-outline-danger") fw-bold text-nowrap">
+                                        @(r.IsHidden ? "Hiện lại" : "Ẩn Spam")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

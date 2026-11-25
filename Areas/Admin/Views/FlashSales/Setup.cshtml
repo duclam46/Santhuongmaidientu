@@ -3,156 +3,205 @@
 @{
     ViewData["Title"] = "Thiết lập Flash Sale";
     var viVn = global::System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
-    
+
     var restartProductIdStr = Context.Request.Query["restartProductId"].ToString();
     var isRestart = int.TryParse(restartProductIdStr, out var restartProductId) && restartProductId > 0;
     var restartProduct = isRestart ? Model.Products?.FirstOrDefault(p => p.ProductId == restartProductId) : null;
 }
 
+<style>
+    :root {
+        --fss-teal: #0b5c56;
+        --fss-teal-dark: #063532;
+        --fss-border: #e2e8f0;
+    }
+
+    .fss-hero {
+        background: linear-gradient(135deg, #063532 0%, #0b5c56 58%, #0f766e 100%);
+        border-radius: 18px;
+        padding: 22px 26px;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 26px rgba(6, 53, 50, 0.16);
+        margin-bottom: 20px;
+    }
+    .fss-hero::before {
+        content: '';
+        position: absolute;
+        top: -60px;
+        right: -30px;
+        width: 240px;
+        height: 240px;
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0) 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .fss-btn-ghost {
+        background: rgba(255,255,255,0.14);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 10px;
+        padding: 9px 15px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .fss-btn-ghost:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
+    .fss-card {
+        background: #fff;
+        border: 1px solid var(--fss-border);
+        border-radius: 18px;
+        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.035);
+        overflow: hidden;
+    }
+    .fss-card-head {
+        padding: 15px 20px;
+        background: #fafcff;
+        border-bottom: 1px solid var(--fss-border);
+    }
+
+    .fss-wizard-nav .nav-link {
+        border-radius: 11px;
+        padding: 10px 14px;
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.86rem;
+        transition: all 0.18s;
+    }
+    .fss-wizard-nav .nav-link:hover { background: #f1f5f9; color: var(--fss-teal); }
+    .fss-wizard-nav .nav-link.active {
+        background: linear-gradient(135deg, #063532 0%, #0b5c56 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(11, 92, 86, 0.22);
+    }
+
+    .fss-scope-card {
+        border-radius: 14px;
+        border: 1.5px solid #e2e8f0;
+        background: #fff;
+        transition: all 0.18s;
+        cursor: pointer;
+    }
+    .fss-scope-card:hover { border-color: #99f6e4; background: #f0fdfa; }
+
+    .fss-btn-primary {
+        background: var(--fss-teal);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 9px 18px;
+    }
+    .fss-btn-primary:hover { background: var(--fss-teal-dark); color: #fff; }
+</style>
+
 @if (isRestart && restartProduct != null)
 {
-    <div class="row mt-4">
-        <div class="col-md-8 mx-auto">
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-header bg-success-subtle border-0 border-start border-4 border-success">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="avatar-xs">
-                            <span class="avatar-title rounded-circle bg-success text-white">
-                                <i class="bx bx-play-circle"></i>
-                            </span>
-                        </span>
-                        <div>
-                            <h5 class="mb-0">Bắt đầu tiếp Flash Sale</h5>
-                            <div class="text-muted small">Cập nhật lại thời gian, giữ nguyên mức giảm giá cũ</div>
-                        </div>
+    <div class="row mt-2">
+        <div class="col-lg-8 mx-auto">
+            <div class="fss-hero d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div style="position: relative; z-index: 2;">
+                    <span class="badge rounded-pill mb-1" style="background: rgba(16,185,129,0.22); color: #a7f3d0; font-weight: 700; font-size: 0.72rem;">
+                        <i class="bx bx-play-circle me-1"></i>KHỞI ĐỘNG LẠI SỰ KIỆN
+                    </span>
+                    <h4 class="mb-1 fw-bold text-white">Bắt đầu tiếp Flash Sale</h4>
+                    <div class="small" style="color: rgba(255,255,255,0.8);">Cập nhật lại khung thời gian mới, giữ nguyên mức giảm giá đã cấu hình trước đó.</div>
+                </div>
+                <a asp-area="Admin" asp-controller="FlashSales" asp-action="Index" class="fss-btn-ghost" style="position: relative; z-index: 2;">
+                    <i class="bx bx-arrow-back"></i>Quay lại
+                </a>
+            </div>
+
+            <div class="fss-card p-4">
+                <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded-3 border" style="background: #f8fafc;">
+                    @if (!string.IsNullOrWhiteSpace(restartProduct.PrimaryImageUrl))
+                    {
+                        <img src="@restartProduct.PrimaryImageUrl" alt="Product" class="rounded-3 border" style="width: 62px; height: 62px; object-fit: cover;" />
+                    }
+                    <div>
+                        <h6 class="mb-1 fw-bold text-dark">@restartProduct.Name</h6>
+                        <div class="text-muted small">Mã SP: #@restartProduct.ProductId • Giữ nguyên mức giảm giá các biến thể cũ</div>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-3 mb-4 p-3 bg-light rounded-3">
-                        @if (!string.IsNullOrWhiteSpace(restartProduct.PrimaryImageUrl))
-                        {
-                            <img src="@restartProduct.PrimaryImageUrl" alt="Product" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" />
-                        }
-                        <div>
-                            <h6 class="mb-1">@restartProduct.Name</h6>
-                            <div class="text-muted small">ID: #@restartProduct.ProductId - Các mức giảm giá đã được cấu hình trước đó</div>
+
+                <form asp-area="Admin" asp-controller="FlashSales" asp-action="RestartProduct" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="productId" value="@restartProduct.ProductId" />
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-dark">Thời gian bắt đầu mới <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bx bx-play-circle text-success"></i></span>
+                                <input class="form-control" type="datetime-local" name="startDate" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-dark">Thời gian kết thúc mới <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bx bx-stop-circle text-danger"></i></span>
+                                <input class="form-control" type="datetime-local" name="endDate" required />
+                            </div>
                         </div>
                     </div>
 
-                    <form asp-area="Admin" asp-controller="FlashSales" asp-action="RestartProduct" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="productId" value="@restartProduct.ProductId" />
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Thời gian bắt đầu mới <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white"><i class="bx bx-calendar"></i></span>
-                                    <input class="form-control" type="datetime-local" name="startDate" required />
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Thời gian kết thúc mới <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white"><i class="bx bx-calendar-check"></i></span>
-                                    <input class="form-control" type="datetime-local" name="endDate" required />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
-                            <a asp-area="Admin" asp-controller="FlashSales" asp-action="Index" class="btn btn-outline-secondary">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-success"><i class="bx bx-check me-1"></i>Khởi động lại sự kiện</button>
-                        </div>
-                    </form>
-                </div>
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                        <a asp-area="Admin" asp-controller="FlashSales" asp-action="Index" class="btn btn-light border px-3" style="border-radius: 10px;">Hủy bỏ</a>
+                        <button type="submit" class="fss-btn-primary"><i class="bx bx-check me-1"></i>Khởi động lại sự kiện</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 }
 else
 {
-        <div class="row">
-            <div class="col-12">
-                <div class="page-title-box">
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 bg-light border rounded-3 p-3">
-                        <div>
-                            <h4 class="mb-1"><i class="bx bx-bolt-circle me-1"></i>Thiết lập Flash Sale</h4>
-                            <div class="text-muted small">Tạo/áp dụng Flash Sale theo % và khoảng thời gian</div>
-                        </div>
-                        <div class="page-title-right">
-                            <ol class="breadcrumb m-0">
-                                <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Home" asp-action="Index">Admin</a></li>
-                                <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="FlashSales" asp-action="Index">Flash Sale</a></li>
-                                <li class="breadcrumb-item active">Thiết lập</li>
-                            </ol>
-                        </div>
-                    </div>
+        <!-- 1. HERO HEADER -->
+        <div class="fss-hero d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div style="position: relative; z-index: 2;">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <span class="badge rounded-pill" style="background: rgba(245,158,11,0.25); color: #fde68a; font-weight: 700; font-size: 0.72rem;">
+                        <i class="bx bxs-zap me-1"></i>TRÌNH THIẾT LẬP 5 BƯỚC
+                    </span>
+                    <span class="badge rounded-pill" style="background: rgba(255,255,255,0.16); color: #ccfbf1; font-weight: 700; font-size: 0.72rem;">
+                        @(Model.Products?.Count ?? 0) sản phẩm khả dụng
+                    </span>
                 </div>
+                <h3 class="mb-1 fw-bold text-white" style="font-size: 1.4rem;">
+                    <i class="bx bx-bolt-circle me-2" style="color: #fbbf24;"></i>Thiết lập Chiến dịch Flash Sale
+                </h3>
+                <div class="small" style="color: rgba(255,255,255,0.8);">
+                    Áp dụng giảm giá theo % và khung giờ cho toàn gian hàng, nhiều sản phẩm hoặc tùy chỉnh riêng từng biến thể SKU.
+                </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2" style="position: relative; z-index: 2;">
+                <form method="get" class="d-flex gap-2" style="max-width: 340px;">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-0"><i class="bx bx-search-alt text-muted"></i></span>
+                        <input class="form-control border-0" name="search" value="@Model.Search" placeholder="Lọc nhanh tên sản phẩm..." />
+                    </div>
+                    <button class="btn btn-sm fw-bold px-3" type="submit" style="background: #10b981; color: #fff; border-radius: 8px;">Tìm</button>
+                </form>
+                <a asp-area="Admin" asp-controller="FlashSales" asp-action="Index" class="fss-btn-ghost">
+                    <i class="bx bx-arrow-back"></i>Danh sách
+                </a>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-                    <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="avatar-xs">
-                                    <span class="avatar-title rounded-circle bg-primary text-white">
-                                        <i class="bx bx-cog"></i>
-                                    </span>
-                                </div>
-                                <div>
-                                    <h5 class="mb-0">Cài đặt Flash Sale</h5>
-                                    <div class="text-muted small">Áp dụng cho toàn shop, nhiều sản phẩm, hoặc 1 sản phẩm</div>
-                                </div>
-                            </div>
-
-                            <span class="badge bg-primary text-white rounded-pill px-3 py-2">
-                                <i class="bx bx-package me-1"></i>
-                                @(Model.Products?.Count ?? 0) sản phẩm
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                            <div class="text-muted">
-                                <i class="bx bx-info-circle me-1"></i>
-                                Tip: nếu muốn set sale theo từng biến thể, hãy chọn ở bước “Chọn biến thể”.
-                            </div>
-
-                            <form method="get" class="d-flex gap-2" style="max-width: 520px; width: 100%;">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white"><i class="bx bx-search-alt"></i></span>
-                                    <input class="form-control" name="search" value="@Model.Search" placeholder="Tìm theo tên sản phẩm..." />
-                                </div>
-                                <button class="btn btn-primary" type="submit"><i class="bx bx-search-alt me-1"></i>Tìm</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
+        <div class="row g-4">
             <div class="col-lg-4 col-xl-3">
-                <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-                    <div class="card-header bg-light border-0">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="avatar-xs">
-                                <span class="avatar-title rounded-circle bg-primary-subtle text-primary-emphasis border border-primary-subtle">
-                                    <i class="bx bx-list-ol"></i>
-                                </span>
-                            </div>
-                            <div>
-                                <h6 class="mb-0">Thiết lập theo bước</h6>
-                                <div class="text-muted small">Đi theo thứ tự để tránh sai cấu hình</div>
-                            </div>
-                        </div>
+                <div class="fss-card mb-3 sticky-top" style="top: 20px; z-index: 90;">
+                    <div class="fss-card-head">
+                        <div class="fw-bold text-dark" style="font-size: 0.92rem;"><i class="bx bx-list-ol text-success me-1"></i>Thiết lập theo bước</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">Đi theo thứ tự để tránh sai cấu hình</div>
                     </div>
-                    <div class="card-body">
-                        <div class="nav flex-column nav-pills gap-2" role="tablist" aria-orientation="vertical">
+                    <div class="p-3">
+                        <div class="nav flex-column nav-pills gap-1 fss-wizard-nav" role="tablist" aria-orientation="vertical">
                             <button class="nav-link active d-flex align-items-center justify-content-between" type="button" data-pane="1">
                                 <span class="d-flex align-items-center gap-2">
                                     <span class="badge bg-primary rounded-pill">1</span>
@@ -177,7 +226,7 @@ else
                             <button class="nav-link d-flex align-items-center justify-content-between" type="button" data-pane="4">
                                 <span class="d-flex align-items-center gap-2">
                                     <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill">4</span>
-                                    <span><i class="bx bx-time-five me-1"></i>Thời gian & giảm giá</span>
+                                    <span><i class="bx bx-time-five me-1"></i>Thời gian &amp; giảm giá</span>
                                 </span>
                                 <i class="bx bx-chevron-right"></i>
                             </button>
@@ -189,26 +238,15 @@ else
                                 <i class="bx bx-chevron-right"></i>
                             </button>
                         </div>
-                    </div>
-                </div>
 
-                <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-                    <div class="card-header bg-light border-0">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="avatar-xs">
-                                <span class="avatar-title rounded-circle bg-warning-subtle text-warning-emphasis border border-warning-subtle">
-                                    <i class="bx bx-bulb"></i>
-                                </span>
-                            </div>
-                            <h6 class="mb-0">Gợi ý nhanh</h6>
+                        <div class="mt-3 p-3 rounded-3" style="background: #fffbeb; border: 1px solid #fde68a;">
+                            <div class="fw-bold small text-dark mb-1"><i class="bx bx-bulb text-warning me-1"></i>Gợi ý nhanh</div>
+                            <ul class="mb-0 ps-3 small text-muted">
+                                <li><strong>Toàn shop:</strong> áp dụng mọi SP.</li>
+                                <li><strong>Nhiều SP:</strong> chọn nhiều sản phẩm.</li>
+                                <li><strong>1 SP:</strong> chọn đúng 1 sản phẩm.</li>
+                            </ul>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <ul class="mb-0 ps-3">
-                            <li>Toàn shop: áp dụng cho tất cả sản phẩm.</li>
-                            <li>Nhiều SP: tick các sản phẩm muốn áp dụng.</li>
-                            <li>1 SP: tick đúng 1 sản phẩm.</li>
-                        </ul>
                     </div>
                 </div>
             </div>
@@ -223,107 +261,101 @@ else
                     <input type="hidden" name="PricingMode" id="PricingMode" value="bulk" />
                     <input type="hidden" name="PerVariantConfigJson" id="PerVariantConfigJson" value="" />
 
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="text-muted small">
-                                <i class="bx bx-trending-up me-1"></i>
-                                Tiến trình cấu hình
+                    <div class="fss-card p-3 mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="fw-semibold small text-dark">
+                                <i class="bx bx-trending-up text-success me-1"></i>Tiến trình cấu hình
                             </div>
-                            <div class="text-muted small" id="wizardStepText">Bước 1/5</div>
+                            <div class="badge rounded-pill" style="background: rgba(11,92,86,0.12); color: #0b5c56;" id="wizardStepText">Bước 1/5</div>
                         </div>
-                        <div class="progress rounded-pill" style="height: 8px;">
-                            <div id="wizardProgress" class="progress-bar bg-primary" role="progressbar" style="width: 20%"></div>
+                        <div class="progress rounded-pill" style="height: 8px; background: #e2e8f0;">
+                            <div id="wizardProgress" class="progress-bar" role="progressbar" style="width: 20%; background: #0b5c56;"></div>
                         </div>
                     </div>
 
-                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden" data-pane-content="1">
-                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-primary rounded-pill">Bước 1</span>
-                                    <span class="fw-semibold"><i class="bx bx-target-lock me-1"></i>Chọn phạm vi</span>
-                                </div>
-                                <span class="text-muted small">Chọn 1 trong 3 tuỳ chọn</span>
+                    <!-- STEP 1 -->
+                    <div class="fss-card" data-pane-content="1">
+                        <div class="fss-card-head d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill" style="background: #0b5c56;">Bước 1</span>
+                                <span class="fw-bold text-dark"><i class="bx bx-target-lock me-1"></i>Chọn phạm vi áp dụng</span>
                             </div>
+                            <span class="text-muted small">Chọn 1 trong 3 tuỳ chọn</span>
                         </div>
-                        <div class="card-body">
+                        <div class="p-4">
                             <div class="row g-3">
                                 <div class="col-md-4">
-                                    <div class="form-check card p-3 h-100 border" data-scope-card="all">
+                                    <div class="form-check fss-scope-card p-3 h-100" data-scope-card="all">
                                         <input class="form-check-input" type="radio" name="_scopeRadio" id="scope_all" value="all" />
                                         <label class="form-check-label ms-1" for="scope_all">
-                                            <strong>Toàn bộ gian hàng</strong>
-                                            <div class="text-muted">Áp dụng cho tất cả sản phẩm.</div>
+                                            <strong class="d-block text-dark">Toàn bộ gian hàng</strong>
+                                            <div class="text-muted small mt-1">Áp dụng cho tất cả sản phẩm hiện có.</div>
                                         </label>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="form-check card p-3 h-100 border" data-scope-card="selected">
+                                    <div class="form-check fss-scope-card p-3 h-100" data-scope-card="selected">
                                         <input class="form-check-input" type="radio" name="_scopeRadio" id="scope_selected" value="selected" checked />
                                         <label class="form-check-label ms-1" for="scope_selected">
-                                            <strong>Nhiều sản phẩm</strong>
-                                            <div class="text-muted">Chọn nhiều sản phẩm từ danh sách.</div>
+                                            <strong class="d-block text-dark">Nhiều sản phẩm</strong>
+                                            <div class="text-muted small mt-1">Chọn nhiều sản phẩm từ danh sách.</div>
                                         </label>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="form-check card p-3 h-100 border" data-scope-card="single">
+                                    <div class="form-check fss-scope-card p-3 h-100" data-scope-card="single">
                                         <input class="form-check-input" type="radio" name="_scopeRadio" id="scope_single" value="single" />
                                         <label class="form-check-label ms-1" for="scope_single">
-                                            <strong>1 sản phẩm</strong>
-                                            <div class="text-muted">Chọn đúng 1 sản phẩm.</div>
+                                            <strong class="d-block text-dark">1 sản phẩm</strong>
+                                            <div class="text-muted small mt-1">Chọn đúng 1 sản phẩm để tùy biến sâu.</div>
                                         </label>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="mt-3">
-                                <button class="btn btn-primary" type="button" data-next><i class="bx bx-right-arrow-alt me-1"></i>Tiếp tục</button>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                                <button class="fss-btn-primary" type="button" data-next>Tiếp tục <i class="bx bx-right-arrow-alt ms-1"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden d-none" data-pane-content="2">
-                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-primary rounded-pill">Bước 2</span>
-                                    <span class="fw-semibold"><i class="bx bx-package me-1"></i>Chọn sản phẩm</span>
-                                </div>
-                                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle rounded-pill px-3 py-2" id="selectedBadge">
-                                    <i class="bx bx-check-square me-1"></i>
-                                    Đã chọn: 0
-                                </span>
+                    <!-- STEP 2 -->
+                    <div class="fss-card d-none" data-pane-content="2">
+                        <div class="fss-card-head d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill" style="background: #0b5c56;">Bước 2</span>
+                                <span class="fw-bold text-dark"><i class="bx bx-package me-1"></i>Chọn sản phẩm</span>
                             </div>
+                            <span class="badge rounded-pill px-3 py-2" style="background: rgba(11,92,86,0.12); color: #0b5c56;" id="selectedBadge">
+                                <i class="bx bx-check-square me-1"></i>Đã chọn: 0
+                            </span>
                         </div>
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                <h5 class="card-title mb-0">2) Chọn sản phẩm</h5>
-                                <div class="d-flex gap-2 align-items-center">
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" id="selectAllBtn"><i class="bx bx-select-multiple me-1"></i>Chọn tất cả</button>
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" id="clearAllBtn"><i class="bx bx-x me-1"></i>Bỏ chọn</button>
+                        <div class="p-4">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                <div class="alert alert-info d-flex align-items-start gap-2 mb-0 py-2 px-3 flex-grow-1" id="scopeHint" role="alert">
+                                    <i class="bx bx-info-circle mt-1"></i>
+                                    <div class="small"></div>
                                 </div>
-                            </div>
-
-                            <div class="alert alert-info d-flex align-items-start gap-2" id="scopeHint" role="alert">
-                                <i class="bx bx-info-circle mt-1"></i>
-                                <div></div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-light border" type="button" id="selectAllBtn"><i class="bx bx-select-multiple me-1"></i>Chọn tất cả</button>
+                                    <button class="btn btn-sm btn-light border" type="button" id="clearAllBtn"><i class="bx bx-x me-1"></i>Bỏ chọn</button>
+                                </div>
                             </div>
 
                             @if (Model.Products == null || Model.Products.Count == 0)
                             {
-                                <div class="text-muted">Không có sản phẩm để hiển thị.</div>
+                                <div class="text-muted text-center py-4">Không có sản phẩm để hiển thị.</div>
                             }
                             else
                             {
-                                <div class="table-responsive border rounded-3" style="max-height: 520px; overflow:auto;">
-                                    <table class="table table-striped table-hover table-nowrap align-middle mb-0">
+                                <div class="table-responsive border rounded-3" style="max-height: 500px; overflow:auto;">
+                                    <table class="table table-hover table-nowrap align-middle mb-0">
                                         <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
                                             <tr>
                                                 <th style="width:42px"></th>
                                                 <th>Sản phẩm</th>
-                                                <th style="width:140px" class="text-end">Biến thể</th>
-                                                <th style="width:220px" class="text-end">Giá thấp nhất</th>
+                                                <th style="width:130px" class="text-end">Biến thể</th>
+                                                <th style="width:200px" class="text-end">Giá thấp nhất</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -338,19 +370,19 @@ else
                                                         <div class="d-flex align-items-center gap-2">
                                                             @if (!string.IsNullOrWhiteSpace(p.PrimaryImageUrl))
                                                             {
-                                                                <img src="@p.PrimaryImageUrl" alt="@p.Name" class="rounded" style="width:40px;height:40px;object-fit:cover;" />
+                                                                <img src="@p.PrimaryImageUrl" alt="@p.Name" class="rounded-3 border" style="width:42px;height:42px;object-fit:cover;" />
                                                             }
                                                             <div>
-                                                                <div class="fw-semibold">@p.Name</div>
+                                                                <div class="fw-bold text-dark">@p.Name</div>
                                                                 @if (isOnSale)
                                                                 {
-                                                                    <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle rounded-pill">Đang Flash Sale</span>
+                                                                    <span class="badge rounded-pill bg-danger-subtle text-danger">Đang Flash Sale</span>
                                                                 }
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td class="text-end">@p.VariantCount</td>
-                                                    <td class="text-end fw-semibold">@p.MinPrice.ToString("N0", viVn)₫</td>
+                                                    <td class="text-end fw-semibold">@p.VariantCount SKU</td>
+                                                    <td class="text-end fw-bold text-dark">@p.MinPrice.ToString("N0", viVn)₫</td>
                                                 </tr>
                                             }
                                         </tbody>
@@ -358,29 +390,28 @@ else
                                 </div>
                             }
 
-                            <div class="mt-3 d-flex gap-2">
-                                <button class="btn btn-outline-secondary" type="button" data-prev>Quay lại</button>
-                                <button class="btn btn-primary" type="button" data-next><i class="bx bx-right-arrow-alt me-1"></i>Tiếp tục</button>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                                <button class="btn btn-light border px-3" type="button" data-prev style="border-radius: 10px;">Quay lại</button>
+                                <button class="fss-btn-primary" type="button" data-next>Tiếp tục <i class="bx bx-right-arrow-alt ms-1"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden d-none" data-pane-content="3">
-                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-primary rounded-pill">Bước 3</span>
-                                    <span class="fw-semibold"><i class="bx bx-layer me-1"></i>Chọn biến thể</span>
-                                </div>
-                                <span class="text-muted small">Chọn biến thể sale cho từng sản phẩm</span>
+                    <!-- STEP 3 -->
+                    <div class="fss-card d-none" data-pane-content="3">
+                        <div class="fss-card-head d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill" style="background: #0b5c56;">Bước 3</span>
+                                <span class="fw-bold text-dark"><i class="bx bx-layer me-1"></i>Chọn biến thể</span>
                             </div>
+                            <span class="text-muted small">Chọn biến thể sale cho từng sản phẩm</span>
                         </div>
-                        <div class="card-body">
+                        <div class="p-4">
                             <div class="alert alert-danger d-none" id="variantStepError" role="alert"></div>
 
-                            <div class="alert alert-info d-flex align-items-start gap-2" role="alert">
+                            <div class="alert alert-info d-flex align-items-start gap-2 rounded-3" role="alert">
                                 <i class="bx bx-info-circle mt-1"></i>
-                                <div>
+                                <div class="small">
                                     Nếu chọn “Toàn bộ gian hàng” thì mặc định áp dụng cho <strong>tất cả biến thể</strong>.
                                     Nếu chọn 1/nhiều sản phẩm, bạn có thể chọn sale cho một số biến thể hoặc toàn bộ biến thể theo từng sản phẩm.
                                 </div>
@@ -388,36 +419,35 @@ else
 
                             <div id="variantSelectionContainer" class="d-flex flex-column gap-3"></div>
 
-                            <div class="mt-3 d-flex gap-2">
-                                <button class="btn btn-outline-secondary" type="button" data-prev>Quay lại</button>
-                                <button class="btn btn-primary" type="button" data-next><i class="bx bx-right-arrow-alt me-1"></i>Tiếp tục</button>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                                <button class="btn btn-light border px-3" type="button" data-prev style="border-radius: 10px;">Quay lại</button>
+                                <button class="fss-btn-primary" type="button" data-next>Tiếp tục <i class="bx bx-right-arrow-alt ms-1"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden d-none" data-pane-content="4">
-                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-primary rounded-pill">Bước 4</span>
-                                    <span class="fw-semibold"><i class="bx bx-time-five me-1"></i>Giảm giá & thời gian</span>
-                                </div>
-                                <span class="text-muted small">Thiết lập % và thời gian áp dụng</span>
+                    <!-- STEP 4 -->
+                    <div class="fss-card d-none" data-pane-content="4">
+                        <div class="fss-card-head d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill" style="background: #0b5c56;">Bước 4</span>
+                                <span class="fw-bold text-dark"><i class="bx bx-time-five me-1"></i>Giảm giá &amp; thời gian</span>
                             </div>
+                            <span class="text-muted small">Thiết lập % và thời gian áp dụng</span>
                         </div>
-                        <div class="card-body">
+                        <div class="p-4">
                             <div class="alert alert-danger d-none" id="pricingStepError" role="alert"></div>
 
-                            <div class="border rounded-3 p-3 mb-3" id="pricingModeBox">
-                                <div class="fw-semibold mb-2">Cách đặt giảm giá</div>
+                            <div class="border rounded-3 p-3 mb-4" style="background: #f8fafc;" id="pricingModeBox">
+                                <div class="fw-bold text-dark small mb-2">Cách đặt giảm giá</div>
                                 <div class="d-flex flex-wrap gap-4">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="_pricingModeRadio" id="pricing_bulk" value="bulk" checked />
-                                        <label class="form-check-label" for="pricing_bulk">Một mức giảm & thời gian cho tất cả biến thể</label>
+                                        <label class="form-check-label fw-semibold" for="pricing_bulk">Một mức giảm &amp; thời gian cho tất cả biến thể</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="_pricingModeRadio" id="pricing_pervariant" value="pervariant" />
-                                        <label class="form-check-label" for="pricing_pervariant">Mỗi biến thể một mức giảm & thời gian riêng</label>
+                                        <label class="form-check-label fw-semibold" for="pricing_pervariant">Mỗi biến thể một mức giảm &amp; thời gian riêng</label>
                                     </div>
                                 </div>
                                 <div class="text-muted small mt-2" id="pricingModeHint"></div>
@@ -425,94 +455,79 @@ else
 
                             <div class="row g-3">
                                 <div class="col-md-4">
-                                    <label class="form-label">Giảm giá (%)</label>
+                                    <label class="form-label fw-semibold small text-dark">Giảm giá (%)</label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-white"><i class="bx bx-purchase-tag"></i></span>
-                                        <input class="form-control" type="number" name="DiscountPercent" id="DiscountPercent" min="1" max="90" value="10" required />
-                                        <span class="input-group-text bg-white">%</span>
+                                        <span class="input-group-text bg-light"><i class="bx bx-purchase-tag text-danger"></i></span>
+                                        <input class="form-control fw-bold" type="number" name="DiscountPercent" id="DiscountPercent" min="1" max="90" value="10" required />
+                                        <span class="input-group-text bg-light fw-bold">%</span>
                                     </div>
-                                    <div class="form-text">Nhập 1–90.</div>
+                                    <div class="form-text">Nhập từ 1 đến 90%.</div>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Bắt đầu</label>
+                                    <label class="form-label fw-semibold small text-dark">Bắt đầu</label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-white"><i class="bx bx-calendar"></i></span>
+                                        <span class="input-group-text bg-light"><i class="bx bx-play-circle text-success"></i></span>
                                         <input class="form-control" type="datetime-local" name="SaleStartDate" id="SaleStartDate" required />
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Kết thúc</label>
+                                    <label class="form-label fw-semibold small text-dark">Kết thúc</label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-white"><i class="bx bx-calendar-check"></i></span>
+                                        <span class="input-group-text bg-light"><i class="bx bx-stop-circle text-danger"></i></span>
                                         <input class="form-control" type="datetime-local" name="SaleEndDate" id="SaleEndDate" required />
                                     </div>
                                 </div>
                             </div>
 
                             <div class="mt-3 d-none" id="perVariantPricingContainer">
-                                <div class="alert alert-info d-flex align-items-start gap-2" role="alert">
+                                <div class="alert alert-info d-flex align-items-start gap-2 rounded-3" role="alert">
                                     <i class="bx bx-info-circle mt-1"></i>
-                                    <div>Nhập % giảm và thời gian áp dụng cho từng biến thể.</div>
+                                    <div class="small">Nhập % giảm và thời gian áp dụng cho từng biến thể.</div>
                                 </div>
                                 <div id="perVariantPricingList" class="d-flex flex-column gap-3"></div>
                             </div>
 
-                            <div class="mt-3 d-flex gap-2">
-                                <button class="btn btn-outline-secondary" type="button" data-prev>Quay lại</button>
-                                <button class="btn btn-primary" type="button" data-next><i class="bx bx-right-arrow-alt me-1"></i>Tiếp tục</button>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                                <button class="btn btn-light border px-3" type="button" data-prev style="border-radius: 10px;">Quay lại</button>
+                                <button class="fss-btn-primary" type="button" data-next>Tiếp tục <i class="bx bx-right-arrow-alt ms-1"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card shadow-sm border-0 rounded-3 overflow-hidden d-none" data-pane-content="5">
-                        <div class="card-header bg-primary-subtle border-0 border-start border-4 border-primary">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-primary rounded-pill">Bước 5</span>
-                                    <span class="fw-semibold"><i class="bx bx-check-shield me-1"></i>Xác nhận</span>
-                                </div>
-                                <span class="text-muted small">Kiểm tra lại trước khi áp dụng</span>
+                    <!-- STEP 5 -->
+                    <div class="fss-card d-none" data-pane-content="5">
+                        <div class="fss-card-head d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill" style="background: #0b5c56;">Bước 5</span>
+                                <span class="fw-bold text-dark"><i class="bx bx-check-shield me-1"></i>Xác nhận áp dụng</span>
                             </div>
+                            <span class="text-muted small">Kiểm tra lại trước khi kích hoạt</span>
                         </div>
-                        <div class="card-body">
+                        <div class="p-4">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <div class="border rounded-3 p-3 h-100 bg-light">
-                                        <div class="d-flex align-items-center gap-2 mb-2">
-                                            <span class="avatar-xs">
-                                                <span class="avatar-title rounded-circle bg-primary-subtle text-primary-emphasis border border-primary-subtle">
-                                                    <i class="bx bx-target-lock"></i>
-                                                </span>
-                                            </span>
-                                            <div class="fw-semibold">Phạm vi</div>
-                                        </div>
-                                        <div class="fw-semibold" id="summaryScope">—</div>
-                                        <div class="text-muted mt-2">Số sản phẩm chọn</div>
-                                        <div class="fw-semibold" id="summaryCount">—</div>
+                                    <div class="border rounded-3 p-3 h-100" style="background: #f8fafc;">
+                                        <div class="fw-bold text-dark small mb-2"><i class="bx bx-target-lock text-success me-1"></i>Phạm vi áp dụng</div>
+                                        <div class="fw-bold text-dark" id="summaryScope">—</div>
+                                        <div class="text-muted small mt-2">Số sản phẩm chọn</div>
+                                        <div class="fw-bold text-dark" id="summaryCount">—</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="border rounded-3 p-3 h-100 bg-light">
-                                        <div class="d-flex align-items-center gap-2 mb-2">
-                                            <span class="avatar-xs">
-                                                <span class="avatar-title rounded-circle bg-success-subtle text-success-emphasis border border-success-subtle">
-                                                    <i class="bx bx-purchase-tag"></i>
-                                                </span>
-                                            </span>
-                                            <div class="fw-semibold">Giảm giá & thời gian</div>
-                                        </div>
-                                        <div class="text-muted">Giảm giá</div>
-                                        <div class="fw-semibold" id="summaryDiscount">—</div>
-                                        <div class="text-muted mt-2">Thời gian</div>
-                                        <div class="fw-semibold" id="summaryDates">—</div>
+                                    <div class="border rounded-3 p-3 h-100" style="background: #f8fafc;">
+                                        <div class="fw-bold text-dark small mb-2"><i class="bx bx-purchase-tag text-danger me-1"></i>Giảm giá &amp; thời gian</div>
+                                        <div class="text-muted small">Mức giảm</div>
+                                        <div class="fw-bold text-danger" id="summaryDiscount">—</div>
+                                        <div class="text-muted small mt-2">Khung thời gian</div>
+                                        <div class="fw-bold text-dark" id="summaryDates">—</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="mt-3">
-                                <div class="fw-semibold mb-2"><i class="bx bx-list-check me-1"></i>Chi tiết áp dụng</div>
+                            <div class="mt-4">
+                                <div class="fw-bold text-dark small mb-2"><i class="bx bx-list-check text-success me-1"></i>Chi tiết áp dụng</div>
                                 <div class="table-responsive border rounded-3">
-                                    <table class="table table-striped table-sm align-middle mb-0">
+                                    <table class="table table-sm align-middle mb-0">
                                         <thead class="table-light">
                                             <tr>
                                                 <th style="width: 28%">Sản phẩm</th>
@@ -532,14 +547,16 @@ else
                                 <div class="text-muted small mt-2" id="confirmNote"></div>
                             </div>
 
-                            <div class="mt-3 d-flex gap-2">
-                                <button class="btn btn-outline-secondary" type="button" data-prev>Quay lại</button>
-                                <button class="btn btn-primary" type="submit" onclick="document.getElementById('Action').value='apply';document.getElementById('DiscountPercent').required=true;document.getElementById('SaleStartDate').required=true;document.getElementById('SaleEndDate').required=true;">
-                                    <i class="bx bx-check-circle me-1"></i>Áp dụng Flash Sale
-                                </button>
-                                <button class="btn btn-outline-danger" type="submit" onclick="document.getElementById('Action').value='clear';document.getElementById('DiscountPercent').required=false;document.getElementById('SaleStartDate').required=false;document.getElementById('SaleEndDate').required=false;">
-                                    <i class="bx bx-trash me-1"></i>Gỡ Flash Sale
-                                </button>
+                            <div class="mt-4 pt-3 border-top d-flex flex-wrap justify-content-between gap-2">
+                                <button class="btn btn-light border px-3" type="button" data-prev style="border-radius: 10px;">Quay lại</button>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-danger" style="border-radius: 10px;" type="submit" onclick="document.getElementById('Action').value='clear';document.getElementById('DiscountPercent').required=false;document.getElementById('SaleStartDate').required=false;document.getElementById('SaleEndDate').required=false;">
+                                        <i class="bx bx-trash me-1"></i>Gỡ Flash Sale
+                                    </button>
+                                    <button class="fss-btn-primary px-4" type="submit" onclick="document.getElementById('Action').value='apply';document.getElementById('DiscountPercent').required=true;document.getElementById('SaleStartDate').required=true;document.getElementById('SaleEndDate').required=true;">
+                                        <i class="bx bx-check-circle me-1"></i>Áp dụng Flash Sale
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

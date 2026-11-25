@@ -18,8 +18,9 @@ public class CategoryMenuViewComponent : ViewComponent
         // Load all categories once.
         var all = await _context.Categories
             .AsNoTracking()
-            .Where(x => x.IsActive)
+            .Where(x => x.IsActive && !x.IsDeleted)
             .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Id)
             .ToListAsync(cancellationToken);
 
         // 3 levels: root -> dropdown -> sub_category
@@ -64,6 +65,8 @@ public class CategoryMenuViewComponent : ViewComponent
             ParentId = src.ParentId,
             Name = src.Name,
             Slug = src.Slug,
+            IconUrl = src.IconUrl,
+            SortOrder = src.SortOrder,
             Children = new List<Category>()
         };
     }

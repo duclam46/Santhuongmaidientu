@@ -19,6 +19,30 @@ public class Product
     [ForeignKey(nameof(CategoryId))]
     public Category? Category { get; set; }
 
+    public int? BrandId { get; set; }
+
+    [ForeignKey(nameof(BrandId))]
+    public Brand? Brand { get; set; }
+
+    public int WarrantyMonths { get; set; } = 0;
+
+    [MaxLength(100)]
+    public string? WarrantyType { get; set; }
+
+    public bool IsReturnable { get; set; } = true;
+
+    public bool IsDigital { get; set; } = false;
+
+    [MaxLength(1000)]
+    public string? DigitalContent { get; set; }
+
+    public DateTime? ManufacturingDate { get; set; }
+
+    public DateTime? ExpiryDate { get; set; }
+
+    [MaxLength(50)]
+    public string? ShippingCondition { get; set; } = "Tiêu chuẩn"; // Tiêu chuẩn | Hàng dễ vỡ | Thực phẩm / Bảo quản mát
+
     [Required]
     [MaxLength(255)]
     public string Name { get; set; } = string.Empty;
@@ -46,7 +70,6 @@ public class Product
     [NotMapped]
     public decimal VatRate { get; set; } = 0.08m;
 
-
     public bool IsDeleted { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -56,6 +79,10 @@ public class Product
     public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
 
     public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
+
+    public ICollection<ProductOption> Options { get; set; } = new List<ProductOption>();
+
+    public ICollection<ProductAttributeValue> AttributeValues { get; set; } = new List<ProductAttributeValue>();
 
     public ICollection<SizeGuide> SizeGuides { get; set; } = new List<SizeGuide>();
 

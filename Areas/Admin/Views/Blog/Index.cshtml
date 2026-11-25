@@ -3,177 +3,335 @@
 
 @{
     ViewData["Title"] = "Quản lý bài viết Blog";
+    var activeStatus = string.IsNullOrWhiteSpace(Model.StatusFilter) ? "All" : Model.StatusFilter.Trim();
+
+    var statusTabs = new (string status, string label, string icon, int count)[]
+    {
+        ("All", "Tất cả bài viết", "bx bx-news", Model.TotalAllCount),
+        ("Published", "Đã xuất bản", "bx bx-check-circle", Model.PublishedCount),
+        ("Draft", "Bản nháp", "bx bx-edit-alt", Model.DraftCount),
+        ("Hidden", "Đang ẩn", "bx bx-hide", Model.HiddenCount)
+    };
 }
 
-<div class="row">
-    <div class="col-12">
-        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18">Quản lý bài viết Blog</h4>
+@section Styles {
+    <style>
+        .bl-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 26px 30px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .bl-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+        @@media (max-width: 991px) {
+            .bl-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .bl-kpi-card {
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .bl-kpi-ic {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255, 235, 105, 0.18);
+            color: #FFEB69;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .bl-tab-bar {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            background: #F1F5F9;
+            padding: 6px;
+            border-radius: 16px;
+            margin-bottom: 18px;
+        }
+        @@media (max-width: 767px) {
+            .bl-tab-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .bl-tab-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #475569;
+            transition: all 0.2s ease;
+            text-decoration: none !important;
+        }
+        .bl-tab-btn:hover {
+            color: #088178;
+            background: rgba(255, 255, 255, 0.65);
+        }
+        .bl-tab-btn.is-active {
+            background: #088178;
+            color: #ffffff !important;
+            box-shadow: 0 6px 14px -6px rgba(8, 129, 120, 0.45);
+        }
+        .bl-thumb {
+            width: 64px;
+            height: 46px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #E2E8F0;
+            background: #F8FAFC;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #94A3B8;
+        }
+        .bl-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+}
 
-            <div class="page-title-right">
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a asp-action="Index" asp-controller="Home">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Blog</li>
-                </ol>
+<!-- HERO HEADER -->
+<div class="bl-hero">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-news text-warning me-1"></i>Quản lý Bài viết &amp; Tin tức Blog
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Xuất bản bài viết đánh giá, cẩm nang mua sắm và gắn sản phẩm liên kết để tăng chuyển đổi trên trang chủ Sellzy.
+            </p>
+        </div>
+        <a asp-action="Create" class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-sm" style="background: #FFEB69; color: #161C24;">
+            <i class="bx bx-plus-circle me-1"></i>Viết bài mới
+        </a>
+    </div>
+
+    <div class="bl-kpi-grid">
+        <div class="bl-kpi-card">
+            <span class="bl-kpi-ic"><i class="bx bx-news"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.TotalAllCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Tổng số bài viết</div>
+            </div>
+        </div>
+        <div class="bl-kpi-card">
+            <span class="bl-kpi-ic" style="background: rgba(52,211,153,0.22); color: #6EE7B7;"><i class="bx bx-check-circle"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@Model.PublishedCount</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Đã xuất bản</div>
+            </div>
+        </div>
+        <div class="bl-kpi-card">
+            <span class="bl-kpi-ic"><i class="bx bx-show"></i></span>
+            <div>
+                <div class="fs-5 fw-bold lh-1" style="color: #FFEB69;">@Model.TotalViewsCount.ToString("N0")</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Tổng lượt xem</div>
+            </div>
+        </div>
+        <div class="bl-kpi-card">
+            <span class="bl-kpi-ic" style="background: rgba(251,191,36,0.22); color: #FDE68A;"><i class="bx bx-edit-alt"></i></span>
+            <div>
+                <div class="fs-5 fw-bold text-white lh-1">@(Model.DraftCount + Model.HiddenCount)</div>
+                <div class="small" style="color: rgba(255,255,255,0.78);">Bản nháp / Đang ẩn</div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <form asp-action="Index" method="get" class="row mb-4 align-items-end">
-                    <div class="col-sm-4">
-                        <div class="search-box me-2 mb-2 d-inline-block w-100">
-                            <div class="position-relative">
-                                <label for="search" class="form-label">Tìm kiếm</label>
-                                <input type="text" class="form-control" name="search" value="@Model.SearchQuery" placeholder="Tiêu đề bài viết...">
-                                <i class="bx bx-search-alt search-icon" style="top: 36px;"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-3">
-                        <div class="mb-2">
-                            <label for="status" class="form-label">Trạng thái</label>
-                            <select name="status" class="form-select">
-                                <!option value="All" @(Model.StatusFilter == "All" ? "selected" : "")>Tất cả trạng thái</!option>
-                                <!option value="Published" @(Model.StatusFilter == "Published" ? "selected" : "")>Đã xuất bản</!option>
-                                <!option value="Draft" @(Model.StatusFilter == "Draft" ? "selected" : "")>Bản nháp</!option>
-                                <!option value="Hidden" @(Model.StatusFilter == "Hidden" ? "selected" : "")>Đã ẩn</!option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-sm-2">
-                        <div class="mb-2">
-                            <button type="submit" class="btn btn-primary w-100"><i class="bx bx-filter-alt"></i> Lọc</button>
-                        </div>
-                    </div>
-                    <div class="col-sm-3 text-sm-end">
-                        <div class="mb-2">
-                            <a asp-action="Create" class="btn btn-success btn-rounded waves-effect waves-light w-100"><i class="mdi mdi-plus me-1"></i> Viết bài mới</a>
-                        </div>
-                    </div>
-                </form>
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-4">
+        @if (TempData["AdminToast"] is string toast && !string.IsNullOrWhiteSpace(toast))
+        {
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 rounded-3" role="alert">
+                <i class="bx bx-check-circle fs-5"></i>
+                <div>@toast</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
 
-                <div class="table-responsive">
-                    <table class="table align-middle table-nowrap table-hover">
-                        <thead class="table-light">
+        <!-- THANH CHUYỂN TRẠNG THÁI -->
+        <div class="bl-tab-bar">
+            @foreach (var t in statusTabs)
+            {
+                var isActive = string.Equals(activeStatus, t.status, StringComparison.OrdinalIgnoreCase);
+                <a class="bl-tab-btn @(isActive ? "is-active" : "")"
+                   asp-action="Index"
+                   asp-route-status="@t.status"
+                   asp-route-search="@Model.SearchQuery">
+                    <i class="@t.icon fs-6"></i>
+                    <span>@t.label</span>
+                    <span class="badge rounded-pill @(isActive ? "bg-white text-primary" : "bg-secondary-subtle text-dark")">@t.count</span>
+                </a>
+            }
+        </div>
+
+        <!-- THANH TÌM KIẾM GỌN -->
+        <div class="border rounded-3 px-3 py-2.5 bg-light mb-4">
+            <form asp-action="Index" method="get" class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <input type="hidden" name="status" value="@activeStatus" />
+                <div class="small text-secondary fw-semibold">
+                    <i class="bx bx-list-ul me-1"></i>Hiển thị <strong>@Model.Posts.Count</strong> / <strong>@Model.TotalItems</strong> bài viết phù hợp
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 440px;">
+                    <div class="input-group input-group-sm flex-grow-1">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bx bx-search"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" name="search" value="@Model.SearchQuery" placeholder="Nhập tiêu đề bài viết cần tìm..." />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold text-nowrap">Tìm kiếm</button>
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary" title="Đặt lại bộ lọc"><i class="bx bx-reset"></i></a>
+                </div>
+            </form>
+        </div>
+
+        <!-- BẢNG DANH SÁCH BÀI VIẾT -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Bài viết &amp; Đường dẫn</th>
+                        <th>Trạng thái</th>
+                        <th>Tương tác</th>
+                        <th>SP liên kết</th>
+                        <th>Ngày tạo</th>
+                        <th class="text-end" style="width: 175px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Posts.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <i class="bx bx-news display-5 text-muted d-block mb-2"></i>
+                                <div class="fw-bold text-dark">Chưa có bài viết nào phù hợp</div>
+                                <div class="text-muted small mt-1">Bấm <strong>Viết bài mới</strong> ở góc trên để tạo bài viết đầu tiên.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Posts)
+                        {
                             <tr>
-                                <th>Bài viết</th>
-                                <th>Trạng thái</th>
-                                <th>Lượt xem</th>
-                                <th>Bình luận</th>
-                                <th>SP liên kết</th>
-                                <th>Ngày tạo</th>
-                                <th>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (!Model.Posts.Any())
-                            {
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted py-5">
-                                        <i class="bx bx-news display-4 text-light d-block mb-3"></i>
-                                        Chưa có bài viết nào.
-                                    </td>
-                                </tr>
-                            }
-                            else
-                            {
-                                @foreach (var item in Model.Posts)
-                                {
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex">
-                                                <div class="me-3">
-                                                    @if (!string.IsNullOrEmpty(item.CoverImageUrl))
-                                                    {
-                                                        <img src="@item.CoverImageUrl" alt="" class="avatar-sm rounded object-cover">
-                                                    }
-                                                    else
-                                                    {
-                                                        <div class="avatar-sm">
-                                                            <span class="avatar-title rounded bg-primary-subtle text-primary font-size-16">
-                                                                <i class="bx bx-image-alt"></i>
-                                                            </span>
-                                                        </div>
-                                                    }
-                                                </div>
-                                                <div class="flex-grow-1 overflow-hidden">
-                                                    <h5 class="text-truncate font-size-14 mb-1">
-                                                        <a href="@Url.Action("Details", "Blog", new { area = "", slug = item.Slug })" target="_blank" class="text-dark">@item.Title</a>
-                                                    </h5>
-                                                    <p class="text-muted mb-0 font-size-12">slug: @item.Slug</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            @if (item.Status == "Published")
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="bl-thumb">
+                                            @if (!string.IsNullOrEmpty(item.CoverImageUrl))
                                             {
-                                                <span class="badge badge-pill badge-soft-success font-size-11">Đã xuất bản</span>
-                                                @if (item.PublishedAt.HasValue)
-                                                {
-                                                    <div class="text-muted font-size-11 mt-1">@item.PublishedAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</div>
-                                                }
-                                            }
-                                            else if (item.Status == "Draft")
-                                            {
-                                                <span class="badge badge-pill badge-soft-warning font-size-11">Bản nháp</span>
+                                                <img src="@item.CoverImageUrl" alt="@item.Title" />
                                             }
                                             else
                                             {
-                                                <span class="badge badge-pill badge-soft-secondary font-size-11">@item.Status</span>
+                                                <i class="bx bx-image-alt fs-4"></i>
                                             }
-                                        </td>
-                                        <td><i class="bx bx-show me-1"></i> @item.ViewCount</td>
-                                        <td><i class="bx bx-comment-dots me-1"></i> @item.CommentCount</td>
-                                        <td><i class="bx bx-link me-1"></i> @item.ProductCount</td>
-                                        <td>@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                                        <td>
-                                            <div class="d-flex gap-3">
-                                                <a asp-action="Edit" asp-route-id="@item.Id" class="text-success" title="Sửa"><i class="mdi mdi-pencil font-size-18"></i></a>
-                                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa bài viết này?');">
-                                                    @Html.AntiForgeryToken()
-                                                    <button type="submit" class="btn btn-link p-0 text-danger" title="Xóa"><i class="mdi mdi-delete font-size-18"></i></button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                @if (Model.TotalPages > 1)
-                {
-                    <div class="row mt-4">
-                        <div class="col-sm-6">
-                            <p class="mb-sm-0">Trang @Model.CurrentPage / @Model.TotalPages</p>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="float-sm-end">
-                                <ul class="pagination pagination-rounded mb-sm-0">
-                                    <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
-                                        <a href="?page=@(Model.CurrentPage - 1)&search=@Model.SearchQuery&status=@Model.StatusFilter" class="page-link"><i class="mdi mdi-chevron-left"></i></a>
-                                    </li>
-                                    @for (var i = 1; i <= Model.TotalPages; i++)
+                                        </div>
+                                        <div style="min-width: 0; max-width: 360px;">
+                                            <a href="@Url.Action("Details", "Blog", new { area = "", slug = item.Slug })" target="_blank" class="fw-bold text-dark text-decoration-none d-block text-truncate" title="@item.Title">
+                                                @item.Title
+                                            </a>
+                                            <div class="small text-muted font-monospace text-truncate">/@item.Slug</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (item.Status == "Published")
                                     {
-                                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                            <a href="?page=@i&search=@Model.SearchQuery&status=@Model.StatusFilter" class="page-link">@i</a>
-                                        </li>
+                                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bx bx-check-circle me-1"></i>Đã xuất bản
+                                        </span>
+                                        @if (item.PublishedAt.HasValue)
+                                        {
+                                            <div class="text-muted small mt-1">@item.PublishedAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                        }
                                     }
-                                    <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
-                                        <a href="?page=@(Model.CurrentPage + 1)&search=@Model.SearchQuery&status=@Model.StatusFilter" class="page-link"><i class="mdi mdi-chevron-right"></i></a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
+                                    else if (item.Status == "Draft")
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bx bx-edit-alt me-1"></i>Bản nháp
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle rounded-pill px-2.5 py-1">
+                                            <i class="bx bx-hide me-1"></i>Đang ẩn
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="small text-dark"><i class="bx bx-show text-primary me-1"></i><strong>@item.ViewCount.ToString("N0")</strong> lượt xem</div>
+                                    <div class="small text-muted"><i class="bx bx-comment-dots me-1"></i>@item.CommentCount bình luận</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-1">
+                                        <i class="bx bx-link me-1"></i>@item.ProductCount sản phẩm
+                                    </span>
+                                </td>
+                                <td class="small text-muted">
+                                    <div class="text-dark fw-semibold">@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                    <div>@item.CreatedAt.ToLocalTime().ToString("HH:mm")</div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex align-items-center gap-1.5">
+                                        <a href="@Url.Action("Details", "Blog", new { area = "", slug = item.Slug })" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5" title="Xem bài ngoài trang chủ">
+                                            <i class="bx bx-link-external"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 fw-semibold">
+                                            <i class="bx bx-edit-alt me-1"></i>Sửa
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
+                                              onsubmit="return confirm('Xác nhận xóa bài viết này?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" title="Xóa bài viết">
+                                                <i class="bx bx-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
         </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-4 pt-3 border-top">
+                <div class="small text-muted">Trang <strong>@Model.CurrentPage</strong> / <strong>@Model.TotalPages</strong></div>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
+                        <a href="?page=@(Model.CurrentPage - 1)&search=@Model.SearchQuery&status=@activeStatus" class="page-link">&laquo;</a>
+                    </li>
+                    @for (var i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                            <a href="?page=@i&search=@Model.SearchQuery&status=@activeStatus" class="page-link">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                        <a href="?page=@(Model.CurrentPage + 1)&search=@Model.SearchQuery&status=@activeStatus" class="page-link">&raquo;</a>
+                    </li>
+                </ul>
+            </div>
+        }
     </div>
 </div>

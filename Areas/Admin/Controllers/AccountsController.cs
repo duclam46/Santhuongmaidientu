@@ -36,7 +36,6 @@ public class AccountsController : Controller
     {
         var q = _db.Accounts.AsQueryable();
 
-        // Admin area should not leak data to anonymous or non-admin users.
         if (!accountId.HasValue || accountId.Value <= 0)
         {
             return q.Where(_ => false);
@@ -69,6 +68,7 @@ public class AccountsController : Controller
     }
 
     [HttpGet]
+    [HttpGet("/Admin/Accounts")]
     public async Task<IActionResult> Index([FromQuery] AdminAccountListQueryVm query, CancellationToken cancellationToken)
     {
         int? accountId = null;
@@ -82,22 +82,27 @@ public class AccountsController : Controller
         var effectiveRole = NormalizeCustomerRoleOrDefault(query.Role);
         var effectiveStatus = NormalizeStatusOrNull(query.Status);
 
-        IQueryable<Account> q = ScopedAccounts(accountId, role)
+        var baseVisible = ScopedAccounts(accountId, role)
             .AsNoTracking()
-            .Include(a => a.Profile);
+            .Include(a => a.Profile)
+            .Where(a => !a.IsDeleted)
+            .Where(a => a.Role != "Admin")
+            .Where(a => a.PasswordHash != null || a.AuthProvider != null);
 
-        q = q.Where(a => !a.IsDeleted);
-        q = q.Where(a => a.Role != "Admin");
-        // Hide seeded/demo accounts that don't have any auth credentials.
-        // Real accounts should have either a local password hash or an external auth provider.
-        q = q.Where(a => a.PasswordHash != null || a.AuthProvider != null);
-        q = q.Where(a => a.Role == effectiveRole);
+        var totalCustomers = await baseVisible.CountAsync(a => a.Role == "Customer", cancellationToken);
+        var totalShops = await baseVisible.CountAsync(a => a.Role == "Shop", cancellationToken);
+        var totalMallShops = await baseVisible.CountAsync(a => a.Role == "Shop" && a.Profile != null && a.Profile.IsMall, cancellationToken);
+        var totalBlocked = await baseVisible.CountAsync(a => a.Status == "Blocked", cancellationToken);
+
+        var q = baseVisible.Where(a => a.Role == effectiveRole);
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var term = query.Search.Trim();
             q = q.Where(a => a.Email.Contains(term)
-                             || (a.Profile != null && a.Profile.FullName != null && a.Profile.FullName.Contains(term)));
+                             || (a.Profile != null && a.Profile.FullName != null && a.Profile.FullName.Contains(term))
+                             || (a.Profile != null && a.Profile.PhoneNumber != null && a.Profile.PhoneNumber.Contains(term))
+                             || (a.Profile != null && a.Profile.ShopName != null && a.Profile.ShopName.Contains(term)));
         }
 
         if (!string.IsNullOrWhiteSpace(effectiveStatus))
@@ -112,7 +117,8 @@ public class AccountsController : Controller
         var skip = (page - 1) * pageSize;
 
         var accounts = await q
-            .OrderByDescending(a => a.Id)
+            .OrderByDescending(a => a.Profile != null && a.Profile.IsMall)
+            .ThenByDescending(a => a.Id)
             .Skip(skip)
             .Take(pageSize)
             .Select(a => new AdminAccountListItemVm
@@ -126,6 +132,12 @@ public class AccountsController : Controller
                 LastLoginAt = a.LastLoginAt,
                 FullName = a.Profile != null ? a.Profile.FullName : null,
                 PhoneNumber = a.Profile != null ? a.Profile.PhoneNumber : null,
+                AvatarUrl = a.Profile != null ? (a.Profile.ShopLogoUrl ?? a.Profile.AvatarUrl) : null,
+                ShopName = a.Profile != null ? a.Profile.ShopName : null,
+                ShopSlug = a.Profile != null ? a.Profile.ShopSlug : null,
+                IsMall = a.Profile != null && a.Profile.IsMall,
+                ProductCount = _db.Products.Count(p => p.ShopId == a.Id && !p.IsDeleted),
+                OrderCount = _db.Orders.Count(o => o.CustomerId == a.Id)
             })
             .ToListAsync(cancellationToken);
 
@@ -140,7 +152,11 @@ public class AccountsController : Controller
                 PageSize = pageSize
             },
             Accounts = accounts,
-            TotalItems = totalItems
+            TotalItems = totalItems,
+            TotalCustomers = totalCustomers,
+            TotalShops = totalShops,
+            TotalMallShops = totalMallShops,
+            TotalBlocked = totalBlocked
         };
 
         return View(vm);
@@ -192,7 +208,7 @@ public class AccountsController : Controller
 
         if (string.Equals(account.Role, "Admin", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["AdminAccountError"] = "Không thể khóa tài khoản Admin.";
+            TempData["AdminAccountError"] = "Không thể khóa tài khoản quản trị viên.";
             return Redirect(returnUrl);
         }
 
@@ -200,7 +216,7 @@ public class AccountsController : Controller
         account.Status = isBlocked ? "Active" : "Blocked";
         await _db.SaveChangesAsync(cancellationToken);
 
-        TempData["AdminAccountSuccess"] = isBlocked ? "Đã mở khóa tài khoản." : "Đã khóa tài khoản.";
+        TempData["AdminAccountSuccess"] = isBlocked ? "Đã mở khóa tài khoản thành công." : "Đã khóa tài khoản thành công.";
         return Redirect(returnUrl);
     }
 }

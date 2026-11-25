@@ -1,214 +1,178 @@
 @model DOAN_BANHANG.Models.Category
 
 @{
-    ViewData["Title"] = "Thêm danh mục";
+    ViewData["Title"] = "Thêm ngành hàng mới";
 }
 
-<style>
-    .card-premium {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        overflow: hidden;
-    }
+@section Styles {
+    <style>
+        .cat-form-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 22px 28px;
+            color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .cat-toggle-box {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-left: 4px solid #088178;
+            border-radius: 14px;
+            padding: 14px 16px;
+        }
+        .category-tree-selector {
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            background: #F8FAFC;
+            padding: 14px 16px;
+        }
+        .tree-node .form-check-input:checked + .form-check-label {
+            color: #088178;
+            font-weight: 700;
+        }
+        .cursor-pointer { cursor: pointer; }
+    </style>
+}
 
-    .form-label {
-        font-weight: 700;
-        color: #4a5568;
-        margin-bottom: 0.5rem;
-    }
-
-    .form-control, .form-select {
-        border-radius: 10px;
-        padding: 0.75rem 1rem;
-        border: 1px solid #e2e8f0;
-        transition: all 0.2s;
-    }
-
-    .form-control:focus, .form-select:focus {
-        border-color: #556ee6;
-        box-shadow: 0 0 0 3px rgba(85, 110, 230, 0.1);
-    }
-
-    .btn-premium {
-        padding: 0.75rem 2rem;
-        border-radius: 12px;
-        font-weight: 700;
-        transition: all 0.3s;
-    }
-
-    .btn-primary-premium {
-        background: linear-gradient(135deg, #556ee6 0%, #3b4cb8 100%);
-        border: none;
-        color: #fff;
-    }
-
-    .btn-primary-premium:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(85, 110, 230, 0.3);
-        color: #fff;
-    }
-
-    .info-box {
-        background: #f8faff;
-        border-radius: 15px;
-        padding: 1.5rem;
-        border-left: 4px solid #556ee6;
-    }
-
-    /* Custom Tree Selector */
-    .category-tree-selector {
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        background: #fff;
-        padding: 1rem;
-        box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
-    }
-    
-    .category-tree-selector::-webkit-scrollbar {
-        width: 6px;
-    }
-    .category-tree-selector::-webkit-scrollbar-thumb {
-        background: #cbd5e0;
-        border-radius: 4px;
-    }
-
-    .tree-node .form-check-input:checked + .form-check-label {
-        color: #556ee6;
-        font-weight: 700;
-    }
-
-    .tree-node .form-check-label {
-        cursor: pointer;
-        user-select: none;
-        transition: color 0.2s;
-    }
-
-    .tree-node .form-check-label:hover {
-        color: #556ee6;
-    }
-    
-    .cursor-pointer {
-        cursor: pointer;
-    }
-</style>
-
-<div class="row">
-    <div class="col-12">
-        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18 fw-bold">Thiết lập Danh mục Mới</h4>
-            <div class="page-title-right">
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a asp-action="Index">Danh mục</a></li>
-                    <li class="breadcrumb-item active">Thêm mới</li>
-                </ol>
-            </div>
-        </div>
-    </div>
+<!-- HERO HEADER -->
+<div class="cat-form-hero">
+    <a asp-action="Index" class="btn btn-sm rounded-pill px-3 mb-2" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);">
+        <i class="bx bx-left-arrow-alt me-1"></i>Danh sách ngành hàng
+    </a>
+    <h4 class="text-white fw-bold mb-1"><i class="bx bx-plus-circle text-warning me-1"></i>Thêm Ngành hàng / Danh mục mới</h4>
+    <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+        Thiết lập thông tin cơ bản, biểu phí chiết khấu sàn và vị trí phân cấp trong cây danh mục Sellzy.
+    </p>
 </div>
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card card-premium">
-            <div class="card-header bg-white border-bottom p-4">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="avatar-sm">
-                        <span class="avatar-title rounded-circle bg-soft-primary text-primary fs-3">
-                            <i class="bx bx-plus-circle"></i>
-                        </span>
-                    </div>
-                    <div>
-                        <h5 class="mb-1 fw-bold">Thông tin Danh mục</h5>
-                        <p class="text-muted mb-0">Vui lòng điền đầy đủ các thông tin bên dưới</p>
-                    </div>
+<form asp-action="Create" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div class="row g-4">
+        <!-- CỘT TRÁI -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-info-circle text-primary me-2"></i>1. Thông tin Danh mục &amp; Chính sách Chiết khấu</h5>
                 </div>
-            </div>
-            <div class="card-body p-4">
-                <form asp-action="Create" method="post">
-                    @Html.AntiForgeryToken()
-                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div class="card-body p-4">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-3"></div>
 
                     <div class="mb-4">
-                        <label asp-for="Name" class="form-label">Tên danh mục <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0"><i class="bx bx-tag-alt"></i></span>
-                            <input asp-for="Name" class="form-control border-start-0" placeholder="Ví dụ: Đồ dùng gia đình, Thời trang nam..." />
-                        </div>
+                        <label asp-for="Name" class="form-label fw-semibold">Tên ngành hàng / danh mục <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" placeholder="Ví dụ: Điện thoại & Phụ kiện, Thực phẩm tươi sống, Sách..." required />
                         <span asp-validation-for="Name" class="text-danger mt-1 small"></span>
                     </div>
 
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="CommissionRate" class="form-label fw-semibold">Tỷ lệ chiết khấu sàn (%)</label>
+                            <div class="input-group">
+                                <input asp-for="CommissionRate" type="number" step="0.01" min="0" max="100" class="form-control" placeholder="Để trống = Kế thừa cấp cha" />
+                                <span class="input-group-text fw-bold">%</span>
+                            </div>
+                            <div class="form-text">Ví dụ: 8% cho Thời trang, 4% cho Điện tử. Để trống ở danh mục con để kế thừa từ danh mục cha.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="MaxCommissionAmount" class="form-label fw-semibold">Trần phí chiết khấu tối đa / sản phẩm (₫)</label>
+                            <div class="input-group">
+                                <input asp-for="MaxCommissionAmount" type="number" step="1000" min="0" class="form-control" placeholder="Để trống nếu không giới hạn..." />
+                                <span class="input-group-text fw-bold">₫</span>
+                            </div>
+                            <div class="form-text">Áp dụng cho sản phẩm giá trị cao (ví dụ: Điện thoại / Máy tính trần tối đa 500.000₫/SP).</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tải ảnh biểu tượng danh mục</label>
+                            <input type="file" name="iconFile" class="form-control" accept="image/*" />
+                            <div class="form-text">Hiển thị ngoài Trang chủ (khuyến nghị ảnh vuông nền trong suốt PNG/SVG).</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="IconUrl" class="form-label fw-semibold">Hoặc nhập mã biểu tượng / đường dẫn ảnh</label>
+                            <input asp-for="IconUrl" class="form-control" placeholder="Ví dụ: bx-mobile-alt, bx-laptop hoặc /uploads/..." />
+                            <div class="form-text">Hỗ trợ mã Boxicons (<code>bx-laptop</code>, <code>bx-book-open</code>...) hoặc đường dẫn ảnh.</div>
+                        </div>
+                    </div>
+
                     <div class="mb-4">
-                        <label class="form-label">Danh mục cha</label>
-                        <div class="category-tree-selector" style="max-height: 350px; overflow-y: auto;">
-                            <!-- Option for Root -->
-                            <div class="tree-node root-selection mb-3 pb-2 border-bottom">
+                        <label class="form-label fw-semibold">Vị trí danh mục cha</label>
+                        <div class="category-tree-selector" style="max-height: 280px; overflow-y: auto;">
+                            <div class="tree-node root-selection mb-2 pb-2 border-bottom">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="ParentId" value="" id="parent_root" @(Model.ParentId == null ? "checked" : "")>
                                     <label class="form-check-label fw-bold text-primary" for="parent_root">
-                                        <i class="bx bx-folder-open me-1"></i> — Cấp cao nhất (Root) —
+                                        <i class="bx bx-folder-open me-1"></i>Cấp cao nhất (Ngành hàng gốc)
                                     </label>
                                 </div>
                             </div>
-                            
-                            <!-- Dynamic Tree -->
+
                             @{
                                 var allCats = ViewBag.AllCategories as List<DOAN_BANHANG.Models.Category>;
                                 if (allCats != null)
                                 {
                                     var rootCats = allCats.Where(c => c.ParentId == null).ToList();
-                                    foreach(var cat in rootCats)
+                                    foreach (var cat in rootCats)
                                     {
                                         await RenderCategoryRadioRecursive(cat, 0, allCats, Model.Id);
                                     }
                                 }
                             }
                         </div>
-                        <div class="form-text small mt-2"><i class="bx bx-info-circle me-1"></i> Chọn danh mục cha để tạo cấu trúc đa tầng. Có thể cuộn xuống để xem thêm.</div>
                     </div>
 
-                    <div class="mb-4">
-                        <div class="info-box">
-                            <div class="form-check form-switch form-switch-lg">
-                                <input class="form-check-input" type="checkbox" asp-for="IsActive" checked>
-                                <label class="form-check-label fw-bold" asp-for="IsActive">Kích hoạt danh mục này ngay lập tức</label>
-                            </div>
-                            <p class="text-muted mb-0 mt-2 small">Khi bị tắt, danh mục và các sản phẩm bên trong sẽ không hiển thị trên website.</p>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-3 pt-3">
-                        <a asp-action="Index" class="btn btn-light btn-premium">Quay lại</a>
-                        <button type="submit" class="btn btn-primary-premium btn-premium">
-                            <i class="bx bx-save me-1"></i> Lưu danh mục
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <a asp-action="Index" class="btn btn-outline-secondary rounded-3 px-4 fw-semibold">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary rounded-3 px-4 fw-bold shadow-sm">
+                            <i class="bx bx-save me-1"></i>Tạo &amp; Tiếp tục cấu hình Thông số
                         </button>
                     </div>
-                </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bx bx-cog text-primary me-2"></i>2. Tùy chọn Ngành hàng</h5>
+                </div>
+                <div class="card-body p-4 d-flex flex-column gap-3">
+                    <div class="cat-toggle-box">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" asp-for="HasSizeGuide">
+                            <label class="form-check-label fw-bold" asp-for="HasSizeGuide">Áp dụng bảng quy đổi kích cỡ</label>
+                        </div>
+                        <p class="text-muted mb-0 mt-1 small">Bật cho ngành Quần áo, Giày dép để hiện mục nhập bảng kích cỡ cho nhà bán và hướng dẫn chọn kích cỡ cho khách hàng.</p>
+                    </div>
+
+                    <div class="cat-toggle-box">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" asp-for="IsReturnableDefault">
+                            <label class="form-check-label fw-bold" asp-for="IsReturnableDefault">Mặc định cho phép đổi trả</label>
+                        </div>
+                        <p class="text-muted mb-0 mt-1 small">Tắt đối với các ngành đặc thù như Thực phẩm tươi sống, đồ ăn chế biến sẵn.</p>
+                    </div>
+
+                    <div class="cat-toggle-box">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" asp-for="IsActive">
+                            <label class="form-check-label fw-bold" asp-for="IsActive">Kích hoạt hiển thị</label>
+                        </div>
+                        <p class="text-muted mb-0 mt-1 small">Cho phép hiển thị danh mục này trên thanh điều hướng và trang chủ.</p>
+                    </div>
+
+                    <div class="alert alert-info rounded-3 mb-0 small">
+                        <i class="bx bx-bulb me-1"></i>Sau khi bấm <strong>Tạo</strong>, hệ thống sẽ tự động chuyển sang trang Chỉnh sửa để bạn bổ sung các <strong>Thông số kỹ thuật riêng của ngành</strong> (RAM, CPU, Xuất xứ, Hạn sử dụng...).
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-lg-4 mt-4 mt-lg-0">
-        <div class="card card-premium bg-light border-0 shadow-none">
-            <div class="card-body p-4">
-                <h6 class="fw-bold text-primary mb-3"><i class="bx bx-info-circle me-1"></i> Mẹo nhỏ cho bạn</h6>
-                <ul class="list-unstyled mb-0">
-                    <li class="mb-3 d-flex gap-2">
-                        <i class="bx bx-check-circle text-success mt-1"></i>
-                        <span><strong>SEO:</strong> Slug sẽ được tự động tạo thân thiện với công cụ tìm kiếm.</span>
-                    </li>
-                    <li class="mb-3 d-flex gap-2">
-                        <i class="bx bx-check-circle text-success mt-1"></i>
-                        <span><strong>Cấu trúc:</strong> Bạn có thể tạo vô số cấp độ danh mục con để phân loại sản phẩm tốt hơn.</span>
-                    </li>
-                    <li class="d-flex gap-2">
-                        <i class="bx bx-check-circle text-success mt-1"></i>
-                        <span><strong>Sắp xếp:</strong> Sau khi tạo, bạn có thể kéo thả để thay đổi vị trí tại trang danh sách.</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
+</form>
 
 @functions {
     async Task RenderCategoryRadioRecursive(DOAN_BANHANG.Models.Category category, int level, List<DOAN_BANHANG.Models.Category> allCats, int excludeId)
@@ -216,29 +180,37 @@
         if (category.Id == excludeId) return;
 
         var children = allCats.Where(c => c.ParentId == category.Id).ToList();
-        var paddingLeft = level * 24;
-        
-        <div class="tree-node" style="padding-left: @(paddingLeft)px; margin-bottom: 0.5rem;">
+        var paddingLeft = level * 22;
+
+        <div class="tree-node" style="padding-left: @(paddingLeft)px; margin-bottom: 0.45rem;">
             <div class="d-flex align-items-center">
-                @if(children.Any()) {
+                @if (children.Any())
+                {
                     <i class="bx bx-chevron-right text-muted me-2 cursor-pointer fs-5" onclick="$(this).parent().next('.child-nodes').slideToggle(); $(this).toggleClass('bx-chevron-right bx-chevron-down');"></i>
-                } else {
+                }
+                else
+                {
                     <i class="bx bx-minus text-muted me-2 fs-5" style="opacity: 0.3;"></i>
                 }
-                
+
                 <div class="form-check mb-0">
                     <input class="form-check-input" type="radio" name="ParentId" value="@category.Id" id="parent_@category.Id" @(Model.ParentId == category.Id ? "checked" : "")>
                     <label class="form-check-label" for="parent_@category.Id">
                         <i class="bx @(children.Any() ? "bx-folder text-warning" : "bx-file text-info") me-1"></i>
                         @category.Name
+                        @if (category.CommissionRate.HasValue)
+                        {
+                            <span class="text-muted small ms-1">(@category.CommissionRate.Value.ToString("0.##")%)</span>
+                        }
                     </label>
                 </div>
             </div>
-            
-            @if(children.Any()) {
+
+            @if (children.Any())
+            {
                 <div class="child-nodes mt-2" style="display: none;">
                     @{
-                        foreach(var child in children)
+                        foreach (var child in children)
                         {
                             await RenderCategoryRadioRecursive(child, level + 1, allCats, excludeId);
                         }

@@ -2,180 +2,63 @@
 @model VoucherAdminUpsertVm
 
 @{
-    ViewData["Title"] = "Thêm Voucher Mới";
+    ViewData["Title"] = Model.IsAdmin ? "Tạo Voucher Hệ thống mới" : "Tạo Mã giảm giá Gian hàng";
 }
 
-<div class="row">
-    <div class="col-12">
-        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18">Thêm Voucher Mới</h4>
+@section Styles {
+    <style>
+        .vc-form-hero {
+            background: radial-gradient(circle at 88% 18%, rgba(255, 235, 105, 0.16) 0%, transparent 46%),
+                        linear-gradient(135deg, #00262A 0%, #034147 58%, #088178 100%);
+            border-radius: 22px;
+            padding: 22px 28px;
+            color: #ffffff;
+            margin-bottom: 20px;
+            box-shadow: 0 18px 38px -16px rgba(0, 38, 42, 0.34);
+        }
+        .vc-preview-ticket {
+            background: linear-gradient(135deg, #00262A 0%, #065F58 100%);
+            border-radius: 18px;
+            padding: 20px;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            border: 1px dashed rgba(255, 235, 105, 0.45);
+        }
+        .vc-preview-code {
+            display: inline-block;
+            background: rgba(255, 235, 105, 0.16);
+            color: #FFEB69;
+            border: 1px dashed rgba(255, 235, 105, 0.6);
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+    </style>
+}
 
-            <div class="page-title-right">
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a asp-action="Index" asp-controller="Home">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index">Voucher</a></li>
-                    <li class="breadcrumb-item active">Thêm mới</li>
-                </ol>
-            </div>
+<div class="vc-form-hero">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <a asp-action="Index" class="btn btn-sm rounded-pill px-3 mb-2" style="background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.22);">
+                <i class="bx bx-left-arrow-alt me-1"></i>Danh sách mã giảm giá
+            </a>
+            <h4 class="text-white fw-bold mb-1">
+                <i class="bx bx-plus-circle text-warning me-1"></i>@(Model.IsAdmin ? "Tạo Mã giảm giá Hệ thống (Toàn sàn / Ngành hàng / Mall)" : $"Tạo Mã giảm giá Gian hàng — {Model.ShopName}")
+            </h4>
+            <p class="mb-0 small" style="color: rgba(255,255,255,0.82);">
+                Tích hợp bộ chọn phạm vi Đa tầng chuẩn Shopee, giới hạn lượt dùng mỗi khách và AI kiểm tra an toàn biên lợi nhuận theo thời gian thực.
+            </p>
         </div>
     </div>
 </div>
 
-<form asp-action="Create" method="post" id="voucherForm">
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-    <div class="row">
-        <!-- Thông tin cơ bản -->
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title mb-4"><i class="bx bx-info-circle text-primary me-2"></i>Thông tin cơ bản</h4>
-
-                    <div class="row mb-4">
-                        <label asp-for="DiscountType" class="col-form-label col-lg-3 fw-medium">Loại mã <span class="text-danger">*</span></label>
-                        <div class="col-lg-9">
-                            <select asp-for="DiscountType" class="form-select" id="discountTypeSelect">
-                                <option value="Percent">Mã giảm giá (Theo phần trăm %)</option>
-                                <option value="FixedAmount">Mã giảm giá (Số tiền cố định)</option>
-                                <option value="FreeShipping">Miễn phí vận chuyển</option>
-                            </select>
-                            <span asp-validation-for="DiscountType" class="text-danger"></span>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <label asp-for="Code" class="col-form-label col-lg-3 fw-medium">Mã Voucher <span class="text-danger">*</span></label>
-                        <div class="col-lg-9">
-                            <div class="input-group">
-                                <input asp-for="Code" id="voucherCodeInput" class="form-control" placeholder="Ví dụ: SUMMER2024, FREESHIP..." style="text-transform: uppercase;">
-                                <button class="btn btn-outline-secondary" type="button" onclick="generateCode()">Tạo mã ngẫu nhiên</button>
-                            </div>
-                            <span asp-validation-for="Code" class="text-danger d-block mt-1"></span>
-                            <small class="form-text text-muted">Mã voucher tự động viết hoa và chỉ chứa chữ/số.</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Thiết lập mức giảm -->
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title mb-4"><i class="bx bx-cog text-primary me-2"></i>Thiết lập mức giảm</h4>
-
-                    <div class="row mb-4">
-                        <label asp-for="DiscountValue" class="col-form-label col-lg-3 fw-medium" id="lblDiscountValue">Mức giảm <span class="text-danger">*</span></label>
-                        <div class="col-lg-9">
-                            <div class="input-group">
-                                <input asp-for="DiscountValue" type="number" step="any" class="form-control" placeholder="Nhập số lượng..." value="@Model.DiscountValue.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)">
-                                <span class="input-group-text" id="discountUnit">%</span>
-                            </div>
-                            <span asp-validation-for="DiscountValue" class="text-danger"></span>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4" id="rowMaxDiscount">
-                        <label asp-for="MaxDiscountValue" class="col-form-label col-lg-3 fw-medium">Giảm tối đa (VNĐ)</label>
-                        <div class="col-lg-9">
-                            <input asp-for="MaxDiscountValue" type="number" step="1000" class="form-control" placeholder="Để trống nếu không giới hạn..." value="@(Model.MaxDiscountValue?.ToString("0", System.Globalization.CultureInfo.InvariantCulture) ?? "")">
-                            <span asp-validation-for="MaxDiscountValue" class="text-danger"></span>
-                            <small class="form-text text-muted">Chỉ có tác dụng khi chọn loại giảm theo phần trăm.</small>
-                        </div>
-                    </div>
-
-                    <div class="row mb-0">
-                        <label asp-for="MinOrderValue" class="col-form-label col-lg-3 fw-medium">Đơn tối thiểu (VNĐ)</label>
-                        <div class="col-lg-9">
-                            <input asp-for="MinOrderValue" type="number" step="1000" class="form-control" placeholder="Giá trị đơn hàng tối thiểu để áp dụng..." value="@Model.MinOrderValue.ToString("0", System.Globalization.CultureInfo.InvariantCulture)">
-                            <span asp-validation-for="MinOrderValue" class="text-danger"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Điều kiện & Thời gian -->
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title mb-4"><i class="bx bx-time text-primary me-2"></i>Giới hạn & Thời hạn</h4>
-
-                    <div class="mb-4">
-                        <label asp-for="UsageLimit" class="form-label fw-medium">Số lượt dùng tối đa</label>
-                        <input asp-for="UsageLimit" type="number" class="form-control" placeholder="Nhập số lượt, 0 là vô hạn...">
-                        <span asp-validation-for="UsageLimit" class="text-danger"></span>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-medium">Thời gian bắt đầu <span class="text-danger">*</span></label>
-                        <input type="datetime-local" asp-for="StartDate" class="form-control" />
-                        <span asp-validation-for="StartDate" class="text-danger mt-1"></span>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-medium">Thời gian kết thúc <span class="text-danger">*</span></label>
-                        <input type="datetime-local" asp-for="EndDate" class="form-control" />
-                        <span asp-validation-for="EndDate" class="text-danger mt-1"></span>
-                    </div>
-
-                    <hr />
-
-                    <div class="mb-0">
-                        <div class="form-check form-switch form-switch-md" dir="ltr">
-                            <input type="checkbox" class="form-check-input" id="IsActiveSwitch" asp-for="IsActive">
-                            <label class="form-check-label fw-medium ms-1" for="IsActiveSwitch">Hiển thị Voucher</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Nút hành động -->
-            <div class="card bg-transparent border-0 shadow-none">
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-lg waves-effect waves-light"><i class="bx bx-save me-1"></i> Lưu Voucher</button>
-                    <a asp-action="Index" class="btn btn-outline-secondary btn-lg waves-effect">Hủy bỏ</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</form>
+<partial name="_VoucherFormPartial" model="Model" />
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        function generateCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < 8; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            document.getElementById('voucherCodeInput').value = result;
-        }
-
-        $(document).ready(function () {
-            function updateFormByDiscountType() {
-                var type = $('#discountTypeSelect').val();
-                
-                if (type === 'Percent') {
-                    $('#lblDiscountValue').html('Mức giảm (%) <span class="text-danger">*</span>');
-                    $('#discountUnit').text('%');
-                    $('#rowMaxDiscount').slideDown();
-                } else if (type === 'FixedAmount') {
-                    $('#lblDiscountValue').html('Số tiền giảm <span class="text-danger">*</span>');
-                    $('#discountUnit').text('VNĐ');
-                    $('#rowMaxDiscount').slideUp();
-                } else if (type === 'FreeShipping') {
-                    $('#lblDiscountValue').html('Mức hỗ trợ phí ship <span class="text-danger">*</span>');
-                    $('#discountUnit').text('VNĐ');
-                    $('#rowMaxDiscount').slideUp();
-                }
-            }
-
-            $('#discountTypeSelect').change(function () {
-                updateFormByDiscountType();
-            });
-
-            // Trigger on load
-            updateFormByDiscountType();
-        });
-    </script>
+    <partial name="_VoucherFormScriptsPartial" model="Model" />
 }

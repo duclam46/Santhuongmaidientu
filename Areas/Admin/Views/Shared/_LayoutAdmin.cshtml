@@ -8,18 +8,25 @@
     var currentAccount = _db.Accounts.Include(a => a.Profile).FirstOrDefault(a => a.Id == accId);
     var displayName = currentAccount?.Profile?.ShopName ?? currentAccount?.Profile?.FullName ?? currentAccount?.Email ?? "Tài khoản";
     var avatarUrl = currentAccount?.Profile?.ShopLogoUrl ?? currentAccount?.Profile?.AvatarUrl ?? "/admin/assets/images/users/avatar-1.jpg";
+    var isAdmin = User.IsInRole("Admin");
+    var isShop = User.IsInRole("Shop");
 }
-<html lang="en">
+<html lang="vi">
 
     <head>
         
         <meta charset="utf-8" />
-        <title>Sellzy | Admin - Dashboard</title>
+        <title>Sellzy | @(ViewData["Title"] ?? "Trang chủ")</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta content="Premium Multipurpose Admin & Dashboard Template" name="description" />
-        <meta content="Themesbrand" name="author" />
+        <meta content="Hệ thống quản trị và kênh người bán Sellzy" name="description" />
+        <meta content="Sellzy" name="author" />
         <!-- App favicon -->
         <link rel="shortcut icon" href="~/assets/images/favicon.png">
+
+        <!-- Google Fonts Vietnamese -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
         <!-- Bootstrap Css -->
         <link href="/admin/assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
@@ -27,6 +34,129 @@
         <link href="/admin/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
         <!-- App Css-->
         <link href="/admin/assets/css/app.min.css" id="app-style" rel="stylesheet" type="text/css" />
+
+        <style>
+            :root {
+                --sz-teal: #088178;
+                --sz-teal-dark: #00262A;
+                --sz-teal-mid: #04464C;
+                --sz-gold: #FFEB69;
+            }
+            body {
+                font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+                background-color: #F4F7F9 !important;
+            }
+            /* Sidebar Emerald Theme */
+            body[data-sidebar="dark"] .vertical-menu {
+                background: linear-gradient(180deg, #00262A 0%, #02373C 100%) !important;
+                box-shadow: 4px 0 24px rgba(0, 38, 42, 0.14);
+            }
+            body[data-sidebar="dark"] .navbar-brand-box {
+                background: #002024 !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            #sidebar-menu .menu-title {
+                color: rgba(255, 235, 105, 0.78) !important;
+                font-size: 10.5px !important;
+                font-weight: 700 !important;
+                letter-spacing: 0.09em !important;
+                text-transform: uppercase !important;
+                padding: 16px 20px 6px 20px !important;
+                margin-top: 4px;
+            }
+            #sidebar-menu ul li a {
+                color: rgba(255, 255, 255, 0.78) !important;
+                border-radius: 10px;
+                margin: 2px 10px;
+                padding: 9px 14px !important;
+                font-size: 13.5px !important;
+                font-weight: 500 !important;
+                transition: all 0.2s ease !important;
+            }
+            #sidebar-menu ul li a i {
+                color: rgba(255, 255, 255, 0.65) !important;
+                font-size: 17px !important;
+                min-width: 1.6rem !important;
+            }
+            #sidebar-menu ul li a:hover {
+                background-color: rgba(255, 255, 255, 0.08) !important;
+                color: #ffffff !important;
+            }
+            #sidebar-menu ul li a:hover i {
+                color: #FFEB69 !important;
+            }
+            #sidebar-menu ul li.mm-active > a,
+            #sidebar-menu ul li a.active {
+                background: linear-gradient(90deg, rgba(8, 129, 120, 0.92) 0%, rgba(8, 129, 120, 0.72) 100%) !important;
+                color: #ffffff !important;
+                font-weight: 600 !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+            }
+            #sidebar-menu ul li.mm-active > a i,
+            #sidebar-menu ul li a.active i {
+                color: #FFEB69 !important;
+            }
+            #sidebar-menu ul ul.sub-menu li a {
+                padding: 7px 14px 7px 42px !important;
+                font-size: 13px !important;
+                margin: 1px 10px;
+            }
+            /* Topbar */
+            #page-topbar {
+                background-color: #ffffff !important;
+                border-bottom: 1px solid #EAECEF !important;
+                box-shadow: 0 4px 18px rgba(22, 28, 36, 0.04) !important;
+            }
+            .sz-role-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 14px;
+                border-radius: 999px;
+                font-size: 12.5px;
+                font-weight: 700;
+                background-color: #E6F4F3;
+                color: #088178;
+                border: 1px solid rgba(8, 129, 120, 0.18);
+            }
+            .sz-role-badge.is-admin {
+                background-color: #00262A;
+                color: #FFEB69;
+                border-color: transparent;
+            }
+            .sz-storefront-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 7px 15px;
+                border-radius: 999px;
+                font-size: 12.5px;
+                font-weight: 600;
+                background-color: #F8FAFC;
+                color: #161C24;
+                border: 1px solid #E2E8F0;
+                transition: all 0.2s ease;
+            }
+            .sz-storefront-btn:hover {
+                background-color: #088178;
+                border-color: #088178;
+                color: #ffffff;
+            }
+            /* Global Card & Button Polish */
+            .main-content .card {
+                border: 1px solid #EAECEF !important;
+                border-radius: 16px !important;
+                box-shadow: 0 6px 20px -8px rgba(22, 28, 36, 0.06) !important;
+            }
+            .main-content .btn-primary {
+                background-color: #088178 !important;
+                border-color: #088178 !important;
+            }
+            .main-content .btn-primary:hover {
+                background-color: #056D6E !important;
+                border-color: #056D6E !important;
+            }
+        </style>
         <script>
             (function () {
                 function normalizeAdminAssetUrl(url) {
@@ -89,283 +219,56 @@
             
             <header id="page-topbar">
                 <div class="navbar-header">
-                    <div class="d-flex">
+                    <div class="d-flex align-items-center">
                         <!-- LOGO -->
                         <div class="navbar-brand-box">
-                            <a href="index.html" class="logo logo-dark">
+                            <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="logo logo-dark">
                                 <span class="logo-sm">
-                                    <img src="/admin/assets/images/logo.svg" alt="" height="22">
+                                    <img src="/admin/assets/images/logo.svg" alt="Sellzy" height="22">
                                 </span>
                                 <span class="logo-lg">
-                                    <img src="~/assets/images/logo.png" alt="" height="33">
+                                    <img src="~/assets/images/logo.png" alt="Sellzy" height="32">
                                 </span>
                             </a>
 
-                            <a href="index.html" class="logo logo-light">
+                            <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="logo logo-light">
                                 <span class="logo-sm">
-                                    <img src="/admin/assets/images/logo-light.svg" alt="" height="22">
+                                    <img src="/admin/assets/images/logo-light.svg" alt="Sellzy" height="22">
                                 </span>
                                 <span class="logo-lg">
-                                    <img src="~/assets/images/logo.png" alt="" height="33">
+                                    <img src="~/assets/images/logo.png" alt="Sellzy" height="32" style="filter: brightness(0) invert(1);">
                                 </span>
                             </a>
-
                         </div>
 
                         <button type="button" class="btn btn-sm px-3 font-size-16 header-item waves-effect" id="vertical-menu-btn">
                             <i class="fa fa-fw fa-bars"></i>
                         </button>
 
-                        <!-- App Search-->
-                        <form class="app-search d-none d-lg-block">
-                            <div class="position-relative">
-                                <input type="text" class="form-control" placeholder="Search...">
-                                <span class="bx bx-search-alt"></span>
-                            </div>
-                        </form>
-
-                        <div class="dropdown dropdown-mega d-none d-lg-block ms-2">
-                            <button type="button" class="btn header-item waves-effect" data-bs-toggle="dropdown" aria-haspopup="false" aria-expanded="false">
-                                <span key="t-megamenu">Mega Menu</span>
-                                <i class="mdi mdi-chevron-down"></i> 
-                            </button>
-                            <div class="dropdown-menu dropdown-megamenu">
-                                <div class="row">
-                                    <div class="col-sm-8">
-    
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <h5 class="font-size-14" key="t-ui-components">UI Components</h5>
-                                                <ul class="list-unstyled megamenu-list">
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-lightbox">Lightbox</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-range-slider">Range Slider</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-sweet-alert">Sweet Alert</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-rating">Rating</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-forms">Forms</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-tables">Tables</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-charts">Charts</a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-
-                                            <div class="col-md-4">
-                                                <h5 class="font-size-14" key="t-applications">Applications</h5>
-                                                <ul class="list-unstyled megamenu-list">
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-ecommerce">Ecommerce</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-calendar">Calendar</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-email">Email</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-projects">Projects</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-tasks">Tasks</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-contacts">Contacts</a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-
-                                            <div class="col-md-4">
-                                                <h5 class="font-size-14" key="t-extra-pages">Extra Pages</h5>
-                                                <ul class="list-unstyled megamenu-list">
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-light-sidebar">Light Sidebar</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-compact-sidebar">Compact Sidebar</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-horizontal">Horizontal layout</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-maintenance">Maintenance</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-coming-soon">Coming Soon</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-timeline">Timeline</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-faqs">FAQs</a>
-                                                    </li>
-                            
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-4">
-                                        <div class="row">
-                                            <div class="col-sm-6">
-                                                <h5 class="font-size-14" key="t-ui-components">UI Components</h5>
-                                                <ul class="list-unstyled megamenu-list">
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-lightbox">Lightbox</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-range-slider">Range Slider</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-sweet-alert">Sweet Alert</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-rating">Rating</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-forms">Forms</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-tables">Tables</a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="javascript:void(0);" key="t-charts">Charts</a>
-                                                    </li>
-                                                </ul>
-                                            </div>
-
-                                            <div class="col-sm-5">
-                                                <div>
-                                                    <img src="~/admin/assets/images/megamenu-img.png" alt="" class="img-fluid mx-auto d-block">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
+                        <div class="d-none d-md-inline-flex align-items-center ms-2">
+                            @if (isAdmin)
+                            {
+                                <span class="sz-role-badge is-admin">
+                                    <i class="bx bx-shield-quarter"></i> Quản trị viên Hệ thống
+                                </span>
+                            }
+                            else if (isShop)
+                            {
+                                <span class="sz-role-badge">
+                                    <i class="bx bx-store-alt"></i> Kênh Người Bán • @displayName
+                                </span>
+                            }
                         </div>
                     </div>
 
-                    <div class="d-flex">
+                    <div class="d-flex align-items-center gap-1">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="sz-storefront-btn d-none d-sm-inline-flex me-2">
+                            <i class="bx bx-globe"></i>
+                            <span>Trang người dùng</span>
+                        </a>
 
-                        <div class="dropdown d-inline-block d-lg-none ms-2">
-                            <button type="button" class="btn header-item noti-icon waves-effect" id="page-header-search-dropdown"
-                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="mdi mdi-magnify"></i>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
-                                aria-labelledby="page-header-search-dropdown">
-        
-                                <form class="p-3">
-                                    <div class="form-group m-0">
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="Search ..." aria-label="Recipient's username">
-                                            <div class="input-group-append">
-                                                <button class="btn btn-primary" type="submit"><i class="mdi mdi-magnify"></i></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        <div class="dropdown d-inline-block">
-                            <button type="button" class="btn header-item waves-effect"
-                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <img id="header-lang-img" src="~/admin/assets/images/flags/us.jpg" alt="Header Language" height="16">
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end">
-
-                                <!-- item-->
-                                <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="en">
-                                    <img src="~/admin/assets/images/flags/us.jpg" alt="user-image" class="me-1" height="12"> <span class="align-middle">English</span>
-                                </a>
-                                <!-- item-->
-                                <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="sp">
-                                    <img src="~/admin/assets/images/flags/spain.jpg" alt="user-image" class="me-1" height="12"> <span class="align-middle">Spanish</span>
-                                </a>
-
-                                <!-- item-->
-                                <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="gr">
-                                    <img src="~/admin/assets/images/flags/germany.jpg" alt="user-image" class="me-1" height="12"> <span class="align-middle">German</span>
-                                </a>
-
-                                <!-- item-->
-                                <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="it">
-                                    <img src="~/admin/assets/images/flags/italy.jpg" alt="user-image" class="me-1" height="12"> <span class="align-middle">Italian</span>
-                                </a>
-
-                                <!-- item-->
-                                <a href="javascript:void(0);" class="dropdown-item notify-item language" data-lang="ru">
-                                    <img src="~/admin/assets/images/flags/russia.jpg" alt="user-image" class="me-1" height="12"> <span class="align-middle">Russian</span>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="dropdown d-none d-lg-inline-block ms-1">
-                            <button type="button" class="btn header-item noti-icon waves-effect"
-                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="bx bx-customize"></i>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
-                                <div class="px-lg-2">
-                                    <div class="row g-0">
-                                        <div class="col">
-                                            <a class="dropdown-icon-item" href="#">
-                                                <img src="~/admin/assets/images/brands/github.png" alt="Github">
-                                                <span>GitHub</span>
-                                            </a>
-                                        </div>
-                                        <div class="col">
-                                            <a class="dropdown-icon-item" href="#">
-                                                <img src="~/admin/assets/images/brands/bitbucket.png" alt="bitbucket">
-                                                <span>Bitbucket</span>
-                                            </a>
-                                        </div>
-                                        <div class="col">
-                                            <a class="dropdown-icon-item" href="#">
-                                                <img src="~/admin/assets/images/brands/dribbble.png" alt="dribbble">
-                                                <span>Dribbble</span>
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    <div class="row g-0">
-                                        <div class="col">
-                                            <a class="dropdown-icon-item" href="#">
-                                                <img src="~/admin/assets/images/brands/dropbox.png" alt="dropbox">
-                                                <span>Dropbox</span>
-                                            </a>
-                                        </div>
-                                        <div class="col">
-                                            <a class="dropdown-icon-item" href="#">
-                                                <img src="~/admin/assets/images/brands/mail_chimp.png" alt="mail_chimp">
-                                                <span>Mail Chimp</span>
-                                            </a>
-                                        </div>
-                                        <div class="col">
-                                            <a class="dropdown-icon-item" href="#">
-                                                <img src="~/admin/assets/images/brands/slack.png" alt="slack">
-                                                <span>Slack</span>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="dropdown d-none d-lg-inline-block ms-1">
-                            <button type="button" class="btn header-item noti-icon waves-effect" data-bs-toggle="fullscreen">
+                        <div class="dropdown d-none d-lg-inline-block">
+                            <button type="button" class="btn header-item noti-icon waves-effect" data-bs-toggle="fullscreen" title="Toàn màn hình">
                                 <i class="bx bx-fullscreen"></i>
                             </button>
                         </div>
@@ -428,11 +331,17 @@
 
                                             data.forEach(n => {
                                                 const time = new Date(n.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
-                                                const iconClass = 'bg-primary';
-                                                const icon = 'bx-info-circle';
+                                                let iconClass = 'bg-primary';
+                                                let icon = 'bx-bell';
+                                                if (n.categoryKey === 'order') { iconClass = 'bg-success'; icon = 'bx-package'; }
+                                                else if (n.categoryKey === 'return') { iconClass = 'bg-warning'; icon = 'bx-revision'; }
+                                                else if (n.categoryKey === 'dispute') { iconClass = 'bg-danger'; icon = 'bx-error-circle'; }
+                                                else if (n.categoryKey === 'wallet') { iconClass = 'bg-info'; icon = 'bx-wallet'; }
+
+                                                const targetHref = n.actionUrl || '/Chat/SystemNotifications';
                                                 
                                                 html += `
-                                                    <a href="/Chat/SystemNotifications" class="text-reset notification-item ${n.isRead ? '' : 'bg-light'}">
+                                                    <a href="${targetHref}" class="text-reset notification-item ${n.isRead ? '' : 'bg-light'}" data-notif-id="${n.id}">
                                                         <div class="d-flex">
                                                             <div class="avatar-xs me-3">
                                                                 <span class="avatar-title ${iconClass} rounded-circle font-size-16">
@@ -442,7 +351,7 @@
                                                             <div class="flex-grow-1">
                                                                 <h6 class="mb-1">${n.title}</h6>
                                                                 <div class="font-size-12 text-muted">
-                                                                    <p class="mb-1 text-truncate" style="max-width: 200px;">${n.content}</p>
+                                                                    <p class="mb-1 text-truncate" style="max-width: 220px;">${n.content}</p>
                                                                     <p class="mb-0"><i class="mdi mdi-clock-outline"></i> ${time}</p>
                                                                 </div>
                                                             </div>
@@ -450,6 +359,14 @@
                                                     </a>`;
                                             });
                                             container.innerHTML = html;
+                                            container.querySelectorAll('a[data-notif-id]').forEach(link => {
+                                                link.addEventListener('click', function () {
+                                                    const id = this.getAttribute('data-notif-id');
+                                                    if (id) {
+                                                        fetch(`/notifications/mark-read?id=${id}`, { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+                                                    }
+                                                });
+                                            });
                                         });
                                 }
 
@@ -464,21 +381,20 @@
                             data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <img class="rounded-circle header-profile-user" src="@avatarUrl"
                                     alt="Header Avatar" onerror="this.onerror=null;this.src='/admin/assets/images/users/avatar-1.jpg';">
-                                <span class="d-none d-xl-inline-block ms-1" key="t-henry">@displayName</span>
+                                <span class="d-none d-xl-inline-block ms-1 fw-semibold" key="t-henry">@displayName</span>
                                 <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end">
+                                <a class="dropdown-item" asp-area="" asp-controller="Home" asp-action="Index">
+                                    <i class="bx bx-globe font-size-16 align-middle me-1 text-primary"></i>
+                                    <span>Trang người dùng</span>
+                                </a>
+                                <div class="dropdown-divider"></div>
                                 <a class="dropdown-item text-danger" href="/Auth/Logout">
                                     <i class="bx bx-power-off font-size-16 align-middle me-1 text-danger"></i> 
                                     <span key="t-logout">Đăng xuất</span>
                                 </a>
                             </div>
-                        </div>
-
-                        <div class="dropdown d-inline-block">
-                            <button type="button" class="btn header-item noti-icon right-bar-toggle waves-effect">
-                                <i class="bx bx-cog bx-spin"></i>
-                            </button>
                         </div>
 
                     </div>
@@ -496,150 +412,236 @@
                     <div id="sidebar-menu">
                         <!-- Left Menu Start -->
                         <ul class="metismenu list-unstyled" id="side-menu">
-                            <li class="menu-title" key="t-menu">Menu</li>
-
+                            <!-- Cụm 1: Tổng quan -->
+                            <li class="menu-title">Tổng quan</li>
                             <li>
                                 <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="waves-effect">
                                     <i class="bx bx-home-circle"></i>
-                                    <span key="t-dashboards">Bảng điều khiển</span>
+                                    <span key="t-dashboards">Trang chủ</span>
                                 </a>
                             </li>
 
-                            @if (User.IsInRole("Shop"))
+                            @if (isShop)
                             {
+                                <!-- Cụm 2 (Seller): Hàng hóa & Khuyến mãi -->
+                                <li class="menu-title">Hàng hóa &amp; Khuyến mãi</li>
                                 <li>
                                     <a href="javascript: void(0);" class="has-arrow waves-effect">
                                         <i class="bx bx-store"></i>
                                         <span key="t-ecommerce">Quản lý sản phẩm</span>
                                     </a>
                                     <ul class="sub-menu" aria-expanded="false">
-                                        <li><a asp-area="Admin" asp-controller="Products" asp-action="Index" key="t-products">Sản phẩm</a></li>
-                                        <li><a asp-area="Admin" asp-controller="Products" asp-action="Create" key="t-add-product">Thêm sản phẩm</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Products" asp-action="Index" key="t-products">Danh sách sản phẩm</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Products" asp-action="Create" key="t-add-product">Thêm sản phẩm mới</a></li>
                                         <li><a asp-area="Admin" asp-controller="Products" asp-action="Inventory" key="t-orders">Cập nhật kho hàng</a></li>
                                     </ul>
                                 </li>
-
                                 <li>
                                     <a asp-area="Admin" asp-controller="FlashSales" asp-action="Index" class="waves-effect">
                                         <i class="bx bx-purchase-tag-alt"></i>
-                                        <span key="t-projects">FlashSale</span>
+                                        <span key="t-projects">Chương trình FlashSale</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Vouchers" asp-action="Index" class="waves-effect">
+                                        <i class="bx bxs-coupon"></i>
+                                        <span>Mã giảm giá của Shop</span>
                                     </a>
                                 </li>
 
+                                <!-- Cụm 3 (Seller): Bán hàng & Vận hành -->
+                                <li class="menu-title">Bán hàng &amp; Chăm sóc</li>
                                 <li>
                                     <a href="javascript: void(0);" class="has-arrow waves-effect">
                                         <i class="bx bx-receipt"></i>
                                         <span key="t-orders">Quản lý đơn hàng</span>
                                     </a>
                                     <ul class="sub-menu" aria-expanded="false">
-                                        <li><a asp-area="Admin" asp-controller="Orders" asp-action="Index" key="t-orders">Tất cả đơn</a></li>
-                                        <li><a asp-area="Admin" asp-controller="Orders" asp-action="Index" asp-route-Status="Pending" key="t-orders">Chờ xác nhận</a></li>
-                                        <li><a asp-area="Admin" asp-controller="ReturnRequests" asp-action="Index" key="t-returns">↩ Yêu cầu trả hàng</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Orders" asp-action="Index" key="t-orders">Tất cả đơn hàng</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Orders" asp-action="Index" asp-route-Status="Pending" key="t-orders">Đơn chờ xác nhận</a></li>
+                                        <li><a asp-area="Admin" asp-controller="ReturnRequests" asp-action="Index" key="t-returns">Yêu cầu trả hàng</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Disputes" asp-action="Index">Khiếu nại &amp; Tranh chấp</a></li>
                                     </ul>
                                 </li>
-
                                 <li>
                                     <a asp-area="Admin" asp-controller="Chat" asp-action="Index" class="waves-effect">
                                         <i class="bx bx-chat"></i>
-                                        <span key="t-chat">Quản lý Chat</span>
+                                        <span key="t-chat">Quản lý Chat khách hàng</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Reviews" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-star"></i>
+                                        <span>Đánh giá &amp; Phản hồi AI</span>
                                     </a>
                                 </li>
 
+                                <!-- Cụm 4 (Seller): Cửa hàng & Nội dung -->
+                                <li class="menu-title">Cửa hàng &amp; Nội dung</li>
                                 <li>
                                     <a asp-area="Admin" asp-controller="PartnerStores" asp-action="Index" class="waves-effect">
                                         <i class="bx bx-store-alt"></i>
-                                        <span>Quản lý hồ sơ Shop</span>
+                                        <span>Hồ sơ cửa hàng</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="PartnerStores" asp-action="MallUpgrade" class="waves-effect">
+                                        <i class="bx bxs-badge-check" style="color: #FFEB69 !important;"></i>
+                                        <span>Nâng cấp Sellzy Mall</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                        <i class="bx bx-detail"></i>
+                                        <span key="t-blog">Quản lý Blog</span>
+                                    </a>
+                                    <ul class="sub-menu" aria-expanded="false">
+                                        <li><a asp-area="Admin" asp-controller="Blog" asp-action="Index" key="t-blog-list">Danh sách bài viết</a></li>
+                                        <li><a asp-area="Admin" asp-controller="Blog" asp-action="Create" key="t-add-post">Viết bài mới</a></li>
+                                    </ul>
+                                </li>
+
+                                <!-- Cụm 5 (Seller): Thống kê & Lợi nhuận -->
+                                <li class="menu-title">Thống kê &amp; Tài chính</li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="SystemStatistics" asp-action="Seller" class="waves-effect">
+                                        <i class="bx bxs-bar-chart-alt-2"></i>
+                                        <span>Phân tích Cửa hàng AI</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="SellerWallet" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-wallet"></i>
+                                        <span>Ví Doanh thu &amp; Đối soát</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="SystemStatistics" asp-action="ProfitCalculator" class="waves-effect">
+                                        <i class="bx bx-shield-quarter"></i>
+                                        <span>Định giá &amp; Kiểm soát Lãi lỗ</span>
                                     </a>
                                 </li>
                             }
-                            
-                            @if (User.IsInRole("Admin"))
-                            {
-                                <li>
-                                    <a asp-area="Admin" asp-controller="Vouchers" asp-action="Index" class="waves-effect">
-                                        <i class="bx bx-gift"></i>
-                                        <span>Quản lý Voucher Hệ thống</span>
-                                    </a>
-                                </li>
 
+                            @if (isAdmin)
+                            {
+                                <!-- Cụm 2 (Admin): Đối tác & Khách hàng -->
+                                <li class="menu-title">Đối tác &amp; Khách hàng</li>
                                 <li>
                                     <a asp-area="Admin" asp-controller="PartnerApplications" asp-action="Index" asp-route-Status="Pending" class="waves-effect">
                                         <i class="bx bx-user-check"></i>
-                                        <span>Duyệt đối tác</span>
+                                        <span>Duyệt hồ sơ đối tác</span>
                                     </a>
                                 </li>
-
-                                <li>
-                                    <a asp-area="Admin" asp-controller="SystemMessage" asp-action="Index" class="waves-effect">
-                                        <i class="bx bx-broadcast"></i>
-                                        <span key="t-system-message">Thông báo hệ thống</span>
-                                    </a>
-                                </li>
-
                                 <li>
                                     <a asp-area="Admin" asp-controller="Accounts" asp-action="Index" asp-route-Role="Customer" class="waves-effect">
                                         <i class="bx bxs-user-detail"></i>
                                         <span key="t-contacts">Quản lý khách hàng</span>
                                     </a>
                                 </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Disputes" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-shield-alt-2"></i>
+                                        <span>Khiếu nại &amp; Tranh chấp</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Moderation" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-check-shield"></i>
+                                        <span>Kiểm duyệt SP &amp; Đánh giá</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Vouchers" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-gift"></i>
+                                        <span>Voucher Hệ thống</span>
+                                    </a>
+                                </li>
 
+                                <!-- Cụm 3 (Admin): Danh mục & Thuộc tính -->
+                                <li class="menu-title">Danh mục &amp; Thuộc tính</li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Categories" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-category"></i>
+                                        <span>Ngành hàng &amp; Thông số</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Brands" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-award"></i>
+                                        <span>Thương hiệu (Brands)</span>
+                                    </a>
+                                </li>
+
+                                <!-- Cụm 4 (Admin): Nội dung & Truyền thông -->
+                                <li class="menu-title">Nội dung &amp; Thông báo</li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Campaigns" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-bullhorn"></i>
+                                        <span>Banner &amp; Chiến dịch Sàn</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="SystemMessage" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-broadcast"></i>
+                                        <span key="t-system-message">Thông báo hệ thống</span>
+                                    </a>
+                                </li>
+                                @if (!isShop)
+                                {
+                                    <li>
+                                        <a href="javascript: void(0);" class="has-arrow waves-effect">
+                                            <i class="bx bx-detail"></i>
+                                            <span key="t-blog">Quản lý Blog</span>
+                                        </a>
+                                        <ul class="sub-menu" aria-expanded="false">
+                                            <li><a asp-area="Admin" asp-controller="Blog" asp-action="Index" key="t-blog-list">Danh sách bài viết</a></li>
+                                            <li><a asp-area="Admin" asp-controller="Blog" asp-action="Create" key="t-add-post">Viết bài mới</a></li>
+                                        </ul>
+                                    </li>
+                                }
+
+                                <!-- Cụm 5 (Admin): Tài chính & Báo cáo -->
+                                <li class="menu-title">Tài chính &amp; Báo cáo</li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="Payouts" asp-action="Index" class="waves-effect">
+                                        <i class="bx bxs-bank"></i>
+                                        <span>Duyệt rút tiền đối tác</span>
+                                    </a>
+                                </li>
                                 <li>
                                     <a asp-area="Admin" asp-controller="SystemSettings" asp-action="Index" class="waves-effect">
                                         <i class="bx bx-money"></i>
                                         <span key="t-financial">Cấu hình Tài chính</span>
                                     </a>
                                 </li>
-
                                 <li>
-                                    <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                        <i class="bx bx-list-ul"></i>
-                                        <span key="t-attributes">Quản lý thuộc tính</span>
+                                    <a asp-area="Admin" asp-controller="SystemStatistics" asp-action="Admin" class="waves-effect">
+                                        <i class="bx bxs-bar-chart-alt-2"></i>
+                                        <span>Phân tích Hệ thống</span>
                                     </a>
-                                    <ul class="sub-menu" aria-expanded="false">
-                                        <li><a asp-area="Admin" asp-controller="Categories" asp-action="Index">Danh mục sản phẩm</a></li>
-                                        <li><a asp-area="Admin" asp-controller="Colors" asp-action="Index">Màu sắc</a></li>
-                                        <li><a asp-area="Admin" asp-controller="Sizes" asp-action="Index">Kích thước</a></li>
-                                    </ul>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="SystemStatistics" asp-action="FinancialReport" class="waves-effect">
+                                        <i class="bx bx-line-chart"></i>
+                                        <span>Báo cáo Tài chính</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-area="Admin" asp-controller="AuditLogs" asp-action="Index" class="waves-effect">
+                                        <i class="bx bx-history"></i>
+                                        <span>Nhật ký Kiểm toán (Audit)</span>
+                                    </a>
                                 </li>
                             }
-
-                            <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="bx bx-detail"></i>
-                                    <span key="t-blog">Quản lý Blog</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    <li><a asp-area="Admin" asp-controller="Blog" asp-action="Index" key="t-blog-list">Danh sách bài viết</a></li>
-                                    <li><a asp-area="Admin" asp-controller="Blog" asp-action="Create" key="t-add-post">Viết bài mới</a></li>
-                                </ul>
-                            </li>
-                            
-                             <li>
-                                <a href="javascript: void(0);" class="has-arrow waves-effect">
-                                    <i class="bx bxs-bar-chart-alt-2"></i>
-                                    <span key="t-charts">Thống kê Chuyên sâu</span>
-                                </a>
-                                <ul class="sub-menu" aria-expanded="false">
-                                    @if (User.IsInRole("Admin"))
-                                    {
-                                        <li><a asp-area="Admin" asp-controller="SystemStatistics" asp-action="Admin">Phân tích Hệ thống (Admin)</a></li>
-                                        <li><a asp-area="Admin" asp-controller="SystemStatistics" asp-action="FinancialReport">Báo cáo Tài chính</a></li>
-                                    }
-                                    @if (User.IsInRole("Shop"))
-                                    {
-                                        <li><a asp-area="Admin" asp-controller="SystemStatistics" asp-action="Seller">Phân tích Cửa hàng (Shop)</a></li>
-                                        <li><a asp-area="Admin" asp-controller="SystemStatistics" asp-action="ProfitCalculator">Máy tính Lợi nhuận</a></li>
-                                    }
-                                </ul>
-                            </li>
                         </ul>
                     </div>
                     <!-- Sidebar -->
 
-                    <div class="mt-auto p-3 border-top">
-                        <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-outline-light w-100 waves-effect waves-light">
+                    <div class="mt-auto p-3" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="btn w-100 waves-effect waves-light" style="background: rgba(255,235,105,0.14); color: #FFEB69; border: 1px solid rgba(255,235,105,0.28); border-radius: 12px; font-weight: 600;">
                             <i class="bx bx-arrow-back font-size-16 align-middle me-2"></i>
-                            <span>Quay lại trang người dùng</span>
+                            <span>Quay lại trang chủ</span>
                         </a>
                     </div>
 
@@ -784,6 +786,42 @@
                 var headerLangImg = document.getElementById("header-lang-img");
                 if (headerLangImg) {
                     headerLangImg.setAttribute("src", normalizeUrl(headerLangImg.getAttribute("src")));
+                }
+
+                // Fix sidebar active highlight for links with query params (e.g. ?Status=Pending, ?Role=Customer) or child actions (e.g. /Details/1)
+                var currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '');
+                var hasActive = document.querySelector('#sidebar-menu a.active');
+                if (!hasActive) {
+                    var links = document.querySelectorAll('#sidebar-menu a[href]');
+                    var matchedLink = null;
+                    links.forEach(function (a) {
+                        var rawHref = a.getAttribute('href');
+                        if (!rawHref || rawHref.startsWith('javascript:')) return;
+                        try {
+                            var linkUrl = new URL(a.href, window.location.origin);
+                            var linkPath = linkUrl.pathname.toLowerCase().replace(/\/+$/, '');
+                            if (linkPath === currentPath) {
+                                matchedLink = a;
+                            } else if (!matchedLink && linkPath.endsWith('/index')) {
+                                var ctrlPrefix = linkPath.slice(0, -6); // e.g. /admin/partnerapplications
+                                if (currentPath === ctrlPrefix || currentPath.startsWith(ctrlPrefix + '/')) {
+                                    matchedLink = a;
+                                }
+                            }
+                        } catch (e) { }
+                    });
+
+                    if (matchedLink) {
+                        matchedLink.classList.add('active');
+                        var li = matchedLink.closest('li');
+                        if (li) li.classList.add('mm-active');
+                        var parentUl = li ? li.closest('ul.sub-menu') : null;
+                        if (parentUl) {
+                            parentUl.classList.add('mm-show');
+                            var parentLi = parentUl.closest('li');
+                            if (parentLi) parentLi.classList.add('mm-active');
+                        }
+                    }
                 }
             })();
         </script>

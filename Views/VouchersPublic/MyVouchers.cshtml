@@ -1,0 +1,339 @@
+@using System.Globalization
+@model DOAN_BANHANG.ViewModels.MyVouchersVm
+@{
+    ViewData["Title"] = "Kho Voucher của tôi";
+    var viVn = CultureInfo.GetCultureInfo("vi-VN");
+
+    string FormatDiscTitle(DOAN_BANHANG.ViewModels.VoucherHubCardVm v)
+    {
+        if (v.DiscountType == "FreeShipping")
+            return $"Freeship đến {v.DiscountValue.ToString("N0", viVn)}₫";
+        if (v.DiscountType == "Percent")
+            return $"Giảm {v.DiscountValue:0.##}%";
+        return $"Giảm {v.DiscountValue.ToString("N0", viVn)}₫";
+    }
+}
+
+@section Styles {
+<style>
+  .mv-page { background: #eef2f6; min-height: 78vh; padding: 28px 0 80px; }
+  .mv-crumb {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    font-size: 13.5px; color: #64748b; margin-bottom: 18px;
+  }
+  .mv-crumb a { color: #475569; text-decoration: none; font-weight: 500; }
+  .mv-crumb a:hover { color: #008374; }
+
+  .mv-hero {
+    background: radial-gradient(circle at 88% 18%, rgba(253, 224, 71, 0.16) 0%, transparent 45%),
+                linear-gradient(135deg, #022c22 0%, #065f5b 55%, #008374 100%);
+    border-radius: 26px; padding: 28px 32px; color: #ffffff;
+    box-shadow: 0 20px 44px -18px rgba(2, 44, 34, 0.45); margin-bottom: 24px;
+  }
+  @@media (max-width: 767px) { .mv-hero { padding: 22px 18px; border-radius: 20px; } }
+  .mv-hero h1 { color: #ffffff !important; font-size: clamp(22px, 2.6vw, 30px); font-weight: 800; margin: 0 0 6px; }
+  .mv-kpi-grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px;
+  }
+  @@media (max-width: 640px) { .mv-kpi-grid { grid-template-columns: 1fr; } }
+  .mv-kpi {
+    background: rgba(255, 255, 255, 0.11); border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .mv-card {
+    background: #ffffff; border: 1px solid #dbe3ec; border-radius: 24px;
+    box-shadow: 0 10px 30px -14px rgba(15, 23, 42, 0.08); padding: 24px;
+  }
+  .mv-add-bar {
+    background: #f8fafc; border: 1px solid #dbe3ec; border-radius: 16px;
+    padding: 14px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    margin-bottom: 20px;
+  }
+  .mv-add-bar input {
+    flex: 1; min-width: 210px; height: 40px; border-radius: 10px; border: 1px solid #cbd5e1;
+    padding: 0 14px; font-size: 13.5px; font-weight: 700; text-transform: uppercase; color: #0f172a;
+    background: #ffffff; outline: none;
+  }
+  .mv-add-bar input:focus { border-color: #008374; }
+  .mv-add-bar button {
+    height: 40px; padding: 0 20px; border-radius: 10px; border: none;
+    background: #008374; color: #ffffff; font-size: 13px; font-weight: 800; cursor: pointer;
+  }
+  .mv-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; }
+  .mv-tab {
+    padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 700;
+    border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer;
+  }
+  .mv-tab.is-active { background: #008374; color: #ffffff; border-color: #008374; }
+
+  .mv-grid { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; }
+  @@media (min-width: 900px) { .mv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .mv-ticket {
+    position: relative; background: #ffffff; border: 1px solid #dbe3ec; border-radius: 18px;
+    display: flex; overflow: hidden; box-shadow: 0 4px 16px -8px rgba(15, 23, 42, 0.08);
+  }
+  .mv-ticket.is-dead { opacity: 0.62; filter: grayscale(0.5); }
+  .mv-stub {
+    position: relative; width: 112px; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 16px 10px; text-align: center; color: #ffffff;
+    border-right: 2px dashed rgba(255,255,255,0.55);
+  }
+  .mv-stub::before, .mv-stub::after {
+    content: ""; position: absolute; right: -8px; width: 14px; height: 14px;
+    border-radius: 50%; background: #ffffff; z-index: 2;
+  }
+  .mv-stub::before { top: -7px; }
+  .mv-stub::after { bottom: -7px; }
+  .mv-stub.is-ship { background: linear-gradient(145deg, #0369a1, #0ea5e9); }
+  .mv-stub.is-platform { background: linear-gradient(145deg, #022c22, #008374); }
+  .mv-stub.is-shop { background: linear-gradient(145deg, #c2410c, #f59e0b); }
+  .mv-body {
+    flex: 1; padding: 14px 16px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0;
+  }
+</style>
+}
+
+<div class="mv-page">
+  <div class="container">
+    <nav class="mv-crumb">
+      <a href="/">Trang chủ</a><span>•</span>
+      <a href="/my-account">Tài khoản</a><span>•</span>
+      <span style="color:#0f172a; font-weight:700;">Kho Voucher của tôi</span>
+    </nav>
+
+    @if (!Model.IsAuthenticated)
+    {
+      <div class="mv-card" style="text-align:center; padding:60px 24px;">
+        <div style="font-size:44px; margin-bottom:10px;">🔐</div>
+        <h4 style="font-weight:800; color:#0f172a; margin:0 0 8px;">Đăng nhập để quản lý Kho Voucher cá nhân</h4>
+        <p style="color:#64748b; font-size:14.5px; max-width:440px; margin:0 auto 22px;">
+          Lưu trữ tập trung tất cả mã Freeship, mã Toàn Sàn và mã riêng do Shop tặng qua Chat để tự động áp dụng khi thanh toán.
+        </p>
+        <a href="#" class="btn btn-primary rounded-full px-8 py-3 font-bold login-page-btn">Đăng nhập ngay</a>
+      </div>
+    }
+    else
+    {
+      <div class="mv-hero">
+        <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px;">
+          <div>
+            <span style="display:inline-flex; align-items:center; gap:6px; background:rgba(253,224,71,0.18); border:1px solid rgba(253,224,71,0.42); color:#fde047; font-size:11.5px; font-weight:800; padding:4px 12px; border-radius:999px; margin-bottom:10px;">💼 VÍ ƯU ĐÃI CÁ NHÂN</span>
+            <h1>Kho Voucher Của Tôi</h1>
+            <p style="color:rgba(255,255,255,0.85); font-size:14px; margin:0;">Quản lý mã đã lưu, kiểm tra hạn sử dụng và dùng ngay khi đặt hàng.</p>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <a href="/vouchers" style="background:#fde047; color:#022c22; font-size:13px; font-weight:800; padding:9px 18px; border-radius:999px; text-decoration:none;">🎟️ + Săn thêm Voucher</a>
+            <a href="/my-account" style="background:rgba(255,255,255,0.14); color:#ffffff; border:1px solid rgba(255,255,255,0.25); font-size:13px; font-weight:700; padding:9px 16px; border-radius:999px; text-decoration:none;">Tài khoản</a>
+            <a href="/my-orders" style="background:rgba(255,255,255,0.14); color:#ffffff; border:1px solid rgba(255,255,255,0.25); font-size:13px; font-weight:700; padding:9px 16px; border-radius:999px; text-decoration:none;">Đơn mua</a>
+          </div>
+        </div>
+
+        <div class="mv-kpi-grid">
+          <div class="mv-kpi">
+            <span style="font-size:26px;">🎟️</span>
+            <div>
+              <div style="font-size:20px; font-weight:800; color:#fde047;">@Model.UsableVouchers.Count</div>
+              <div style="font-size:12px; color:rgba(255,255,255,0.82);">Mã sẵn sàng sử dụng</div>
+            </div>
+          </div>
+          <div class="mv-kpi">
+            <span style="font-size:26px;">🚚</span>
+            <div>
+              <div style="font-size:20px; font-weight:800; color:#ffffff;">@Model.FreeShippingCount</div>
+              <div style="font-size:12px; color:rgba(255,255,255,0.82);">Mã Miễn phí vận chuyển</div>
+            </div>
+          </div>
+          <div class="mv-kpi">
+            <span style="font-size:26px;">⏰</span>
+            <div>
+              <div style="font-size:20px; font-weight:800; color:#fca5a5;">@Model.ExpiringSoonCount</div>
+              <div style="font-size:12px; color:rgba(255,255,255,0.82);">Sắp hết hạn (≤ 3 ngày)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mv-card">
+        <!-- Nhập mã thêm vào kho -->
+        <div class="mv-add-bar">
+          <span style="font-size:13.5px; font-weight:800; color:#0f172a;">Mã Voucher:</span>
+          <input type="text" id="js-mv-add-input" placeholder="Nhập mã Voucher để lưu vào Kho của bạn..." />
+          <button type="button" onclick="addCodeToMyWallet()">Lưu vào Kho</button>
+          <div id="js-mv-add-msg" style="width:100%; font-size:13px; font-weight:600; display:none;"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mv-tabs">
+          <button type="button" class="mv-tab is-active" onclick="switchMyVoucherTab('usable', this)">Sẵn dùng (@Model.UsableVouchers.Count)</button>
+          <button type="button" class="mv-tab" onclick="switchMyVoucherTab('ship', this)">🚚 Freeship (@Model.FreeShippingCount)</button>
+          <button type="button" class="mv-tab" onclick="switchMyVoucherTab('expiring', this)">⏰ Sắp hết hạn (@Model.ExpiringSoonCount)</button>
+          <button type="button" class="mv-tab" onclick="switchMyVoucherTab('expired', this)">Hết hạn / Hết lượt (@Model.ExpiredOrUsedVouchers.Count)</button>
+        </div>
+
+        <!-- Panel Khả dụng -->
+        <div id="mv-panel-usable" class="mv-grid">
+          @if (Model.UsableVouchers.Count == 0)
+          {
+            <div style="grid-column:1/-1; text-align:center; padding:44px 16px;">
+              <div style="font-size:38px; margin-bottom:8px;">💼</div>
+              <h5 style="font-weight:800; color:#0f172a; margin:0 0 6px;">Kho Voucher của bạn đang trống</h5>
+              <p style="color:#64748b; font-size:14px; margin:0 0 18px;">Hãy ghé Trạm Săn Voucher để lưu ngay các mã Freeship và Giảm giá hot nhất hôm nay!</p>
+              <a href="/vouchers" style="display:inline-block; background:#008374; color:#ffffff; font-weight:800; font-size:13.5px; padding:10px 24px; border-radius:999px; text-decoration:none;">🎟️ Đi Săn Voucher Ngay →</a>
+            </div>
+          }
+          else
+          {
+            foreach (var v in Model.UsableVouchers)
+            {
+              var stubClass = v.DiscountType == "FreeShipping" ? "is-ship" : (v.IsShopVoucher ? "is-shop" : "is-platform");
+              <div class="mv-ticket js-mv-usable-item"
+                   data-voucher-id="@v.Id"
+                   data-is-ship="@(v.DiscountType == "FreeShipping" ? "1" : "0")"
+                   data-is-expiring="@(v.IsExpiringSoon ? "1" : "0")">
+                <div class="mv-stub @stubClass">
+                  <div style="font-size:22px; margin-bottom:4px;">@(v.DiscountType == "FreeShipping" ? "🚚" : (v.IsShopVoucher ? "🏪" : "💎"))</div>
+                  <div style="font-size:10.5px; font-weight:800; text-transform:uppercase;">@(v.IsShopVoucher ? v.ShopName : "SELLZY")</div>
+                  <div style="font-size:10px; opacity:0.9; margin-top:3px; font-family:monospace;">@v.Code</div>
+                </div>
+                <div class="mv-body">
+                  <div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:4px;">
+                      <span style="font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px; background:#f1f5f9; color:#334155;">@v.ScopeLabel</span>
+                      @if (v.IsExpiringSoon)
+                      {
+                        <span style="font-size:10.5px; font-weight:800; color:#dc2626; background:#fef2f2; padding:2px 8px; border-radius:999px;">⏰ Sắp hết hạn</span>
+                      }
+                      else if (v.TargetAudience == "PrivateChatOnly")
+                      {
+                        <span style="font-size:10.5px; font-weight:800; color:#7c3aed; background:#f5f3ff; padding:2px 8px; border-radius:999px;">🎁 Quà tặng riêng</span>
+                      }
+                    </div>
+                    <div style="font-size:16px; font-weight:800; color:#0f172a;">@FormatDiscTitle(v)</div>
+                    @if (v.MaxDiscountValue.HasValue && v.DiscountType == "Percent")
+                    {
+                      <div style="font-size:12px; font-weight:700; color:#dc2626;">Tối đa @v.MaxDiscountValue.Value.ToString("N0", viVn)₫</div>
+                    }
+                    <div style="font-size:12.5px; color:#475569; margin-top:2px;">Đơn tối thiểu @v.MinOrderValue.ToString("N0", viVn)₫ • HSD: <strong>@v.EndDate.ToString("dd/MM/yyyy")</strong></div>
+                  </div>
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; padding-top:9px; border-top:1px dashed #e2e8f0;">
+                    <div style="display:flex; gap:6px;">
+                      <button type="button" onclick="copyMyCode('@v.Code', this)" style="border:1px solid #cbd5e1; background:#ffffff; color:#334155; border-radius:999px; padding:4px 10px; font-size:11.5px; font-weight:700; cursor:pointer;">Sao chép</button>
+                      <button type="button" onclick="unsaveMyVoucher(@v.Id, this)" style="border:1px solid #fecaca; background:#fef2f2; color:#dc2626; border-radius:999px; padding:4px 10px; font-size:11.5px; font-weight:700; cursor:pointer;">Bỏ lưu</button>
+                    </div>
+                    <a href="@v.UseNowUrl" onclick="prioritizeMyCode('@v.Code')" style="background:#008374; color:#ffffff; border-radius:999px; padding:6px 14px; font-size:12px; font-weight:800; text-decoration:none;">Dùng ngay →</a>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- Panel Hết hạn / Hết lượt -->
+        <div id="mv-panel-expired" class="mv-grid" style="display:none;">
+          @if (Model.ExpiredOrUsedVouchers.Count == 0)
+          {
+            <div style="grid-column:1/-1; text-align:center; padding:36px 16px; color:#64748b; font-size:14px;">
+              Không có mã nào đã hết hạn hoặc hết lượt trong Kho của bạn.
+            </div>
+          }
+          else
+          {
+            foreach (var v in Model.ExpiredOrUsedVouchers)
+            {
+              <div class="mv-ticket is-dead" data-voucher-id="@v.Id">
+                <div class="mv-stub is-platform">
+                  <div style="font-size:20px;">🎟️</div>
+                  <div style="font-size:10.5px; font-weight:800; margin-top:3px; font-family:monospace;">@v.Code</div>
+                </div>
+                <div class="mv-body">
+                  <div>
+                    <span style="font-size:10.5px; font-weight:800; color:#b91c1c; background:#fee2e2; padding:2px 8px; border-radius:999px;">@v.StatusNote</span>
+                    <div style="font-size:15.5px; font-weight:800; color:#334155; margin-top:4px;">@FormatDiscTitle(v)</div>
+                    <div style="font-size:12px; color:#64748b;">HSD: @v.EndDate.ToString("dd/MM/yyyy")</div>
+                  </div>
+                  <div style="text-align:right; margin-top:8px;">
+                    <button type="button" onclick="unsaveMyVoucher(@v.Id, this)" style="border:1px solid #cbd5e1; background:#ffffff; color:#475569; border-radius:999px; padding:4px 12px; font-size:11.5px; font-weight:700; cursor:pointer;">Xóa khỏi Kho</button>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+@section Scripts {
+<script>
+  function switchMyVoucherTab(tab, btnEl) {
+    document.querySelectorAll('.mv-tab').forEach(b => b.classList.toggle('is-active', b === btnEl));
+    const usablePanel = document.getElementById('mv-panel-usable');
+    const expPanel = document.getElementById('mv-panel-expired');
+    if (tab === 'expired') {
+      usablePanel.style.display = 'none';
+      expPanel.style.display = 'grid';
+      return;
+    }
+    expPanel.style.display = 'none';
+    usablePanel.style.display = 'grid';
+    document.querySelectorAll('.js-mv-usable-item').forEach(el => {
+      let show = true;
+      if (tab === 'ship') show = el.dataset.isShip === '1';
+      if (tab === 'expiring') show = el.dataset.isExpiring === '1';
+      el.style.display = show ? 'flex' : 'none';
+    });
+  }
+
+  function prioritizeMyCode(code) {
+    document.cookie = "sellzy_claimed_voucher=" + encodeURIComponent(code) + "; path=/; max-age=604800; SameSite=Lax";
+  }
+
+  function copyMyCode(code, btnEl) {
+    navigator.clipboard?.writeText(code);
+    const orig = btnEl.textContent;
+    btnEl.textContent = '✓ Đã chép';
+    setTimeout(() => { btnEl.textContent = orig; }, 1600);
+  }
+
+  async function unsaveMyVoucher(voucherId, btnEl) {
+    try {
+      const res = await fetch('/vouchers/unsave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ voucherId })
+      });
+      if (res.ok) {
+        const card = btnEl.closest('.mv-ticket');
+        if (card) card.remove();
+      }
+    } catch (e) {}
+  }
+
+  async function addCodeToMyWallet() {
+    const input = document.getElementById('js-mv-add-input');
+    const msg = document.getElementById('js-mv-add-msg');
+    const code = (input?.value || '').trim().toUpperCase();
+    if (!code) return;
+    try {
+      const res = await fetch('/vouchers/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ voucherId: 0, code })
+      });
+      const data = await res.json();
+      msg.style.display = 'block';
+      if (res.ok && data?.ok) {
+        msg.style.color = '#059669';
+        msg.textContent = '✅ ' + data.message + ' Đang tải lại Kho Voucher...';
+        setTimeout(() => window.location.reload(), 650);
+      } else {
+        msg.style.color = '#dc2626';
+        msg.textContent = '⚠️ ' + (data?.message || 'Mã không hợp lệ hoặc đã hết hạn.');
+      }
+    } catch (e) {}
+  }
+</script>
+}

@@ -6,13 +6,67 @@
 <div class="row">
     <div class="col-12">
         <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 class="mb-sm-0 font-size-18">Bảng điều khiển Quản trị</h4>
+            <h4 class="mb-sm-0 font-size-18 fw-bold">Bảng điều khiển Quản trị</h4>
 
             <div class="page-title-right">
                 <ol class="breadcrumb m-0">
                     <li class="breadcrumb-item"><a href="javascript: void(0);">Hệ thống</a></li>
                     <li class="breadcrumb-item active">Bảng điều khiển</li>
                 </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cụm điều khiển nhanh cho Admin -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(120deg, #EFF8F7 0%, #FFFFFF 60%, #FFFBEB 100%);">
+            <div class="card-body py-3 px-4">
+                <div class="row g-3 align-items-center">
+                    <div class="col-lg-4">
+                        <div class="text-muted text-uppercase fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.06em;">Đối tác &amp; Kiểm duyệt</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a asp-area="Admin" asp-controller="PartnerApplications" asp-action="Index" asp-route-Status="Pending" class="btn btn-sm btn-primary rounded-pill px-3">
+                                <i class="bx bx-user-check me-1"></i> Duyệt đối tác
+                            </a>
+                            <a asp-area="Admin" asp-controller="Moderation" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-shield-quarter me-1"></i> Kiểm duyệt SP
+                            </a>
+                            <a asp-area="Admin" asp-controller="Accounts" asp-action="Index" asp-route-Role="Customer" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bxs-user-detail me-1"></i> Tài khoản
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="text-muted text-uppercase fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.06em;">Chiến dịch &amp; Khuyến mãi</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a asp-area="Admin" asp-controller="Campaigns" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-carousel me-1"></i> Banner &amp; Chiến dịch
+                            </a>
+                            <a asp-area="Admin" asp-controller="Vouchers" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-gift me-1"></i> Voucher Sàn
+                            </a>
+                            <a asp-area="Admin" asp-controller="SystemMessage" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-broadcast me-1"></i> Thông báo
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="text-muted text-uppercase fw-bold mb-2" style="font-size: 11px; letter-spacing: 0.06em;">Tài chính &amp; Giám sát</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a asp-area="Admin" asp-controller="Payouts" asp-action="Index" class="btn btn-sm btn-success rounded-pill px-3">
+                                <i class="bx bx-transfer-alt me-1"></i> Duyệt rút tiền
+                            </a>
+                            <a asp-area="Admin" asp-controller="SystemStatistics" asp-action="FinancialReport" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-line-chart me-1"></i> Báo cáo
+                            </a>
+                            <a asp-area="Admin" asp-controller="AuditLogs" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white">
+                                <i class="bx bx-history me-1"></i> Audit Logs
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -57,7 +111,7 @@
                                 </div>
                             </div>
                             <div class="mt-4">
-                                <a href="javascript:void(0);" class="btn btn-primary waves-effect waves-light btn-sm">Xem hồ sơ <i class="mdi mdi-arrow-right ms-1"></i></a>
+                                <a asp-area="Admin" asp-controller="PartnerApplications" asp-action="Index" class="btn btn-primary waves-effect waves-light btn-sm">Quản lý đối tác <i class="mdi mdi-arrow-right ms-1"></i></a>
                             </div>
                         </div>
                     </div>
@@ -74,7 +128,7 @@
                         <p class="text-muted"><span class="text-success me-2"> @Model.RevenueGrowthRate% <i class="mdi mdi-arrow-up"></i> </span> So với tháng trước</p>
 
                         <div class="mt-4">
-                            <a href="javascript:void(0);" class="btn btn-primary waves-effect waves-light btn-sm">Xem chi tiết <i class="mdi mdi-arrow-right ms-1"></i></a>
+                            <a asp-area="Admin" asp-controller="SystemStatistics" asp-action="FinancialReport" class="btn btn-primary waves-effect waves-light btn-sm">Xem báo cáo <i class="mdi mdi-arrow-right ms-1"></i></a>
                         </div>
                     </div>
                     <div class="col-sm-6">
@@ -157,13 +211,13 @@
                     <div class="ms-auto">
                         <ul class="nav nav-pills">
                             <li class="nav-item">
-                                <a class="nav-link" href="#">Tuần</a>
+                                <a class="nav-link" href="javascript:void(0);">Tuần</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">Tháng</a>
+                                <a class="nav-link" href="javascript:void(0);">Tháng</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link active" href="#">Năm</a>
+                                <a class="nav-link active" href="javascript:void(0);">Năm</a>
                             </li>
                         </ul>
                     </div>

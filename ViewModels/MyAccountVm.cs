@@ -114,6 +114,7 @@ public sealed class OrderSummaryVm
     public string? FirstProductImageUrl { get; set; }
     public string? FirstProductVariantName { get; set; }
     public bool IsReceivedByCustomer { get; set; }
+    public bool CanReturn { get; set; } = true;
 }
 
 public sealed class UserAddressVm

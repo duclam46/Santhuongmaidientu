@@ -133,7 +133,13 @@ builder.Services.AddHttpClient<GhnClient>((sp, http) =>
 });
 
 builder.Services.AddScoped<GhnStationCatalog>();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<StatisticsService>();
+builder.Services.AddScoped<DisputeAiService>();
+builder.Services.Configure<DOAN_BANHANG.Services.AiChatbot.GeminiOptions>(builder.Configuration.GetSection(DOAN_BANHANG.Services.AiChatbot.GeminiOptions.SectionName));
+builder.Services.AddSingleton<DOAN_BANHANG.Services.AiChatbot.SellzyAiMonitor>();
+builder.Services.AddScoped<DOAN_BANHANG.Services.AiChatbot.SellzyAiTools>();
+builder.Services.AddScoped<DOAN_BANHANG.Services.AiChatbot.SellzyAiFallbackEngine>();
 builder.Services.AddHttpClient<GeminiChatService>();
 
 // VNPay
@@ -143,7 +149,9 @@ vnpaySection.Bind(vnpayOptions);
 builder.Services.AddSingleton(vnpayOptions);
 builder.Services.AddSingleton<VnPayService>();
 builder.Services.AddHostedService<VnPayExpiredOrderCleaner>();
+builder.Services.AddHostedService<OrderAutoSettlementWorker>();
 builder.Services.AddScoped<WalletService>();
+builder.Services.AddScoped<AuditLogService>();
 
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
@@ -264,6 +272,8 @@ app.MapControllerRoute(
 
 // SignalR Hub
 app.MapHub<ChatHub>("/chathub");
+
+await PlatformUpgradeSchemaBootstrapper.EnsureUpgradedSchemaAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {

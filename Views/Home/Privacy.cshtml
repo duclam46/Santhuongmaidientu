@@ -1,6 +1,530 @@
-﻿@{
-    ViewData["Title"] = "Chính sách quyền riêng tư";
+@{
+    ViewData["Title"] = "Chính sách bảo mật & Điều khoản dịch vụ";
+    var initialTab = string.Equals(Context.Request.Query["tab"].ToString(), "terms", StringComparison.OrdinalIgnoreCase)
+        ? "terms"
+        : "privacy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Sử dụng trang này để mô tả chính sách quyền riêng tư của website.</p>
+@section Styles {
+<style>
+  .sz-pol-page {
+    background: #eef2f6;
+    min-height: 78vh;
+    padding: 28px 0 80px;
+  }
+  .sz-pol-crumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13.5px;
+    color: #64748b;
+    margin-bottom: 18px;
+  }
+  .sz-pol-crumb a {
+    color: #475569;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .sz-pol-crumb a:hover { color: #008374; }
+
+  .sz-pol-hero {
+    background: radial-gradient(circle at 90% 18%, rgba(253, 224, 71, 0.16) 0%, transparent 45%),
+                linear-gradient(135deg, #022c22 0%, #065f5b 55%, #008374 100%);
+    border-radius: 26px;
+    padding: 32px 36px;
+    color: #ffffff;
+    box-shadow: 0 20px 44px -18px rgba(2, 44, 34, 0.45);
+    margin-bottom: 24px;
+  }
+  @@media (max-width: 767px) {
+    .sz-pol-hero { padding: 22px 18px; border-radius: 20px; }
+  }
+  .sz-pol-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(253, 224, 71, 0.18);
+    border: 1px solid rgba(253, 224, 71, 0.42);
+    color: #fde047;
+    font-size: 11.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .sz-pol-hero h1 {
+    color: #ffffff !important;
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: 800;
+    margin: 0 0 8px;
+    line-height: 1.25;
+  }
+  .sz-pol-hero p {
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 14.5px;
+    margin: 0;
+    max-width: 680px;
+  }
+  .sz-pol-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .sz-pol-meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 13px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  /* Tabs Bar */
+  .sz-pol-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #ffffff;
+    border: 1px solid #dbe3ec;
+    border-radius: 20px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    box-shadow: 0 6px 20px -12px rgba(15, 23, 42, 0.08);
+  }
+  .sz-pol-tab-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sz-pol-tab-btn {
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 800;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .sz-pol-tab-btn.is-active {
+    background: #008374;
+    border-color: #008374;
+    color: #ffffff;
+    box-shadow: 0 8px 18px -6px rgba(0, 131, 116, 0.45);
+  }
+  .sz-pol-print-btn {
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #334155;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sz-pol-print-btn:hover { background: #e2e8f0; color: #0f172a; }
+
+  /* Layout Grid */
+  .sz-pol-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @@media (min-width: 1024px) {
+    .sz-pol-grid { grid-template-columns: 290px minmax(0, 1fr); }
+  }
+
+  /* Sidebar */
+  .sz-pol-side-card {
+    background: #ffffff;
+    border: 1px solid #dbe3ec;
+    border-radius: 22px;
+    padding: 20px;
+    box-shadow: 0 8px 24px -14px rgba(15, 23, 42, 0.08);
+    position: sticky;
+    top: 24px;
+  }
+  .sz-pol-toc-title {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #065f5b;
+    margin-bottom: 12px;
+  }
+  .sz-pol-toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .sz-pol-toc-list a {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    text-decoration: none;
+    transition: all 0.16s ease;
+  }
+  .sz-pol-toc-list a:hover,
+  .sz-pol-toc-list a.is-current {
+    background: #f0fdfa;
+    color: #008374;
+  }
+  .sz-pol-toc-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: #008374;
+    background: #e6f4f3;
+    padding: 1px 7px;
+    border-radius: 999px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .sz-pol-help-box {
+    background: linear-gradient(135deg, #f0fdfa 0%, #fffbeb 100%);
+    border: 1px solid #cce7e3;
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  /* Main Document Card */
+  .sz-pol-doc {
+    background: #ffffff;
+    border: 1px solid #dbe3ec;
+    border-radius: 24px;
+    padding: 32px 36px;
+    box-shadow: 0 10px 30px -14px rgba(15, 23, 42, 0.08);
+  }
+  @@media (max-width: 767px) {
+    .sz-pol-doc { padding: 22px 18px; border-radius: 20px; }
+  }
+  .sz-pol-sec {
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #eef2f6;
+    scroll-margin-top: 110px;
+  }
+  .sz-pol-sec:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+  .sz-pol-sec-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .sz-pol-sec-num {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #065f5b, #008374);
+    color: #fde047;
+    font-size: 13px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .sz-pol-sec h2 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.35;
+  }
+  .sz-pol-doc p {
+    font-size: 14.5px;
+    line-height: 1.72;
+    color: #334155;
+    margin: 0 0 10px;
+  }
+  .sz-pol-doc ul {
+    margin: 0 0 12px;
+    padding-left: 20px;
+    list-style-type: disc;
+  }
+  .sz-pol-doc li {
+    font-size: 14.5px;
+    line-height: 1.72;
+    color: #334155;
+    margin-bottom: 7px;
+  }
+  .sz-pol-callout {
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+    border-left: 4px solid #008374;
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: #065f46;
+    margin-top: 12px;
+  }
+</style>
+}
+
+<div class="sz-pol-page">
+  <div class="container">
+    <nav class="sz-pol-crumb">
+      <a href="/">Trang chủ</a>
+      <span>•</span>
+      <span style="color: #0f172a; font-weight: 700;">Chính sách bảo mật &amp; Điều khoản dịch vụ</span>
+    </nav>
+
+    <!-- Hero -->
+    <div class="sz-pol-hero">
+      <div class="sz-pol-badge">🛡️ Trung tâm Pháp lý &amp; Bảo vệ Người tiêu dùng Sellzy</div>
+      <h1 id="sz-pol-hero-title">@(initialTab == "terms" ? "Điều khoản dịch vụ Sellzy" : "Chính sách bảo mật thông tin Sellzy")</h1>
+      <p>Văn bản pháp lý áp dụng thống nhất trên toàn hệ thống sàn thương mại điện tử đa ngành Sellzy — đồng bộ hoàn toàn với Điều khoản xác nhận khi đăng ký tài khoản.</p>
+      <div class="sz-pol-meta-row">
+        <span class="sz-pol-meta-pill">📅 Cập nhật lần cuối: Tháng 11/2026</span>
+        <span class="sz-pol-meta-pill">🔒 Mã hóa mật khẩu ASP.NET Core Identity</span>
+        <span class="sz-pol-meta-pill">⚖️ Bảo vệ giao dịch &amp; Trọng tài 3 bên</span>
+      </div>
+    </div>
+
+    <!-- Switch Tabs -->
+    <div class="sz-pol-tabs">
+      <div class="sz-pol-tab-group">
+        <button type="button"
+                class="sz-pol-tab-btn @(initialTab == "privacy" ? "is-active" : "")"
+                data-pol-tab="privacy"
+                onclick="switchPolicyTab('privacy', this)">
+          🔒 Chính sách bảo mật
+        </button>
+        <button type="button"
+                class="sz-pol-tab-btn @(initialTab == "terms" ? "is-active" : "")"
+                data-pol-tab="terms"
+                onclick="switchPolicyTab('terms', this)">
+          📜 Điều khoản dịch vụ
+        </button>
+      </div>
+      <button type="button" class="sz-pol-print-btn" onclick="window.print()">
+        🖨️ In / Lưu PDF
+      </button>
+    </div>
+
+    <div class="sz-pol-grid">
+      <!-- Left Sticky TOC -->
+      <aside class="sz-pol-side-card">
+        <div id="sz-toc-privacy" style="display:@(initialTab == "privacy" ? "block" : "none");">
+          <div class="sz-pol-toc-title">Mục lục Bảo mật</div>
+          <ul class="sz-pol-toc-list">
+            <li><a href="javascript:void(0)" data-target-id="priv-1" onclick="scrollToPolicySection('priv-1', this, event)"><span class="sz-pol-toc-num">01</span><span>Mục đích &amp; Phạm vi thu thập</span></a></li>
+            <li><a href="javascript:void(0)" data-target-id="priv-2" onclick="scrollToPolicySection('priv-2', this, event)"><span class="sz-pol-toc-num">02</span><span>Phạm vi sử dụng thông tin</span></a></li>
+            <li><a href="javascript:void(0)" data-target-id="priv-3" onclick="scrollToPolicySection('priv-3', this, event)"><span class="sz-pol-toc-num">03</span><span>Lưu trữ &amp; Bảo mật dữ liệu</span></a></li>
+            <li><a href="javascript:void(0)" data-target-id="priv-4" onclick="scrollToPolicySection('priv-4', this, event)"><span class="sz-pol-toc-num">04</span><span>Chia sẻ thông tin cần thiết</span></a></li>
+            <li><a href="javascript:void(0)" data-target-id="priv-5" onclick="scrollToPolicySection('priv-5', this, event)"><span class="sz-pol-toc-num">05</span><span>Quyền khách hàng &amp; Liên hệ</span></a></li>
+          </ul>
+        </div>
+
+        <div id="sz-toc-terms" style="display:@(initialTab == "terms" ? "block" : "none");">
+          <div class="sz-pol-toc-title">Mục lục Điều khoản</div>
+          <ul class="sz-pol-toc-list">
+            <li><a href="javascript:void(0)" data-target-id="term-1" onclick="scrollToPolicySection('term-1', this, event)"><span class="sz-pol-toc-num">01</span><span>Giới thiệu &amp; Phạm vi áp dụng</span></a></li>
+            <li><a href="javascript:void(0)" data-target-id="term-2" onclick="scrollToPolicySection('term-2', this, event)"><span class="sz-pol-toc-num">02</span><span>Tài khoản &amp; Bảo mật</span></a></li>
+            <li><a href="javascript:void(0)" data-target-id="term-3" onclick="scrollToPolicySection('term-3', this, event)"><span class="sz-pol-toc-num">03</span><span>Đặt hàng, Thanh toán &amp; Giao vận</span></a></li>
+            <li><a href="javascript:void(0)" data-target-id="term-4" onclick="scrollToPolicySection('term-4', this, event)"><span class="sz-pol-toc-num">04</span><span>Trả hàng, Hoàn tiền &amp; Khiếu nại</span></a></li>
+            <li><a href="javascript:void(0)" data-target-id="term-5" onclick="scrollToPolicySection('term-5', this, event)"><span class="sz-pol-toc-num">05</span><span>Sản phẩm chính hãng &amp; Cấm</span></a></li>
+          </ul>
+        </div>
+
+        <div class="sz-pol-help-box">
+          <div style="font-size:13.5px; font-weight:800; color:#022c22; margin-bottom:4px;">Cần giải đáp thêm?</div>
+          <p style="font-size:12.5px; color:#475569; margin:0 0 12px; line-height:1.5;">
+            Đội ngũ CSKH Sellzy luôn sẵn sàng hỗ trợ về bảo mật tài khoản, quyền riêng tư và khiếu nại giao dịch 24/7.
+          </p>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <a href="/Home/Contact" style="text-align:center; background:#008374; color:#ffffff; font-size:12.5px; font-weight:700; padding:8px 12px; border-radius:999px; text-decoration:none;">
+              Liên hệ CSKH Sellzy
+            </a>
+            <a href="/my-account" style="text-align:center; background:#ffffff; color:#0f172a; border:1px solid #cbd5e1; font-size:12.5px; font-weight:700; padding:7px 12px; border-radius:999px; text-decoration:none;">
+              Quản lý tài khoản của tôi
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Document Content -->
+      <main class="sz-pol-doc">
+        <!-- PANEL 1: CHÍNH SÁCH BẢO MẬT -->
+        <div id="sz-panel-privacy" style="display:@(initialTab == "privacy" ? "block" : "none");">
+          <section class="sz-pol-sec" id="priv-1">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">01</span>
+              <h2>Mục đích &amp; Phạm vi thu thập thông tin</h2>
+            </div>
+            <p>Sellzy chỉ thu thập các thông tin cần thiết để phục vụ quá trình mua sắm và bảo vệ quyền lợi khách hàng, bao gồm:</p>
+            <ul>
+              <li><strong>Thông tin định danh:</strong> Họ và tên, địa chỉ Email, Số điện thoại, địa chỉ nhận hàng.</li>
+              <li><strong>Thông tin giao dịch:</strong> Lịch sử đơn hàng, giao dịch Ví Sellzy, mã giảm giá đã sử dụng và nội dung khiếu nại/hỗ trợ.</li>
+              <li><strong>Dữ liệu kỹ thuật cơ bản:</strong> Nhằm tối ưu hiệu năng hiển thị và phát hiện truy cập bất thường.</li>
+            </ul>
+          </section>
+
+          <section class="sz-pol-sec" id="priv-2">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">02</span>
+              <h2>Phạm vi sử dụng thông tin cá nhân</h2>
+            </div>
+            <ul>
+              <li>Xác nhận đơn hàng, điều phối giao nhận, xử lý đổi trả và hoàn tiền vào <strong>Ví Sellzy</strong>.</li>
+              <li>Gửi thông báo trạng thái đơn hàng, mã xác thực OTP khôi phục mật khẩu và cảnh báo bảo mật tài khoản.</li>
+              <li>Cải thiện trải nghiệm tìm kiếm, gợi ý sản phẩm phù hợp và hỗ trợ giải đáp qua Trợ lý trực tuyến AI.</li>
+            </ul>
+          </section>
+
+          <section class="sz-pol-sec" id="priv-3">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">03</span>
+              <h2>Cam kết lưu trữ &amp; Bảo mật dữ liệu</h2>
+            </div>
+            <ul>
+              <li>Mật khẩu người dùng được mã hóa một chiều bằng thuật toán băm tiêu chuẩn công nghiệp (<strong>ASP.NET Core Identity PasswordHasher</strong>); nhân viên Sellzy không thể xem mật khẩu gốc của bạn.</li>
+              <li>Sellzy cam kết <strong>không bán, cho thuê hoặc trao đổi</strong> dữ liệu cá nhân của khách hàng cho bất kỳ bên thứ ba nào vì mục đích thương mại trái phép.</li>
+            </ul>
+            <div class="sz-pol-callout">
+              <strong>🔒 Cam kết bảo vệ tài khoản:</strong> Mọi thao tác đăng nhập sai liên tiếp (tối đa 5 lần) đều kích hoạt cơ chế tạm khóa tự động, và quy trình khôi phục mật khẩu luôn yêu cầu xác thực OTP 6 chữ số.
+            </div>
+          </section>
+
+          <section class="sz-pol-sec" id="priv-4">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">04</span>
+              <h2>Chia sẻ thông tin trong phạm vi cần thiết</h2>
+            </div>
+            <p>Thông tin giao nhận (tên người nhận, số điện thoại, địa chỉ) chỉ được cung cấp cho <strong>Gian hàng bán sản phẩm</strong> và <strong>Đơn vị vận chuyển</strong> để thực hiện giao hàng đúng hẹn, hoặc cung cấp cho cơ quan nhà nước có thẩm quyền khi có yêu cầu hợp pháp.</p>
+          </section>
+
+          <section class="sz-pol-sec" id="priv-5">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">05</span>
+              <h2>Quyền của khách hàng &amp; Liên hệ</h2>
+            </div>
+            <p>Bạn có toàn quyền xem, chỉnh sửa thông tin cá nhân tại mục <a href="/my-account" style="color:#008374; font-weight:700; text-decoration:underline;">Tài khoản của tôi</a>, thay đổi mật khẩu bất cứ lúc nào hoặc yêu cầu hỗ trợ bảo mật qua trung tâm CSKH của Sellzy (Hotline: <strong>1900 6868</strong>).</p>
+          </section>
+        </div>
+
+        <!-- PANEL 2: ĐIỀU KHOẢN DỊCH VỤ -->
+        <div id="sz-panel-terms" style="display:@(initialTab == "terms" ? "block" : "none");">
+          <section class="sz-pol-sec" id="term-1">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">01</span>
+              <h2>Giới thiệu &amp; Phạm vi áp dụng</h2>
+            </div>
+            <p>Chào mừng bạn đến với sàn thương mại điện tử đa ngành <strong>Sellzy</strong>. Khi đăng ký tài khoản hoặc sử dụng các dịch vụ mua sắm, thanh toán, ví điện tử và hỗ trợ trực tuyến trên Sellzy, bạn xác nhận đã đọc, hiểu và đồng ý tuân thủ các điều khoản dưới đây.</p>
+          </section>
+
+          <section class="sz-pol-sec" id="term-2">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">02</span>
+              <h2>Tài khoản người dùng &amp; Trách nhiệm bảo mật</h2>
+            </div>
+            <ul>
+              <li>Người dùng cam kết cung cấp thông tin đăng ký trung thực, chính xác (Họ tên, Email, Số điện thoại) và tự chịu trách nhiệm bảo mật mật khẩu tài khoản.</li>
+              <li>Hệ thống hỗ trợ cơ chế khóa tạm thời sau 5 lần nhập sai mật khẩu liên tiếp và khôi phục mật khẩu bằng mã OTP 6 chữ số để bảo vệ tài khoản.</li>
+              <li>Mỗi cá nhân chỉ sử dụng tài khoản cho mục đích mua sắm hợp pháp, không tạo tài khoản ảo để trục lợi mã giảm giá hoặc gian lận đơn hàng.</li>
+            </ul>
+          </section>
+
+          <section class="sz-pol-sec" id="term-3">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">03</span>
+              <h2>Quy định đặt hàng, thanh toán &amp; giao vận</h2>
+            </div>
+            <ul>
+              <li>Sellzy hỗ trợ thanh toán khi nhận hàng (COD), thanh toán trực tuyến (VNPay) và thanh toán bằng số dư <strong>Ví Sellzy</strong>.</li>
+              <li>Đơn hàng được vận chuyển qua hệ thống đối tác giao nhận tích hợp và có mã vận đơn theo dõi hành trình theo thời gian thực.</li>
+              <li>Khách hàng có quyền kiểm tra tình trạng ngoại quan kiện hàng khi nhận và quay video mở hộp để làm bằng chứng đối chiếu nếu có phát sinh.</li>
+            </ul>
+          </section>
+
+          <section class="sz-pol-sec" id="term-4">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">04</span>
+              <h2>Chính sách trả hàng, hoàn tiền &amp; Trọng tài khiếu nại 3 bên</h2>
+            </div>
+            <ul>
+              <li>Trong trường hợp sản phẩm bị hư hỏng, giao sai mẫu, thiếu số lượng hoặc có sự cố vận chuyển, người mua có thể gửi yêu cầu <strong>Trả hàng / Hoàn tiền</strong> hoặc mở <strong>Khiếu nại đơn hàng</strong> trực tiếp trên trang chi tiết đơn.</li>
+              <li>Quy trình giải quyết minh bạch giữa <strong>Khách hàng — Gian hàng — Ban quản trị Sellzy</strong> với hỗ trợ phân tích chứng cứ tự động và hoàn tiền trực tiếp vào Ví Sellzy khi khiếu nại hợp lệ.</li>
+            </ul>
+            <div class="sz-pol-callout">
+              <strong>⚖️ Cơ chế Bảo vệ Escrow:</strong> Doanh thu đơn hàng được Sellzy tạm giữ bảo vệ người mua trong suốt thời gian giao nhận và đối soát, đảm bảo hoàn tiền nhanh chóng khi có tranh chấp hợp lệ.
+            </div>
+          </section>
+
+          <section class="sz-pol-sec" id="term-5">
+            <div class="sz-pol-sec-head">
+              <span class="sz-pol-sec-num">05</span>
+              <h2>Quy định đối với sản phẩm chính hãng &amp; Hành vi nghiêm cấm</h2>
+            </div>
+            <ul>
+              <li>Nghiêm cấm mọi hành vi đăng tải nội dung vi phạm pháp luật, giả mạo đánh giá, can thiệp trái phép vào hệ thống hoặc gây ảnh hưởng đến quyền lợi các bên tham gia sàn.</li>
+              <li>Sellzy có quyền tạm khóa hoặc chấm dứt tài khoản vi phạm nghiêm trọng điều khoản dịch vụ nhằm bảo vệ cộng đồng người mua và gian hàng uy tín.</li>
+            </ul>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+  function scrollToPolicySection(targetId, linkEl, evt) {
+    if (evt) evt.preventDefault();
+    const target = document.getElementById(targetId);
+    if (!target) return;
+
+    document.querySelectorAll('.sz-pol-toc-list a').forEach(a => a.classList.remove('is-current'));
+    if (linkEl) linkEl.classList.add('is-current');
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function switchPolicyTab(tab, btnEl) {
+    document.querySelectorAll('.sz-pol-tab-btn').forEach(b => b.classList.toggle('is-active', b === btnEl));
+    const isTerms = tab === 'terms';
+    document.getElementById('sz-panel-privacy').style.display = isTerms ? 'none' : 'block';
+    document.getElementById('sz-panel-terms').style.display = isTerms ? 'block' : 'none';
+    document.getElementById('sz-toc-privacy').style.display = isTerms ? 'none' : 'block';
+    document.getElementById('sz-toc-terms').style.display = isTerms ? 'block' : 'none';
+    const heroTitle = document.getElementById('sz-pol-hero-title');
+    if (heroTitle) {
+      heroTitle.textContent = isTerms ? 'Điều khoản dịch vụ Sellzy' : 'Chính sách bảo mật thông tin Sellzy';
+    }
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {}
+  }
+</script>
+}

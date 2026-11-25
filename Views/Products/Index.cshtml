@@ -8,20 +8,24 @@
 
   string CategoryUrl(
     int? childCategoryId = null,
+    int? brandId = null,
     int? rating = null,
     string? color = null,
     string? size = null,
     decimal? minPrice = null,
     decimal? maxPrice = null,
     int? page = null,
-    string? sort = null)
+    string? sort = null,
+    int? overrideAttrId = null,
+    string? overrideAttrVal = null,
+    bool clearAttr = false)
   {
-    if (string.IsNullOrEmpty(Model.CategorySlug))
-    {
-      return Url.Action("Search", "Products", new
+    var baseUrl = string.IsNullOrEmpty(Model.CategorySlug)
+      ? (Url.Action("Search", "Products", new
       {
         q = Model.SearchTerm,
         childCategoryId,
+        brandId,
         rating,
         color,
         size,
@@ -29,24 +33,46 @@
         maxPrice,
         page,
         sort
-      }) ?? "#";
-    }
-    return Url.RouteUrl("category", new
+      }) ?? "#")
+      : (Url.RouteUrl("category", new
+      {
+        slug = Model.CategorySlug,
+        childCategoryId,
+        brandId,
+        rating,
+        color,
+        size,
+        minPrice,
+        maxPrice,
+        page,
+        sort
+      }) ?? "#");
+
+    var attrPairs = new List<string>();
+    if (Model.SelectedAttributes != null)
     {
-      slug = Model.CategorySlug,
-      childCategoryId,
-      rating,
-      color,
-      size,
-      minPrice,
-      maxPrice,
-      page,
-      sort
-    }) ?? "#";
+      foreach (var kv in Model.SelectedAttributes)
+      {
+        if (overrideAttrId.HasValue && kv.Key == overrideAttrId.Value) continue;
+        attrPairs.Add($"attr_{kv.Key}={Uri.EscapeDataString(kv.Value)}");
+      }
+    }
+    if (overrideAttrId.HasValue && !clearAttr && !string.IsNullOrWhiteSpace(overrideAttrVal))
+    {
+      attrPairs.Add($"attr_{overrideAttrId.Value}={Uri.EscapeDataString(overrideAttrVal)}");
+    }
+
+    if (attrPairs.Count > 0)
+    {
+      baseUrl += (baseUrl.Contains('?') ? "&" : "?") + string.Join("&", attrPairs);
+    }
+
+    return baseUrl;
   }
 
   string PageUrl(int page) => CategoryUrl(
     childCategoryId: Model.SelectedChildCategoryId,
+    brandId: Model.SelectedBrandId,
     rating: Model.SelectedRating,
     color: Model.SelectedColor,
     size: Model.SelectedSize,
@@ -54,6 +80,437 @@
     maxPrice: Model.SelectedMaxPrice,
     page: page,
     sort: Model.Sort);
+
+  var hasActiveFilters = Model.SelectedChildCategoryId.HasValue
+    || Model.SelectedBrandId.HasValue
+    || (Model.SelectedAttributes != null && Model.SelectedAttributes.Count > 0)
+    || Model.SelectedRating.HasValue
+    || !string.IsNullOrWhiteSpace(Model.SelectedColor)
+    || !string.IsNullOrWhiteSpace(Model.SelectedSize)
+    || Model.SelectedMinPrice.HasValue
+    || Model.SelectedMaxPrice.HasValue;
+}
+
+@section Styles {
+  <style>
+    /* ========== LUXURY BOUTIQUE SHOP PAGE ========== */
+    .sp-hero {
+      background: radial-gradient(circle at 90% 15%, rgba(255, 235, 105, 0.16) 0%, transparent 45%),
+                  linear-gradient(135deg, #00262A 0%, #04464C 55%, #088178 100%);
+      border-radius: 28px;
+      padding: 32px 36px;
+      color: #ffffff;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 44px -16px rgba(0, 38, 42, 0.28);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    @@media (max-width: 767px) {
+      .sp-hero {
+        padding: 24px 20px;
+        border-radius: 22px;
+      }
+    }
+    .sp-breadcrumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.72);
+      margin-bottom: 10px;
+    }
+    .sp-breadcrumb a {
+      color: rgba(255, 255, 255, 0.88);
+      transition: color 0.2s;
+    }
+    .sp-breadcrumb a:hover {
+      color: #FFEB69;
+    }
+    .sp-hero-title {
+      font-size: clamp(24px, 2.8vw, 34px);
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.02em;
+    }
+    .sp-hero-sub {
+      font-size: 14.5px;
+      color: rgba(255, 255, 255, 0.82);
+      margin: 0;
+    }
+    .sp-hero-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .sp-stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: 999px;
+    }
+    .sp-stat-pill strong {
+      color: #FFEB69;
+      font-weight: 800;
+    }
+
+    /* Quick Subcategory Bar */
+    .sp-quick-cats {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 24px;
+      scrollbar-width: none;
+    }
+    .sp-quick-cats::-webkit-scrollbar { display: none; }
+    .sp-quick-cat-pill {
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 13.5px;
+      font-weight: 600;
+      background-color: #ffffff;
+      border: 1px solid #E2E8F0;
+      color: #334155;
+      transition: all 0.2s ease;
+    }
+    .sp-quick-cat-pill:hover {
+      border-color: #088178;
+      color: #088178;
+      background-color: #F0FAF9;
+    }
+    .sp-quick-cat-pill.is-active {
+      background-color: #088178;
+      border-color: #088178;
+      color: #ffffff;
+      box-shadow: 0 6px 16px -4px rgba(8, 129, 120, 0.35);
+    }
+
+    /* Sidebar Filter Panel */
+    .sp-filter-panel {
+      background-color: #ffffff;
+      border: 1px solid #E5EAEF;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 10px 28px -12px rgba(0, 38, 42, 0.08);
+    }
+    .sp-filter-head {
+      background: linear-gradient(135deg, #002F34 0%, #055258 100%);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sp-filter-head h5 {
+      color: #ffffff;
+      font-size: 15.5px;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sp-filter-clear {
+      font-size: 12px;
+      font-weight: 700;
+      color: #161C24;
+      background-color: #FFEB69;
+      padding: 4px 12px;
+      border-radius: 999px;
+      transition: opacity 0.2s;
+    }
+    .sp-filter-clear:hover {
+      opacity: 0.9;
+    }
+    .sp-filter-body {
+      padding: 4px 20px 20px;
+    }
+    .sp-filter-group {
+      padding: 18px 0;
+      border-bottom: 1px solid #EEF2F6;
+    }
+    .sp-filter-group:last-child {
+      border-bottom: none;
+      padding-bottom: 4px;
+    }
+    .sp-filter-group-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .sp-filter-group-head h6 {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #0F172A;
+      margin: 0;
+    }
+    .sp-filter-reset {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748B;
+      transition: color 0.2s;
+    }
+    .sp-filter-reset:hover {
+      color: #088178;
+      text-decoration: underline;
+    }
+    .sp-cat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .sp-cat-row:hover {
+      background-color: #F4FAF9;
+    }
+    .sp-cat-row.is-selected {
+      background-color: #E6F4F3;
+      font-weight: 700;
+    }
+    .sp-filter-panel .widget-rating .ratings a {
+      background-color: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      color: #1E293B;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+    }
+    .sp-filter-panel .widget-rating .ratings a.active {
+      background-color: #088178 !important;
+      border-color: #088178 !important;
+      color: #ffffff !important;
+    }
+    .sp-filter-panel .widget-size-picker .sizes button {
+      background-color: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      color: #1E293B;
+      font-size: 13px;
+      font-weight: 700;
+      min-width: 44px;
+      padding: 6px 12px;
+    }
+    .sp-filter-panel .widget-size-picker .sizes button.active {
+      background-color: #088178 !important;
+      border-color: #088178 !important;
+      color: #ffffff !important;
+    }
+    .sp-filter-panel .widget-color-picker .colors button.active {
+      outline: 2px solid #088178;
+      outline-offset: 3px;
+    }
+
+    /* Top Control Bar */
+    .sp-control-bar {
+      background-color: #ffffff;
+      border: 1px solid #E5EAEF;
+      border-radius: 18px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 4px 16px -8px rgba(15, 23, 42, 0.06);
+    }
+    .sp-view-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #E2E8F0;
+      background-color: #F8FAFC;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .sp-view-btn.is-active,
+    .sp-view-btn:hover {
+      background-color: #088178;
+      border-color: #088178;
+      color: #ffffff;
+    }
+
+    /* Active Filter Chips */
+    .sp-active-chips {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .sp-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #E6F4F3;
+      border: 1px solid rgba(8, 129, 120, 0.2);
+      color: #056D6E;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+      transition: background-color 0.2s;
+    }
+    .sp-chip:hover {
+      background-color: #d0ebe8;
+    }
+
+    /* Boutique Product Card */
+    .sp-card {
+      background-color: #ffffff;
+      border: 1px solid #E5EAEF !important;
+      border-radius: 22px !important;
+      padding: 16px !important;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease !important;
+    }
+    .sp-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(8, 129, 120, 0.4) !important;
+      box-shadow: 0 18px 36px -14px rgba(0, 43, 48, 0.14) !important;
+    }
+    .sp-card .product-image {
+      background-color: #F4F6F8 !important;
+      border-radius: 16px !important;
+      aspect-ratio: 1 / 1;
+    }
+    .sp-discount-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background-color: #00262A;
+      color: #FFEB69;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+    .sp-card-title {
+      font-size: 15.5px !important;
+      line-height: 1.45 !important;
+      font-weight: 700 !important;
+      color: #0F172A;
+      height: 45px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .sp-card-title a:hover {
+      color: #088178;
+    }
+    .sp-price-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .sp-price-now {
+      font-size: 17.5px;
+      font-weight: 800;
+      color: #088178;
+    }
+    .sp-price-old {
+      font-size: 13px;
+      color: #94A3B8;
+      text-decoration: line-through;
+    }
+    .sp-price-off {
+      font-size: 11px;
+      font-weight: 700;
+      color: #B91C1C;
+      background-color: #FEE2E2;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .sp-card .btn-section {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      width: 100% !important;
+      margin-top: auto;
+    }
+    .sp-card .btn-section button[data-wishlist-toggle] {
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      flex: 0 0 40px !important;
+      background-color: #F8FAFC !important;
+      border-color: #E2E8F0 !important;
+    }
+    .sp-card .btn-section .btn {
+      flex: 1 1 0% !important;
+      min-width: 0 !important;
+      padding: 9px 12px !important;
+      font-size: 13px !important;
+      line-height: 20px !important;
+      gap: 6px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+    }
+
+    /* List View Mode */
+    #shop-products-grid.is-list-view .sellzy-grid-item {
+      grid-column: span 12 / span 12 !important;
+    }
+    #shop-products-grid.is-list-view .sp-card {
+      flex-direction: row !important;
+      align-items: center;
+      gap: 22px;
+    }
+    #shop-products-grid.is-list-view .product-image-container {
+      width: 210px;
+      flex-shrink: 0;
+    }
+    #shop-products-grid.is-list-view .product-image {
+      margin-bottom: 0 !important;
+    }
+    #shop-products-grid.is-list-view .product-content {
+      flex: 1;
+      min-width: 0;
+    }
+    @@media (max-width: 639px) {
+      #shop-products-grid.is-list-view .sp-card {
+        flex-direction: column !important;
+        align-items: stretch;
+      }
+      #shop-products-grid.is-list-view .product-image-container {
+        width: 100%;
+      }
+    }
+  </style>
 }
 
 <!-- Hidden filter form used by template JS (price-range slider auto-submit) -->
@@ -65,6 +522,17 @@
   @if (Model.SelectedChildCategoryId.HasValue)
   {
     <input type="hidden" name="childCategoryId" value="@Model.SelectedChildCategoryId" />
+  }
+  @if (Model.SelectedBrandId.HasValue)
+  {
+    <input type="hidden" name="brandId" value="@Model.SelectedBrandId" />
+  }
+  @if (Model.SelectedAttributes != null)
+  {
+    foreach (var kv in Model.SelectedAttributes)
+    {
+      <input type="hidden" name="attr_@kv.Key" value="@kv.Value" />
+    }
   }
   @if (Model.SelectedRating.HasValue)
   {
@@ -120,59 +588,98 @@
   }
 }
 
-<!-- ========== Breadcrumb Section Start ========== -->
-<div class="container py-12">
-  <div class="breadcrumb">
-    <ul>
-      <li>
+<!-- ========== Top Boutique Hero Banner Start ========== -->
+<div class="container pt-6">
+  <div class="sp-hero">
+    <div>
+      <div class="sp-breadcrumb">
         <a href='@Url.Action("Index", "Home")'>
-          <span class="inline-flex items-center justify-center">
-            <i class="hgi hgi-stroke hgi-home-01 text-2xl leading-6"></i>
-          </span>
-          Home
+          <i class="hgi hgi-stroke hgi-home-01 mr-1"></i>Trang chủ
         </a>
-      </li>
-      <li class="text-light-disabled-text">&#8226;</li>
-      <li><span class="text-sm leading-[22px]">@Model.CategoryName</span></li>
-    </ul>
-  </div>
-</div>
-<!-- ========== Breadcrumb Section End ========== -->
+        <span>/</span>
+        <span style="color: #FFEB69; font-weight: 600;">@Model.CategoryName</span>
+      </div>
+      <h1 class="sp-hero-title">@Model.CategoryName</h1>
+      <p class="sp-hero-sub">
+        Bộ sưu tập chính hãng được tuyển chọn kỹ lưỡng — giao nhanh toàn quốc &amp; đổi trả 30 ngày.
+      </p>
+    </div>
 
-<!-- ========== Filter with 3-column Section Start ========== -->
+    <div class="sp-hero-stats">
+      <div class="sp-stat-pill">
+        <i class="hgi hgi-stroke hgi-shopping-bag-02 text-lg" style="color: #FFEB69;"></i>
+        <span><strong>@Model.TotalItems</strong> sản phẩm</span>
+      </div>
+      <div class="sp-stat-pill">
+        <i class="hgi hgi-stroke hgi-truck-delivery text-lg" style="color: #FFEB69;"></i>
+        <span>Freeship từ <strong>500K</strong></span>
+      </div>
+    </div>
+  </div>
+
+  @if (Model.ChildCategories.Count > 0)
+  {
+    <div class="sp-quick-cats">
+      <a href="@CategoryUrl(childCategoryId: null, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
+         class="sp-quick-cat-pill @(!Model.SelectedChildCategoryId.HasValue ? "is-active" : "")">
+        <span>Tất cả</span>
+      </a>
+      @foreach (var c in Model.ChildCategories)
+      {
+        var quickUrl = CategoryUrl(
+          childCategoryId: c.CategoryId,
+          rating: Model.SelectedRating,
+          color: Model.SelectedColor,
+          size: Model.SelectedSize,
+          minPrice: Model.SelectedMinPrice,
+          maxPrice: Model.SelectedMaxPrice,
+          page: 1,
+          sort: Model.Sort);
+        <a href="@quickUrl" class="sp-quick-cat-pill @(c.IsSelected ? "is-active" : "")">
+          <span>@c.Name</span>
+          <span class="opacity-75 text-xs">(@c.ProductCount)</span>
+        </a>
+      }
+    </div>
+  }
+</div>
+<!-- ========== Top Boutique Hero Banner End ========== -->
+
+<!-- ========== Main Shop Layout Start ========== -->
 <section class="pb-[90px]">
   <div class="container">
     <div class="grid grid-cols-12 lg:gap-x-6 gap-y-6">
       <!-- LEFT SIDEBAR -->
       <div class="xl:col-span-3 lg:col-span-4 col-span-12 row-start-2 lg:row-start-auto">
         <div class="sidebar sticky top-20">
-          <div class="border border-gray-300 rounded-2xl">
-            <!-- title -->
-            <div class="px-6 py-4 bg-gray-200 rounded-t-2xl sidebar-title wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-              <div class="flex items-center justify-between">
-                <h5 class="text-light-primary-text">Bộ lọc</h5>
-                <a href="@CategoryUrl()" class="text-primary text-base leading-[26px] font-semibold hover:underline">Xóa tất cả</a>
-              </div>
+          <div class="sp-filter-panel">
+            <!-- Header -->
+            <div class="sp-filter-head sidebar-title wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+              <h5>
+                <i class="hgi hgi-stroke hgi-filter-horizontal text-lg" style="color: #FFEB69;"></i>
+                <span>Bộ lọc tìm kiếm</span>
+              </h5>
+              <a href="@CategoryUrl()" class="sp-filter-clear">Xóa tất cả</a>
             </div>
 
-            <!-- category -->
-            <div class="px-6 py-6">
+            <div class="sp-filter-body">
+              <!-- Category -->
               <div class="widget-category wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-                <div class="flex flex-col gap-y-4 pb-8 border-b border-gray-300">
-                  <div class="flex items-center justify-between widget-category-title">
+                <div class="sp-filter-group">
+                  <div class="sp-filter-group-head widget-category-title">
                     <h6>Danh mục</h6>
                     <a
                       href="@CategoryUrl(childCategoryId: null, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
-                      class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
+                      class="sp-filter-reset"
                     >Đặt lại</a>
                   </div>
 
                   <div class="widget-category-content">
-                    <ul class="flex flex-col gap-y-2">
+                    <ul class="flex flex-col gap-y-1">
                       @if (Model.ChildCategories.Count == 0)
                       {
                         <li>
-                          <p class="text-sm leading-[22px] text-light-disabled-text">Không có danh mục con.</p>
+                          <p class="text-xs text-light-disabled-text py-1">Không có danh mục con.</p>
                         </li>
                       }
                       else
@@ -190,26 +697,24 @@
                             sort: Model.Sort);
 
                           <li class="widget-category-content-list-items">
-                            <label class="group flex items-center justify-between w-full cursor-pointer">
-                              <span class="flex items-center gap-x-2">
-                                <span class="group-has-[input:checked]:group-hover:bg-[#00AB55]/8 flex items-center justify-center w-9 h-9 bg-transparent rounded-full group-hover:bg-[#919EAB]/8 transition-colors duration-300 ease-in-out">
-                                  <span class="relative inline-flex w-5 h-5 items-center justify-center">
-                                    <input
-                                      type="radio"
-                                      name="childCategoryId"
-                                      value="@c.CategoryId"
-                                      checked="@(c.IsSelected ? "checked" : null)"
-                                      onchange="window.location.href='@childUrl'"
-                                      class="peer appearance-none w-full h-full border-2 focus:outline-none checked:border-none border-gray-300 rounded-sm bg-white checked:bg-primary transition-all duration-300 ease-in-out"
-                                    />
-                                    <span class="absolute inset-0 inline-flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 transition-all">
-                                      <i class="hgi hgi-stroke hgi-tick-02 text-[18px] leading-[18px]"></i>
-                                    </span>
+                            <label class="sp-cat-row @(c.IsSelected ? "is-selected" : "")">
+                              <span class="flex items-center gap-x-2.5">
+                                <span class="relative inline-flex w-4.5 h-4.5 items-center justify-center">
+                                  <input
+                                    type="radio"
+                                    name="childCategoryId"
+                                    value="@c.CategoryId"
+                                    checked="@(c.IsSelected ? "checked" : null)"
+                                    onchange="window.location.href='@childUrl'"
+                                    class="peer appearance-none w-full h-full border-2 focus:outline-none checked:border-none border-gray-300 rounded-sm bg-white checked:bg-primary transition-all duration-200"
+                                  />
+                                  <span class="absolute inset-0 inline-flex items-center justify-center text-white opacity-0 peer-checked:opacity-100 transition-all">
+                                    <i class="hgi hgi-stroke hgi-tick-02 text-[14px]"></i>
                                   </span>
                                 </span>
-                                <span class="text-light-primary-text group-hover:text-primary transition-colors duration-300 ease-in-out">@c.Name</span>
+                                <span class="text-sm text-light-primary-text">@c.Name</span>
                               </span>
-                              <span class="group-hover:text-primary transition-colors duration-300 ease-in-out">(@c.ProductCount)</span>
+                              <span class="text-xs text-light-secondary-text">(@c.ProductCount)</span>
                             </label>
                           </li>
                         }
@@ -219,86 +724,60 @@
                 </div>
               </div>
 
-              <!-- PRICE-Range-content (kept template DOM for existing JS) -->
-              <!-- PRICE-Range-content -->
+              <!-- Price Range -->
+              <div class="widget-price-range wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+                <div class="sp-filter-group flex flex-col gap-y-4 widget-price-range-title">
+                  <div class="sp-filter-group-head mb-0">
+                    <h6>Khoảng giá</h6>
+                    <a
+                      href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: null, maxPrice: null, page: 1, sort: Model.Sort)"
+                      class="sp-filter-reset"
+                    >Đặt lại</a>
+                  </div>
                   <div
-                    class="widget-price-range wow animate__animated animate__fadeInUp"
-                    data-wow-delay=".2s"
-                  >
-                    <div
-                      class="flex flex-col gap-y-6 py-8 border-b border-gray-300 widget-price-range-title"
-                    >
-                      <div class="flex items-center justify-between">
-                        <h6>Khoảng giá</h6>
-                        <a
-                          href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: null, maxPrice: null, page: 1, sort: Model.Sort)"
-                          class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
-                          >Đặt lại</a
-                        >
-                      </div>
-                      <div
-                        id="price-range-slider"
-                        data-min="@Model.PriceMin.ToString("0", global::System.Globalization.CultureInfo.InvariantCulture)"
-                        data-max="@Model.PriceMax.ToString("0", global::System.Globalization.CultureInfo.InvariantCulture)"
-                        data-start-min="@((Model.SelectedMinPrice ?? Model.PriceMin).ToString("0", global::System.Globalization.CultureInfo.InvariantCulture))"
-                        data-start-max="@((Model.SelectedMaxPrice ?? Model.PriceMax).ToString("0", global::System.Globalization.CultureInfo.InvariantCulture))"
-                        data-form="category-filter-form"
-                      ></div>
-                      <div
-                        class="price-range-values flex items-center justify-between"
-                      >
-                        <div
-                          class="input-group medium max-w-[147px] w-full rounded-[80px] py-2 px-3.5"
-                        >
-                          <div
-                            class="input-group-addon inline-flex items-center justify-center leading-6"
-                            data-align="inline-start"
-                          >
-                            ₫
-                          </div>
-                          <input
-                            class="price-range-min-value form-control"
-                            type="text"
-                            inputmode="numeric"
-                            value="@((Model.SelectedMinPrice ?? Model.PriceMin).ToString("N0", viVn))"
-                          />
-                        </div>
-                        <span
-                          class="text-sm leading-[22px] text-light-disabled-text"
-                          >To</span
-                        >
-                        <div
-                          class="input-group medium max-w-[147px] w-full rounded-[80px] py-2 px-3.5"
-                        >
-                          <div
-                            class="input-group-addon inline-flex items-center justify-center leading-6"
-                            data-align="inline-start"
-                          >
-                            ₫
-                          </div>
-                          <input
-                            class="price-range-max-value form-control"
-                            type="text"
-                            inputmode="numeric"
-                            value="@((Model.SelectedMaxPrice ?? Model.PriceMax).ToString("N0", viVn))"
-                          />
-                        </div>
-                      </div>
+                    id="price-range-slider"
+                    data-min="@Model.PriceMin.ToString("0", global::System.Globalization.CultureInfo.InvariantCulture)"
+                    data-max="@Model.PriceMax.ToString("0", global::System.Globalization.CultureInfo.InvariantCulture)"
+                    data-start-min="@((Model.SelectedMinPrice ?? Model.PriceMin).ToString("0", global::System.Globalization.CultureInfo.InvariantCulture))"
+                    data-start-max="@((Model.SelectedMaxPrice ?? Model.PriceMax).ToString("0", global::System.Globalization.CultureInfo.InvariantCulture))"
+                    data-form="category-filter-form"
+                  ></div>
+                  <div class="price-range-values flex items-center justify-between gap-2">
+                    <div class="input-group medium max-w-[130px] w-full rounded-[80px] py-1.5 px-3 bg-[#F8FAFC]">
+                      <div class="input-group-addon inline-flex items-center justify-center text-xs font-bold text-primary" data-align="inline-start">₫</div>
+                      <input
+                        class="price-range-min-value form-control text-xs font-semibold"
+                        type="text"
+                        inputmode="numeric"
+                        value="@((Model.SelectedMinPrice ?? Model.PriceMin).ToString("N0", viVn))"
+                      />
+                    </div>
+                    <span class="text-xs text-light-disabled-text">—</span>
+                    <div class="input-group medium max-w-[130px] w-full rounded-[80px] py-1.5 px-3 bg-[#F8FAFC]">
+                      <div class="input-group-addon inline-flex items-center justify-center text-xs font-bold text-primary" data-align="inline-start">₫</div>
+                      <input
+                        class="price-range-max-value form-control text-xs font-semibold"
+                        type="text"
+                        inputmode="numeric"
+                        value="@((Model.SelectedMaxPrice ?? Model.PriceMax).ToString("N0", viVn))"
+                      />
                     </div>
                   </div>
+                </div>
+              </div>
 
-              <!-- Rating-content -->
+              <!-- Rating -->
               <div class="widget-rating wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-                <div class="flex flex-col gap-y-4 py-8 border-b border-gray-300">
-                  <div class="flex items-center justify-between widget-rating-title">
-                    <h6 class="text-light-primary-text">Đánh giá</h6>
+                <div class="sp-filter-group">
+                  <div class="sp-filter-group-head widget-rating-title">
+                    <h6>Đánh giá</h6>
                     <a
                       href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: null, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
-                      class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
-                    >Reset</a>
+                      class="sp-filter-reset"
+                    >Đặt lại</a>
                   </div>
                   <div class="ratings">
-                    <ul class="flex items-center flex-wrap gap-3">
+                    <ul class="flex items-center flex-wrap gap-2">
                       @for (var r = 5; r >= 1; r--)
                       {
                         var ratingUrl = CategoryUrl(
@@ -314,11 +793,12 @@
                         <li>
                           <a
                             href="@ratingUrl"
-                            class="btn btn-default outline shadow-none gap-x-1.5 items-center text-base leading-6 px-2.5 py-1.5 rounded-[80px] @(Model.SelectedRating == r ? "active" : "")"
-                          >@r
-                              <div class="bg-[url('../images/star-icon.png')] w-5 h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
-                                <div style="width: 100%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
-                              </div>
+                            class="btn btn-default outline shadow-none gap-x-1.5 items-center rounded-[80px] @(Model.SelectedRating == r ? "active" : "")"
+                          >
+                            <span>@r</span>
+                            <div class="bg-[url('../images/star-icon.png')] w-5 h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+                              <div style="width: 100%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+                            </div>
                           </a>
                         </li>
                       }
@@ -327,57 +807,135 @@
                 </div>
               </div>
 
-              <!-- Color-centent -->
+              <!-- Brand Filter -->
+              @{
+                var visibleBrands = (Model.Brands ?? Array.Empty<DOAN_BANHANG.ViewModels.BrandFilterItemVm>())
+                  .Where(b => b.ProductCount > 0 || b.IsSelected)
+                  .ToList();
+              }
+              @if (visibleBrands.Count > 0)
+              {
+                <div class="widget-brand wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+                  <div class="sp-filter-group">
+                    <div class="sp-filter-group-head">
+                      <h6>Thương hiệu</h6>
+                      <a href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, brandId: null, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
+                         class="sp-filter-reset">Đặt lại</a>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      @foreach (var b in visibleBrands)
+                      {
+                        var brandUrl = CategoryUrl(
+                          childCategoryId: Model.SelectedChildCategoryId,
+                          brandId: b.IsSelected ? null : b.BrandId,
+                          rating: Model.SelectedRating,
+                          color: Model.SelectedColor,
+                          size: Model.SelectedSize,
+                          minPrice: Model.SelectedMinPrice,
+                          maxPrice: Model.SelectedMaxPrice,
+                          page: 1,
+                          sort: Model.Sort);
+                        <a href="@brandUrl"
+                           class="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all @(b.IsSelected ? "bg-primary text-white border-primary" : "bg-[#F8FAFC] text-light-primary-text border-gray-200 hover:border-primary hover:text-primary")">
+                          @b.Name (@b.ProductCount)
+                        </a>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- Dynamic Category Attributes (EAV) -->
+              @if (Model.DynamicAttributes != null && Model.DynamicAttributes.Count > 0)
+              {
+                foreach (var attr in Model.DynamicAttributes)
+                {
+                  <div class="widget-dynamic-attr wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+                    <div class="sp-filter-group">
+                      <div class="sp-filter-group-head">
+                        <h6>@attr.Name @(!string.IsNullOrWhiteSpace(attr.Unit) ? $"({attr.Unit})" : "")</h6>
+                        <a href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, brandId: Model.SelectedBrandId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort, overrideAttrId: attr.AttributeId, clearAttr: true)"
+                           class="sp-filter-reset">Đặt lại</a>
+                      </div>
+                      <div class="flex flex-wrap gap-2">
+                        @foreach (var val in attr.AvailableValues)
+                        {
+                          var isSelectedAttr = string.Equals(attr.SelectedValue, val, StringComparison.OrdinalIgnoreCase);
+                          var attrUrl = CategoryUrl(
+                            childCategoryId: Model.SelectedChildCategoryId,
+                            brandId: Model.SelectedBrandId,
+                            rating: Model.SelectedRating,
+                            color: Model.SelectedColor,
+                            size: Model.SelectedSize,
+                            minPrice: Model.SelectedMinPrice,
+                            maxPrice: Model.SelectedMaxPrice,
+                            page: 1,
+                            sort: Model.Sort,
+                            overrideAttrId: attr.AttributeId,
+                            overrideAttrVal: val,
+                            clearAttr: isSelectedAttr);
+                          <a href="@attrUrl"
+                             class="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all @(isSelectedAttr ? "bg-primary text-white border-primary" : "bg-[#F8FAFC] text-light-primary-text border-gray-200 hover:border-primary hover:text-primary")">
+                            @val
+                          </a>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              }
+
+              <!-- Color -->
               <div class="widget-color-picker wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-                <div class="flex flex-col gap-y-4 py-8 border-b border-gray-300">
-                  <div class="flex items-center justify-between widget-color-title">
+                <div class="sp-filter-group">
+                  <div class="sp-filter-group-head widget-color-title">
                     <h6>Màu sắc</h6>
                     <a
                       href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: null, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
-                      class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
+                      class="sp-filter-reset"
                     >Đặt lại</a>
                   </div>
                   <div class="colors">
-                    <ul class="flex items-center flex-wrap gap-5">
+                    <ul class="flex items-center flex-wrap gap-4">
                       <li class="inline-flex items-center justify-center">
-                        <button data-color="primary" class="w-5 h-5 inline-flex items-center justify-center bg-primary rounded-full @(string.Equals(Model.SelectedColor, "primary", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                        <button data-color="primary" class="w-6 h-6 inline-flex items-center justify-center bg-primary rounded-full @(string.Equals(Model.SelectedColor, "primary", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
                       </li>
                       <li class="inline-flex items-center justify-center">
-                        <button data-color="info" class="w-5 h-5 inline-flex items-center justify-center bg-info rounded-full @(string.Equals(Model.SelectedColor, "info", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                        <button data-color="info" class="w-6 h-6 inline-flex items-center justify-center bg-info rounded-full @(string.Equals(Model.SelectedColor, "info", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
                       </li>
                       <li class="inline-flex items-center justify-center">
-                        <button data-color="info-darker" class="w-5 h-5 inline-flex items-center justify-center bg-info-darker rounded-full @(string.Equals(Model.SelectedColor, "info-darker", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                        <button data-color="info-darker" class="w-6 h-6 inline-flex items-center justify-center bg-info-darker rounded-full @(string.Equals(Model.SelectedColor, "info-darker", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
                       </li>
                       <li class="inline-flex items-center justify-center">
-                        <button data-color="warning" class="w-5 h-5 inline-flex items-center justify-center bg-warning rounded-full @(string.Equals(Model.SelectedColor, "warning", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                        <button data-color="warning" class="w-6 h-6 inline-flex items-center justify-center bg-warning rounded-full @(string.Equals(Model.SelectedColor, "warning", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
                       </li>
                       <li class="inline-flex items-center justify-center">
-                        <button data-color="error-light" class="w-5 h-5 inline-flex items-center justify-center bg-error-light rounded-full @(string.Equals(Model.SelectedColor, "error-light", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                        <button data-color="error-light" class="w-6 h-6 inline-flex items-center justify-center bg-error-light rounded-full @(string.Equals(Model.SelectedColor, "error-light", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
                       </li>
                       <li class="inline-flex items-center justify-center">
-                        <button data-color="error-dark" class="w-5 h-5 inline-flex items-center justify-center bg-error-dark rounded-full @(string.Equals(Model.SelectedColor, "error-dark", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
+                        <button data-color="error-dark" class="w-6 h-6 inline-flex items-center justify-center bg-error-dark rounded-full @(string.Equals(Model.SelectedColor, "error-dark", StringComparison.OrdinalIgnoreCase) ? "active" : "")"></button>
                       </li>
                     </ul>
                   </div>
                 </div>
               </div>
 
-              <!-- Size-content -->
+              <!-- Size -->
               <div class="widget-size-picker wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-                <div class="flex flex-col gap-y-4 py-8 border-b border-gray-300">
-                  <div class="flex items-center justify-between widget-size-title">
-                    <h6>Size</h6>
+                <div class="sp-filter-group">
+                  <div class="sp-filter-group-head widget-size-title">
+                    <h6>Kích cỡ (Size)</h6>
                     <a
                       href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: null, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)"
-                      class="text-base leading-[26px] hover:underline hover:text-primary transition-colors duration-300 ease-in-out"
+                      class="sp-filter-reset"
                     >Đặt lại</a>
                   </div>
                   <div class="sizes">
-                    <ul class="flex items-center flex-wrap gap-3">
+                    <ul class="flex items-center flex-wrap gap-2">
                       @foreach (var label in new[] { "S", "M", "L", "XL", "XXL", "XXXL" })
                       {
                         <li>
-                          <button data-size="@label" class="btn btn-default outline shadow-none py-[7px] px-[15px] rounded-[80px] @(string.Equals(Model.SelectedSize, label, StringComparison.OrdinalIgnoreCase) ? "active" : "")">@label</button>
+                          <button data-size="@label" class="btn btn-default outline shadow-none rounded-[80px] @(string.Equals(Model.SelectedSize, label, StringComparison.OrdinalIgnoreCase) ? "active" : "")">@label</button>
                         </li>
                       }
                     </ul>
@@ -391,27 +949,25 @@
 
       <!-- RIGHT CONTENT -->
       <div class="xl:col-span-9 lg:col-span-8 col-span-12 row-start-1 lg:row-start-auto">
-        <div class="flex items-center justify-between pb-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-          <div class="flex items-center gap-x-4 shrink-0 justify-start">
-            <div class="flex items-center gap-x-4">
-              <a class='w-10 h-10 rounded-full inline-flex items-center justify-center btn btn-default outline shadow-none cursor-pointer' href='#'>
-                <span class="inline-flex items-center justify-center">
-                  <i class="hgi hgi-stroke hgi-left-to-right-list-bullet text-2xl leading-6"></i>
-                </span>
-              </a>
-              <a href="#" class="w-10 h-10 rounded-full inline-flex items-center justify-center btn-primary cursor-pointer">
-                <span class="inline-flex items-center justify-center">
-                  <i class="hgi hgi-stroke hgi-more-01 text-2xl leading-6 text-white"></i>
-                </span>
-              </a>
+        <div class="sp-control-bar wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+          <div class="flex items-center gap-x-3 shrink-0 justify-start">
+            <div class="flex items-center gap-x-2">
+              <button type="button" id="btn-view-grid" class="sp-view-btn is-active" title="Xem dạng lưới">
+                <i class="hgi hgi-stroke hgi-grid-view text-lg"></i>
+              </button>
+              <button type="button" id="btn-view-list" class="sp-view-btn" title="Xem dạng danh sách">
+                <i class="hgi hgi-stroke hgi-left-to-right-list-bullet text-lg"></i>
+              </button>
             </div>
             <div class="lg:flex hidden">
-              <p class="text-light-secondary-text">Showing @startItem-@endItem of @Model.TotalItems results</p>
+              <p class="text-sm text-light-secondary-text m-0">
+                Hiển thị <span class="font-bold text-light-primary-text">@startItem–@endItem</span> trong <span class="font-bold text-light-primary-text">@Model.TotalItems</span> sản phẩm
+              </p>
             </div>
           </div>
 
           <!-- Sorting -->
-          <div class="relative min-w-[100px]">
+          <div class="relative min-w-[140px]">
             @{
               var sortNameAscUrl = CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: null);
               var sortNameDescUrl = CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: "name_desc");
@@ -431,16 +987,74 @@
               <option value="@sortRatingAscUrl" selected="@(string.Equals(Model.Sort, "rating_asc", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Đánh giá (Thấp → Cao)</option>
               <option value="@sortNewestUrl" selected="@(string.Equals(Model.Sort, "newest", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Mới nhất</option>
             </select>
-            <label for="sorting" class="nice-select-label">Sorting</label>
+            <label for="sorting" class="nice-select-label">Sắp xếp</label>
           </div>
         </div>
 
-        <div class="grid grid-cols-12 gap-6 pb-12">
+        @if (hasActiveFilters)
+        {
+          <div class="sp-active-chips">
+            <span class="text-xs font-bold text-light-secondary-text mr-1">Đang lọc:</span>
+            @if (Model.SelectedBrandId.HasValue)
+            {
+              var selBrandName = Model.Brands?.FirstOrDefault(b => b.BrandId == Model.SelectedBrandId.Value)?.Name ?? $"Hãng #{Model.SelectedBrandId}";
+              <a class="sp-chip" href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, brandId: null, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)">
+                <span>Hãng: @selBrandName</span>
+                <i class="hgi hgi-stroke hgi-multiplication-sign text-xs"></i>
+              </a>
+            }
+            @if (Model.SelectedAttributes != null)
+            {
+              foreach (var kv in Model.SelectedAttributes)
+              {
+                var attrName = Model.DynamicAttributes?.FirstOrDefault(a => a.AttributeId == kv.Key)?.Name ?? "Thuộc tính";
+                <a class="sp-chip" href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, brandId: Model.SelectedBrandId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort, overrideAttrId: kv.Key, clearAttr: true)">
+                  <span>@attrName: @kv.Value</span>
+                  <i class="hgi hgi-stroke hgi-multiplication-sign text-xs"></i>
+                </a>
+              }
+            }
+            @if (Model.SelectedRating.HasValue)
+            {
+              <a class="sp-chip" href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: null, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)">
+                <span>Từ @Model.SelectedRating sao</span>
+                <i class="hgi hgi-stroke hgi-multiplication-sign text-xs"></i>
+              </a>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.SelectedColor))
+            {
+              <a class="sp-chip" href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: null, size: Model.SelectedSize, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)">
+                <span>Màu: @Model.SelectedColor</span>
+                <i class="hgi hgi-stroke hgi-multiplication-sign text-xs"></i>
+              </a>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.SelectedSize))
+            {
+              <a class="sp-chip" href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: null, minPrice: Model.SelectedMinPrice, maxPrice: Model.SelectedMaxPrice, page: 1, sort: Model.Sort)">
+                <span>Size: @Model.SelectedSize</span>
+                <i class="hgi hgi-stroke hgi-multiplication-sign text-xs"></i>
+              </a>
+            }
+            @if (Model.SelectedMinPrice.HasValue || Model.SelectedMaxPrice.HasValue)
+            {
+              <a class="sp-chip" href="@CategoryUrl(childCategoryId: Model.SelectedChildCategoryId, rating: Model.SelectedRating, color: Model.SelectedColor, size: Model.SelectedSize, minPrice: null, maxPrice: null, page: 1, sort: Model.Sort)">
+                <span>Giá: @((Model.SelectedMinPrice ?? Model.PriceMin).ToString("N0", viVn))đ – @((Model.SelectedMaxPrice ?? Model.PriceMax).ToString("N0", viVn))đ</span>
+                <i class="hgi hgi-stroke hgi-multiplication-sign text-xs"></i>
+              </a>
+            }
+            <a href="@CategoryUrl()" class="text-xs font-bold text-error hover:underline ml-1">Xóa tất cả</a>
+          </div>
+        }
+
+        <div id="shop-products-grid" class="grid grid-cols-12 gap-5 pb-12 items-stretch">
           @if (Model.Products.Count == 0)
           {
             <div class="col-span-12">
-              <div class="border border-gray-300 rounded-2xl p-6 text-center">
-                <p class="text-light-secondary-text">Chưa có sản phẩm trong danh mục này.</p>
+              <div class="border border-dashed border-gray-300 bg-gray-50 rounded-3xl p-12 text-center">
+                <i class="hgi hgi-stroke hgi-shopping-bag-02 text-5xl text-gray-400 mb-3 inline-block"></i>
+                <h5 class="text-lg font-bold text-light-primary-text mb-1">Không tìm thấy sản phẩm phù hợp</h5>
+                <p class="text-sm text-light-secondary-text mb-5">Hãy thử điều chỉnh bộ lọc hoặc xóa điều kiện tìm kiếm để xem thêm sản phẩm.</p>
+                <a href="@CategoryUrl()" class="btn btn-primary rounded-full px-6 py-2.5 text-sm font-semibold text-white">Xem tất cả sản phẩm</a>
               </div>
             </div>
           }
@@ -452,76 +1066,75 @@
               var detailsUrl = Url.RouteUrl("product_details", new { slug = p.Slug }) ?? "#";
               var ratingPct = (int)Math.Round(Math.Clamp((double)(p.RatingAverage / 5m * 100m), 0d, 100d));
 
-              <div class="xl:col-span-4 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
-                <div class="border border-gray-300 rounded-2xl product-card-1 p-4 group">
+              <div class="sellzy-grid-item xl:col-span-4 md:col-span-6 col-span-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
+                <div class="product-card-1 sp-card group">
                   <div class="product-image-container relative">
                     @if (p.DiscountPercent > 0)
                     {
-                      <span class="product-discount-badge">GIẢM @p.DiscountPercent%</span><span style="display:none;">
-                        <i class="hgi hgi-stroke hgi-sale-02 text-sm"></i> -@p.DiscountPercent%
-                      </span>
+                      <span class="sp-discount-tag">-@p.DiscountPercent%</span>
                     }
-                    <div class="product-image rounded-xl bg-[#F4F3F5] mb-4 overflow-hidden">
+                    <div class="product-image rounded-xl mb-3.5 overflow-hidden">
                       <a href='@detailsUrl'>
-                        <img src="@imageUrl" alt="@p.Name" class="w-full h-full object-cover group-hover:scale-110 transition-all transform group-hover:-rotate-3 ease-in-out duration-300" />
+                        <img src="@imageUrl" alt="@p.Name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-in-out" />
                       </a>
                     </div>
                     <div class="product-btn-actions absolute bottom-0 right-0 left-0 flex justify-center z-9 transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 group-hover:bottom-3">
-                      <ul class="flex items-center gap-x-px">
+                      <ul class="flex items-center gap-x-px shadow-md rounded-lg overflow-hidden">
                         <li>
-                          <button type="button" aria-label='Add to Wishlist' data-wishlist-toggle data-product-id='@p.ProductId' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tl-sm rounded-bl-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5'>
-                            <svg class="wishlist-heart-icon w-6 h-6 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <button type="button" aria-label='Yêu thích' data-wishlist-toggle data-product-id='@p.ProductId' class='product-btn-action-item relative size-10 bg-white inline-flex items-center justify-center'>
+                            <svg class="wishlist-heart-icon w-5 h-5 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
                               <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
                             </svg>
                           </button>
                         </li>
                         <li>
-                          <a aria-label='Compare' class='product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5' 
-                             href='javascript:void(0)' onclick='addToCompare(@p.ProductId)'>
-                            <i class="hgi hgi-stroke hgi-reload text-2xl leading-6 text-light-primary-text"></i>
+                          <a aria-label='So sánh' class='product-btn-action-item relative size-10 bg-white inline-flex items-center justify-center' href='javascript:void(0)' onclick='addToCompare(@p.ProductId)'>
+                            <i class="hgi hgi-stroke hgi-reload text-xl text-light-primary-text"></i>
                           </a>
                         </li>
                         <li>
-                          <a aria-label="Quick view" class="quick-view-sidebar-btn product-btn-action-item relative size-11 bg-white inline-flex items-center justify-center rounded-tr-sm rounded-br-sm before:absolute before:left-[calc(50%-8px)] before:bottom-full before:z-9 before:border-8 before:border-transparent before:border-t-black before:opacity-0 before:invisible before:-mb-3.5 hover:before:opacity-100 hover:before:visible before:transition-all before:duration-300 after:absolute after:bottom-full after:left-1/2 after:-translate-x-1/2 after:rounded-sm after:bg-gray-800 after:whitespace-nowrap after:text-white after:text-xs after:leading-[18px] after:py-[3px] after:px-2 after:content-[attr(aria-label)] after:opacity-0 after:invisible after:transition-all after:duration-300 hover:after:opacity-100 hover:after:visible hover:after:-translate-y-2.5 hover:before:-translate-y-2.5" href="#" data-quick-view-url="@Url.Action("QuickView", "Products", new { id = p.ProductId })">
-                            <i class="hgi hgi-stroke hgi-view text-2xl leading-6 text-light-primary-text"></i>
+                          <a aria-label="Xem nhanh" class="quick-view-sidebar-btn product-btn-action-item relative size-10 bg-white inline-flex items-center justify-center" href="#" data-quick-view-url="@Url.Action("QuickView", "Products", new { id = p.ProductId })">
+                            <i class="hgi hgi-stroke hgi-view text-xl text-light-primary-text"></i>
                           </a>
                         </li>
                       </ul>
                     </div>
                   </div>
 
-                  <div class="product-content">
-                    <h5 class="text-base leading-6 font-semibold font-dm-sans mb-4">
-                      <a href='@detailsUrl'>@p.Name</a>
-                    </h5>
+                  <div class="product-content flex-1 flex flex-col justify-between">
+                    <div>
+                      <h5 class="sp-card-title">
+                        <a href='@detailsUrl' class="line-clamp-2 transition-colors">@p.Name</a>
+                      </h5>
 
-                    <div class="rating-section flex items-center mb-4">
-                      <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
-                        <div style="width: @ratingPct%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+                      <div class="rating-section flex items-center mb-2.5">
+                        <div class="bg-[url('../images/star-icon.png')] w-[90px] h-4.5 bg-repeat-x overflow-hidden bg-position-[0_0]">
+                          <div style="width: @ratingPct%" class="bg-[url('../images/star-icon.png')] h-4.5 bg-repeat-x bg-position-[0_-18px]"></div>
+                        </div>
+                        <span class="text-xs leading-[18px] text-light-secondary-text inline-block ml-1.5">(@p.RatingCount)</span>
                       </div>
-                      <span class="text-sm leading-[22px] font-normal inline-block ml-1">(@p.RatingCount)</span>
+
+                      <div class="sp-price-row">
+                        <span class="sp-price-now">@p.Price.ToString("N0", viVn)đ</span>
+                        @if (p.OldPrice.HasValue && p.OldPrice.Value > p.Price)
+                        {
+                          <span class="sp-price-old">@p.OldPrice.Value.ToString("N0", viVn)đ</span>
+                          <span class="sp-price-off">-@p.DiscountPercent%</span>
+                        }
+                      </div>
                     </div>
 
-                    <div class="price-section flex items-center gap-x-3 mb-2">
-                      <span class="current-price text-base font-semibold text-light-primary-text">@p.Price.ToString("N0", viVn) VNĐ</span>
-                      @if (p.OldPrice.HasValue)
-                      {
-                        <span class="old-price text-sm leading-[22px] font-normal text-light-disabled-text line-through">@p.OldPrice.Value.ToString("N0", viVn) VNĐ</span>
-                        <span class="text-xs font-semibold text-error ml-1">@p.DiscountPercent% OFF</span>
-                      }
-                    </div>
-
-                    <div class="btn-section flex items-center gap-x-4">
-                      <button type="button" aria-label="Add to Wishlist" data-wishlist-toggle data-product-id='@p.ProductId' class='size-11 flex flex-none items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 border border-gray-300'>
+                    <div class="btn-section">
+                      <button type="button" aria-label="Yêu thích" data-wishlist-toggle data-product-id='@p.ProductId' class='flex items-center justify-center rounded-full border'>
                         <svg class="wishlist-heart-icon w-5 h-5 text-light-secondary-text" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
                           <path class="wishlist-heart-fill opacity-0" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
                         </svg>
                       </button>
-                      <a class='btn btn-primary rounded-full font-semibold text-sm leading-6 px-6.5 py-2 flex-1' href='#' data-add-to-cart data-variant-id='@p.DefaultVariantId'>
-                        <i class="hgi hgi-stroke hgi-shopping-cart-02 text-xl text-white"></i>
-                        <span>Add to Cart</span>
+                      <a class='btn btn-primary rounded-full font-semibold text-white' href='#' data-add-to-cart data-variant-id='@p.DefaultVariantId'>
+                        <i class="hgi hgi-stroke hgi-shopping-cart-02 text-lg text-white"></i>
+                        <span>Thêm vào giỏ</span>
                       </a>
                     </div>
                   </div>
@@ -531,7 +1144,7 @@
           }
         </div>
 
-        <!-- pagination -->
+        <!-- Pagination -->
         <div class="grid grid-cols-12 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">
           <div class="col-span-12">
             <ul class="flex items-center justify-center gap-x-1.5 blog-pagination">
@@ -546,7 +1159,7 @@
               <li class="group blog-pagination-item">
                 <a
                   href="@(currentPage > 1 ? PageUrl(currentPage - 1) : "#")"
-                  class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:font-semibold group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out"
+                  class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] bg-white cursor-pointer border border-gray-300 group-hover:font-semibold group-hover:border-primary group-hover:bg-[rgba(8,129,120,0.08)] transition-colors duration-300 ease-in-out"
                 >
                   <span class="inline-flex items-center justify-center">
                     <i class="hgi hgi-stroke hgi-arrow-left-01 text-[20px] group-hover:font-semibold leading-5 text-light-primary-text group-hover:text-primary"></i>
@@ -559,7 +1172,7 @@
                 if (windowStart > 1)
                 {
                   <li class="group blog-pagination-item">
-                    <a href="@PageUrl(1)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out">1</a>
+                    <a href="@PageUrl(1)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(8,129,120,0.08)] transition-colors duration-300 ease-in-out">1</a>
                   </li>
                 }
 
@@ -583,7 +1196,7 @@
                   else
                   {
                     <li class="group blog-pagination-item">
-                      <a href="@PageUrl(i)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out">@i</a>
+                      <a href="@PageUrl(i)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(8,129,120,0.08)] transition-colors duration-300 ease-in-out">@i</a>
                     </li>
                   }
                 }
@@ -600,7 +1213,7 @@
                 if (windowEnd < totalPages)
                 {
                   <li class="group blog-pagination-item">
-                    <a href="@PageUrl(totalPages)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out">@totalPages</a>
+                    <a href="@PageUrl(totalPages)" class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] text-base leading-6 text-light-primary-text group-hover:text-primary group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(8,129,120,0.08)] transition-colors duration-300 ease-in-out">@totalPages</a>
                   </li>
                 }
               }
@@ -608,7 +1221,7 @@
               <li class="group blog-pagination-item">
                 <a
                   href="@(currentPage < totalPages ? PageUrl(currentPage + 1) : "#")"
-                  class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(0,171,85,0.08)] transition-colors duration-300 ease-in-out"
+                  class="inline-flex items-center justify-center md:size-10 size-9 rounded-[50px] group-hover:font-semibold bg-white cursor-pointer border border-gray-300 group-hover:border-primary group-hover:bg-[rgba(8,129,120,0.08)] transition-colors duration-300 ease-in-out"
                 >
                   <span class="inline-flex items-center justify-center">
                     <i class="hgi hgi-stroke hgi-arrow-right-01 text-[20px] leading-5 group-hover:font-semibold text-light-primary-text group-hover:text-primary"></i>
@@ -622,4 +1235,27 @@
     </div>
   </div>
 </section>
-<!-- ========== Filter with 3-column Section End ========== -->
+<!-- ========== Main Shop Layout End ========== -->
+
+@section Scripts {
+  <script>
+    (function () {
+      const grid = document.getElementById('shop-products-grid');
+      const btnGrid = document.getElementById('btn-view-grid');
+      const btnList = document.getElementById('btn-view-list');
+      if (!grid || !btnGrid || !btnList) return;
+
+      btnGrid.addEventListener('click', function () {
+        grid.classList.remove('is-list-view');
+        btnGrid.classList.add('is-active');
+        btnList.classList.remove('is-active');
+      });
+
+      btnList.addEventListener('click', function () {
+        grid.classList.add('is-list-view');
+        btnList.classList.add('is-active');
+        btnGrid.classList.remove('is-active');
+      });
+    })();
+  </script>
+}
